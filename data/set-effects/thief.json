@@ -1,0 +1,1432 @@
+{
+  "list": [
+    {
+      "_id": "69945f3591fd456e184d5fc7",
+      "jobType": "thief",
+      "setType": "eternal",
+      "level": 250,
+      "effects": [
+        {
+          "numEquipped": 2,
+          "list": [
+            {
+              "statId": "maxHpMp",
+              "val": 2500,
+              "_id": "69945f3591fd456e184d5fc9"
+            },
+            {
+              "statId": "attmatt",
+              "val": 40,
+              "_id": "69945f3591fd456e184d5fca"
+            },
+            {
+              "statId": "bossPercent",
+              "val": 10,
+              "_id": "69945f3591fd456e184d5fcb"
+            }
+          ],
+          "_id": "69945f3591fd456e184d5fc8"
+        },
+        {
+          "numEquipped": 3,
+          "list": [
+            {
+              "statId": "allStats",
+              "val": 50,
+              "_id": "69945f3591fd456e184d5fcd"
+            },
+            {
+              "statId": "attmatt",
+              "val": 40,
+              "_id": "69945f3591fd456e184d5fce"
+            },
+            {
+              "statId": "def",
+              "val": 600,
+              "_id": "69945f3591fd456e184d5fcf"
+            },
+            {
+              "statId": "bossPercent",
+              "val": 10,
+              "_id": "69945f3591fd456e184d5fd0"
+            }
+          ],
+          "_id": "69945f3591fd456e184d5fcc"
+        },
+        {
+          "numEquipped": 4,
+          "list": [
+            {
+              "statId": "maxHpMpPercent",
+              "val": 15,
+              "_id": "69945f3591fd456e184d5fd2"
+            },
+            {
+              "statId": "attmatt",
+              "val": 40,
+              "_id": "69945f3591fd456e184d5fd3"
+            },
+            {
+              "statId": "bossPercent",
+              "val": 10,
+              "_id": "69945f3591fd456e184d5fd4"
+            }
+          ],
+          "_id": "69945f3591fd456e184d5fd1"
+        },
+        {
+          "numEquipped": 5,
+          "list": [
+            {
+              "statId": "attmatt",
+              "val": 40,
+              "_id": "69945f3591fd456e184d5fd6"
+            },
+            {
+              "statId": "iedPercent",
+              "val": 20,
+              "_id": "69945f3591fd456e184d5fd7"
+            }
+          ],
+          "_id": "69945f3591fd456e184d5fd5"
+        },
+        {
+          "numEquipped": 6,
+          "list": [
+            {
+              "statId": "attmatt",
+              "val": 40,
+              "_id": "69945f3591fd456e184d5fd9"
+            },
+            {
+              "statId": "bossPercent",
+              "val": 15,
+              "_id": "69945f3591fd456e184d5fda"
+            }
+          ],
+          "_id": "69945f3591fd456e184d5fd8"
+        },
+        {
+          "numEquipped": 7,
+          "list": [
+            {
+              "statId": "allStats",
+              "val": 50,
+              "_id": "69945f3591fd456e184d5fdc"
+            },
+            {
+              "statId": "attmatt",
+              "val": 40,
+              "_id": "69945f3591fd456e184d5fdd"
+            },
+            {
+              "statId": "maxHpMp",
+              "val": 2500,
+              "_id": "69945f3591fd456e184d5fde"
+            },
+            {
+              "statId": "bossPercent",
+              "val": 15,
+              "_id": "69945f3591fd456e184d5fdf"
+            }
+          ],
+          "_id": "69945f3591fd456e184d5fdb"
+        },
+        {
+          "numEquipped": 8,
+          "list": [
+            {
+              "statId": "attmatt",
+              "val": 40,
+              "_id": "69945f3591fd456e184d5fe1"
+            },
+            {
+              "statId": "bossPercent",
+              "val": 15,
+              "_id": "69945f3591fd456e184d5fe2"
+            }
+          ],
+          "_id": "69945f3591fd456e184d5fe0"
+        }
+      ],
+      "__v": 0
+    },
+    {
+      "_id": "69945f3591fd456e184d6128",
+      "jobType": "common",
+      "setType": "radiantBossAcc",
+      "level": 250,
+      "effects": [
+        {
+          "numEquipped": 2,
+          "list": [
+            {
+              "statId": "allStats",
+              "val": 20,
+              "_id": "69945f3591fd456e184d612a"
+            },
+            {
+              "statId": "maxHp",
+              "val": 500,
+              "_id": "69945f3591fd456e184d612b"
+            },
+            {
+              "statId": "attmatt",
+              "val": 20,
+              "_id": "69945f3591fd456e184d612c"
+            },
+            {
+              "statId": "bossPercent",
+              "val": 15,
+              "_id": "69945f3591fd456e184d612d"
+            }
+          ],
+          "_id": "69945f3591fd456e184d6129"
+        },
+        {
+          "numEquipped": 3,
+          "list": [
+            {
+              "statId": "allStats",
+              "val": 20,
+              "_id": "69945f3591fd456e184d612f"
+            },
+            {
+              "statId": "maxHp",
+              "val": 500,
+              "_id": "69945f3591fd456e184d6130"
+            },
+            {
+              "statId": "attmatt",
+              "val": 20,
+              "_id": "69945f3591fd456e184d6131"
+            },
+            {
+              "statId": "iedPercent",
+              "val": 15,
+              "_id": "69945f3591fd456e184d6132"
+            }
+          ],
+          "_id": "69945f3591fd456e184d612e"
+        },
+        {
+          "numEquipped": 4,
+          "list": [
+            {
+              "statId": "allStats",
+              "val": 20,
+              "_id": "69945f3591fd456e184d6134"
+            },
+            {
+              "statId": "maxHp",
+              "val": 500,
+              "_id": "69945f3591fd456e184d6135"
+            },
+            {
+              "statId": "attmatt",
+              "val": 20,
+              "_id": "69945f3591fd456e184d6136"
+            },
+            {
+              "statId": "critDmgPercent",
+              "val": 5,
+              "_id": "69945f3591fd456e184d6137"
+            }
+          ],
+          "_id": "69945f3591fd456e184d6133"
+        },
+        {
+          "numEquipped": 5,
+          "list": [
+            {
+              "statId": "allStats",
+              "val": 20,
+              "_id": "69945f3591fd456e184d6139"
+            },
+            {
+              "statId": "maxHp",
+              "val": 500,
+              "_id": "69945f3591fd456e184d613a"
+            },
+            {
+              "statId": "attmatt",
+              "val": 20,
+              "_id": "69945f3591fd456e184d613b"
+            },
+            {
+              "statId": "bossPercent",
+              "val": 15,
+              "_id": "69945f3591fd456e184d613c"
+            }
+          ],
+          "_id": "69945f3591fd456e184d6138"
+        }
+      ],
+      "__v": 0
+    },
+    {
+      "_id": "69945f3591fd456e184d5fe3",
+      "jobType": "thief",
+      "setType": "acs",
+      "level": 200,
+      "effects": [
+        {
+          "numEquipped": 2,
+          "list": [
+            {
+              "statId": "attmatt",
+              "val": 30,
+              "_id": "69945f3591fd456e184d5fe5"
+            },
+            {
+              "statId": "bossPercent",
+              "val": 10,
+              "_id": "69945f3591fd456e184d5fe6"
+            }
+          ],
+          "_id": "69945f3591fd456e184d5fe4"
+        },
+        {
+          "numEquipped": 3,
+          "list": [
+            {
+              "statId": "attmatt",
+              "val": 30,
+              "_id": "69945f3591fd456e184d5fe8"
+            },
+            {
+              "statId": "iedPercent",
+              "val": 10,
+              "_id": "69945f3591fd456e184d5fe9"
+            },
+            {
+              "statId": "def",
+              "val": 400,
+              "_id": "69945f3591fd456e184d5fea"
+            }
+          ],
+          "_id": "69945f3591fd456e184d5fe7"
+        },
+        {
+          "numEquipped": 4,
+          "list": [
+            {
+              "statId": "attmatt",
+              "val": 35,
+              "_id": "69945f3591fd456e184d5fec"
+            },
+            {
+              "statId": "allStats",
+              "val": 50,
+              "_id": "69945f3591fd456e184d5fed"
+            },
+            {
+              "statId": "bossPercent",
+              "val": 10,
+              "_id": "69945f3591fd456e184d5fee"
+            }
+          ],
+          "_id": "69945f3591fd456e184d5feb"
+        },
+        {
+          "numEquipped": 5,
+          "list": [
+            {
+              "statId": "attmatt",
+              "val": 40,
+              "_id": "69945f3591fd456e184d5ff0"
+            },
+            {
+              "statId": "maxHpMp",
+              "val": 2000,
+              "_id": "69945f3591fd456e184d5ff1"
+            },
+            {
+              "statId": "bossPercent",
+              "val": 10,
+              "_id": "69945f3591fd456e184d5ff2"
+            }
+          ],
+          "_id": "69945f3591fd456e184d5fef"
+        },
+        {
+          "numEquipped": 6,
+          "list": [
+            {
+              "statId": "attmatt",
+              "val": 30,
+              "_id": "69945f3591fd456e184d5ff4"
+            },
+            {
+              "statId": "maxHpMpPercent",
+              "val": 30,
+              "_id": "69945f3591fd456e184d5ff5"
+            }
+          ],
+          "_id": "69945f3591fd456e184d5ff3"
+        },
+        {
+          "numEquipped": 7,
+          "list": [
+            {
+              "statId": "attmatt",
+              "val": 30,
+              "_id": "69945f3591fd456e184d5ff7"
+            },
+            {
+              "statId": "iedPercent",
+              "val": 10,
+              "_id": "69945f3591fd456e184d5ff8"
+            }
+          ],
+          "_id": "69945f3591fd456e184d5ff6"
+        }
+      ],
+      "__v": 0
+    },
+    {
+      "_id": "69945f3591fd456e184d5ff9",
+      "jobType": "thief",
+      "setType": "abs",
+      "level": 160,
+      "effects": [
+        {
+          "numEquipped": 2,
+          "list": [
+            {
+              "statId": "attmatt",
+              "val": 20,
+              "_id": "69945f3591fd456e184d5ffb"
+            },
+            {
+              "statId": "maxHpMp",
+              "val": 1500,
+              "_id": "69945f3591fd456e184d5ffc"
+            },
+            {
+              "statId": "bossPercent",
+              "val": 10,
+              "_id": "69945f3591fd456e184d5ffd"
+            }
+          ],
+          "_id": "69945f3591fd456e184d5ffa"
+        },
+        {
+          "numEquipped": 3,
+          "list": [
+            {
+              "statId": "attmatt",
+              "val": 20,
+              "_id": "69945f3591fd456e184d5fff"
+            },
+            {
+              "statId": "allStats",
+              "val": 30,
+              "_id": "69945f3591fd456e184d6000"
+            },
+            {
+              "statId": "bossPercent",
+              "val": 10,
+              "_id": "69945f3591fd456e184d6001"
+            }
+          ],
+          "_id": "69945f3591fd456e184d5ffe"
+        },
+        {
+          "numEquipped": 4,
+          "list": [
+            {
+              "statId": "attmatt",
+              "val": 25,
+              "_id": "69945f3591fd456e184d6003"
+            },
+            {
+              "statId": "iedPercent",
+              "val": 10,
+              "_id": "69945f3591fd456e184d6004"
+            },
+            {
+              "statId": "def",
+              "val": 200,
+              "_id": "69945f3591fd456e184d6005"
+            }
+          ],
+          "_id": "69945f3591fd456e184d6002"
+        },
+        {
+          "numEquipped": 5,
+          "list": [
+            {
+              "statId": "attmatt",
+              "val": 30,
+              "_id": "69945f3591fd456e184d6007"
+            },
+            {
+              "statId": "bossPercent",
+              "val": 10,
+              "_id": "69945f3591fd456e184d6008"
+            }
+          ],
+          "_id": "69945f3591fd456e184d6006"
+        },
+        {
+          "numEquipped": 6,
+          "list": [
+            {
+              "statId": "attmatt",
+              "val": 20,
+              "_id": "69945f3591fd456e184d600a"
+            },
+            {
+              "statId": "maxHpMpPercent",
+              "val": 20,
+              "_id": "69945f3591fd456e184d600b"
+            }
+          ],
+          "_id": "69945f3591fd456e184d6009"
+        },
+        {
+          "numEquipped": 7,
+          "list": [
+            {
+              "statId": "attmatt",
+              "val": 20,
+              "_id": "69945f3591fd456e184d600d"
+            },
+            {
+              "statId": "iedPercent",
+              "val": 10,
+              "_id": "69945f3591fd456e184d600e"
+            }
+          ],
+          "_id": "69945f3591fd456e184d600c"
+        }
+      ],
+      "__v": 0
+    },
+    {
+      "_id": "69945f3591fd456e184d60a9",
+      "jobType": "common",
+      "setType": "hardBossAcc",
+      "level": 160,
+      "effects": [
+        {
+          "numEquipped": 2,
+          "list": [
+            {
+              "statId": "allStats",
+              "val": 10,
+              "_id": "69945f3591fd456e184d60ab"
+            },
+            {
+              "statId": "maxHp",
+              "val": 250,
+              "_id": "69945f3591fd456e184d60ac"
+            },
+            {
+              "statId": "attmatt",
+              "val": 10,
+              "_id": "69945f3591fd456e184d60ad"
+            },
+            {
+              "statId": "bossPercent",
+              "val": 10,
+              "_id": "69945f3591fd456e184d60ae"
+            }
+          ],
+          "_id": "69945f3591fd456e184d60aa"
+        },
+        {
+          "numEquipped": 3,
+          "list": [
+            {
+              "statId": "allStats",
+              "val": 10,
+              "_id": "69945f3591fd456e184d60b0"
+            },
+            {
+              "statId": "maxHp",
+              "val": 250,
+              "_id": "69945f3591fd456e184d60b1"
+            },
+            {
+              "statId": "attmatt",
+              "val": 10,
+              "_id": "69945f3591fd456e184d60b2"
+            },
+            {
+              "statId": "def",
+              "val": 250,
+              "_id": "69945f3591fd456e184d60b3"
+            },
+            {
+              "statId": "iedPercent",
+              "val": 10,
+              "_id": "69945f3591fd456e184d60b4"
+            }
+          ],
+          "_id": "69945f3591fd456e184d60af"
+        },
+        {
+          "numEquipped": 4,
+          "list": [
+            {
+              "statId": "allStats",
+              "val": 15,
+              "_id": "69945f3591fd456e184d60b6"
+            },
+            {
+              "statId": "maxHp",
+              "val": 375,
+              "_id": "69945f3591fd456e184d60b7"
+            },
+            {
+              "statId": "attmatt",
+              "val": 15,
+              "_id": "69945f3591fd456e184d60b8"
+            },
+            {
+              "statId": "critDmgPercent",
+              "val": 5,
+              "_id": "69945f3591fd456e184d60b9"
+            }
+          ],
+          "_id": "69945f3591fd456e184d60b5"
+        },
+        {
+          "numEquipped": 5,
+          "list": [
+            {
+              "statId": "allStats",
+              "val": 15,
+              "_id": "69945f3591fd456e184d60bb"
+            },
+            {
+              "statId": "maxHp",
+              "val": 375,
+              "_id": "69945f3591fd456e184d60bc"
+            },
+            {
+              "statId": "attmatt",
+              "val": 15,
+              "_id": "69945f3591fd456e184d60bd"
+            },
+            {
+              "statId": "bossPercent",
+              "val": 10,
+              "_id": "69945f3591fd456e184d60be"
+            }
+          ],
+          "_id": "69945f3591fd456e184d60ba"
+        },
+        {
+          "numEquipped": 6,
+          "list": [
+            {
+              "statId": "allStats",
+              "val": 15,
+              "_id": "69945f3591fd456e184d60c0"
+            },
+            {
+              "statId": "maxHp",
+              "val": 375,
+              "_id": "69945f3591fd456e184d60c1"
+            },
+            {
+              "statId": "attmatt",
+              "val": 15,
+              "_id": "69945f3591fd456e184d60c2"
+            },
+            {
+              "statId": "iedPercent",
+              "val": 10,
+              "_id": "69945f3591fd456e184d60c3"
+            }
+          ],
+          "_id": "69945f3591fd456e184d60bf"
+        },
+        {
+          "numEquipped": 7,
+          "list": [
+            {
+              "statId": "allStats",
+              "val": 15,
+              "_id": "69945f3591fd456e184d60c5"
+            },
+            {
+              "statId": "maxHp",
+              "val": 375,
+              "_id": "69945f3591fd456e184d60c6"
+            },
+            {
+              "statId": "attmatt",
+              "val": 15,
+              "_id": "69945f3591fd456e184d60c7"
+            },
+            {
+              "statId": "critDmgPercent",
+              "val": 5,
+              "_id": "69945f3591fd456e184d60c8"
+            }
+          ],
+          "_id": "69945f3591fd456e184d60c4"
+        },
+        {
+          "numEquipped": 8,
+          "list": [
+            {
+              "statId": "allStats",
+              "val": 15,
+              "_id": "69945f3591fd456e184d60ca"
+            },
+            {
+              "statId": "maxHp",
+              "val": 375,
+              "_id": "69945f3591fd456e184d60cb"
+            },
+            {
+              "statId": "attmatt",
+              "val": 15,
+              "_id": "69945f3591fd456e184d60cc"
+            },
+            {
+              "statId": "bossPercent",
+              "val": 10,
+              "_id": "69945f3591fd456e184d60cd"
+            }
+          ],
+          "_id": "69945f3591fd456e184d60c9"
+        },
+        {
+          "numEquipped": 9,
+          "list": [
+            {
+              "statId": "allStats",
+              "val": 15,
+              "_id": "69945f3591fd456e184d60cf"
+            },
+            {
+              "statId": "maxHp",
+              "val": 375,
+              "_id": "69945f3591fd456e184d60d0"
+            },
+            {
+              "statId": "attmatt",
+              "val": 15,
+              "_id": "69945f3591fd456e184d60d1"
+            },
+            {
+              "statId": "critDmgPercent",
+              "val": 5,
+              "_id": "69945f3591fd456e184d60d2"
+            }
+          ],
+          "_id": "69945f3591fd456e184d60ce"
+        },
+        {
+          "numEquipped": 10,
+          "list": [
+            {
+              "statId": "allStats",
+              "val": 20,
+              "_id": "69945f3591fd456e184d60d4"
+            },
+            {
+              "statId": "maxHp",
+              "val": 500,
+              "_id": "69945f3591fd456e184d60d5"
+            },
+            {
+              "statId": "attmatt",
+              "val": 20,
+              "_id": "69945f3591fd456e184d60d6"
+            },
+            {
+              "statId": "bossPercent",
+              "val": 10,
+              "_id": "69945f3591fd456e184d60d7"
+            }
+          ],
+          "_id": "69945f3591fd456e184d60d3"
+        }
+      ],
+      "__v": 0
+    },
+    {
+      "_id": "69945f3591fd456e184d6110",
+      "jobType": "common",
+      "setType": "inverse",
+      "level": 150,
+      "effects": [
+        {
+          "numEquipped": 3,
+          "list": [
+            {
+              "statId": "attmatt",
+              "val": 20,
+              "_id": "69945f3591fd456e184d6112"
+            },
+            {
+              "statId": "bossPercent",
+              "val": 20,
+              "_id": "69945f3591fd456e184d6113"
+            }
+          ],
+          "_id": "69945f3591fd456e184d6111"
+        }
+      ],
+      "__v": 0
+    },
+    {
+      "_id": "69945f3591fd456e184d600f",
+      "jobType": "thief",
+      "setType": "faf",
+      "level": 150,
+      "effects": [
+        {
+          "numEquipped": 2,
+          "list": [
+            {
+              "statId": "dex",
+              "val": 20,
+              "_id": "69945f3591fd456e184d6011"
+            },
+            {
+              "statId": "luk",
+              "val": 20,
+              "_id": "69945f3591fd456e184d6012"
+            },
+            {
+              "statId": "maxHpMp",
+              "val": 1000,
+              "_id": "69945f3591fd456e184d6013"
+            }
+          ],
+          "_id": "69945f3591fd456e184d6010"
+        },
+        {
+          "numEquipped": 3,
+          "list": [
+            {
+              "statId": "att",
+              "val": 50,
+              "_id": "69945f3591fd456e184d6015"
+            },
+            {
+              "statId": "maxHpMpPercent",
+              "val": 10,
+              "_id": "69945f3591fd456e184d6016"
+            }
+          ],
+          "_id": "69945f3591fd456e184d6014"
+        },
+        {
+          "numEquipped": 4,
+          "list": [
+            {
+              "statId": "bossPercent",
+              "val": 30,
+              "_id": "69945f3591fd456e184d6018"
+            }
+          ],
+          "_id": "69945f3591fd456e184d6017"
+        }
+      ],
+      "__v": 0
+    },
+    {
+      "_id": "69945f3591fd456e184d611e",
+      "jobType": "common",
+      "setType": "superiorGollux",
+      "level": 150,
+      "effects": [
+        {
+          "numEquipped": 2,
+          "list": [
+            {
+              "statId": "allStats",
+              "val": 20,
+              "_id": "69945f3591fd456e184d6120"
+            },
+            {
+              "statId": "maxHpMp",
+              "val": 1500,
+              "_id": "69945f3591fd456e184d6121"
+            }
+          ],
+          "_id": "69945f3591fd456e184d611f"
+        },
+        {
+          "numEquipped": 3,
+          "list": [
+            {
+              "statId": "maxHpMpPercent",
+              "val": 13,
+              "_id": "69945f3591fd456e184d6123"
+            },
+            {
+              "statId": "attmatt",
+              "val": 35,
+              "_id": "69945f3591fd456e184d6124"
+            }
+          ],
+          "_id": "69945f3591fd456e184d6122"
+        },
+        {
+          "numEquipped": 4,
+          "list": [
+            {
+              "statId": "bossPercent",
+              "val": 30,
+              "_id": "69945f3591fd456e184d6126"
+            },
+            {
+              "statId": "iedPercent",
+              "val": 30,
+              "_id": "69945f3591fd456e184d6127"
+            }
+          ],
+          "_id": "69945f3591fd456e184d6125"
+        }
+      ],
+      "__v": 0
+    },
+    {
+      "_id": "69945f3591fd456e184d6019",
+      "jobType": "thief",
+      "setType": "sengoku-era-3",
+      "level": 150,
+      "effects": [
+        {
+          "numEquipped": 2,
+          "list": [
+            {
+              "statId": "allStats",
+              "val": 10,
+              "_id": "69945f3591fd456e184d601b"
+            },
+            {
+              "statId": "def",
+              "val": 500,
+              "_id": "69945f3591fd456e184d601c"
+            }
+          ],
+          "_id": "69945f3591fd456e184d601a"
+        },
+        {
+          "numEquipped": 3,
+          "list": [
+            {
+              "statId": "allStats",
+              "val": 10,
+              "_id": "69945f3591fd456e184d601e"
+            },
+            {
+              "statId": "maxHpMp",
+              "val": 1000,
+              "_id": "69945f3591fd456e184d601f"
+            },
+            {
+              "statId": "attmatt",
+              "val": 5,
+              "_id": "69945f3591fd456e184d6020"
+            }
+          ],
+          "_id": "69945f3591fd456e184d601d"
+        },
+        {
+          "numEquipped": 4,
+          "list": [
+            {
+              "statId": "allStats",
+              "val": 15,
+              "_id": "69945f3591fd456e184d6022"
+            },
+            {
+              "statId": "attmatt",
+              "val": 10,
+              "_id": "69945f3591fd456e184d6023"
+            },
+            {
+              "statId": "speed",
+              "val": 20,
+              "_id": "69945f3591fd456e184d6024"
+            },
+            {
+              "statId": "jump",
+              "val": 10,
+              "_id": "69945f3591fd456e184d6025"
+            }
+          ],
+          "_id": "69945f3591fd456e184d6021"
+        },
+        {
+          "numEquipped": 5,
+          "list": [
+            {
+              "statId": "maxHpMpPercent",
+              "val": 20,
+              "_id": "69945f3591fd456e184d6027"
+            },
+            {
+              "statId": "attmatt",
+              "val": 10,
+              "_id": "69945f3591fd456e184d6028"
+            },
+            {
+              "statId": "iedPercent",
+              "val": 10,
+              "_id": "69945f3591fd456e184d6029"
+            }
+          ],
+          "_id": "69945f3591fd456e184d6026"
+        },
+        {
+          "numEquipped": 6,
+          "list": [
+            {
+              "statId": "allStats",
+              "val": 20,
+              "_id": "69945f3591fd456e184d602b"
+            },
+            {
+              "statId": "attmatt",
+              "val": 20,
+              "_id": "69945f3591fd456e184d602c"
+            }
+          ],
+          "_id": "69945f3591fd456e184d602a"
+        },
+        {
+          "numEquipped": 7,
+          "list": [
+            {
+              "statId": "allStats",
+              "val": 30,
+              "_id": "69945f3591fd456e184d602e"
+            },
+            {
+              "statId": "attmatt",
+              "val": 30,
+              "_id": "69945f3591fd456e184d602f"
+            },
+            {
+              "statId": "iedPercent",
+              "val": 10,
+              "_id": "69945f3591fd456e184d6030"
+            }
+          ],
+          "_id": "69945f3591fd456e184d602d"
+        },
+        {
+          "numEquipped": 8,
+          "list": [
+            {
+              "statId": "attmatt",
+              "val": 40,
+              "_id": "69945f3591fd456e184d6032"
+            },
+            {
+              "statId": "bossPercent",
+              "val": 30,
+              "_id": "69945f3591fd456e184d6033"
+            }
+          ],
+          "_id": "69945f3591fd456e184d6031"
+        },
+        {
+          "numEquipped": 9,
+          "list": [
+            {
+              "statId": "attmatt",
+              "val": 40,
+              "_id": "69945f3591fd456e184d6035"
+            },
+            {
+              "statId": "critDmgPercent",
+              "val": 5,
+              "_id": "69945f3591fd456e184d6036"
+            },
+            {
+              "statId": "iedPercent",
+              "val": 10,
+              "_id": "69945f3591fd456e184d6037"
+            }
+          ],
+          "_id": "69945f3591fd456e184d6034"
+        }
+      ],
+      "__v": 0
+    },
+    {
+      "_id": "69945f3591fd456e184d60d8",
+      "jobType": "common",
+      "setType": "dawnBossAcc",
+      "level": 140,
+      "effects": [
+        {
+          "numEquipped": 2,
+          "list": [
+            {
+              "statId": "allStats",
+              "val": 10,
+              "_id": "69945f3591fd456e184d60da"
+            },
+            {
+              "statId": "maxHp",
+              "val": 250,
+              "_id": "69945f3591fd456e184d60db"
+            },
+            {
+              "statId": "attmatt",
+              "val": 10,
+              "_id": "69945f3591fd456e184d60dc"
+            },
+            {
+              "statId": "bossPercent",
+              "val": 10,
+              "_id": "69945f3591fd456e184d60dd"
+            }
+          ],
+          "_id": "69945f3591fd456e184d60d9"
+        },
+        {
+          "numEquipped": 3,
+          "list": [
+            {
+              "statId": "allStats",
+              "val": 10,
+              "_id": "69945f3591fd456e184d60df"
+            },
+            {
+              "statId": "maxHp",
+              "val": 250,
+              "_id": "69945f3591fd456e184d60e0"
+            },
+            {
+              "statId": "attmatt",
+              "val": 10,
+              "_id": "69945f3591fd456e184d60e1"
+            }
+          ],
+          "_id": "69945f3591fd456e184d60de"
+        },
+        {
+          "numEquipped": 4,
+          "list": [
+            {
+              "statId": "allStats",
+              "val": 10,
+              "_id": "69945f3591fd456e184d60e3"
+            },
+            {
+              "statId": "maxHp",
+              "val": 250,
+              "_id": "69945f3591fd456e184d60e4"
+            },
+            {
+              "statId": "attmatt",
+              "val": 10,
+              "_id": "69945f3591fd456e184d60e5"
+            },
+            {
+              "statId": "def",
+              "val": 100,
+              "_id": "69945f3591fd456e184d60e6"
+            },
+            {
+              "statId": "iedPercent",
+              "val": 10,
+              "_id": "69945f3591fd456e184d60e7"
+            }
+          ],
+          "_id": "69945f3591fd456e184d60e2"
+        }
+      ],
+      "__v": 0
+    },
+    {
+      "_id": "69945f3591fd456e184d60fe",
+      "jobType": "common",
+      "setType": "meister",
+      "level": 140,
+      "effects": [
+        {
+          "numEquipped": 2,
+          "list": [
+            {
+              "statId": "maxHpMpPercent",
+              "val": 10,
+              "_id": "69945f3591fd456e184d6100"
+            }
+          ],
+          "_id": "69945f3591fd456e184d60ff"
+        },
+        {
+          "numEquipped": 3,
+          "list": [
+            {
+              "statId": "attmatt",
+              "val": 40,
+              "_id": "69945f3591fd456e184d6102"
+            }
+          ],
+          "_id": "69945f3591fd456e184d6101"
+        },
+        {
+          "numEquipped": 4,
+          "list": [
+            {
+              "statId": "bossPercent",
+              "val": 20,
+              "_id": "69945f3591fd456e184d6104"
+            }
+          ],
+          "_id": "69945f3591fd456e184d6103"
+        }
+      ],
+      "__v": 0
+    },
+    {
+      "_id": "69945f3591fd456e184d6114",
+      "jobType": "common",
+      "setType": "reinforcedGollux",
+      "level": 140,
+      "effects": [
+        {
+          "numEquipped": 2,
+          "list": [
+            {
+              "statId": "allStats",
+              "val": 15,
+              "_id": "69945f3591fd456e184d6116"
+            },
+            {
+              "statId": "maxHpMp",
+              "val": 1200,
+              "_id": "69945f3591fd456e184d6117"
+            }
+          ],
+          "_id": "69945f3591fd456e184d6115"
+        },
+        {
+          "numEquipped": 3,
+          "list": [
+            {
+              "statId": "maxHpMpPercent",
+              "val": 10,
+              "_id": "69945f3591fd456e184d6119"
+            },
+            {
+              "statId": "attmatt",
+              "val": 30,
+              "_id": "69945f3591fd456e184d611a"
+            }
+          ],
+          "_id": "69945f3591fd456e184d6118"
+        },
+        {
+          "numEquipped": 4,
+          "list": [
+            {
+              "statId": "bossPercent",
+              "val": 30,
+              "_id": "69945f3591fd456e184d611c"
+            },
+            {
+              "statId": "iedPercent",
+              "val": 15,
+              "_id": "69945f3591fd456e184d611d"
+            }
+          ],
+          "_id": "69945f3591fd456e184d611b"
+        }
+      ],
+      "__v": 0
+    },
+    {
+      "_id": "69945f3591fd456e184d6105",
+      "jobType": "common",
+      "setType": "sengoku",
+      "level": 140,
+      "effects": [
+        {
+          "numEquipped": 2,
+          "list": [
+            {
+              "statId": "allStats",
+              "val": 2,
+              "_id": "69945f3591fd456e184d6107"
+            },
+            {
+              "statId": "attmatt",
+              "val": 3,
+              "_id": "69945f3591fd456e184d6108"
+            },
+            {
+              "statId": "def",
+              "val": 20,
+              "_id": "69945f3591fd456e184d6109"
+            },
+            {
+              "statId": "damagePercent",
+              "val": 3,
+              "_id": "69945f3591fd456e184d610a"
+            }
+          ],
+          "_id": "69945f3591fd456e184d6106"
+        },
+        {
+          "numEquipped": 3,
+          "list": [
+            {
+              "statId": "allStats",
+              "val": 8,
+              "_id": "69945f3591fd456e184d610c"
+            },
+            {
+              "statId": "attmatt",
+              "val": 12,
+              "_id": "69945f3591fd456e184d610d"
+            },
+            {
+              "statId": "def",
+              "val": 80,
+              "_id": "69945f3591fd456e184d610e"
+            },
+            {
+              "statId": "damagePercent",
+              "val": 6,
+              "_id": "69945f3591fd456e184d610f"
+            }
+          ],
+          "_id": "69945f3591fd456e184d610b"
+        }
+      ],
+      "__v": 0
+    },
+    {
+      "_id": "69945f3591fd456e184d60e8",
+      "jobType": "common",
+      "setType": "bossAcc",
+      "level": 100,
+      "effects": [
+        {
+          "numEquipped": 3,
+          "list": [
+            {
+              "statId": "allStats",
+              "val": 10,
+              "_id": "69945f3591fd456e184d60ea"
+            },
+            {
+              "statId": "maxHpMpPercent",
+              "val": 5,
+              "_id": "69945f3591fd456e184d60eb"
+            },
+            {
+              "statId": "attmatt",
+              "val": 5,
+              "_id": "69945f3591fd456e184d60ec"
+            }
+          ],
+          "_id": "69945f3591fd456e184d60e9"
+        },
+        {
+          "numEquipped": 5,
+          "list": [
+            {
+              "statId": "allStats",
+              "val": 10,
+              "_id": "69945f3591fd456e184d60ee"
+            },
+            {
+              "statId": "maxHpMpPercent",
+              "val": 5,
+              "_id": "69945f3591fd456e184d60ef"
+            },
+            {
+              "statId": "attmatt",
+              "val": 5,
+              "_id": "69945f3591fd456e184d60f0"
+            }
+          ],
+          "_id": "69945f3591fd456e184d60ed"
+        },
+        {
+          "numEquipped": 7,
+          "list": [
+            {
+              "statId": "allStats",
+              "val": 10,
+              "_id": "69945f3591fd456e184d60f2"
+            },
+            {
+              "statId": "attmatt",
+              "val": 10,
+              "_id": "69945f3591fd456e184d60f3"
+            },
+            {
+              "statId": "def",
+              "val": 80,
+              "_id": "69945f3591fd456e184d60f4"
+            },
+            {
+              "statId": "iedPercent",
+              "val": 10,
+              "_id": "69945f3591fd456e184d60f5"
+            }
+          ],
+          "_id": "69945f3591fd456e184d60f1"
+        },
+        {
+          "numEquipped": 9,
+          "list": [
+            {
+              "statId": "allStats",
+              "val": 15,
+              "_id": "69945f3591fd456e184d60f7"
+            },
+            {
+              "statId": "attmatt",
+              "val": 10,
+              "_id": "69945f3591fd456e184d60f8"
+            },
+            {
+              "statId": "def",
+              "val": 100,
+              "_id": "69945f3591fd456e184d60f9"
+            },
+            {
+              "statId": "bossPercent",
+              "val": 10,
+              "_id": "69945f3591fd456e184d60fa"
+            }
+          ],
+          "_id": "69945f3591fd456e184d60f6"
+        }
+      ],
+      "__v": 0
+    },
+    {
+      "_id": "69945f3591fd456e184d60fb",
+      "jobType": "common",
+      "setType": "monsterPark",
+      "level": 100,
+      "effects": [
+        {
+          "numEquipped": 2,
+          "list": [
+            {
+              "statId": "iedPercent",
+              "val": 20,
+              "_id": "69945f3591fd456e184d60fd"
+            }
+          ],
+          "_id": "69945f3591fd456e184d60fc"
+        }
+      ],
+      "__v": 0
+    }
+  ]
+}

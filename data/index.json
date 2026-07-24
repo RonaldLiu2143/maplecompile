@@ -1,0 +1,78 @@
+{
+  "jobs": {
+    "warrior": {
+      "chars": [
+        "adele",
+        "aran",
+        "blaster",
+        "dk",
+        "da",
+        "ds",
+        "hayato",
+        "hero",
+        "len",
+        "mihile",
+        "kaiser",
+        "paladin",
+        "sm",
+        "zero"
+      ]
+    },
+    "magician": {
+      "chars": [
+        "bam",
+        "bs",
+        "evan",
+        "fp",
+        "fw",
+        "il",
+        "illium",
+        "kanna",
+        "kinesis",
+        "lara",
+        "lumi",
+        "lynn",
+        "sia"
+      ]
+    },
+    "archer": {
+      "chars": [
+        "bm",
+        "xbm",
+        "kain",
+        "merc",
+        "pf",
+        "wh",
+        "wb"
+      ]
+    },
+    "thief": {
+      "chars": [
+        "cadena",
+        "db",
+        "hy",
+        "khali",
+        "nl",
+        "nw",
+        "phantom",
+        "sdw",
+        "xenon"
+      ]
+    },
+    "pirate": {
+      "chars": [
+        "ab",
+        "ark",
+        "cm",
+        "captain",
+        "eunwol",
+        "mech",
+        "mx",
+        "striker",
+        "viper",
+        "xenon"
+      ]
+    }
+  },
+  "generatedAt": "2026-08-03T15:13:51.020Z"
+}
