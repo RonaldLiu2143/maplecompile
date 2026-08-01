@@ -31,10 +31,16 @@ export default function Home() {
           >
             Flame Calculator
           </Link>
+          <Link
+            href="/calc/cubing"
+            className="rounded-lg border-2 border-border bg-surface px-5 py-2.5 font-semibold transition hover:bg-surface-muted"
+          >
+            Cubing Calculator
+          </Link>
         </div>
       </section>
 
-      <section className="grid gap-4 sm:grid-cols-2">
+      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <div className="rounded-xl border border-border/50 bg-surface/80 p-5">
           <h2 className="font-display text-lg font-semibold">Equipment Setup</h2>
           <p className="mt-2 text-sm opacity-80">
@@ -47,6 +53,13 @@ export default function Home() {
           <p className="mt-2 text-sm opacity-80">
             View possible flame values, save your current lines, and estimate the
             chance of rolling something better with CRF, RRF, or ARF.
+          </p>
+        </div>
+        <div className="rounded-xl border border-border/50 bg-surface/80 p-5">
+          <h2 className="font-display text-lg font-semibold">Cubing Calculator</h2>
+          <p className="mt-2 text-sm opacity-80">
+            Estimate how many cubes and mesos you need to roll desired potential
+            lines, including tier-ups and Double Miracle Time.
           </p>
         </div>
       </section>
