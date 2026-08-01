@@ -10,7 +10,9 @@ npm run seed   # pull equips / set-effects into data/
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+**Live:** [https://maplecompile.vercel.app](https://maplecompile.vercel.app)
+
+Local: [http://localhost:3000](http://localhost:3000).
 
 ## Pages
 
