@@ -71,8 +71,8 @@ export default function Home() {
         <div className="rounded-xl border border-border/50 bg-surface/80 p-5">
           <h2 className="font-display text-lg font-semibold">Scouter</h2>
           <p className="mt-2 text-sm opacity-80">
-            Enter character stats to calculate converted main stat and compare
-            builds, using MapleScouter as the calculation reference.
+            Enter character stats to estimate range, expected boss damage, and
+            converted main stat for build comparison.
           </p>
         </div>
       </section>
