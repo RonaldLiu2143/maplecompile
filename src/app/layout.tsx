@@ -18,7 +18,7 @@ const sourceSans = Source_Sans_3({
 export const metadata: Metadata = {
   title: "Maplehub — MapleStory Calculators",
   description:
-    "Equipment setup, flame odds, and cubing probability calculators for MapleStory.",
+    "Equipment setup, flame odds, cubing, and scouter tools for MapleStory.",
 };
 
 export default function RootLayout({
@@ -53,12 +53,18 @@ export default function RootLayout({
               >
                 Cubing Calculator
               </Link>
+              <Link
+                href="/calc/scouter"
+                className="rounded-lg px-3 py-2 transition-colors hover:bg-accent-soft hover:text-accent"
+              >
+                Scouter
+              </Link>
             </nav>
           </div>
         </header>
         <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6">{children}</main>
         <footer className="border-t border-border/40 px-4 py-4 text-center text-sm opacity-70">
-          Maplehub calculators — equipment, flames, and cubing
+          Maplehub calculators — equipment, flames, cubing, and scouter
         </footer>
       </body>
     </html>

@@ -12,11 +12,11 @@ export default function Home() {
           Maplehub
         </p>
         <h1 className="mt-4 max-w-xl text-2xl font-semibold leading-snug sm:text-3xl">
-          Plan your gear, flames, and cubes in one place.
+          Plan your gear, flames, cubes, and scouter stats in one place.
         </h1>
         <p className="mt-3 max-w-lg text-base opacity-80">
-          Build an equipment setup, score flame odds, and estimate cubing costs
-          against the lines you want.
+          Build an equipment setup, score flame and cubing odds, and convert
+          character stats with Scouter.
         </p>
         <div className="mt-8 flex flex-wrap gap-3">
           <Link
@@ -37,10 +37,16 @@ export default function Home() {
           >
             Cubing Calculator
           </Link>
+          <Link
+            href="/calc/scouter"
+            className="rounded-lg border-2 border-border bg-surface px-5 py-2.5 font-semibold transition hover:bg-surface-muted"
+          >
+            Scouter
+          </Link>
         </div>
       </section>
 
-      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <section className="grid gap-4 sm:grid-cols-2">
         <div className="rounded-xl border border-border/50 bg-surface/80 p-5">
           <h2 className="font-display text-lg font-semibold">Equipment Setup</h2>
           <p className="mt-2 text-sm opacity-80">
@@ -60,6 +66,13 @@ export default function Home() {
           <p className="mt-2 text-sm opacity-80">
             Estimate how many cubes and mesos you need to roll desired potential
             lines, including tier-ups and Double Miracle Time.
+          </p>
+        </div>
+        <div className="rounded-xl border border-border/50 bg-surface/80 p-5">
+          <h2 className="font-display text-lg font-semibold">Scouter</h2>
+          <p className="mt-2 text-sm opacity-80">
+            Enter character stats to calculate converted main stat and compare
+            builds, using MapleScouter as the calculation reference.
           </p>
         </div>
       </section>
