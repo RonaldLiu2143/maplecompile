@@ -1,6 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Keep seeded JSON available to API routes on Vercel
+  outputFileTracingIncludes: {
+    "/api/**/*": ["./data/**/*"],
+  },
   images: {
     remotePatterns: [
       {
