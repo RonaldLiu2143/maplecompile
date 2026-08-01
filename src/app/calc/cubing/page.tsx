@@ -1,11 +1,11 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   buildDesiredStatGroups,
   canPickDesiredStat,
+  isWseItem,
   maxCubeTier,
-  runCubingCalc,
   suggestCubeType,
   type CubeType,
   type CubingResult,
@@ -71,15 +71,13 @@ export default function CubingCalculatorPage() {
   const [desiredStat, setDesiredStat] = useState("any");
   const [dmt, setDmt] = useState(false);
   const [result, setResult] = useState<CubingResult | null>(null);
-  const [pending, startTransition] = useTransition();
+  const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const canPick = canPickDesiredStat(currentTier, desiredTier, cubeType);
   const levelOk = itemLevel >= 71;
-  const isWse =
-    itemType === "weapon" ||
-    itemType === "secondary" ||
-    itemType === "emblem";
+  const cubeSupportsTier = maxCubeTier[cubeType] >= desiredTier;
+  const canCalculate = levelOk && cubeSupportsTier;
 
   const groups = useMemo(() => {
     if (!canPick || !levelOk) return [];
@@ -92,24 +90,16 @@ export default function CubingCalculatorPage() {
     });
   }, [canPick, levelOk, itemType, itemLevel, desiredTier, cubeType, statType]);
 
-  const flatOptions = useMemo(() => {
-    if (!canPick || !levelOk) {
-      return [{ value: "any", label: "Any (tier-up only)" }];
-    }
-    return [
-      { value: "any", label: "Any" },
-      ...groups.flatMap((g) =>
-        g.options.map((o) => ({
-          value: o.value,
-          label: `${g.label}: ${o.label}`,
-        })),
-      ),
-    ];
+  const validStatValues = useMemo(() => {
+    if (!canPick || !levelOk) return ["any"];
+    return ["any", ...groups.flatMap((g) => g.options.map((o) => o.value))];
   }, [canPick, levelOk, groups]);
 
-  const selectedStat = flatOptions.some((o) => o.value === desiredStat)
-    ? desiredStat
-    : (flatOptions[0]?.value ?? "any");
+  useEffect(() => {
+    if (!validStatValues.includes(desiredStat)) {
+      setDesiredStat(validStatValues[0] ?? "any");
+    }
+  }, [validStatValues, desiredStat]);
 
   const onCurrentTier = (tier: Tier) => {
     setCurrentTier(tier);
@@ -125,17 +115,20 @@ export default function CubingCalculatorPage() {
     setCubeType(suggestCubeType(tier, nextCurrent, cubeType));
   };
 
-  const calculate = () => {
+  const calculate = async () => {
     if (!levelOk) {
       setError("Item level must be 71 or higher.");
       return;
     }
-    if (maxCubeTier[cubeType] < desiredTier) {
+    if (!cubeSupportsTier) {
       setError("Selected cube cannot reach the desired tier.");
       return;
     }
     setError(null);
-    startTransition(() => {
+    setPending(true);
+    try {
+      // Lazy-load rates + probability so the route chunk stays light
+      const { runCubingCalc } = await import("@/lib/cubing/run");
       setResult(
         runCubingCalc({
           itemType,
@@ -143,11 +136,13 @@ export default function CubingCalculatorPage() {
           currentTier,
           desiredTier,
           itemLevel,
-          desiredStat: selectedStat,
+          desiredStat,
           dmt,
         }),
       );
-    });
+    } finally {
+      setPending(false);
+    }
   };
 
   const cubeShort =
@@ -249,7 +244,7 @@ export default function CubingCalculatorPage() {
             <select
               className={`${inputClass} min-w-[12rem]`}
               value={statType}
-              disabled={isWse}
+              disabled={isWseItem(itemType)}
               onChange={(e) => setStatType(e.target.value as StatType)}
             >
               {STAT_TYPES.map((t) => (
@@ -263,7 +258,7 @@ export default function CubingCalculatorPage() {
             Desired stat
             <select
               className={inputClass}
-              value={selectedStat}
+              value={desiredStat}
               disabled={!levelOk}
               onChange={(e) => setDesiredStat(e.target.value)}
             >
@@ -301,8 +296,8 @@ export default function CubingCalculatorPage() {
           </label>
           <button
             type="button"
-            onClick={calculate}
-            disabled={pending || !levelOk}
+            onClick={() => void calculate()}
+            disabled={pending || !canCalculate}
             className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50 dark:text-zinc-900"
           >
             {pending ? "Calculating…" : "Calculate"}
@@ -310,7 +305,13 @@ export default function CubingCalculatorPage() {
         </div>
 
         {error && <p className="text-sm text-danger">{error}</p>}
-        {!canPick && levelOk && (
+        {!cubeSupportsTier && levelOk && (
+          <p className="text-sm text-danger">
+            This cube cannot reach the desired tier. Pick a higher cube or lower
+            the desired tier.
+          </p>
+        )}
+        {!canPick && levelOk && cubeSupportsTier && (
           <p className="text-sm opacity-70">
             Desired lines unlock when current tier matches desired tier and the
             cube can roll that tier. Until then, results are tier-up costs only.
@@ -324,7 +325,7 @@ export default function CubingCalculatorPage() {
             <h2 className="font-display text-lg font-semibold">3) Results</h2>
             <p className="mt-1 text-sm opacity-70">
               Expected cubes and mesos for this roll
-              {selectedStat !== "any" ? (
+              {desiredStat !== "any" ? (
                 <>
                   {" · "}
                   line chance{" "}

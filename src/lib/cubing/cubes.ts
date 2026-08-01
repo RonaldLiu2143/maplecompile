@@ -42,9 +42,7 @@ export const tierRates: Record<CubeType, Partial<Record<number, number>>> = {
 };
 
 export const tierRatesDmt: Record<CubeType, Partial<Record<number, number>>> = {
-  occult: tierRates.occult,
-  master: tierRates.master,
-  meister: tierRates.meister,
+  ...tierRates,
   red: { 0: 0.14 * 2, 1: 0.06 * 2, 2: 0.025 * 2 },
   black: { 0: 0.17 * 2, 1: 0.11 * 2, 2: 0.05 * 2 },
 };

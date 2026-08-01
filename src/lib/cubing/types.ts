@@ -66,5 +66,4 @@ export type CubingResult = {
   cubes: CubeQuantiles;
   mesos: CubeQuantiles;
   probability: number;
-  cubeType: CubeType;
 };

@@ -19,7 +19,7 @@ const STAT_OPTIONS: Record<
 function getPrimeLineValue(
   itemLevel: number,
   desiredTier: number,
-  type: StatType | "attack" = "normal",
+  type: StatType = "normal",
 ): number {
   const levelBonus = itemLevel >= 160 ? 1 : 0;
   const base = type === "allStat" ? 0 : 3;
@@ -64,6 +64,14 @@ function pctGroup(
   };
 }
 
+export function isWseItem(itemType: ItemCategory): boolean {
+  return (
+    itemType === "weapon" ||
+    itemType === "secondary" ||
+    itemType === "emblem"
+  );
+}
+
 export function buildDesiredStatGroups(opts: {
   itemType: ItemCategory;
   itemLevel: number;
@@ -75,12 +83,7 @@ export function buildDesiredStatGroups(opts: {
   const groups: DesiredStatGroup[] = [];
   const { statValueName, displayText } = STAT_OPTIONS[statType];
 
-  const isWse =
-    itemType === "weapon" ||
-    itemType === "secondary" ||
-    itemType === "emblem";
-
-  if (isWse) {
+  if (isWseItem(itemType)) {
     const prime = getPrimeLineValue(itemLevel, desiredTier);
     const three = get3LAtkOptionAmounts(prime);
     const two = get2LAtkOptionAmounts(prime);

@@ -159,12 +159,14 @@ const OUTCOME_MATCH: Record<
     v,
 };
 
-function getUsefulCategories(input: ProbabilityInput): string[] {
-  const cats: string[] = [];
+function getUsefulCategories(input: ProbabilityInput): Set<string> {
+  const cats = new Set<string>();
   for (const field of Object.keys(INPUT_CATEGORY_MAP) as (keyof ProbabilityInput)[]) {
-    if (input[field] > 0) cats.push(...INPUT_CATEGORY_MAP[field]);
+    if (input[field] > 0) {
+      for (const cat of INPUT_CATEGORY_MAP[field]) cats.add(cat);
+    }
   }
-  return [...new Set(cats)];
+  return cats;
 }
 
 const MAX_CATEGORY_COUNT: Record<string, number> = {
@@ -177,12 +179,11 @@ const MAX_CATEGORY_COUNT: Record<string, number> = {
   [CATEGORY.INVINCIBLE_PERC]: 2,
 };
 
-const isSpecialLine = (category: string) =>
-  Object.prototype.hasOwnProperty.call(MAX_CATEGORY_COUNT, category);
+const isSpecialLine = (category: string) => category in MAX_CATEGORY_COUNT;
 
 function getConsolidatedRates(
   ratesList: RateLine[],
-  usefulCategories: string[],
+  usefulCategories: Set<string>,
 ): RateLine[] {
   const consolidated: RateLine[] = [];
   let junkRate = 0;
@@ -190,7 +191,7 @@ function getConsolidatedRates(
 
   for (const item of ratesList) {
     const [category, val, rate] = item;
-    if (usefulCategories.includes(category) || isSpecialLine(category)) {
+    if (usefulCategories.has(category) || isSpecialLine(category)) {
       consolidated.push(item);
     } else if (category === CATEGORY.JUNK) {
       junkRate += rate;
@@ -207,11 +208,10 @@ function getConsolidatedRates(
 function satisfiesInput(
   outcome: RateLine[],
   input: ProbabilityInput,
+  activeFields: (keyof ProbabilityInput)[],
 ): boolean {
-  for (const field of Object.keys(input) as (keyof ProbabilityInput)[]) {
-    if (input[field] > 0 && !OUTCOME_MATCH[field](outcome, input[field])) {
-      return false;
-    }
+  for (const field of activeFields) {
+    if (!OUTCOME_MATCH[field](outcome, input[field])) return false;
   }
   return true;
 }
@@ -230,7 +230,7 @@ function getAdjustedRate(
     if (isSpecialLine(cat)) prevSpecial[cat] = (prevSpecial[cat] ?? 0) + 1;
   }
 
-  const toRemove: string[] = [];
+  const toRemove = new Set<string>();
   for (const [spCat, count] of Object.entries(prevSpecial)) {
     if (
       count > MAX_CATEGORY_COUNT[spCat] ||
@@ -238,13 +238,13 @@ function getAdjustedRate(
     ) {
       return 0;
     }
-    if (count === MAX_CATEGORY_COUNT[spCat]) toRemove.push(spCat);
+    if (count === MAX_CATEGORY_COUNT[spCat]) toRemove.add(spCat);
   }
 
   let adjustedTotal = 100;
   let adjusted = false;
   for (const [cat, , rate] of currentPool) {
-    if (toRemove.includes(cat)) {
+    if (toRemove.has(cat)) {
       adjustedTotal -= rate;
       adjusted = true;
     }
@@ -327,12 +327,13 @@ type RatesRoot = {
 };
 
 export function translateInputToObject(webInput: string): ProbabilityInput {
-  const output = { ...emptyInputObject };
+  const output: ProbabilityInput = { ...emptyInputObject };
   if (!webInput || webInput === "any") return output;
+  const keys = Object.keys(emptyInputObject) as (keyof ProbabilityInput)[];
   for (const val of webInput.split("&")) {
-    const [stat, amount] = val.split("+");
-    if (stat in output) {
-      (output as Record<string, number>)[stat] += parseInt(amount, 10) || 0;
+    const [stat, amount] = val.split("+") as [keyof ProbabilityInput, string];
+    if (keys.includes(stat)) {
+      output[stat] += parseInt(amount, 10) || 0;
     }
   }
   return output;
@@ -358,6 +359,9 @@ export function getProbability(
   };
   const cubeData = convertCubeDataForLevel(raw, itemLevel);
   const usefulCategories = getUsefulCategories(probabilityInput);
+  const activeFields = (
+    Object.keys(probabilityInput) as (keyof ProbabilityInput)[]
+  ).filter((field) => probabilityInput[field] > 0);
   const consolidated = {
     first_line: getConsolidatedRates(cubeData.first_line, usefulCategories),
     second_line: getConsolidatedRates(cubeData.second_line, usefulCategories),
@@ -369,7 +373,7 @@ export function getProbability(
     for (const line2 of consolidated.second_line) {
       for (const line3 of consolidated.third_line) {
         const outcome = [line1, line2, line3];
-        if (satisfiesInput(outcome, probabilityInput)) {
+        if (satisfiesInput(outcome, probabilityInput, activeFields)) {
           totalChance += calculateRate(outcome, consolidated);
         }
       }
