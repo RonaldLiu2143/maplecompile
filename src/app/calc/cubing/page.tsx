@@ -53,8 +53,8 @@ const STAT_TYPES: { id: StatType; label: string }[] = [
   { id: "allStat", label: "All Stat (Xenon)" },
 ];
 
-const fieldClass =
-  "w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-accent";
+const inputClass =
+  "rounded border border-border bg-background px-2 py-1 text-sm outline-none focus:border-accent";
 
 function formatNum(n: number): string {
   if (!Number.isFinite(n)) return "∞";
@@ -76,6 +76,10 @@ export default function CubingCalculatorPage() {
 
   const canPick = canPickDesiredStat(currentTier, desiredTier, cubeType);
   const levelOk = itemLevel >= 71;
+  const isWse =
+    itemType === "weapon" ||
+    itemType === "secondary" ||
+    itemType === "emblem";
 
   const groups = useMemo(() => {
     if (!canPick || !levelOk) return [];
@@ -95,15 +99,17 @@ export default function CubingCalculatorPage() {
     return [
       { value: "any", label: "Any" },
       ...groups.flatMap((g) =>
-        g.options.map((o) => ({ value: o.value, label: `${g.label}: ${o.label}` })),
+        g.options.map((o) => ({
+          value: o.value,
+          label: `${g.label}: ${o.label}`,
+        })),
       ),
     ];
   }, [canPick, levelOk, groups]);
 
-  // Keep desiredStat valid when options change
   const selectedStat = flatOptions.some((o) => o.value === desiredStat)
     ? desiredStat
-    : flatOptions[0]?.value ?? "any";
+    : (flatOptions[0]?.value ?? "any");
 
   const onCurrentTier = (tier: Tier) => {
     setCurrentTier(tier);
@@ -130,20 +136,21 @@ export default function CubingCalculatorPage() {
     }
     setError(null);
     startTransition(() => {
-      const next = runCubingCalc({
-        itemType,
-        cubeType,
-        currentTier,
-        desiredTier,
-        itemLevel,
-        desiredStat: selectedStat,
-        dmt,
-      });
-      setResult(next);
+      setResult(
+        runCubingCalc({
+          itemType,
+          cubeType,
+          currentTier,
+          desiredTier,
+          itemLevel,
+          desiredStat: selectedStat,
+          dmt,
+        }),
+      );
     });
   };
 
-  const cubeLabel =
+  const cubeShort =
     CUBE_TYPES.find((c) => c.id === cubeType)?.label.split(" / ")[1] ??
     cubeType;
 
@@ -154,18 +161,20 @@ export default function CubingCalculatorPage() {
           Cubing Calculator
         </h1>
         <p className="mt-2 max-w-2xl text-sm opacity-75">
-          Estimate cubes and mesos to hit your desired potential lines, including
-          tier-ups. Rates follow community / Nexon probability data.
+          Estimate cubes and mesos needed for your desired potential lines,
+          including tier-ups and Double Miracle Time.
         </p>
       </header>
 
-      <section className="space-y-4 rounded-xl border border-border/40 bg-surface/80 p-4">
-        <h2 className="font-display text-lg font-semibold">Cubing information</h2>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <label className="flex flex-col gap-1 text-sm">
+      <section className="space-y-3 rounded-xl border border-border/40 bg-surface/80 p-4">
+        <h2 className="font-display text-lg font-semibold">
+          1) Cubing information
+        </h2>
+        <div className="flex flex-wrap gap-3 text-sm">
+          <label className="flex flex-col gap-1">
             Item category
             <select
-              className={fieldClass}
+              className={`${inputClass} min-w-[9rem]`}
               value={itemType}
               onChange={(e) => setItemType(e.target.value as ItemCategory)}
             >
@@ -176,10 +185,10 @@ export default function CubingCalculatorPage() {
               ))}
             </select>
           </label>
-          <label className="flex flex-col gap-1 text-sm">
+          <label className="flex flex-col gap-1">
             Cube type
             <select
-              className={fieldClass}
+              className={`${inputClass} min-w-[10rem]`}
               value={cubeType}
               onChange={(e) => setCubeType(e.target.value as CubeType)}
             >
@@ -190,10 +199,10 @@ export default function CubingCalculatorPage() {
               ))}
             </select>
           </label>
-          <label className="flex flex-col gap-1 text-sm">
+          <label className="flex flex-col gap-1">
             Current tier
             <select
-              className={fieldClass}
+              className={`${inputClass} w-32`}
               value={currentTier}
               onChange={(e) => onCurrentTier(Number(e.target.value) as Tier)}
             >
@@ -204,11 +213,11 @@ export default function CubingCalculatorPage() {
               ))}
             </select>
           </label>
-          <label className="flex flex-col gap-1 text-sm">
+          <label className="flex flex-col gap-1">
             Item level
             <input
               type="number"
-              className={fieldClass}
+              className={`${inputClass} w-24`}
               value={itemLevel}
               min={1}
               max={300}
@@ -218,13 +227,13 @@ export default function CubingCalculatorPage() {
         </div>
       </section>
 
-      <section className="space-y-4 rounded-xl border border-border/40 bg-surface/80 p-4">
-        <h2 className="font-display text-lg font-semibold">Desired stats</h2>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          <label className="flex flex-col gap-1 text-sm">
+      <section className="space-y-3 rounded-xl border border-border/40 bg-surface/80 p-4">
+        <h2 className="font-display text-lg font-semibold">2) Desired stats</h2>
+        <div className="flex flex-wrap gap-3 text-sm">
+          <label className="flex flex-col gap-1">
             Desired tier
             <select
-              className={fieldClass}
+              className={`${inputClass} w-32`}
               value={desiredTier}
               onChange={(e) => onDesiredTier(Number(e.target.value) as Tier)}
             >
@@ -235,16 +244,12 @@ export default function CubingCalculatorPage() {
               ))}
             </select>
           </label>
-          <label className="flex flex-col gap-1 text-sm">
+          <label className="flex flex-col gap-1">
             Stat type
             <select
-              className={fieldClass}
+              className={`${inputClass} min-w-[12rem]`}
               value={statType}
-              disabled={
-                itemType === "weapon" ||
-                itemType === "secondary" ||
-                itemType === "emblem"
-              }
+              disabled={isWse}
               onChange={(e) => setStatType(e.target.value as StatType)}
             >
               {STAT_TYPES.map((t) => (
@@ -254,10 +259,10 @@ export default function CubingCalculatorPage() {
               ))}
             </select>
           </label>
-          <label className="flex flex-col gap-1 text-sm sm:col-span-2 lg:col-span-1">
+          <label className="flex min-w-[16rem] flex-1 flex-col gap-1">
             Desired stat
             <select
-              className={fieldClass}
+              className={inputClass}
               value={selectedStat}
               disabled={!levelOk}
               onChange={(e) => setDesiredStat(e.target.value)}
@@ -284,7 +289,7 @@ export default function CubingCalculatorPage() {
           </label>
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+        <div className="flex flex-wrap items-center gap-4 border-t border-border/30 pt-3">
           <label className="flex items-center gap-2 text-sm">
             <input
               type="checkbox"
@@ -298,11 +303,12 @@ export default function CubingCalculatorPage() {
             type="button"
             onClick={calculate}
             disabled={pending || !levelOk}
-            className="rounded-lg bg-accent px-5 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50 dark:text-zinc-900"
+            className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50 dark:text-zinc-900"
           >
             {pending ? "Calculating…" : "Calculate"}
           </button>
         </div>
+
         {error && <p className="text-sm text-danger">{error}</p>}
         {!canPick && levelOk && (
           <p className="text-sm opacity-70">
@@ -313,63 +319,69 @@ export default function CubingCalculatorPage() {
       </section>
 
       {result && (
-        <section className="space-y-4">
-          <h2 className="font-display text-lg font-semibold">Results</h2>
-          {selectedStat !== "any" && (
-            <p className="text-sm opacity-70">
-              Line probability:{" "}
-              <span className="font-semibold tabular-nums text-accent">
-                {(result.probability * 100).toFixed(4)}%
-              </span>
+        <section className="space-y-3 rounded-xl border border-border/40 bg-surface/80 p-4">
+          <div>
+            <h2 className="font-display text-lg font-semibold">3) Results</h2>
+            <p className="mt-1 text-sm opacity-70">
+              Expected cubes and mesos for this roll
+              {selectedStat !== "any" ? (
+                <>
+                  {" · "}
+                  line chance{" "}
+                  <span className="font-semibold tabular-nums text-accent">
+                    {(result.probability * 100).toFixed(4)}%
+                  </span>
+                </>
+              ) : null}
+              .
             </p>
-          )}
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="rounded-xl border border-border/40 bg-surface/80 p-4">
-              <h3 className="font-display text-base font-semibold">Mesos</h3>
-              <p className="mt-2 space-y-1 text-sm tabular-nums">
-                <span className="block">
-                  Average: {formatNum(result.mesos.mean)}
-                </span>
-                <span className="block">
-                  Median: {formatNum(result.mesos.median)}
-                </span>
-              </p>
-              <p className="mt-3 space-y-1 border-t border-border/30 pt-3 text-sm tabular-nums opacity-90">
-                <span className="block">
-                  75% within {formatNum(result.mesos.seventy_fifth)}
-                </span>
-                <span className="block">
-                  85% within {formatNum(result.mesos.eighty_fifth)}
-                </span>
-                <span className="block">
-                  95% within {formatNum(result.mesos.nintey_fifth)}
-                </span>
-              </p>
-            </div>
-            <div className="rounded-xl border border-border/40 bg-surface/80 p-4">
-              <h3 className="font-display text-base font-semibold">
-                {cubeLabel} cubes
-              </h3>
-              <p className="mt-2 space-y-1 text-sm tabular-nums">
-                <span className="block">
-                  Average: {formatNum(result.cubes.mean)}
-                </span>
-                <span className="block">
-                  Median: {formatNum(result.cubes.median)}
-                </span>
-              </p>
-              <p className="mt-3 space-y-1 border-t border-border/30 pt-3 text-sm tabular-nums opacity-90">
-                <span className="block">
-                  75% within {formatNum(result.cubes.seventy_fifth)}
-                </span>
-                <span className="block">
-                  85% within {formatNum(result.cubes.eighty_fifth)}
-                </span>
-                <span className="block">
-                  95% within {formatNum(result.cubes.nintey_fifth)}
-                </span>
-              </p>
-            </div>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[28rem] border-collapse text-sm">
+              <thead>
+                <tr className="border-b border-border/40 text-left">
+                  <th className="py-1.5 pr-3 font-semibold">Metric</th>
+                  <th className="px-2 py-1.5 text-right font-semibold">
+                    {cubeShort} cubes
+                  </th>
+                  <th className="px-2 py-1.5 text-right font-semibold">Mesos</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(
+                  [
+                    ["Average", result.cubes.mean, result.mesos.mean],
+                    ["Median", result.cubes.median, result.mesos.median],
+                    [
+                      "75% chance within",
+                      result.cubes.seventy_fifth,
+                      result.mesos.seventy_fifth,
+                    ],
+                    [
+                      "85% chance within",
+                      result.cubes.eighty_fifth,
+                      result.mesos.eighty_fifth,
+                    ],
+                    [
+                      "95% chance within",
+                      result.cubes.nintey_fifth,
+                      result.mesos.nintey_fifth,
+                    ],
+                  ] as const
+                ).map(([label, cubes, mesos]) => (
+                  <tr key={label} className="border-b border-border/20">
+                    <td className="py-1.5 pr-3 opacity-80">{label}</td>
+                    <td className="px-2 py-1.5 text-right tabular-nums">
+                      {formatNum(cubes)}
+                    </td>
+                    <td className="px-2 py-1.5 text-right tabular-nums">
+                      {formatNum(mesos)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </section>
       )}
@@ -380,7 +392,7 @@ export default function CubingCalculatorPage() {
           href="https://brendonmay.github.io/cubingCalculator/"
           target="_blank"
           rel="noopener noreferrer"
-          className="underline hover:text-accent"
+          className="text-accent underline"
         >
           MathBro&apos;s Cubing Calculator
         </a>

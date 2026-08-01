@@ -58,7 +58,7 @@ export default function RootLayout({
         </header>
         <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6">{children}</main>
         <footer className="border-t border-border/40 px-4 py-4 text-center text-sm opacity-70">
-          Maplehub equipment tools — data seeded for offline use
+          Maplehub calculators — equipment, flames, and cubing
         </footer>
       </body>
     </html>

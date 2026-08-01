@@ -12,11 +12,11 @@ export default function Home() {
           Maplehub
         </p>
         <h1 className="mt-4 max-w-xl text-2xl font-semibold leading-snug sm:text-3xl">
-          Plan your gear and flames in one place.
+          Plan your gear, flames, and cubes in one place.
         </h1>
         <p className="mt-3 max-w-lg text-base opacity-80">
-          Build an equipment setup, see set effects instantly, then score flame
-          odds against what you already rolled.
+          Build an equipment setup, score flame odds, and estimate cubing costs
+          against the lines you want.
         </p>
         <div className="mt-8 flex flex-wrap gap-3">
           <Link
