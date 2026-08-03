@@ -268,25 +268,64 @@ function ConvertedStatCell({
   label,
   value,
   emphasize,
+  compact,
 }: {
   label: string;
   value: number;
   emphasize?: boolean;
+  compact?: boolean;
 }) {
   return (
-    <div className="rounded-lg border border-border/30 bg-background/60 px-3 py-2.5">
-      <p className="text-[11px] font-medium uppercase tracking-wide opacity-55">
+    <div
+      className={`rounded-lg border border-border/30 bg-background/60 ${
+        compact ? "px-2 py-1.5" : "px-3 py-2.5"
+      }`}
+    >
+      <p
+        className={`font-medium uppercase tracking-wide opacity-55 ${
+          compact ? "text-[10px]" : "text-[11px]"
+        }`}
+      >
         {label}
       </p>
       <p
-        className={`mt-1 font-display font-bold tabular-nums ${
-          emphasize ? "text-2xl text-accent sm:text-3xl" : "text-xl sm:text-2xl"
+        className={`mt-0.5 font-display font-bold tabular-nums ${
+          compact
+            ? emphasize
+              ? "text-lg text-accent"
+              : "text-base"
+            : emphasize
+              ? "text-2xl text-accent sm:text-3xl"
+              : "text-xl sm:text-2xl"
         }`}
       >
         {formatNum(value)}
       </p>
     </div>
   );
+}
+
+function BossCardGrid({
+  rows,
+  columnsClass,
+}: {
+  rows: BossClearRow[];
+  columnsClass: string;
+}) {
+  return (
+    <div className={`relative z-0 grid gap-2 overflow-visible ${columnsClass}`}>
+      {rows.map((row) => (
+        <BossClearCard
+          key={`${row.id}-${row.difficulty}-${row.isPartyBoss ? "p" : "s"}-${row.rank}`}
+          row={row}
+        />
+      ))}
+    </div>
+  );
+}
+
+function isDestinyOrChampion(row: BossClearRow): boolean {
+  return row.difficulty === "Destiny" || row.difficulty === "Champion";
 }
 
 export default function ScouterDetailedResultPage() {
@@ -298,6 +337,7 @@ export default function ScouterDetailedResultPage() {
   const [arcaneForce, setArcaneForce] = useState(0);
   const [authenticForce, setAuthenticForce] = useState(0);
   const [relevantOnly, setRelevantOnly] = useState(true);
+  const [showDestinyChampion, setShowDestinyChampion] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
@@ -350,29 +390,45 @@ export default function ScouterDetailedResultPage() {
     };
   }, []);
 
-  const bossRows = useMemo(() => {
-    if (!data) return [];
-    const boss300 = Number(data.boss300_hexaStat ?? data.boss300_stat ?? 0);
-    const boss380 = Number(data.boss380_hexaStat ?? data.boss380_stat ?? 0);
-    const damage300 = Number(data.calculatedHexaDamage_300 ?? 0);
-    const damage380 = Number(data.calculatedHexaDamage_380 ?? 0);
-    return evaluateBossClears({
-      boss300Stat: boss300,
-      boss380Stat: boss380,
-      damage300,
-      damage380,
+  const clearInput = useMemo(() => {
+    if (!data) return null;
+    return {
+      boss300Stat: Number(data.boss300_hexaStat ?? data.boss300_stat ?? 0),
+      boss380Stat: Number(data.boss380_hexaStat ?? data.boss380_stat ?? 0),
+      damage300: Number(data.calculatedHexaDamage_300 ?? 0),
+      damage380: Number(data.calculatedHexaDamage_380 ?? 0),
       level,
       arcaneForce,
       authenticForce,
       spline300: data.spline_300 ?? null,
       spline380: data.spline_380 ?? null,
       ascentConst: Number(data.ascent_const ?? 0),
-      relevantOnly,
-    });
-  }, [data, level, arcaneForce, authenticForce, relevantOnly]);
+    };
+  }, [data, level, arcaneForce, authenticForce]);
+
+  const allBossRows = useMemo(() => {
+    if (!clearInput) return [];
+    return evaluateBossClears({ ...clearInput, relevantOnly: false });
+  }, [clearInput]);
+
+  const destinyChampionRows = useMemo(
+    () => allBossRows.filter(isDestinyOrChampion),
+    [allBossRows],
+  );
+
+  const bossRows = useMemo(() => {
+    if (!clearInput) return [];
+    const base = relevantOnly
+      ? evaluateBossClears({ ...clearInput, relevantOnly: true })
+      : allBossRows;
+    if (showDestinyChampion) {
+      return base.filter((row) => !isDestinyOrChampion(row));
+    }
+    return base;
+  }, [allBossRows, clearInput, relevantOnly, showDestinyChampion]);
 
   return (
-    <div className="mx-auto max-w-6xl space-y-5 pb-12">
+    <div className="mx-auto max-w-7xl space-y-5 pb-12">
       <div className="flex flex-wrap items-start justify-between gap-3 rounded-xl border border-border/40 bg-surface/90 p-4 shadow-sm sm:p-5">
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-accent">
@@ -417,118 +473,167 @@ export default function ScouterDetailedResultPage() {
       ) : null}
 
       {!loading && !error && data ? (
-        <>
-          <StatBlock
-            title="Boss Converted Stat"
-            hint="HEXA values are used for clear %. Higher is stronger."
-          >
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="space-y-2">
-                <p className="text-sm font-semibold">Boss 300% PDR</p>
-                <div className="grid grid-cols-2 gap-2">
-                  <ConvertedStatCell
-                    label="Normal"
-                    value={Number(data.boss300_stat ?? 0)}
-                  />
-                  <ConvertedStatCell
-                    label="HEXA"
-                    value={Number(data.boss300_hexaStat ?? 0)}
-                    emphasize
-                  />
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
+          <aside className="w-full shrink-0 lg:sticky lg:top-4 lg:w-64 xl:w-72">
+            <StatBlock
+              title="Boss Converted Stat"
+              hint="HEXA drives clear %."
+            >
+              <div className="space-y-3">
+                <div className="space-y-1.5">
+                  <p className="text-xs font-semibold opacity-80">
+                    Boss 300% PDR
+                  </p>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    <ConvertedStatCell
+                      compact
+                      label="Normal"
+                      value={Number(data.boss300_stat ?? 0)}
+                    />
+                    <ConvertedStatCell
+                      compact
+                      label="HEXA"
+                      value={Number(data.boss300_hexaStat ?? 0)}
+                      emphasize
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <p className="text-xs font-semibold opacity-80">
+                    Boss 380% PDR
+                  </p>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    <ConvertedStatCell
+                      compact
+                      label="Normal"
+                      value={Number(data.boss380_stat ?? 0)}
+                    />
+                    <ConvertedStatCell
+                      compact
+                      label="HEXA"
+                      value={Number(data.boss380_hexaStat ?? 0)}
+                      emphasize
+                    />
+                  </div>
                 </div>
               </div>
-              <div className="space-y-2">
-                <p className="text-sm font-semibold">Boss 380% PDR</p>
-                <div className="grid grid-cols-2 gap-2">
-                  <ConvertedStatCell
-                    label="Normal"
-                    value={Number(data.boss380_stat ?? 0)}
+            </StatBlock>
+          </aside>
+
+          <div className="min-w-0 flex-1 space-y-3">
+            {showDestinyChampion ? (
+              <StatBlock
+                title="Destiny & Champion"
+                hint="Solo-mode Destiny and Champion cuts."
+                action={
+                  <button
+                    type="button"
+                    className="rounded-full border border-border/50 bg-surface px-3 py-1.5 text-xs font-semibold transition hover:bg-surface-muted"
+                    onClick={() => setShowDestinyChampion(false)}
+                  >
+                    Hide
+                  </button>
+                }
+              >
+                {destinyChampionRows.length === 0 ? (
+                  <p className="py-6 text-center text-sm opacity-60">
+                    No Destiny or Champion bosses in the list.
+                  </p>
+                ) : (
+                  <BossCardGrid
+                    rows={destinyChampionRows}
+                    columnsClass="grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-5 xl:grid-cols-6"
                   />
-                  <ConvertedStatCell
-                    label="HEXA"
-                    value={Number(data.boss380_hexaStat ?? 0)}
-                    emphasize
-                  />
+                )}
+              </StatBlock>
+            ) : null}
+
+            <StatBlock
+              title="Boss Clear (Cut)"
+              hint="Hover a boss for GMS HP by phase, crystal value, and drops."
+              action={
+                <div className="flex flex-wrap items-center gap-2 text-xs">
+                  <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-border/50 bg-surface px-3 py-1.5 font-semibold">
+                    <input
+                      type="checkbox"
+                      className="size-3.5 accent-[var(--accent,#c2410c)]"
+                      checked={showDestinyChampion}
+                      onChange={(e) => setShowDestinyChampion(e.target.checked)}
+                    />
+                    Destiny / Champion
+                  </label>
+                  <button
+                    type="button"
+                    className={`rounded-full px-3 py-1.5 font-semibold transition ${
+                      relevantOnly
+                        ? "bg-accent text-white"
+                        : "border border-border/50 bg-surface hover:bg-surface-muted"
+                    }`}
+                    onClick={() => setRelevantOnly(true)}
+                  >
+                    Relevant
+                  </button>
+                  <button
+                    type="button"
+                    className={`rounded-full px-3 py-1.5 font-semibold transition ${
+                      !relevantOnly
+                        ? "bg-accent text-white"
+                        : "border border-border/50 bg-surface hover:bg-surface-muted"
+                    }`}
+                    onClick={() => setRelevantOnly(false)}
+                  >
+                    All bosses
+                  </button>
                 </div>
+              }
+            >
+              <div className="mb-3 flex flex-wrap gap-2 text-[11px]">
+                <span className="rounded-full bg-emerald-500/15 px-2 py-1 font-semibold text-emerald-800 dark:text-emerald-300">
+                  Easy / Possible
+                </span>
+                <span className="rounded-full bg-amber-500/15 px-2 py-1 font-semibold text-amber-800 dark:text-amber-300">
+                  Solo Min (~90%+)
+                </span>
+                <span className="rounded-full bg-blue-500/15 px-2 py-1 font-semibold text-blue-800 dark:text-blue-300">
+                  Party cuts
+                </span>
+                <span className="rounded-full bg-rose-500/15 px-2 py-1 font-semibold text-rose-800 dark:text-rose-300">
+                  Under cut
+                </span>
               </div>
-            </div>
-          </StatBlock>
 
-          <StatBlock
-            title="Boss Clear (Cut)"
-            hint="Hover a boss for GMS HP by phase, crystal value, and drops."
-            action={
-              <div className="flex flex-wrap gap-2 text-xs">
-                <button
-                  type="button"
-                  className={`rounded-full px-3 py-1.5 font-semibold transition ${
-                    relevantOnly
-                      ? "bg-accent text-white"
-                      : "border border-border/50 bg-surface hover:bg-surface-muted"
-                  }`}
-                  onClick={() => setRelevantOnly(true)}
-                >
-                  Relevant
-                </button>
-                <button
-                  type="button"
-                  className={`rounded-full px-3 py-1.5 font-semibold transition ${
-                    !relevantOnly
-                      ? "bg-accent text-white"
-                      : "border border-border/50 bg-surface hover:bg-surface-muted"
-                  }`}
-                  onClick={() => setRelevantOnly(false)}
-                >
-                  All bosses
-                </button>
-              </div>
-            }
-          >
-            <div className="mb-3 flex flex-wrap gap-2 text-[11px]">
-              <span className="rounded-full bg-emerald-500/15 px-2 py-1 font-semibold text-emerald-800 dark:text-emerald-300">
-                Easy / Possible
-              </span>
-              <span className="rounded-full bg-amber-500/15 px-2 py-1 font-semibold text-amber-800 dark:text-amber-300">
-                Solo Min (~90%+)
-              </span>
-              <span className="rounded-full bg-blue-500/15 px-2 py-1 font-semibold text-blue-800 dark:text-blue-300">
-                Party cuts
-              </span>
-              <span className="rounded-full bg-rose-500/15 px-2 py-1 font-semibold text-rose-800 dark:text-rose-300">
-                Under cut
-              </span>
-            </div>
+              {bossRows.length === 0 ? (
+                <p className="rounded-lg border border-dashed border-border/50 py-10 text-center text-sm opacity-60">
+                  No bosses in this range — switch to{" "}
+                  <button
+                    type="button"
+                    className="font-semibold text-accent underline"
+                    onClick={() => setRelevantOnly(false)}
+                  >
+                    All bosses
+                  </button>
+                  .
+                </p>
+              ) : (
+                <BossCardGrid
+                  rows={bossRows}
+                  columnsClass="grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-5 xl:grid-cols-6"
+                />
+              )}
 
-            {bossRows.length === 0 ? (
-              <p className="rounded-lg border border-dashed border-border/50 py-10 text-center text-sm opacity-60">
-                No bosses in this range — switch to{" "}
-                <button
-                  type="button"
-                  className="font-semibold text-accent underline"
-                  onClick={() => setRelevantOnly(false)}
-                >
-                  All bosses
-                </button>
-                .
+              <p className="mt-3 text-xs opacity-55">
+                Hardest bosses first · {bossRows.length} shown
+                {showDestinyChampion
+                  ? ` · ${destinyChampionRows.length} Destiny/Champion above`
+                  : ""}{" "}
+                · [Party] means the party cut table
               </p>
-            ) : (
-              <div className="relative z-0 grid grid-cols-3 gap-2 overflow-visible sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7">
-                {bossRows.map((row) => (
-                  <BossClearCard
-                    key={`${row.id}-${row.difficulty}-${row.isPartyBoss ? "p" : "s"}-${row.rank}`}
-                    row={row}
-                  />
-                ))}
-              </div>
-            )}
-
-            <p className="mt-3 text-xs opacity-55">
-              Hardest bosses first · {bossRows.length} shown · [Party] means the
-              party cut table
-            </p>
-          </StatBlock>
-        </>
+            </StatBlock>
+          </div>
+        </div>
       ) : null}
     </div>
   );
 }
+
+
