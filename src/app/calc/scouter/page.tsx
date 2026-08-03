@@ -31,6 +31,7 @@ import {
   DEFAULT_JOB,
   parseClassValue,
 } from "@/lib/jobs";
+import { storage } from "@/lib/storage";
 
 const PRESET_KEY = "maplehub-scouter-preset";
 
@@ -185,6 +186,7 @@ export default function ScouterPage() {
   const [hexa, setHexa] = useState<number[]>(() => defaultHexaLevels());
   const [showResult, setShowResult] = useState(true);
   const [presetMsg, setPresetMsg] = useState<string | null>(null);
+  const [draftReady, setDraftReady] = useState(false);
 
   const classValue = `${input.jobType}:${input.charType}`;
   const { mainKeys, secondaryKeys, isXenon, isDa } = useMemo(
@@ -227,12 +229,30 @@ export default function ScouterPage() {
   );
 
   useEffect(() => {
+    const last = storage.getScouterLast();
+    if (last?.input) {
+      const job = last.input.jobType || DEFAULT_JOB;
+      const char = last.input.charType || DEFAULT_CHAR;
+      setInput({ ...defaultScouterInput(job, char), ...last.input });
+    }
+    if (last?.buffs) setBuffs(last.buffs);
+    if (last?.links) setLinks(last.links);
+    if (last?.hexa) setHexa(last.hexa);
+    setDraftReady(true);
+  }, []);
+
+  useEffect(() => {
     setInput((prev) =>
       prev.finalDamagePercent === computedFinalDamage
         ? prev
         : { ...prev, finalDamagePercent: computedFinalDamage },
     );
   }, [computedFinalDamage]);
+
+  useEffect(() => {
+    if (!draftReady) return;
+    storage.setScouterLast({ input, buffs, links, hexa });
+  }, [input, buffs, links, hexa, draftReady]);
 
   const patch = (partial: Partial<ScouterInput>) =>
     setInput((prev) => ({ ...prev, ...partial }));

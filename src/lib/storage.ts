@@ -1,4 +1,6 @@
 import type { EquipSetup, FlameSetup, JobType, StatEquiv } from "./types";
+import type { BuffState, LinkState } from "./scouter/buffs";
+import type { ScouterInput } from "./scouter/types";
 
 function readJson<T>(key: string, fallback: T): T {
   if (typeof window === "undefined") return fallback;
@@ -15,6 +17,15 @@ function writeJson(key: string, value: unknown) {
   if (typeof window === "undefined") return;
   localStorage.setItem(key, JSON.stringify(value));
 }
+
+export type ScouterLastState = {
+  input: ScouterInput;
+  buffs: BuffState;
+  links: LinkState;
+  hexa: number[];
+};
+
+const SCOUTER_LAST_KEY = "maplehub-scouter-last";
 
 export const storage = {
   getJobType: () => readJson<JobType | "">("jobType", ""),
@@ -46,4 +57,8 @@ export const storage = {
     writeJson("flameSetup", {});
     writeJson("flameProbabilities", {});
   },
+
+  getScouterLast: () =>
+    readJson<ScouterLastState | null>(SCOUTER_LAST_KEY, null),
+  setScouterLast: (v: ScouterLastState) => writeJson(SCOUTER_LAST_KEY, v),
 };
