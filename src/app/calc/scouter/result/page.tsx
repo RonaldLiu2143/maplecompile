@@ -169,12 +169,19 @@ export default function ScouterDetailedResultPage() {
     if (!data) return [];
     const boss300 = Number(data.boss300_hexaStat ?? data.boss300_stat ?? 0);
     const boss380 = Number(data.boss380_hexaStat ?? data.boss380_stat ?? 0);
+    const damage300 = Number(data.calculatedHexaDamage_300 ?? 0);
+    const damage380 = Number(data.calculatedHexaDamage_380 ?? 0);
     return evaluateBossClears({
-      boss300,
-      boss380,
+      boss300Stat: boss300,
+      boss380Stat: boss380,
+      damage300,
+      damage380,
       level,
       arcaneForce,
       authenticForce,
+      spline300: data.spline_300 ?? null,
+      spline380: data.spline_380 ?? null,
+      ascentConst: Number(data.ascent_const ?? 0),
       relevantOnly,
     });
   }, [data, level, arcaneForce, authenticForce, relevantOnly]);
@@ -294,9 +301,9 @@ export default function ScouterDetailedResultPage() {
             }
           >
             <p className="mb-3 text-xs opacity-60">
-              Icons from MapleScouter. Clear % uses your HEXA Boss 300/380 vs
-              their cut × timer rate. Labels match their Solo Min / Possible /
-              Easy / Party tiers.
+              Icons and cut table from MapleScouter GMS. Clear % uses their
+              damage-spline formula (HEXA expected damage × force/level gaps ÷
+              cut).
             </p>
             {bossRows.length === 0 ? (
               <p className="py-8 text-center text-sm opacity-60">
@@ -315,6 +322,7 @@ export default function ScouterDetailedResultPage() {
             <div className="mt-4 flex flex-wrap gap-3 text-[11px] opacity-60">
               <span>
                 <span className="font-bold text-emerald-600">Easy</span> ≥200%
+                solo
               </span>
               <span>
                 <span className="font-bold text-sky-600">Possible</span> ≥110%
@@ -323,18 +331,18 @@ export default function ScouterDetailedResultPage() {
                 <span className="font-bold text-amber-600">Solo Min</span> ≥90%
               </span>
               <span>
-                <span className="font-bold text-orange-600">Party-able</span> party
-                range
+                <span className="font-bold text-orange-600">Party-able</span> /
+                Party Min
               </span>
               <span>
-                <span className="font-bold text-rose-600">Party Min</span> low
-                party
+                <span className="font-bold text-rose-600">Np Min Cut</span> party
+                cuts
               </span>
               <span>
                 <span className="rounded bg-accent px-1 text-[9px] font-bold text-white">
                   P
                 </span>{" "}
-                party cut
+                uses partyBossCut
               </span>
             </div>
           </StatBlock>

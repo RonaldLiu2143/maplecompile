@@ -298,5 +298,9 @@ export type MapleScouterCalculatedData = {
   hexaEffect?: Record<string, number>;
   hexaPoss?: Record<string, number>;
   myClassData?: Record<string, unknown>;
+  ascent_const?: number;
+  elixir?: number;
+  spline_300?: { x: number[]; y: number[]; m: number[] };
+  spline_380?: { x: number[]; y: number[]; m: number[] };
   [key: string]: unknown;
 };
