@@ -364,6 +364,9 @@ export default function ScouterPage() {
     [input.level, input.reboot, input.liberation],
   );
 
+  // Tracks last Reboot/Liberation FD baseline (must be declared before load effect).
+  const prevExceptionFd = useRef<number | null>(null);
+
   useEffect(() => {
     const last = storage.getScouterLast();
     if (last?.input) {
@@ -384,6 +387,13 @@ export default function ScouterPage() {
           liberation: merged.liberation,
         });
       }
+      // Seed baseline from the restored draft so Reboot/Liberation sync
+      // does not re-multiply FD on every refresh.
+      prevExceptionFd.current = combatExceptionFinalDamagePercent({
+        level: merged.level,
+        reboot: merged.reboot,
+        liberation: merged.liberation,
+      });
       setInput(merged);
     }
     if (last?.buffs) setBuffs(last.buffs);
@@ -394,8 +404,10 @@ export default function ScouterPage() {
 
   // When Reboot / Liberation / level changes, multiply/divide the exception
   // portion so equipment FD in the same field stays intact.
-  const prevExceptionFd = useRef<number | null>(null);
+  // Wait until autosave restore finishes — otherwise default (0%) → loaded
+  // Reboot (45%) re-applies on every refresh and stacks FD/CP.
   useEffect(() => {
+    if (!draftReady) return;
     const next = exceptionFinalDamage;
     if (prevExceptionFd.current === null) {
       prevExceptionFd.current = next;
@@ -413,7 +425,7 @@ export default function ScouterPage() {
       };
     });
     prevExceptionFd.current = next;
-  }, [exceptionFinalDamage]);
+  }, [exceptionFinalDamage, draftReady]);
 
   useEffect(() => {
     if (!draftReady) return;
