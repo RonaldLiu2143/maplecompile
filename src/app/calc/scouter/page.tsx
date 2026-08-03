@@ -14,7 +14,7 @@ import {
   INNER_ABILITY_OPTIONS,
   LINK_DEFS,
   OZ_CONTINUOUS_STATUS,
-  OZ_RINGS,
+  getVisibleOzRings,
   resolveMainSecondary,
   SCOUTER_CDN,
   type BuffState,
