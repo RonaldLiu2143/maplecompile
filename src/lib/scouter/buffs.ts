@@ -20,7 +20,7 @@ export type BuffDef = {
    * Mutually exclusive group — enabling one turns the others off
    * (e.g. Onyx Apple vs Tengu's Judgement).
    */
-  mutexGroup?: string;
+  mutexGroup?: "weaponTemp" | "atkFood";
 };
 
 /**
@@ -567,8 +567,4 @@ export function defaultHexaLevels(): number[] {
     if (i < 11) return 30; // skill
     return 1; // common
   });
-}
-
-export function hexaIconPath(slot: HexaSlot): string | null {
-  return slot.iconSuffix;
 }

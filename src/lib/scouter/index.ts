@@ -15,7 +15,6 @@ export {
   HEXA_SLOT_COUNT,
   HEXA_MAX_LEVEL,
   getHexaSlots,
-  hexaIconPath,
   defaultBuffState,
   defaultLinkState,
   defaultHexaLevels,

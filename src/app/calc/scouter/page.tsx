@@ -14,6 +14,7 @@ import {
   INNER_ABILITY_OPTIONS,
   LINK_DEFS,
   OZ_CONTINUOUS_STATUS,
+  OZ_RING_MAX,
   getVisibleOzRings,
   resolveMainSecondary,
   SCOUTER_CDN,
@@ -153,15 +154,8 @@ function CdnIcon({
     );
   }
   const href =
-    src.startsWith("http://") ||
-    src.startsWith("https://") ||
-    src.startsWith("/")
-      ? src.startsWith("/linkskill/") ||
-        src.startsWith("/doping_v2/") ||
-        src.startsWith("/hexaskill/") ||
-        src.startsWith("/images/")
-        ? `${SCOUTER_CDN}${src}`
-        : src
+    src.startsWith("http://") || src.startsWith("https://")
+      ? src
       : `${SCOUTER_CDN}${src}`;
   return (
     // eslint-disable-next-line @next/next/no-img-element
@@ -258,7 +252,7 @@ export default function ScouterPage() {
     setHexa(defaultHexaLevels());
   };
 
-  const allBuffsOn = BUFF_DEFS.every((b) =>
+  const allBuffsOn = BUFF_DEFS.filter((b) => !b.mutexGroup).every((b) =>
     b.control === "check"
       ? buffs[b.id]?.on
       : (buffs[b.id]?.level ?? 0) > 0,
@@ -700,11 +694,7 @@ export default function ScouterPage() {
               {BUFF_DEFS.map((b) => {
                 const st = buffs[b.id] ?? { on: false, level: 0 };
                 const active =
-                  b.control === "check"
-                    ? st.on
-                    : b.control === "champion"
-                      ? st.level > 0
-                      : st.level > 0;
+                  b.control === "check" ? st.on : st.level > 0;
                 const tip = `${b.label} — ${b.bonus}`;
                 return (
                   <div
@@ -937,19 +927,17 @@ export default function ScouterPage() {
                     title={ring.label}
                     className="flex flex-col items-center gap-1 rounded border border-border/40 bg-background p-1.5"
                   >
-                    <span title={ring.label} className="cursor-help">
-                      <CdnIcon src={ring.icon} alt={ring.label} />
-                    </span>
+                    <CdnIcon src={ring.icon} alt={ring.label} />
                     <input
                       type="number"
                       title={ring.label}
                       min={0}
-                      max={ring.max}
+                      max={OZ_RING_MAX}
                       className="w-full rounded border border-border/40 bg-background px-0.5 py-0.5 text-center text-[11px] tabular-nums outline-none focus:border-accent"
                       value={input[ring.field]}
                       onChange={(e) => {
                         const raw = Number(e.target.value) || 0;
-                        const capped = Math.min(Math.max(0, raw), ring.max);
+                        const capped = Math.min(Math.max(0, raw), OZ_RING_MAX);
                         patch({ [ring.field]: capped });
                       }}
                     />

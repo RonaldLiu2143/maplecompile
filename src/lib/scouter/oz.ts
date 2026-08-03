@@ -6,71 +6,52 @@ export type OzRingField =
   | "ozWeaponJumpLevel"
   | "ozRingOfSumLevel";
 
+export type OzContinuousStatus = "noUse" | "use";
+
 export type OzRingDef = {
   id: string;
   label: string;
   icon: string;
   field: OzRingField;
-  /** MapleScouter validates levels ≤ 6 */
-  max: number;
+  /** Which Continuous Use Status values show this ring */
+  visibleIn: readonly OzContinuousStatus[];
 };
 
 export const OZ_RING_MAX = 6;
 
-/**
- * Full GMS Oz ring set used by MapleScouter.
- * Visibility depends on Continuous Use Status (same as their UI).
- */
 export const OZ_RINGS: OzRingDef[] = [
   {
     id: "restraint",
     label: "Restraint Ring",
     icon: "/seedring/restraint.png",
     field: "ozRestraintLevel",
-    max: OZ_RING_MAX,
+    visibleIn: ["noUse"],
   },
   {
     id: "weaponJump",
     label: "Weapon Jump Ring",
     icon: "/seedring/weapon.png",
     field: "ozWeaponJumpLevel",
-    max: OZ_RING_MAX,
+    visibleIn: ["noUse"],
   },
   {
     id: "ringOfSum",
     label: "Ring of Sum",
     icon: "/seedring/ringofsum.png",
     field: "ozRingOfSumLevel",
-    max: OZ_RING_MAX,
+    visibleIn: ["noUse", "use"],
   },
   {
     id: "continuous",
     label: "Continuous Ring",
     icon: "/seedring/continuos.png",
     field: "ozContinuousLevel",
-    max: OZ_RING_MAX,
+    visibleIn: ["use"],
   },
 ];
 
-/**
- * MapleScouter GMS visibility:
- * - Continuous No Use → Restraint + Weapon Jump + Ring of Sum
- * - Continuous Use → Continuous + Ring of Sum
- */
-export function getVisibleOzRings(
-  status: "noUse" | "use",
-): OzRingDef[] {
-  if (status === "use") {
-    return OZ_RINGS.filter(
-      (r) => r.id === "continuous" || r.id === "ringOfSum",
-    );
-  }
-  return OZ_RINGS.filter(
-    (r) =>
-      r.id === "restraint" ||
-      r.id === "weaponJump" ||
-      r.id === "ringOfSum",
-  );
+export function getVisibleOzRings(status: OzContinuousStatus): OzRingDef[] {
+  return OZ_RINGS.filter((r) => r.visibleIn.includes(status));
 }
 
 export const OZ_CONTINUOUS_STATUS = [
