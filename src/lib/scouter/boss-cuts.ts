@@ -1,12 +1,10 @@
 /** MapleScouter GMS Boss Clear (Cut) standards (`e_` list) + clear-rate math. */
 
-import { getBossRegionHpTotals } from "./boss-info";
-
-/** Supported fight windows for burst/ascent adjust (MapleScouter uses 20). */
+/** Supported fight windows — hover HP only (clear % matches MapleScouter @ 20). */
 export type BossClearFightMinutes = 20 | 30;
 export const BOSS_CLEAR_FIGHT_MINUTES_DEFAULT: BossClearFightMinutes = 20;
 
-/** MapleScouter cut calibration baseline. */
+/** MapleScouter burst-slot baseline (hardcoded in their clear math). */
 const MS_CLEAR_BASE_MINUTES = 20;
 
 export type BossCutDifficulty =
@@ -1273,26 +1271,50 @@ export type BossClearCalcInput = {
   damage300: number;
   /** HEXA expected damage at 380% PDR */
   damage380: number;
+  /** MapleScouter calculatedHexaDamage_kaling (falls back to damage380). */
+  damageKaling?: number;
+  /** Non-HEXA 380% damage — used for Maerin mix (0.95 hexa + 0.05 non-hexa). */
+  damage380NonHexa?: number;
   boss300Stat: number;
   boss380Stat: number;
   spline300?: Spline | null;
   spline380?: Spline | null;
   /** ascent_const from CALC_DMG (timer adjust). */
   ascentConst?: number;
-  /** Fight window for burst/ascent adjust (default 20). */
+  /**
+   * UI fight-window toggle (hover HP only).
+   * Clear % always uses MapleScouter’s 20-min burst math — they do not
+   * scale clears by region HP, and their time slider caps elixir L at 20.
+   */
   fightMinutes?: BossClearFightMinutes;
   relevantOnly?: boolean;
   newbieMode?: boolean;
 };
 
+function damageForBoss(
+  entry: BossCutEntry,
+  damage300: number,
+  damage380: number,
+  damageKaling: number,
+  damage380NonHexa: number,
+): number {
+  if (entry.guard === 300) return damage300;
+  // MapleScouter: 카링 → calculatedHexaDamage_kaling || hexa380
+  if (entry.id === "kaling") return damageKaling || damage380;
+  // MapleScouter: 메이린 → 0.95*hexa380 + 0.05*nonHexa380
+  if (entry.id === "maerin") {
+    return 0.95 * damage380 + 0.05 * (damage380NonHexa || damage380);
+  }
+  return damage380;
+}
+
 /**
- * MapleScouter clearRate (cut/spline), then region HP + fight-time scale:
- *   z0 = I/E * easyRate          (calibrated to KMS HP @ 20 min)
- *   z  = z0 * (kmsHp / targetHp) * (fightMinutes / 20)
- *        targetHp = KMS when 20 min, GMS when 30 min
- *   O  = z * (1 + timerAdjust(ascentConst, fightMinutes))
+ * MapleScouter clearRate (cut/spline), MS-parity:
+ *   z = I/E * easyRate * L
+ *   O = z * (1 + ascentAdjust) with burst slots from ceil(20/z/5.667)
  *
- * Note: never divide raw CALC_DMG damage by wiki HP directly — different units.
+ * Do not scale by wiki/KMS HP — MapleScouter never does; Kaling’s GMS/KMS
+ * HP ratio (~1.76) was incorrectly crushing 30-min clears.
  */
 export function evaluateBossClears(args: BossClearCalcInput): BossClearRow[] {
   const {
@@ -1301,12 +1323,13 @@ export function evaluateBossClears(args: BossClearCalcInput): BossClearRow[] {
     authenticForce,
     damage300,
     damage380,
+    damageKaling = damage380,
+    damage380NonHexa = damage380,
     boss300Stat,
     boss380Stat,
     spline300,
     spline380,
     ascentConst = 0,
-    fightMinutes = BOSS_CLEAR_FIGHT_MINUTES_DEFAULT,
     relevantOnly = true,
     newbieMode = false,
   } = args;
@@ -1314,7 +1337,13 @@ export function evaluateBossClears(args: BossClearCalcInput): BossClearRow[] {
   const rows: BossClearRow[] = BOSS_CUTS.map((entry, rank) => {
     const isPartyBoss = entry.partyBossCut != null;
     const cut = (entry.bossCut ?? entry.partyBossCut) || 0;
-    const dmg = entry.guard === 380 ? damage380 : damage300;
+    const dmg = damageForBoss(
+      entry,
+      damage300,
+      damage380,
+      damageKaling,
+      damage380NonHexa,
+    );
     const fallbackStat = entry.guard === 380 ? boss380Stat : boss300Stat;
     const spline = entry.guard === 380 ? spline380 : spline300;
 
@@ -1330,33 +1359,23 @@ export function evaluateBossClears(args: BossClearCalcInput): BossClearRow[] {
     let clearRate = 0;
     let userStat = fallbackStat;
 
-    const { kms: kmsHp, gms: gmsHp } = getBossRegionHpTotals(entry.imgKey);
-    const targetHp = fightMinutes === 30 ? gmsHp : kmsHp;
-    const regionScale =
-      kmsHp > 0 && targetHp > 0
-        ? (kmsHp / targetHp) * (fightMinutes / MS_CLEAR_BASE_MINUTES)
-        : fightMinutes / MS_CLEAR_BASE_MINUTES;
-
     if (spline && cut > 0 && Array.isArray(spline.x) && spline.x.length > 0) {
       const E = splineDamage(spline, cut);
       userStat = splineStat(spline, I * L);
       if (E > 0) {
-        const z0 = (I / (E < 0 ? 1e4 : E)) * (entry.easyRate || 1) * L;
-        const z = z0 * regionScale;
+        const z = (I / (E < 0 ? 1e4 : E)) * (entry.easyRate || 1) * L;
         const burstSlots =
           entry.nameKo === "루시드" && entry.difficulty === "Hard"
             ? 0.4
             : Math.min(
                 3,
-                Math.ceil(fightMinutes / Math.max(z, 1e-9) / 5.667),
+                Math.ceil(MS_CLEAR_BASE_MINUTES / Math.max(z, 1e-9) / 5.667),
               );
         const G = (3 * R) / burstSlots - R || 0;
         clearRate = z * (1 + G) || 0;
       }
     } else if (cut > 0) {
-      // No spline: approximate with converted-stat ratio + region scale
-      clearRate =
-        (fallbackStat / cut) * (entry.easyRate || 1) * regionScale;
+      clearRate = (fallbackStat / cut) * (entry.easyRate || 1);
       userStat = fallbackStat;
     }
 

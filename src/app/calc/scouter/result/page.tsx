@@ -409,11 +409,16 @@ export default function ScouterDetailedResultPage() {
 
   const clearInput = useMemo(() => {
     if (!data) return null;
+    const damage380 = Number(data.calculatedHexaDamage_380 ?? 0);
     return {
       boss300Stat: Number(data.boss300_hexaStat ?? data.boss300_stat ?? 0),
       boss380Stat: Number(data.boss380_hexaStat ?? data.boss380_stat ?? 0),
       damage300: Number(data.calculatedHexaDamage_300 ?? 0),
-      damage380: Number(data.calculatedHexaDamage_380 ?? 0),
+      damage380,
+      damageKaling: Number(
+        data.calculatedHexaDamage_kaling ?? damage380,
+      ),
+      damage380NonHexa: Number(data.calculatedDamage_380 ?? damage380),
       level,
       arcaneForce,
       authenticForce,
@@ -502,7 +507,7 @@ export default function ScouterDetailedResultPage() {
           <aside className="w-full shrink-0 lg:w-64 xl:w-72">
             <StatBlock
               title="Boss Converted Stat"
-              hint={`HEXA drives clear %. ${fightLabel} (GMS HP is often ~1.5× KMS, so many % stay similar).`}
+              hint={`HEXA drives clear % (MapleScouter math). Toggle only switches hover HP (KMS ↔ GMS).`}
               action={
                 <div className="inline-flex overflow-hidden rounded-full border border-border/50 text-xs">
                   <button
@@ -513,7 +518,7 @@ export default function ScouterDetailedResultPage() {
                         : "bg-surface hover:bg-surface-muted"
                     }`}
                     onClick={() => setFightMinutes(20)}
-                    title="MapleScouter parity · KMS HP"
+                    title="Hover: KMS HP"
                   >
                     20 min
                   </button>
@@ -525,7 +530,7 @@ export default function ScouterDetailedResultPage() {
                         : "bg-surface hover:bg-surface-muted"
                     }`}
                     onClick={() => setFightMinutes(30)}
-                    title="GMS HP scaled clear"
+                    title="Hover: GMS HP"
                   >
                     30 min
                   </button>
@@ -576,7 +581,7 @@ export default function ScouterDetailedResultPage() {
           <div className="min-w-0 flex-1 space-y-3">
             <StatBlock
               title="Destiny & Champion"
-              hint={`Solo-mode Destiny and Champion · ${fightLabel}.`}
+              hint="Solo-mode Destiny and Champion. Hover for HP, crystal, and drops."
               action={
                 <button
                   type="button"
@@ -608,7 +613,7 @@ export default function ScouterDetailedResultPage() {
 
             <StatBlock
               title="Boss Clear (Cut)"
-              hint={`Clear % · ${fightLabel}. Hover for HP, crystal, and drops.`}
+              hint="Clear % (MapleScouter). Hover for HP, crystal, and drops."
               action={
                 <div className="flex flex-wrap items-center gap-2 text-xs">
                   <button
