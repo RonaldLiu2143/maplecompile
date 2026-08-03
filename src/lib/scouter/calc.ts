@@ -1,8 +1,14 @@
 import { getPrimarySecondary } from "@/lib/flames";
+import { getWeaponConstant } from "./weapon-constant";
 import type { ScouterInput, ScouterResult, StatKey, StatTriple } from "./types";
 
 function applyTriple(t: StatTriple): number {
   return t.base * (1 + t.percent / 100) + t.flat;
+}
+
+/** MapleScouter / in-game floor: floor(Number((base*(1+%)+flat).toFixed(10))) */
+function tripleFloor(t: StatTriple): number {
+  return Math.floor(Number(applyTriple(t).toFixed(10)));
 }
 
 function clamp01(n: number): number {
@@ -98,6 +104,7 @@ export function resolveOzRingStats(input: ScouterInput): {
  */
 export function calculateScouter(input: ScouterInput): ScouterResult {
   const { mainKeys, secondaryKeys, isXenon, isDa } = resolveMainSecondary(input);
+  const weaponConstant = getWeaponConstant(input.charType);
 
   let totalMain = 0;
   if (isDa) {
@@ -120,21 +127,63 @@ export function calculateScouter(input: ScouterInput): ScouterResult {
   }
 
   const attackSource = input.useMagicAttack ? input.magicAttack : input.attack;
-  const attackFinal = applyTriple(attackSource);
+  const attackFinal = tripleFloor(attackSource);
 
-  // Xenon: all three primaries count as main (×4 each already via summing mains)
+  // Floored mains/subs for General Range (MapleScouter)
+  const mainFloored = isXenon
+    ? tripleFloor(input.stats.str) +
+      tripleFloor(input.stats.dex) +
+      tripleFloor(input.stats.luk)
+    : isDa
+      ? tripleFloor(input.stats.hp)
+      : mainKeys.reduce((sum, key) => sum + tripleFloor(input.stats[key]), 0);
+  const secFloored = isXenon
+    ? 0
+    : isDa
+      ? tripleFloor(input.stats.str)
+      : secondaryKeys.reduce(
+          (sum, key) => sum + tripleFloor(input.stats[key]),
+          0,
+        );
+
+  /**
+   * Stat term `c` from MapleScouter:
+   * DA: (⌊baseHP/3.5⌋ + 0.8×⌊(HP-baseHP)/3.5⌋ + STR) / 100
+   * Xenon: (STR+DEX+LUK)×4 / 100
+   * else: (4×main + sub [+ sub2]) / 100
+   */
+  let statTerm: number;
+  if (isDa) {
+    const baseHp = 90 * input.level + 545;
+    const hp = mainFloored;
+    statTerm =
+      (Math.floor(baseHp / 3.5) +
+        0.8 * Math.floor((hp - baseHp) / 3.5) +
+        secFloored) /
+      100;
+  } else if (isXenon) {
+    statTerm = (mainFloored * 4) / 100;
+  } else {
+    statTerm = (4 * mainFloored + secFloored) / 100;
+  }
+
   const statValue = isXenon
     ? 4 * totalMain
-    : 4 * totalMain + totalSecondary;
+    : isDa
+      ? statTerm * 100
+      : 4 * totalMain + totalSecondary;
 
-  // Base range before Damage% / FD (used for expected / converted main)
-  const baseMax = (statValue * attackFinal) / 100;
+  // Upper range before Damage%/FD: ATT × weaponConstant × statTerm
+  const baseMax = attackFinal * weaponConstant * statTerm;
   const mastery = clamp01(input.masteryPercent / 100);
   const damageMultiplier = 1 + input.damagePercent / 100;
   const finalMultiplier = 1 + input.finalDamagePercent / 100;
 
-  // Character-window General Range includes Damage% + Final Damage (not Boss Damage)
-  const displayedMax = Math.floor(baseMax * damageMultiplier * finalMultiplier);
+  // MapleScouter General Range:
+  // floor( round(ATT × WC × c) × (1+DMG%) × (1+FD%) )
+  const displayedMax = Math.floor(
+    Math.round(baseMax) * damageMultiplier * finalMultiplier,
+  );
   const displayedMin = Math.floor(displayedMax * mastery);
 
   const critMultiplier = critExpectedMultiplier(
@@ -167,9 +216,9 @@ export function calculateScouter(input: ScouterInput): ScouterResult {
     finalMultiplier *
     masteryAvg;
 
-  // ∂expected/∂main ≈ 4 * ATT/100 * multipliers
+  // ∂expected/∂main ≈ 4 * ATT * WC / 100 * multipliers
   const perMain =
-    (4 * attackFinal) /
+    (4 * attackFinal * weaponConstant) /
     100 *
     critMultiplier *
     bossMultiplier *
@@ -195,33 +244,10 @@ export function calculateScouter(input: ScouterInput): ScouterResult {
   const equivIed =
     iedMultiplier > 0 ? convertedMain * (dIedMult / iedMultiplier) : 0;
 
-  /**
-   * In-game Combat Power (전투력):
-   * floor( (4*main+sec)*0.01 * floor(ATT*(1+ATT%)) * (1+DMG+BD) * (1+FD) * (1.35+CD) )
-   * Excludes IED, crit rate, mastery. Weapon→bow ATT conversion omitted (needs weapon base).
-   * DA / Xenon use their special main-stat terms.
-   */
-  let combatStatTerm: number;
-  if (isDa) {
-    const hpTerm = Math.floor(applyTriple(input.stats.hp) / 3.5);
-    const strTerm = Math.floor(applyTriple(input.stats.str));
-    combatStatTerm = (hpTerm + strTerm) * 0.01;
-  } else if (isXenon) {
-    combatStatTerm =
-      (Math.floor(applyTriple(input.stats.str)) +
-        Math.floor(applyTriple(input.stats.dex)) +
-        Math.floor(applyTriple(input.stats.luk))) *
-      4 *
-      0.01;
-  } else {
-    combatStatTerm =
-      (4 * Math.floor(totalMain) + Math.floor(totalSecondary)) * 0.01;
-  }
-  const combatAtt = Math.floor(attackFinal);
   const combatCd = 1.35 + input.criticalDamagePercent / 100;
   const combatPower = Math.floor(
-    combatStatTerm *
-      combatAtt *
+    statTerm *
+      attackFinal *
       bossMultiplier *
       finalMultiplier *
       combatCd,

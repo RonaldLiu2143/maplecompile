@@ -30,6 +30,10 @@ export {
   CLASS_FD,
 } from "./class-fd";
 export {
+  CLASS_WEAPON_CONSTANT,
+  getWeaponConstant,
+} from "./weapon-constant";
+export {
   OZ_RINGS,
   OZ_CONTINUOUS_STATUS,
   INNER_ABILITY_OPTIONS,

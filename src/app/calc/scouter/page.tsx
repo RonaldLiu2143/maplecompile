@@ -203,11 +203,11 @@ export default function ScouterPage() {
     [input.charType],
   );
   const attackPowerTotal = useMemo(
-    () => Math.round(applyTriple(input.attack)),
+    () => Math.floor(Number(applyTriple(input.attack).toFixed(10))),
     [input.attack],
   );
   const magicAttackTotal = useMemo(
-    () => Math.round(applyTriple(input.magicAttack)),
+    () => Math.floor(Number(applyTriple(input.magicAttack).toFixed(10))),
     [input.magicAttack],
   );
 
