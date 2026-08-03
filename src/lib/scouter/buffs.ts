@@ -521,9 +521,24 @@ export function getHexaSlots(charType: string): HexaSlot[] {
     { id: "skill1", group: "skill", label: "Skill Core 1", iconSuffix: cls(1) },
     { id: "skill2", group: "skill", label: "Skill Core 2", iconSuffix: cls(10) },
     { id: "skill3", group: "skill", label: "Skill Core 3", iconSuffix: cls(12) },
-    { id: "commonClass", group: "common", label: "Common (Class)", iconSuffix: cls(11) },
-    { id: "common1", group: "common", label: "Common 1", iconSuffix: "/hexaskill/General/General_1_0.png" },
-    { id: "common2", group: "common", label: "Common 2", iconSuffix: "/hexaskill/General/General_2.png" },
+    {
+      id: "commonClass",
+      group: "common",
+      label: "Class Common",
+      iconSuffix: cls(11),
+    },
+    {
+      id: "solJanus",
+      group: "common",
+      label: "Sol Janus",
+      iconSuffix: "/hexaskill/General/General_1_0.png",
+    },
+    {
+      id: "solHecate",
+      group: "common",
+      label: "Sol Hecate",
+      iconSuffix: "/hexaskill/General/General_2.png",
+    },
   ];
 }
 

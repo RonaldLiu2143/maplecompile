@@ -17,6 +17,16 @@ function linkLevel(links: LinkState, id: string): string {
   return String(links[id] ?? 0);
 }
 
+function entireOf(triple: { base: number; percent: number; flat: number }): string {
+  return String(
+    Math.floor(triple.base * (1 + triple.percent / 100) + triple.flat),
+  );
+}
+
+function seedRingEntry(level: number): { level: string; efficiency: number } {
+  return { level: String(level), efficiency: 0 };
+}
+
 /**
  * Build MapleScouter `userStat` payload from our scouter form state.
  * @see https://api.maplescouter.com/api/calc/dmg
@@ -49,8 +59,11 @@ export function toMapleScouterUserStat(args: {
   const attack = input.useMagicAttack ? input.magicAttack : input.attack;
 
   const myClass = CHAR_TO_KMS_CLASS[input.charType] ?? "영웅";
+  const continuousUse = input.ozContinuousStatus === "use";
+  const statPotionLv = buffLevel(buffs, "statPotion");
 
-  // hexa[] order from getHexaSlots: mastery×4, rein×4, skill×3, commonClass, common1, common2
+  // hexa[] order from getHexaSlots:
+  // mastery×4, rein×4, skill×3, commonClass, solJanus, solHecate
   const h = hexa;
   const hexaPayload = {
     masteryCore1: String(h[0] ?? 0),
@@ -67,20 +80,24 @@ export function toMapleScouterUserStat(args: {
     skillCore4: "0",
     skillCore5: "0",
     skillCore6: "0",
-    generalCore2: String(h[12] ?? 0),
-    generalCore3: String(h[13] ?? 0),
-    generalCore4: String(h[11] ?? 0), // class common
+    // MapleScouter: Sol Hecate → generalCore2, class common (_11) → generalCore3
+    generalCore2: String(h[13] ?? 0),
+    generalCore3: String(h[11] ?? 0),
+    generalCore4: "0",
     hexaStat: 0,
   };
 
   return {
     doping: {
       extreme: buffOn(buffs, "extreme"),
-      stat: String(buffLevel(buffs, "statPotion")),
+      // MapleScouter sends both the boolean and the level string
+      statPotion: statPotionLv > 0,
+      stat: String(statPotionLv),
       superPower: buffOn(buffs, "superPower"),
       unionsPower: buffOn(buffs, "unionsPower"),
       urus: buffOn(buffs, "urus"),
       heroesHawl: buffOn(buffs, "heroesHawl"),
+      guildBlessing: buffOn(buffs, "guildBlessing"),
       noblessBoss: buffLevel(buffs, "noblessBoss") > 0,
       noblessDmg: buffLevel(buffs, "noblessDmg") > 0,
       noblessCriDmg: buffLevel(buffs, "noblessCriDmg") > 0,
@@ -96,6 +113,9 @@ export function toMapleScouterUserStat(args: {
       buff275: buffOn(buffs, "buff275"),
       additional1: buffOn(buffs, "additional1"),
       additional2: false,
+      greatIgnoreGuard: false,
+      rebootAtkPotion: false,
+      legendHp: isDa,
       championAll: String(buffLevel(buffs, "championAll")),
       championAtk: String(buffLevel(buffs, "championAtk")),
       championBoss: String(buffLevel(buffs, "championBoss")),
@@ -119,7 +139,6 @@ export function toMapleScouterUserStat(args: {
       rainbow: false,
       thanks: false,
       genePass: buffOn(buffs, "genePass"),
-      // Extra doping our UI has — map best-effort into unused / closest flags
       shiningRed: buffOn(buffs, "shiningRed"),
       shiningBlue: buffOn(buffs, "shiningBlue"),
       bigHero: buffOn(buffs, "bigHero"),
@@ -151,16 +170,14 @@ export function toMapleScouterUserStat(args: {
       genesis: input.liberation,
       oneHandSword: false,
       useRuinForceShild: false,
-      useContinuousRingAsMainRing: false,
-      restraintRing: String(input.ozRestraintLevel),
-      weaponRing: String(input.ozWeaponJumpLevel),
+      useContinuousRingAsMainRing: continuousUse,
+      restraintRing: String(continuousUse ? 0 : input.ozRestraintLevel),
+      weaponRing: String(continuousUse ? 0 : input.ozWeaponJumpLevel),
       ringOfSum: String(input.ozRingOfSumLevel),
       riskTaker: "0",
       statThird: "0",
       statFourth: "0",
-      continuosRing: String(
-        input.ozContinuousStatus === "use" ? input.ozContinuousLevel : 0,
-      ),
+      continuosRing: String(continuousUse ? input.ozContinuousLevel : 0),
       challenge: false,
       is30min: false,
       destiny2ndSkill: false,
@@ -198,27 +215,52 @@ export function toMapleScouterUserStat(args: {
       resetCoolDown: String(input.cooldownSkipPercent),
       statusAdditionalDmg: String(input.additionalStatusDamagePercent),
       passiveSkillLevelUp: input.specialInnerAbility === "passivePlus1",
-      increaseTarget: false,
+      increaseTarget: input.specialInnerAbility === "mobTargeted",
       summonPersistTime: String(input.summonDurationPercent),
       artifact_increaseTarget: input.legionArtifactAdditionalExp,
       artifact_finalAttack: String(input.legionArtifactFinalAttack),
+      // Present in MapleScouter payloads (filled client-side after doping expand)
+      subStat_hyper: "",
+      subStat_ability: "",
+      subStat_union: "",
+      subStat_doping: "",
+      subStat_afterDoping: "",
+      ssubStat_hyper: "",
+      ssubStat_ability: "",
+      ssubStat_union: "",
+      ssubStat_doping: "",
+      ssubStat_afterDoping: "",
       ignoreElementalResist: String(input.ignoreElementalResistancePercent),
       maple_combatPower: "",
       tms_fd: "0",
     },
     hexa: hexaPayload,
-    seedRing: {},
+    seedRing: {
+      restraintRing: seedRingEntry(continuousUse ? 0 : input.ozRestraintLevel),
+      weaponRing: seedRingEntry(continuousUse ? 0 : input.ozWeaponJumpLevel),
+      ringOfSum: seedRingEntry(input.ozRingOfSumLevel),
+      riskTakerRing: seedRingEntry(0),
+      criDamageRing: seedRingEntry(0),
+      levelRing: seedRingEntry(0),
+      continuosRing: seedRingEntry(continuousUse ? input.ozContinuousLevel : 0),
+      ultiRing: seedRingEntry(0),
+      durabilityRing: seedRingEntry(0),
+    },
     entireStat: {
-      str: String(Math.floor(input.stats.str.base * (1 + input.stats.str.percent / 100) + input.stats.str.flat)),
-      dex: String(Math.floor(input.stats.dex.base * (1 + input.stats.dex.percent / 100) + input.stats.dex.flat)),
-      int: String(Math.floor(input.stats.int.base * (1 + input.stats.int.percent / 100) + input.stats.int.flat)),
-      luk: String(Math.floor(input.stats.luk.base * (1 + input.stats.luk.percent / 100) + input.stats.luk.flat)),
+      str: entireOf(input.stats.str),
+      dex: entireOf(input.stats.dex),
+      int: entireOf(input.stats.int),
+      luk: entireOf(input.stats.luk),
     },
     isGMS: true,
     isTMS: false,
     isJMS: false,
     isMSEA: false,
-    huntSkill: { solJanus: "0", erdaShower: "0" },
+    // Sol Janus uses General_1; Erda Shower is a separate hunt-only core we don't expose yet
+    huntSkill: {
+      solJanus: String(h[12] ?? 0),
+      erdaShower: "0",
+    },
   };
 }
 
