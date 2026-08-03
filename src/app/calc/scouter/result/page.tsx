@@ -326,7 +326,7 @@ export default function ScouterDetailedResultPage() {
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <p className="mb-2 text-sm font-semibold">Boss 300</p>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-3">
                   <div>
                     <p className="text-xs opacity-60">Normal</p>
                     <p className="font-display text-3xl font-bold tabular-nums">
@@ -343,7 +343,7 @@ export default function ScouterDetailedResultPage() {
               </div>
               <div>
                 <p className="mb-2 text-sm font-semibold">Boss 380</p>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-3">
                   <div>
                     <p className="text-xs opacity-60">Normal</p>
                     <p className="font-display text-3xl font-bold tabular-nums">
