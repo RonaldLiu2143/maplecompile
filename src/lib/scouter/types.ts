@@ -1,3 +1,5 @@
+import { classFinalDamage } from "./buffs";
+
 export type StatKey = "str" | "dex" | "int" | "luk" | "hp";
 
 export type StatTriple = {
@@ -46,7 +48,6 @@ export type ScouterInput = {
   wildHunterLegion: number;
   reboot: boolean;
   liberation: boolean;
-  firstLegacy: boolean;
   mugongSoul: boolean;
 };
 
@@ -97,7 +98,7 @@ export function defaultScouterInput(
     magicAttack: { ...EMPTY_TRIPLE },
     damagePercent: 0,
     bossDamagePercent: 0,
-    finalDamagePercent: 0,
+    finalDamagePercent: classFinalDamage(charType),
     ignoreDefensePercent: 0,
     normalEnemyDamagePercent: 0,
     criticalRatePercent: 100,
@@ -120,7 +121,6 @@ export function defaultScouterInput(
     wildHunterLegion: 0,
     reboot: false,
     liberation: false,
-    firstLegacy: false,
     mugongSoul: false,
   };
 }

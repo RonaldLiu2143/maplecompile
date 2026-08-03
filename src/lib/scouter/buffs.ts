@@ -9,7 +9,6 @@ export type BuffDef = {
   label: string;
   icon: string;
   control: BuffControl;
-  /** Default level when control is level */
   defaultLevel?: number;
   maxLevel?: number;
 };
@@ -47,21 +46,38 @@ export const BUFF_DEFS: BuffDef[] = [
 export type LinkDef = {
   id: string;
   label: string;
-  icon: string;
+  /** Short label when CDN icon is missing */
+  short: string;
+  icon: string | null;
   maxLevel: number;
   defaultLevel: number;
 };
 
-/** Common damage / utility links shown in MapleScouter. */
+/**
+ * Links/Legion grid — MapleScouter Adele-style set plus common damage links.
+ * Icons that aren't on the CDN use a text fallback (`short`).
+ */
 export const LINK_DEFS: LinkDef[] = [
-  { id: "kadena", label: "Cadena", icon: "/linkskill/kadena.png", maxLevel: 3, defaultLevel: 3 },
-  { id: "illium", label: "Illium", icon: "/linkskill/illium.png", maxLevel: 3, defaultLevel: 3 },
-  { id: "ark", label: "Ark", icon: "/linkskill/ark.png", maxLevel: 3, defaultLevel: 3 },
-  { id: "kain", label: "Kain", icon: "/linkskill/kain.png", maxLevel: 3, defaultLevel: 3 },
-  { id: "magician", label: "Explorer Mage", icon: "/linkskill/magician.png", maxLevel: 3, defaultLevel: 0 },
-  { id: "thief", label: "Explorer Thief", icon: "/linkskill/thief.png", maxLevel: 3, defaultLevel: 0 },
-  { id: "angel", label: "Angelic Buster", icon: "/linkskill/angel.png", maxLevel: 3, defaultLevel: 3 },
-  { id: "hoyoung", label: "Ho Young", icon: "/linkskill/hoyoung.png", maxLevel: 3, defaultLevel: 3 },
+  { id: "pirate", label: "Explorer Pirate (Pirate Blessing)", short: "PIR", icon: null, maxLevel: 3, defaultLevel: 3 },
+  { id: "thief", label: "Explorer Thief (Thief's Cunning)", short: "THF", icon: "/linkskill/thief.png", maxLevel: 3, defaultLevel: 0 },
+  { id: "resistance", label: "Resistance (Spirit of Freedom)", short: "RES", icon: null, maxLevel: 3, defaultLevel: 0 },
+  { id: "da", label: "Demon Avenger (Wild Rage)", short: "DA", icon: null, maxLevel: 3, defaultLevel: 0 },
+  { id: "ark", label: "Ark (Solus)", short: "ARK", icon: "/linkskill/ark.png", maxLevel: 10, defaultLevel: 3 },
+  { id: "illium", label: "Illium (Tide of Battle)", short: "ILM", icon: "/linkskill/illium.png", maxLevel: 10, defaultLevel: 3 },
+  { id: "adele", label: "Adele (Noble Fire)", short: "ADL", icon: null, maxLevel: 3, defaultLevel: 3 },
+  { id: "kanna", label: "Kanna (Elementalism)", short: "KAN", icon: "/linkskill/kanna.png", maxLevel: 3, defaultLevel: 3 },
+  { id: "ds", label: "Demon Slayer (Fury Unleashed)", short: "DS", icon: null, maxLevel: 3, defaultLevel: 3 },
+  { id: "xenon", label: "Xenon (Hybrid Logic)", short: "XEN", icon: null, maxLevel: 3, defaultLevel: 0 },
+  { id: "magician", label: "Explorer Mage (Empirical Knowledge)", short: "MAG", icon: "/linkskill/magician.png", maxLevel: 10, defaultLevel: 3 },
+  { id: "kadena", label: "Cadena (Unpleasant Insult)", short: "CAD", icon: "/linkskill/kadena.png", maxLevel: 3, defaultLevel: 0 },
+  { id: "kain", label: "Kain", short: "KAI", icon: "/linkskill/kain.png", maxLevel: 3, defaultLevel: 0 },
+  { id: "angel", label: "Angelic Buster", short: "AB", icon: "/linkskill/angel.png", maxLevel: 3, defaultLevel: 0 },
+  { id: "hoyoung", label: "Ho Young", short: "HY", icon: "/linkskill/hoyoung.png", maxLevel: 3, defaultLevel: 0 },
+  { id: "kaiser", label: "Kaiser", short: "KSR", icon: "/linkskill/kaiser.png", maxLevel: 3, defaultLevel: 0 },
+  { id: "mihile", label: "Mihile", short: "MIH", icon: "/linkskill/mihile.png", maxLevel: 3, defaultLevel: 0 },
+  { id: "hayato", label: "Hayato", short: "HAY", icon: "/linkskill/hayato.png", maxLevel: 3, defaultLevel: 0 },
+  { id: "lynn", label: "Lynn", short: "LYN", icon: "/linkskill/lynn.png", maxLevel: 3, defaultLevel: 0 },
+  { id: "mukhyun", label: "Mo Xuan", short: "MX", icon: "/linkskill/mukhyun.png", maxLevel: 3, defaultLevel: 0 },
 ];
 
 /** charType → MapleScouter HEXA folder prefix */
@@ -75,9 +91,9 @@ export const HEXA_CLASS_PREFIX: Record<string, string> = {
   hayato: "Hayato",
   hero: "Hero",
   len: "Len",
-  mihile: "Mihile",
+  mihile: "Mikhail",
   kaiser: "Kaiser",
-  paladin: "Paladin",
+  paladin: "Palladin",
   sm: "SoulMaster",
   zero: "Zero",
   bam: "BattleMage",
@@ -85,24 +101,24 @@ export const HEXA_CLASS_PREFIX: Record<string, string> = {
   evan: "Evan",
   fp: "ArchMageFP",
   fw: "FlameWizard",
-  il: "ArchMageIL",
+  il: "ArchMageTC",
   illium: "Illium",
   kanna: "Kanna",
   kinesis: "Kinesis",
   lara: "Lara",
   lumi: "Luminous",
   lynn: "Lynn",
-  sia: "SiaAstelle",
+  sia: "Sia",
   bm: "Bowmaster",
   xbm: "Marksman",
   kain: "Kain",
   merc: "Mercedes",
-  pf: "Pathfinder",
+  pf: "PathFinder",
   wh: "WildHunter",
-  wb: "WindArcher",
+  wb: "WindBreaker",
   cadena: "Cadena",
-  db: "DualBlade",
-  hy: "Hoyoung",
+  db: "DualBlader",
+  hy: "Hoyeong",
   khali: "Khali",
   nl: "NightLord",
   nw: "NightWalker",
@@ -115,20 +131,105 @@ export const HEXA_CLASS_PREFIX: Record<string, string> = {
   captain: "Captain",
   eunwol: "Eunwol",
   mech: "Mechanic",
-  mx: "MoXuan",
+  mx: "Moxuan",
   striker: "Striker",
   viper: "Viper",
 };
 
-/** Typical MapleScouter HEXA slot count (class skills + common). */
-export const HEXA_SLOT_COUNT = 12;
+export type HexaSlot = {
+  id: string;
+  group: "mastery" | "reinforcement" | "skill" | "common";
+  label: string;
+  /** Relative icon path under CDN, or null */
+  iconSuffix: string | null;
+};
 
-export function hexaIconPath(charType: string, index: number): string {
-  const prefix = HEXA_CLASS_PREFIX[charType] ?? "Mercedes";
-  // slots 1..10 class, then general
-  if (index <= 10) return `/hexaskill/${prefix}_${index}.png`;
-  if (index === 11) return "/hexaskill/General/General_2.png";
-  return "/hexaskill/General/General_1_0.png";
+/**
+ * MapleScouter core numbering (same for all classes):
+ * Mastery: _2,_7,_8,_9 · Reinforcement: _3,_4,_5,_6 · Skill: _1,_10,_12 · Common: _11 + shared
+ */
+export function getHexaSlots(charType: string): HexaSlot[] {
+  const prefix = HEXA_CLASS_PREFIX[charType] ?? "Adele";
+  const cls = (n: number) => `/hexaskill/${prefix}_${n}.png`;
+  return [
+    { id: "mastery1", group: "mastery", label: "Mastery 1", iconSuffix: cls(2) },
+    { id: "mastery2", group: "mastery", label: "Mastery 2", iconSuffix: cls(7) },
+    { id: "mastery3", group: "mastery", label: "Mastery 3", iconSuffix: cls(8) },
+    { id: "mastery4", group: "mastery", label: "Mastery 4", iconSuffix: cls(9) },
+    { id: "rein1", group: "reinforcement", label: "Reinforcement 1", iconSuffix: cls(3) },
+    { id: "rein2", group: "reinforcement", label: "Reinforcement 2", iconSuffix: cls(4) },
+    { id: "rein3", group: "reinforcement", label: "Reinforcement 3", iconSuffix: cls(5) },
+    { id: "rein4", group: "reinforcement", label: "Reinforcement 4", iconSuffix: cls(6) },
+    { id: "skill1", group: "skill", label: "Skill Core 1", iconSuffix: cls(1) },
+    { id: "skill2", group: "skill", label: "Skill Core 2", iconSuffix: cls(10) },
+    { id: "skill3", group: "skill", label: "Skill Core 3", iconSuffix: cls(12) },
+    { id: "commonClass", group: "common", label: "Common (Class)", iconSuffix: cls(11) },
+    { id: "common1", group: "common", label: "Common 1", iconSuffix: "/hexaskill/General/General_1_0.png" },
+    { id: "common2", group: "common", label: "Common 2", iconSuffix: "/hexaskill/General/General_2.png" },
+  ];
+}
+
+export const HEXA_SLOT_COUNT = 14;
+export const HEXA_MAX_LEVEL = 30;
+
+/** Approximate job-inherent final damage % (read-only per class). */
+export const CLASS_FINAL_DAMAGE: Record<string, number> = {
+  adele: 55,
+  aran: 50,
+  blaster: 48,
+  dk: 45,
+  da: 40,
+  ds: 48,
+  hayato: 45,
+  hero: 50,
+  len: 50,
+  mihile: 42,
+  kaiser: 48,
+  paladin: 45,
+  sm: 45,
+  zero: 48,
+  bam: 45,
+  bs: 40,
+  evan: 48,
+  fp: 48,
+  fw: 48,
+  il: 48,
+  illium: 50,
+  kanna: 45,
+  kinesis: 48,
+  lara: 48,
+  lumi: 48,
+  lynn: 42,
+  sia: 45,
+  bm: 48,
+  xbm: 48,
+  kain: 50,
+  merc: 48,
+  pf: 48,
+  wh: 45,
+  wb: 48,
+  cadena: 50,
+  db: 48,
+  hy: 50,
+  khali: 50,
+  nl: 50,
+  nw: 48,
+  phantom: 48,
+  sdw: 48,
+  xenon: 45,
+  ab: 50,
+  ark: 50,
+  cm: 48,
+  captain: 48,
+  eunwol: 48,
+  mech: 45,
+  mx: 48,
+  striker: 48,
+  viper: 48,
+};
+
+export function classFinalDamage(charType: string): number {
+  return CLASS_FINAL_DAMAGE[charType] ?? 45;
 }
 
 export type BuffState = Record<string, { on: boolean; level: number }>;
@@ -152,7 +253,16 @@ export function defaultLinkState(): LinkState {
 }
 
 export function defaultHexaLevels(): number[] {
-  return Array.from({ length: HEXA_SLOT_COUNT }, (_, i) =>
-    i < 6 ? 30 : i < 10 ? 10 : 1,
-  );
+  return Array.from({ length: HEXA_SLOT_COUNT }, (_, i) => {
+    if (i < 4) return 30; // mastery
+    if (i < 8) return 30; // reinforcement
+    if (i < 11) return 30; // skill
+    return 1; // common
+  });
+}
+
+/** @deprecated use getHexaSlots */
+export function hexaIconPath(charType: string, index: number): string {
+  const slots = getHexaSlots(charType);
+  return slots[index - 1]?.iconSuffix ?? `/hexaskill/Adele_${index}.png`;
 }

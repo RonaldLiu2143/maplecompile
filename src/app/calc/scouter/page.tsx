@@ -5,11 +5,13 @@ import {
   BOSS_PDR_PRESETS,
   BUFF_DEFS,
   calculateScouter,
+  classFinalDamage,
   defaultBuffState,
   defaultHexaLevels,
   defaultLinkState,
   defaultScouterInput,
-  hexaIconPath,
+  getHexaSlots,
+  HEXA_MAX_LEVEL,
   LINK_DEFS,
   resolveMainSecondary,
   SCOUTER_CDN,
@@ -51,25 +53,34 @@ function formatNum(n: number, digits = 0): string {
   });
 }
 
+function applyTriple(t: StatTriple): number {
+  return t.base * (1 + t.percent / 100) + t.flat;
+}
+
 function NumInput({
   value,
   onChange,
   className = "",
   placeholder,
+  readOnly,
 }: {
   value: number;
   onChange?: (n: number) => void;
   className?: string;
   placeholder?: string;
+  readOnly?: boolean;
 }) {
   return (
     <input
       type="number"
+      readOnly={readOnly}
       placeholder={placeholder}
-      className={`${cell} w-full min-w-0 text-right tabular-nums ${className}`}
+      className={`${cell} w-full min-w-0 text-right tabular-nums ${
+        readOnly ? "bg-surface-muted/40 text-foreground/70" : ""
+      } ${className}`}
       value={Number.isFinite(value) ? value : 0}
       onChange={
-        onChange
+        !readOnly && onChange
           ? (e) => onChange(Number(e.target.value) || 0)
           : undefined
       }
@@ -120,7 +131,25 @@ function FieldCell({
   );
 }
 
-function CdnIcon({ src, alt }: { src: string; alt: string }) {
+function CdnIcon({
+  src,
+  alt,
+  fallback,
+}: {
+  src: string | null;
+  alt: string;
+  fallback?: string;
+}) {
+  if (!src) {
+    return (
+      <div
+        className="flex size-8 items-center justify-center rounded bg-surface-muted text-[9px] font-bold tracking-tight"
+        title={alt}
+      >
+        {fallback ?? alt.slice(0, 3).toUpperCase()}
+      </div>
+    );
+  }
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
@@ -152,6 +181,14 @@ export default function ScouterPage() {
     [input],
   );
   const result = useMemo(() => calculateScouter(input), [input]);
+  const hexaSlots = useMemo(
+    () => getHexaSlots(input.charType),
+    [input.charType],
+  );
+  const attackTotal = useMemo(() => {
+    const src = input.useMagicAttack ? input.magicAttack : input.attack;
+    return Math.round(applyTriple(src));
+  }, [input.attack, input.magicAttack, input.useMagicAttack]);
 
   const patch = (partial: Partial<ScouterInput>) =>
     setInput((prev) => ({ ...prev, ...partial }));
@@ -170,6 +207,7 @@ export default function ScouterPage() {
       jobType: parsed.jobType,
       charType: parsed.charType,
       useMagicAttack: parsed.jobType === "magician",
+      finalDamagePercent: classFinalDamage(parsed.charType),
     }));
     setHexa(defaultHexaLevels());
   };
@@ -254,7 +292,6 @@ export default function ScouterPage() {
       magicAttack: prev.magicAttack,
       reboot: prev.reboot,
       liberation: prev.liberation,
-      firstLegacy: prev.firstLegacy,
       mugongSoul: prev.mugongSoul,
     }));
     setShowResult(false);
@@ -375,7 +412,6 @@ export default function ScouterPage() {
               [
                 ["reboot", "Reboot", input.reboot],
                 ["liberation", "Liberation", input.liberation],
-                ["firstLegacy", "최초의 유산", input.firstLegacy],
                 ["mugongSoul", "Mugong Soul", input.mugongSoul],
               ] as const
             ).map(([key, label, checked]) => (
@@ -443,12 +479,7 @@ export default function ScouterPage() {
               />
             </FieldCell>
             <FieldCell label="Final Damage">
-              <NumInput
-                value={input.finalDamagePercent}
-                onChange={(finalDamagePercent) =>
-                  patch({ finalDamagePercent })
-                }
-              />
+              <NumInput value={input.finalDamagePercent} readOnly />
             </FieldCell>
             <FieldCell label="Boss Damage">
               <NumInput
@@ -473,10 +504,7 @@ export default function ScouterPage() {
               />
             </FieldCell>
             <FieldCell label="Attack">
-              <NumInput
-                value={input.displayedAttack}
-                onChange={(displayedAttack) => patch({ displayedAttack })}
-              />
+              <NumInput value={attackTotal} readOnly />
             </FieldCell>
             <FieldCell label="Critical Rate">
               <NumInput
@@ -487,12 +515,7 @@ export default function ScouterPage() {
               />
             </FieldCell>
             <FieldCell label="M.Attack">
-              <NumInput
-                value={input.displayedMagicAttack}
-                onChange={(displayedMagicAttack) =>
-                  patch({ displayedMagicAttack })
-                }
-              />
+              <NumInput value={attackTotal} readOnly />
             </FieldCell>
             <FieldCell label="Critical Damage">
               <NumInput
@@ -660,15 +683,17 @@ export default function ScouterPage() {
                         max={b.maxLevel ?? 99}
                         className="w-full rounded border border-border/40 bg-background px-0.5 py-0.5 text-center text-[11px] tabular-nums outline-none focus:border-accent"
                         value={st.level}
-                        onChange={(e) =>
+                        onChange={(e) => {
+                          const raw = Number(e.target.value) || 0;
+                          const capped = Math.min(
+                            Math.max(0, raw),
+                            b.maxLevel ?? 99,
+                          );
                           setBuffs((prev) => ({
                             ...prev,
-                            [b.id]: {
-                              on: true,
-                              level: Number(e.target.value) || 0,
-                            },
-                          }))
-                        }
+                            [b.id]: { on: true, level: capped },
+                          }));
+                        }}
                       />
                     )}
                   </div>
@@ -688,19 +713,18 @@ export default function ScouterPage() {
                   title={l.label}
                   className="flex flex-col items-center gap-1 rounded border border-border/40 bg-background p-1.5"
                 >
-                  <CdnIcon src={l.icon} alt={l.label} />
+                  <CdnIcon src={l.icon} alt={l.label} fallback={l.short} />
                   <input
                     type="number"
                     min={0}
                     max={l.maxLevel}
                     className="w-full rounded border border-border/40 bg-background px-0.5 py-0.5 text-center text-[11px] tabular-nums outline-none focus:border-accent"
                     value={links[l.id] ?? 0}
-                    onChange={(e) =>
-                      setLinks((prev) => ({
-                        ...prev,
-                        [l.id]: Number(e.target.value) || 0,
-                      }))
-                    }
+                    onChange={(e) => {
+                      const raw = Number(e.target.value) || 0;
+                      const capped = Math.min(Math.max(0, raw), l.maxLevel);
+                      setLinks((prev) => ({ ...prev, [l.id]: capped }));
+                    }}
                   />
                 </div>
               ))}
@@ -718,34 +742,59 @@ export default function ScouterPage() {
             <div className="border-b border-border/40 px-3 py-2">
               <h2 className="text-sm font-semibold">HEXA Enhancement</h2>
             </div>
-            <div className="grid grid-cols-4 gap-2 p-3 sm:grid-cols-6">
-              {hexa.map((level, i) => (
-                <div
-                  key={i}
-                  className="flex flex-col items-center gap-1 rounded border border-border/40 bg-background p-1.5"
-                >
-                  <CdnIcon
-                    src={hexaIconPath(input.charType, i + 1)}
-                    alt={`HEXA ${i + 1}`}
-                  />
-                  <input
-                    type="number"
-                    min={0}
-                    max={30}
-                    className="w-full rounded border border-border/40 bg-background px-0.5 py-0.5 text-center text-[11px] tabular-nums outline-none focus:border-accent"
-                    value={level}
-                    onChange={(e) => {
-                      const v = Number(e.target.value) || 0;
-                      setHexa((prev) => {
-                        const next = [...prev];
-                        next[i] = v;
-                        return next;
-                      });
-                    }}
-                  />
+            {(
+              [
+                ["mastery", "HEXA Mastery Core"],
+                ["reinforcement", "Reinforcement Core"],
+                ["skill", "Skill Core"],
+                ["common", "Common Core"],
+              ] as const
+            ).map(([group, title]) => {
+              const slots = hexaSlots
+                .map((slot, i) => ({ slot, i }))
+                .filter(({ slot }) => slot.group === group);
+              return (
+                <div key={group} className="border-b border-border/30 last:border-b-0">
+                  <p className="px-3 pt-2 text-[11px] font-semibold uppercase tracking-wide opacity-60">
+                    {title}
+                  </p>
+                  <div className="grid grid-cols-4 gap-2 p-3 sm:grid-cols-6">
+                    {slots.map(({ slot, i }) => (
+                      <div
+                        key={slot.id}
+                        title={slot.label}
+                        className="flex flex-col items-center gap-1 rounded border border-border/40 bg-background p-1.5"
+                      >
+                        <CdnIcon
+                          src={slot.iconSuffix}
+                          alt={slot.label}
+                          fallback={slot.label.slice(0, 3)}
+                        />
+                        <input
+                          type="number"
+                          min={0}
+                          max={HEXA_MAX_LEVEL}
+                          className="w-full rounded border border-border/40 bg-background px-0.5 py-0.5 text-center text-[11px] tabular-nums outline-none focus:border-accent"
+                          value={hexa[i] ?? 0}
+                          onChange={(e) => {
+                            const raw = Number(e.target.value) || 0;
+                            const capped = Math.min(
+                              Math.max(0, raw),
+                              HEXA_MAX_LEVEL,
+                            );
+                            setHexa((prev) => {
+                              const next = [...prev];
+                              next[i] = capped;
+                              return next;
+                            });
+                          }}
+                        />
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              ))}
-            </div>
+              );
+            })}
           </section>
         </div>
       </div>
@@ -777,7 +826,7 @@ export default function ScouterPage() {
       {showResult ? (
         <section className="space-y-4 overflow-hidden rounded-lg border border-border/60 bg-surface/90 p-4">
           <div className="text-center">
-            <p className="text-sm font-medium opacity-70">환산주스탯</p>
+            <p className="text-sm font-medium opacity-70">Converted Main Stat</p>
             <p className="font-display mt-1 text-4xl font-bold tracking-tight text-accent tabular-nums sm:text-5xl">
               {formatNum(result.convertedMain, 1)}
             </p>
