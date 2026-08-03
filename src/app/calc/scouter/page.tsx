@@ -138,15 +138,18 @@ function CdnIcon({
   src,
   alt,
   fallback,
+  size = 32,
 }: {
   src: string | null;
   alt: string;
   fallback?: string;
+  size?: number;
 }) {
   if (!src) {
     return (
       <div
-        className="flex size-8 items-center justify-center rounded bg-surface-muted text-[9px] font-bold tracking-tight"
+        className="flex items-center justify-center rounded bg-surface-muted text-[8px] font-bold tracking-tight"
+        style={{ width: size, height: size }}
         title={alt}
       >
         {fallback ?? alt.slice(0, 3).toUpperCase()}
@@ -162,9 +165,10 @@ function CdnIcon({
     <img
       src={href}
       alt={alt}
-      width={32}
-      height={32}
-      className="size-8 object-contain"
+      width={size}
+      height={size}
+      className="object-contain"
+      style={{ width: size, height: size }}
       loading="lazy"
       referrerPolicy="no-referrer"
     />
@@ -676,21 +680,21 @@ export default function ScouterPage() {
         </section>
 
         {/* —— Right: Buffs / Links / HEXA —— */}
-        <div className="space-y-4">
+        <div className="space-y-2">
           <section className="overflow-hidden rounded-lg border border-border/60 bg-surface/90">
-            <div className="flex items-center justify-between border-b border-border/40 px-3 py-2">
-              <h2 className="text-sm font-semibold">Buffs</h2>
-              <label className="flex items-center gap-1.5 text-xs font-medium">
+            <div className="flex items-center justify-between border-b border-border/40 px-2 py-1">
+              <h2 className="text-xs font-semibold">Buffs</h2>
+              <label className="flex items-center gap-1 text-[11px] font-medium">
                 <input
                   type="checkbox"
-                  className="size-3.5 accent-[var(--accent)]"
+                  className="size-3 accent-[var(--accent)]"
                   checked={allBuffsOn}
                   onChange={toggleSelectAllBuffs}
                 />
                 Select All
               </label>
             </div>
-            <div className="grid grid-cols-6 gap-2 p-3 sm:grid-cols-8">
+            <div className="grid grid-cols-8 gap-1 p-1.5 sm:grid-cols-10">
               {BUFF_DEFS.map((b) => {
                 const st = buffs[b.id] ?? { on: false, level: 0 };
                 const active =
@@ -699,20 +703,20 @@ export default function ScouterPage() {
                 return (
                   <div
                     key={b.id}
-                    className={`flex flex-col items-center gap-1 rounded border p-1.5 ${
+                    className={`flex flex-col items-center gap-0.5 rounded border p-1 ${
                       active
                         ? "border-accent bg-accent-soft/40"
                         : "border-border/40 bg-background"
                     }`}
                   >
                     <span title={tip} className="cursor-help">
-                      <CdnIcon src={b.icon} alt={b.label} />
+                      <CdnIcon src={b.icon} alt={b.label} size={24} />
                     </span>
                     {b.control === "check" ? (
                       <input
                         type="checkbox"
                         title={tip}
-                        className="size-3.5 accent-[var(--accent)]"
+                        className="size-3 accent-[var(--accent)]"
                         checked={st.on}
                         onChange={(e) => setBuffChecked(b.id, e.target.checked)}
                       />
@@ -722,7 +726,7 @@ export default function ScouterPage() {
                         title={tip}
                         min={0}
                         max={b.maxLevel ?? 99}
-                        className="w-full rounded border border-border/40 bg-background px-0.5 py-0.5 text-center text-[11px] tabular-nums outline-none focus:border-accent"
+                        className="w-full rounded border border-border/40 bg-background px-0 py-0 text-center text-[10px] tabular-nums outline-none focus:border-accent"
                         value={st.level}
                         onChange={(e) => {
                           const raw = Number(e.target.value) || 0;
@@ -744,26 +748,31 @@ export default function ScouterPage() {
           </section>
 
           <section className="overflow-hidden rounded-lg border border-border/60 bg-surface/90">
-            <div className="border-b border-border/40 px-3 py-2">
-              <h2 className="text-sm font-semibold">Links/Legion</h2>
+            <div className="border-b border-border/40 px-2 py-1">
+              <h2 className="text-xs font-semibold">Links/Legion</h2>
             </div>
-            <div className="grid grid-cols-6 gap-2 p-3 sm:grid-cols-8">
+            <div className="grid grid-cols-8 gap-1 p-1.5 sm:grid-cols-10">
               {LINK_DEFS.map((l) => {
                 const tip = `${l.label} — ${l.bonus}`;
                 return (
                   <div
                     key={l.id}
-                    className="flex flex-col items-center gap-1 rounded border border-border/40 bg-background p-1.5"
+                    className="flex flex-col items-center gap-0.5 rounded border border-border/40 bg-background p-1"
                   >
                     <span title={tip} className="cursor-help">
-                      <CdnIcon src={l.icon} alt={l.label} fallback={l.short} />
+                      <CdnIcon
+                        src={l.icon}
+                        alt={l.label}
+                        fallback={l.short}
+                        size={24}
+                      />
                     </span>
                     <input
                       type="number"
                       title={tip}
                       min={0}
                       max={l.maxLevel}
-                      className="w-full rounded border border-border/40 bg-background px-0.5 py-0.5 text-center text-[11px] tabular-nums outline-none focus:border-accent"
+                      className="w-full rounded border border-border/40 bg-background px-0 py-0 text-center text-[10px] tabular-nums outline-none focus:border-accent"
                       value={links[l.id] ?? 0}
                       onChange={(e) => {
                         const raw = Number(e.target.value) || 0;
@@ -775,18 +784,21 @@ export default function ScouterPage() {
                 );
               })}
             </div>
-            <div className="grid grid-cols-[1fr_5rem] border-t border-border/30">
-              <div className={labelCell}>Wild Hunter Legion</div>
+            <div className="grid grid-cols-[1fr_4.5rem] border-t border-border/30">
+              <div className={`${labelCell} !py-1 text-xs`}>
+                Wild Hunter Legion
+              </div>
               <NumInput
                 value={input.wildHunterLegion}
                 onChange={(wildHunterLegion) => patch({ wildHunterLegion })}
+                className="!py-1 text-xs"
               />
             </div>
           </section>
 
           <section className="overflow-hidden rounded-lg border border-border/60 bg-surface/90">
-            <div className="border-b border-border/40 px-3 py-2">
-              <h2 className="text-sm font-semibold">HEXA Enhancement</h2>
+            <div className="border-b border-border/40 px-2 py-1">
+              <h2 className="text-xs font-semibold">HEXA Enhancement</h2>
             </div>
             {(
               [
@@ -801,26 +813,27 @@ export default function ScouterPage() {
                 .filter(({ slot }) => slot.group === group);
               return (
                 <div key={group} className="border-b border-border/30 last:border-b-0">
-                  <p className="px-3 pt-2 text-[11px] font-semibold uppercase tracking-wide opacity-60">
+                  <p className="px-2 pt-1 text-[10px] font-semibold uppercase tracking-wide opacity-60">
                     {title}
                   </p>
-                  <div className="grid grid-cols-4 gap-2 p-3 sm:grid-cols-6">
+                  <div className="grid grid-cols-6 gap-1 p-1.5 sm:grid-cols-7">
                     {slots.map(({ slot, i }) => (
                       <div
                         key={slot.id}
                         title={slot.label}
-                        className="flex flex-col items-center gap-1 rounded border border-border/40 bg-background p-1.5"
+                        className="flex flex-col items-center gap-0.5 rounded border border-border/40 bg-background p-1"
                       >
                         <CdnIcon
                           src={slot.iconSuffix}
                           alt={slot.label}
                           fallback={slot.label.slice(0, 3)}
+                          size={24}
                         />
                         <input
                           type="number"
                           min={0}
                           max={HEXA_MAX_LEVEL}
-                          className="w-full rounded border border-border/40 bg-background px-0.5 py-0.5 text-center text-[11px] tabular-nums outline-none focus:border-accent"
+                          className="w-full rounded border border-border/40 bg-background px-0 py-0 text-center text-[10px] tabular-nums outline-none focus:border-accent"
                           value={hexa[i] ?? 0}
                           onChange={(e) => {
                             const raw = Number(e.target.value) || 0;
@@ -844,14 +857,14 @@ export default function ScouterPage() {
           </section>
 
           <section className="overflow-hidden rounded-lg border border-border/60 bg-surface/90">
-            <div className="border-b border-border/40 px-3 py-2">
-              <h2 className="text-sm font-semibold">Legion Artifact</h2>
+            <div className="border-b border-border/40 px-2 py-1">
+              <h2 className="text-xs font-semibold">Legion Artifact</h2>
             </div>
-            <div className="space-y-2 p-3">
-              <label className="flex items-center gap-2 text-sm">
+            <div className="space-y-1.5 p-1.5">
+              <label className="flex items-center gap-1.5 text-xs">
                 <input
                   type="checkbox"
-                  className="size-3.5 accent-[var(--accent)]"
+                  className="size-3 accent-[var(--accent)]"
                   checked={input.legionArtifactAdditionalExp}
                   onChange={(e) =>
                     patch({ legionArtifactAdditionalExp: e.target.checked })
@@ -859,8 +872,8 @@ export default function ScouterPage() {
                 />
                 Additional EXP (+1 Mob Targeted)
               </label>
-              <div className="grid grid-cols-[1fr_5rem]">
-                <div className={labelCell}>Final Attack</div>
+              <div className="grid grid-cols-[1fr_4.5rem]">
+                <div className={`${labelCell} !py-1 text-xs`}>Final Attack</div>
                 <NumInput
                   value={input.legionArtifactFinalAttack}
                   onChange={(legionArtifactFinalAttack) =>
@@ -871,22 +884,23 @@ export default function ScouterPage() {
                       ),
                     })
                   }
+                  className="!py-1 text-xs"
                 />
               </div>
             </div>
           </section>
 
           <section className="overflow-hidden rounded-lg border border-border/60 bg-surface/90">
-            <div className="border-b border-border/40 px-3 py-2">
-              <h2 className="text-sm font-semibold">Special Inner Ability</h2>
+            <div className="border-b border-border/40 px-2 py-1">
+              <h2 className="text-xs font-semibold">Special Inner Ability</h2>
             </div>
-            <div className="flex flex-col gap-2 p-3 text-sm">
+            <div className="flex flex-col gap-1 p-1.5 text-xs">
               {INNER_ABILITY_OPTIONS.map((opt) => (
-                <label key={opt.id} className="flex items-center gap-2">
+                <label key={opt.id} className="flex items-center gap-1.5">
                   <input
                     type="radio"
                     name="specialInnerAbility"
-                    className="size-3.5 accent-[var(--accent)]"
+                    className="size-3 accent-[var(--accent)]"
                     checked={input.specialInnerAbility === opt.id}
                     onChange={() => patch({ specialInnerAbility: opt.id })}
                   />
@@ -897,14 +911,14 @@ export default function ScouterPage() {
           </section>
 
           <section className="overflow-hidden rounded-lg border border-border/60 bg-surface/90">
-            <div className="border-b border-border/40 px-3 py-2">
-              <h2 className="text-sm font-semibold">Oz Ring</h2>
+            <div className="border-b border-border/40 px-2 py-1">
+              <h2 className="text-xs font-semibold">Oz Ring</h2>
             </div>
-            <div className="space-y-3 p-3">
-              <label className="flex flex-col gap-1 text-sm">
+            <div className="space-y-1.5 p-1.5">
+              <label className="flex flex-col gap-0.5 text-xs">
                 Continuous Use Status
                 <select
-                  className={`${cell} w-full`}
+                  className={`${cell} w-full !py-1 text-xs`}
                   value={input.ozContinuousStatus}
                   onChange={(e) =>
                     patch({
@@ -920,20 +934,20 @@ export default function ScouterPage() {
                 </select>
               </label>
 
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-3 gap-1">
                 {getVisibleOzRings(input.ozContinuousStatus).map((ring) => (
                   <div
                     key={ring.id}
                     title={ring.label}
-                    className="flex flex-col items-center gap-1 rounded border border-border/40 bg-background p-1.5"
+                    className="flex flex-col items-center gap-0.5 rounded border border-border/40 bg-background p-1"
                   >
-                    <CdnIcon src={ring.icon} alt={ring.label} />
+                    <CdnIcon src={ring.icon} alt={ring.label} size={24} />
                     <input
                       type="number"
                       title={ring.label}
                       min={0}
                       max={OZ_RING_MAX}
-                      className="w-full rounded border border-border/40 bg-background px-0.5 py-0.5 text-center text-[11px] tabular-nums outline-none focus:border-accent"
+                      className="w-full rounded border border-border/40 bg-background px-0 py-0 text-center text-[10px] tabular-nums outline-none focus:border-accent"
                       value={input[ring.field]}
                       onChange={(e) => {
                         const raw = Number(e.target.value) || 0;
@@ -946,17 +960,20 @@ export default function ScouterPage() {
               </div>
 
               <div className="overflow-hidden rounded border border-border/40">
-                <div className="grid grid-cols-[1fr_5.5rem]">
-                  <div className={labelCell}>Weapon Total ATT</div>
+                <div className="grid grid-cols-[1fr_4.5rem]">
+                  <div className={`${labelCell} !py-1 text-xs`}>
+                    Weapon Total ATT
+                  </div>
                   <NumInput
                     value={input.ozWeaponTotalAtt}
                     onChange={(ozWeaponTotalAtt) =>
                       patch({ ozWeaponTotalAtt })
                     }
+                    className="!py-1 text-xs"
                   />
                 </div>
-                <div className="grid grid-cols-[1fr_5.5rem]">
-                  <div className={labelCell}>
+                <div className="grid grid-cols-[1fr_4.5rem]">
+                  <div className={`${labelCell} !py-1 text-xs`}>
                     {isDa
                       ? "Max HP"
                       : isXenon
@@ -966,10 +983,11 @@ export default function ScouterPage() {
                   <NumInput
                     value={input.ozPrimaryStat}
                     onChange={(ozPrimaryStat) => patch({ ozPrimaryStat })}
+                    className="!py-1 text-xs"
                   />
                 </div>
-                <div className="grid grid-cols-[1fr_5.5rem]">
-                  <div className={labelCell}>
+                <div className="grid grid-cols-[1fr_4.5rem]">
+                  <div className={`${labelCell} !py-1 text-xs`}>
                     {isXenon
                       ? "DEX"
                       : isDa
@@ -979,6 +997,7 @@ export default function ScouterPage() {
                   <NumInput
                     value={input.ozSecondaryStat}
                     onChange={(ozSecondaryStat) => patch({ ozSecondaryStat })}
+                    className="!py-1 text-xs"
                   />
                 </div>
               </div>
