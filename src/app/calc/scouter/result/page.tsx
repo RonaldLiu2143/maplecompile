@@ -21,6 +21,7 @@ import {
   formatBossHp,
   formatCrystalMeso,
   getBossHoverInfo,
+  type BossHpRegion,
 } from "@/lib/scouter/boss-info";
 import {
   DEFAULT_CHAR,
@@ -75,9 +76,16 @@ function StatBlock({
   );
 }
 
-function BossHoverPanel({ row }: { row: BossClearRow }) {
-  const info = getBossHoverInfo(row.imgKey);
+function BossHoverPanel({
+  row,
+  hpRegion,
+}: {
+  row: BossClearRow;
+  hpRegion: BossHpRegion;
+}) {
+  const info = getBossHoverInfo(row.imgKey, hpRegion);
   if (!info) return null;
+  const hpLabel = hpRegion === "kms" ? "Total HP (KMS)" : "Total HP (GMS)";
 
   return (
     <div
@@ -99,7 +107,7 @@ function BossHoverPanel({ row }: { row: BossClearRow }) {
       {info.hp ? (
         <div className="space-y-1.5">
           <div className="flex items-center justify-between gap-2 px-0.5">
-            <span className="text-xs font-semibold">Total HP</span>
+            <span className="text-xs font-semibold">{hpLabel}</span>
             <span className="text-xs font-bold tabular-nums">
               {formatBossHp(info.hp.totalHp)}
             </span>
@@ -195,7 +203,13 @@ function BossHoverPanel({ row }: { row: BossClearRow }) {
   );
 }
 
-function BossClearCard({ row }: { row: BossClearRow }) {
+function BossClearCard({
+  row,
+  hpRegion,
+}: {
+  row: BossClearRow;
+  hpRegion: BossHpRegion;
+}) {
   const pctColor =
     row.clearPercent >= 200
       ? "text-sky-700 dark:text-sky-300"
@@ -217,7 +231,7 @@ function BossClearCard({ row }: { row: BossClearRow }) {
       tabIndex={0}
       className={`group relative z-0 flex w-full flex-col items-center gap-1 rounded-lg border bg-surface p-1.5 text-center shadow-sm transition hover:z-30 hover:-translate-y-0.5 hover:shadow-md focus-within:z-30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent ${borderClass}`}
     >
-      <BossHoverPanel row={row} />
+      <BossHoverPanel row={row} hpRegion={hpRegion} />
 
       <div className="relative w-full overflow-hidden rounded-md bg-surface-muted">
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -311,9 +325,11 @@ function ConvertedStatCell({
 function BossCardGrid({
   rows,
   columnsClass,
+  hpRegion,
 }: {
   rows: BossClearRow[];
   columnsClass: string;
+  hpRegion: BossHpRegion;
 }) {
   return (
     <div className={`relative z-0 grid gap-2 overflow-visible ${columnsClass}`}>
@@ -321,6 +337,7 @@ function BossCardGrid({
         <BossClearCard
           key={`${row.id}-${row.difficulty}-${row.isPartyBoss ? "p" : "s"}-${row.rank}`}
           row={row}
+          hpRegion={hpRegion}
         />
       ))}
     </div>
@@ -344,6 +361,9 @@ export default function ScouterDetailedResultPage() {
   const [fightMinutes, setFightMinutes] = useState<BossClearFightMinutes>(
     BOSS_CLEAR_FIGHT_MINUTES_DEFAULT,
   );
+  const hpRegion: BossHpRegion = fightMinutes === 30 ? "gms" : "kms";
+  const fightLabel =
+    fightMinutes === 30 ? "30 min · GMS HP" : "20 min · KMS HP";
 
   useEffect(() => {
     let cancelled = false;
@@ -491,7 +511,35 @@ export default function ScouterDetailedResultPage() {
           <aside className="w-full shrink-0 lg:w-64 xl:w-72">
             <StatBlock
               title="Boss Converted Stat"
-              hint="HEXA drives clear %."
+              hint={`HEXA drives clear %. Clear window: ${fightLabel}.`}
+              action={
+                <div className="inline-flex overflow-hidden rounded-full border border-border/50 text-xs">
+                  <button
+                    type="button"
+                    className={`px-3 py-1.5 font-semibold transition ${
+                      fightMinutes === 20
+                        ? "bg-accent text-white"
+                        : "bg-surface hover:bg-surface-muted"
+                    }`}
+                    onClick={() => setFightMinutes(20)}
+                    title="MapleScouter parity · KMS HP"
+                  >
+                    20 min
+                  </button>
+                  <button
+                    type="button"
+                    className={`px-3 py-1.5 font-semibold transition ${
+                      fightMinutes === 30
+                        ? "bg-accent text-white"
+                        : "bg-surface hover:bg-surface-muted"
+                    }`}
+                    onClick={() => setFightMinutes(30)}
+                    title="GMS HP scaled clear"
+                  >
+                    30 min
+                  </button>
+                </div>
+              }
             >
               <div className="space-y-3">
                 <div className="space-y-1.5">
@@ -537,7 +585,7 @@ export default function ScouterDetailedResultPage() {
           <div className="min-w-0 flex-1 space-y-3">
             <StatBlock
               title="Destiny & Champion"
-              hint={`Solo-mode Destiny and Champion · ${fightMinutes} min window.`}
+              hint={`Solo-mode Destiny and Champion · ${fightLabel}.`}
               action={
                 <button
                   type="button"
@@ -556,6 +604,7 @@ export default function ScouterDetailedResultPage() {
                 ) : (
                   <BossCardGrid
                     rows={destinyChampionRows}
+                    hpRegion={hpRegion}
                     columnsClass="grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-5 xl:grid-cols-6"
                   />
                 )
@@ -568,33 +617,9 @@ export default function ScouterDetailedResultPage() {
 
             <StatBlock
               title="Boss Clear (Cut)"
-              hint={`Clear % uses GMS cut standards over ${fightMinutes} min. Hover for GMS HP, crystal, and drops.`}
+              hint={`Clear % · ${fightLabel}. Hover for HP, crystal, and drops.`}
               action={
                 <div className="flex flex-wrap items-center gap-2 text-xs">
-                  <div className="inline-flex overflow-hidden rounded-full border border-border/50">
-                    <button
-                      type="button"
-                      className={`px-3 py-1.5 font-semibold transition ${
-                        fightMinutes === 20
-                          ? "bg-accent text-white"
-                          : "bg-surface hover:bg-surface-muted"
-                      }`}
-                      onClick={() => setFightMinutes(20)}
-                    >
-                      20 min
-                    </button>
-                    <button
-                      type="button"
-                      className={`px-3 py-1.5 font-semibold transition ${
-                        fightMinutes === 30
-                          ? "bg-accent text-white"
-                          : "bg-surface hover:bg-surface-muted"
-                      }`}
-                      onClick={() => setFightMinutes(30)}
-                    >
-                      30 min
-                    </button>
-                  </div>
                   <button
                     type="button"
                     className={`rounded-full px-3 py-1.5 font-semibold transition ${
@@ -650,6 +675,7 @@ export default function ScouterDetailedResultPage() {
               ) : (
                 <BossCardGrid
                   rows={bossRows}
+                  hpRegion={hpRegion}
                   columnsClass="grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-5 xl:grid-cols-6"
                 />
               )}

@@ -1,8 +1,13 @@
 /** MapleScouter GMS Boss Clear (Cut) standards (`e_` list) + clear-rate math. */
 
+import { getBossRegionHpTotals } from "./boss-info";
+
 /** Supported fight windows for burst/ascent adjust (MapleScouter uses 20). */
 export type BossClearFightMinutes = 20 | 30;
 export const BOSS_CLEAR_FIGHT_MINUTES_DEFAULT: BossClearFightMinutes = 20;
+
+/** MapleScouter cut calibration baseline. */
+const MS_CLEAR_BASE_MINUTES = 20;
 
 export type BossCutDifficulty =
   | "Easy"
@@ -1281,14 +1286,13 @@ export type BossClearCalcInput = {
 };
 
 /**
- * MapleScouter clearRate (GMS cut list):
- *   I = dmg * forceGaps / denom
- *   E = splineDamage(spline, bossCut||partyBossCut)
- *   z = I/E * easyRate * L
- *   O = z * (1 + timerAdjust(ascentConst, fightMinutes))
+ * MapleScouter clearRate (cut/spline), then region HP + fight-time scale:
+ *   z0 = I/E * easyRate          (calibrated to KMS HP @ 20 min)
+ *   z  = z0 * (kmsHp / targetHp) * (fightMinutes / 20)
+ *        targetHp = KMS when 20 min, GMS when 30 min
+ *   O  = z * (1 + timerAdjust(ascentConst, fightMinutes))
  *
- * Note: do not divide by raw boss HP — CALC_DMG damage and wiki HP are
- * different units; that path zeroes every clear %.
+ * Note: never divide raw CALC_DMG damage by wiki HP directly — different units.
  */
 export function evaluateBossClears(args: BossClearCalcInput): BossClearRow[] {
   const {
@@ -1325,11 +1329,20 @@ export function evaluateBossClears(args: BossClearCalcInput): BossClearRow[] {
     const I = (dmg * aGap * sGap * lGap) / denom;
     let clearRate = 0;
     let userStat = fallbackStat;
+
+    const { kms: kmsHp, gms: gmsHp } = getBossRegionHpTotals(entry.imgKey);
+    const targetHp = fightMinutes === 30 ? gmsHp : kmsHp;
+    const regionScale =
+      kmsHp > 0 && targetHp > 0
+        ? (kmsHp / targetHp) * (fightMinutes / MS_CLEAR_BASE_MINUTES)
+        : fightMinutes / MS_CLEAR_BASE_MINUTES;
+
     if (spline && cut > 0 && Array.isArray(spline.x) && spline.x.length > 0) {
       const E = splineDamage(spline, cut);
       userStat = splineStat(spline, I * L);
       if (E > 0) {
-        const z = (I / (E < 0 ? 1e4 : E)) * (entry.easyRate || 1) * L;
+        const z0 = (I / (E < 0 ? 1e4 : E)) * (entry.easyRate || 1) * L;
+        const z = z0 * regionScale;
         const burstSlots =
           entry.nameKo === "루시드" && entry.difficulty === "Hard"
             ? 0.4
@@ -1341,8 +1354,9 @@ export function evaluateBossClears(args: BossClearCalcInput): BossClearRow[] {
         clearRate = z * (1 + G) || 0;
       }
     } else if (cut > 0) {
-      // No spline: approximate with converted-stat ratio
-      clearRate = (fallbackStat / cut) * (entry.easyRate || 1);
+      // No spline: approximate with converted-stat ratio + region scale
+      clearRate =
+        (fallbackStat / cut) * (entry.easyRate || 1) * regionScale;
       userStat = fallbackStat;
     }
 

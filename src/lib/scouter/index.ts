@@ -67,10 +67,12 @@ export {
 } from "./boss-cuts";
 export {
   getBossHoverInfo,
+  getBossRegionHpTotals,
   BOSS_CRYSTAL_ICON,
   formatBossHp,
   formatCrystalMeso,
   type BossHoverInfo,
   type BossDropInfo,
   type BossHpPhase,
+  type BossHpRegion,
 } from "./boss-info";
