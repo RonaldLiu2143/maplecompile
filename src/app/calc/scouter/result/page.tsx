@@ -505,7 +505,7 @@ export default function ScouterDetailedResultPage() {
           <aside className="w-full shrink-0 lg:w-64 xl:w-72">
             <StatBlock
               title="Boss Converted Stat"
-              hint={`HEXA drives clear % (MapleScouter math). Toggle only switches hover HP (KMS ↔ GMS).`}
+              hint="HEXA drives clear %. 20 min = MapleScouter; 30 min = ×1.5 time (hover HP KMS ↔ GMS)."
               action={
                 <div className="inline-flex overflow-hidden rounded-full border border-border/50 text-xs">
                   <button
@@ -516,7 +516,7 @@ export default function ScouterDetailedResultPage() {
                         : "bg-surface hover:bg-surface-muted"
                     }`}
                     onClick={() => setFightMinutes(20)}
-                    title="Hover: KMS HP"
+                    title="MapleScouter parity · KMS hover HP"
                   >
                     20 min
                   </button>
@@ -528,7 +528,7 @@ export default function ScouterDetailedResultPage() {
                         : "bg-surface hover:bg-surface-muted"
                     }`}
                     onClick={() => setFightMinutes(30)}
-                    title="Hover: GMS HP"
+                    title="×1.5 clear time · GMS hover HP"
                   >
                     30 min
                   </button>
@@ -579,7 +579,7 @@ export default function ScouterDetailedResultPage() {
           <div className="min-w-0 flex-1 space-y-3">
             <StatBlock
               title="Destiny & Champion"
-              hint="Solo-mode Destiny and Champion. Hover for HP, crystal, and drops."
+              hint={`Solo-mode Destiny and Champion · ${fightMinutes} min.`}
               action={
                 <button
                   type="button"
@@ -611,7 +611,7 @@ export default function ScouterDetailedResultPage() {
 
             <StatBlock
               title="Boss Clear (Cut)"
-              hint="Clear % (MapleScouter). Hover for HP, crystal, and drops."
+              hint={`Clear % · ${fightMinutes} min. Hover for HP, crystal, and drops.`}
               action={
                 <div className="flex flex-wrap items-center gap-2 text-xs">
                   <button
