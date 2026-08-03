@@ -12,7 +12,10 @@ import {
   defaultScouterInput,
   getHexaSlots,
   HEXA_MAX_LEVEL,
+  INNER_ABILITY_OPTIONS,
   LINK_DEFS,
+  OZ_CONTINUOUS_STATUS,
+  OZ_RINGS,
   resolveMainSecondary,
   SCOUTER_CDN,
   type BuffState,
@@ -795,6 +798,147 @@ export default function ScouterPage() {
                 </div>
               );
             })}
+          </section>
+
+          <section className="overflow-hidden rounded-lg border border-border/60 bg-surface/90">
+            <div className="border-b border-border/40 px-3 py-2">
+              <h2 className="text-sm font-semibold">Legion Artifact</h2>
+            </div>
+            <div className="space-y-2 p-3">
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  className="size-3.5 accent-[var(--accent)]"
+                  checked={input.legionArtifactAdditionalExp}
+                  onChange={(e) =>
+                    patch({ legionArtifactAdditionalExp: e.target.checked })
+                  }
+                />
+                Additional EXP (+1 Mob Targeted)
+              </label>
+              <div className="grid grid-cols-[1fr_5rem]">
+                <div className={labelCell}>Final Attack</div>
+                <NumInput
+                  value={input.legionArtifactFinalAttack}
+                  onChange={(legionArtifactFinalAttack) =>
+                    patch({
+                      legionArtifactFinalAttack: Math.min(
+                        40,
+                        Math.max(0, legionArtifactFinalAttack),
+                      ),
+                    })
+                  }
+                />
+              </div>
+            </div>
+          </section>
+
+          <section className="overflow-hidden rounded-lg border border-border/60 bg-surface/90">
+            <div className="border-b border-border/40 px-3 py-2">
+              <h2 className="text-sm font-semibold">Special Inner Ability</h2>
+            </div>
+            <div className="flex flex-col gap-2 p-3 text-sm">
+              {INNER_ABILITY_OPTIONS.map((opt) => (
+                <label key={opt.id} className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="specialInnerAbility"
+                    className="size-3.5 accent-[var(--accent)]"
+                    checked={input.specialInnerAbility === opt.id}
+                    onChange={() => patch({ specialInnerAbility: opt.id })}
+                  />
+                  {opt.label}
+                </label>
+              ))}
+            </div>
+          </section>
+
+          <section className="overflow-hidden rounded-lg border border-border/60 bg-surface/90">
+            <div className="border-b border-border/40 px-3 py-2">
+              <h2 className="text-sm font-semibold">Oz Ring</h2>
+            </div>
+            <div className="space-y-3 p-3">
+              <label className="flex flex-col gap-1 text-sm">
+                Continuous Use Status
+                <select
+                  className={`${cell} w-full`}
+                  value={input.ozContinuousStatus}
+                  onChange={(e) =>
+                    patch({
+                      ozContinuousStatus: e.target.value as "noUse" | "use",
+                    })
+                  }
+                >
+                  {OZ_CONTINUOUS_STATUS.map((o) => (
+                    <option key={o.id} value={o.id}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <div className="grid grid-cols-3 gap-2">
+                {OZ_RINGS.map((ring) => (
+                  <div
+                    key={ring.id}
+                    title={ring.label}
+                    className="flex flex-col items-center gap-1 rounded border border-border/40 bg-background p-1.5"
+                  >
+                    <CdnIcon src={ring.icon} alt={ring.label} />
+                    <input
+                      type="number"
+                      min={0}
+                      max={ring.max}
+                      className="w-full rounded border border-border/40 bg-background px-0.5 py-0.5 text-center text-[11px] tabular-nums outline-none focus:border-accent"
+                      value={input[ring.field]}
+                      onChange={(e) => {
+                        const raw = Number(e.target.value) || 0;
+                        const capped = Math.min(Math.max(0, raw), ring.max);
+                        patch({ [ring.field]: capped });
+                      }}
+                    />
+                  </div>
+                ))}
+              </div>
+
+              <div className="overflow-hidden rounded border border-border/40">
+                <div className="grid grid-cols-[1fr_5.5rem]">
+                  <div className={labelCell}>Weapon Total ATT</div>
+                  <NumInput
+                    value={input.ozWeaponTotalAtt}
+                    onChange={(ozWeaponTotalAtt) =>
+                      patch({ ozWeaponTotalAtt })
+                    }
+                  />
+                </div>
+                <div className="grid grid-cols-[1fr_5.5rem]">
+                  <div className={labelCell}>
+                    {isDa
+                      ? "Max HP"
+                      : isXenon
+                        ? "STR"
+                        : STAT_LABELS[mainKeys[0] ?? "str"]}
+                  </div>
+                  <NumInput
+                    value={input.ozPrimaryStat}
+                    onChange={(ozPrimaryStat) => patch({ ozPrimaryStat })}
+                  />
+                </div>
+                <div className="grid grid-cols-[1fr_5.5rem]">
+                  <div className={labelCell}>
+                    {isXenon
+                      ? "DEX"
+                      : isDa
+                        ? "STR"
+                        : STAT_LABELS[secondaryKeys[0] ?? "dex"]}
+                  </div>
+                  <NumInput
+                    value={input.ozSecondaryStat}
+                    onChange={(ozSecondaryStat) => patch({ ozSecondaryStat })}
+                  />
+                </div>
+              </div>
+            </div>
           </section>
         </div>
       </div>

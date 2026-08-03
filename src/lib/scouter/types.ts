@@ -49,6 +49,17 @@ export type ScouterInput = {
   reboot: boolean;
   liberation: boolean;
   mugongSoul: boolean;
+  /** Legion Artifact / Inner Ability / Oz Ring (MapleScouter) */
+  legionArtifactAdditionalExp: boolean;
+  legionArtifactFinalAttack: number;
+  specialInnerAbility: "none" | "passivePlus1" | "mobTargeted";
+  ozContinuousStatus: "noUse" | "use";
+  ozContinuousLevel: number;
+  ozWeaponJumpLevel: number;
+  ozRiskTakerLevel: number;
+  ozWeaponTotalAtt: number;
+  ozPrimaryStat: number;
+  ozSecondaryStat: number;
 };
 
 export type ScouterResult = {
@@ -122,5 +133,15 @@ export function defaultScouterInput(
     reboot: false,
     liberation: false,
     mugongSoul: false,
+    legionArtifactAdditionalExp: true,
+    legionArtifactFinalAttack: 0,
+    specialInnerAbility: "none",
+    ozContinuousStatus: "noUse",
+    ozContinuousLevel: 0,
+    ozWeaponJumpLevel: 0,
+    ozRiskTakerLevel: 0,
+    ozWeaponTotalAtt: 0,
+    ozPrimaryStat: 0,
+    ozSecondaryStat: 0,
   };
 }
