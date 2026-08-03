@@ -68,6 +68,19 @@ export function getBossRegionHpTotals(imgKey: string): {
 
 export function formatBossHp(n: number): string {
   if (!Number.isFinite(n) || n <= 0) return "—";
+  const abs = Math.abs(n);
+  if (abs >= 1e15) {
+    const q = n / 1e15;
+    return `${q >= 100 ? q.toFixed(0) : q >= 10 ? q.toFixed(1) : q.toFixed(2)}Q`;
+  }
+  if (abs >= 1e12) {
+    const t = n / 1e12;
+    return `${t >= 100 ? t.toFixed(0) : t >= 10 ? t.toFixed(1) : t.toFixed(2)}T`;
+  }
+  if (abs >= 1e9) {
+    const b = n / 1e9;
+    return `${b >= 100 ? b.toFixed(0) : b >= 10 ? b.toFixed(1) : b.toFixed(2)}B`;
+  }
   return Math.round(n).toLocaleString();
 }
 
