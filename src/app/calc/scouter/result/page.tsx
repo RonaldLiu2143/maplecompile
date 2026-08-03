@@ -15,6 +15,12 @@ import {
   type BossClearRow,
 } from "@/lib/scouter/boss-cuts";
 import {
+  BOSS_CRYSTAL_ICON,
+  formatBossHp,
+  formatCrystalMeso,
+  getBossHoverInfo,
+} from "@/lib/scouter/boss-info";
+import {
   DEFAULT_CHAR,
   DEFAULT_JOB,
   getCharName,
@@ -66,6 +72,126 @@ function StatBlock({
   );
 }
 
+function BossHoverPanel({ row }: { row: BossClearRow }) {
+  const info = getBossHoverInfo(row.imgKey);
+  if (!info) return null;
+
+  return (
+    <div
+      className="pointer-events-none absolute left-1/2 top-[calc(100%+8px)] z-40 w-[min(20rem,calc(100vw-1.5rem))] -translate-x-1/2 rounded-xl border border-border/60 bg-zinc-950 px-3 py-2.5 text-left text-white opacity-0 shadow-2xl transition duration-150 group-hover:opacity-100 group-focus-within:opacity-100"
+      role="tooltip"
+    >
+      <div className="mb-2 flex items-start justify-between gap-2">
+        <div>
+          <p className="text-[11px] font-extrabold uppercase tracking-wide text-amber-300">
+            {row.difficulty}
+          </p>
+          <p className="text-sm font-semibold leading-tight">{row.nameEn}</p>
+        </div>
+        <p className="shrink-0 text-[11px] font-medium opacity-70">
+          Party {row.partyLimit}
+        </p>
+      </div>
+
+      {info.hp ? (
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between gap-2 px-0.5">
+            <span className="text-xs font-semibold">Total HP</span>
+            <span className="text-xs font-bold tabular-nums">
+              {formatBossHp(info.hp.totalHp)}
+            </span>
+          </div>
+          <div className="space-y-1">
+            {info.hp.phases.map((phase) => {
+              const multi = phase.entities.length > 1;
+              return (
+                <div key={phase.label} className="space-y-0.5">
+                  <div className="flex items-center justify-between rounded-md bg-white/10 px-1.5 py-0.5">
+                    <span className="text-[11px] font-medium">{phase.label}</span>
+                    {multi ? (
+                      <span className="text-[11px] font-semibold tabular-nums">
+                        {formatBossHp(phase.total)}
+                      </span>
+                    ) : null}
+                  </div>
+                  {multi ? (
+                    <div className="flex gap-1">
+                      {phase.entities.map((hp, i) => (
+                        <div
+                          key={`${phase.label}-${i}`}
+                          className="flex h-4 min-w-0 flex-1 items-center justify-center overflow-hidden rounded bg-rose-600 px-1 text-[9px] font-semibold tabular-nums text-white"
+                        >
+                          {formatBossHp(hp)}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="flex h-4 items-center justify-center rounded bg-rose-600 px-1.5 text-[10px] font-semibold tabular-nums text-white">
+                      {formatBossHp(phase.total)}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ) : null}
+
+      {info.crystalMeso > 0 ? (
+        <div className="mt-2 flex items-center justify-center gap-2 border-t border-white/10 pt-2">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={BOSS_CRYSTAL_ICON}
+            alt=""
+            width={22}
+            height={22}
+            className="h-[22px] w-[22px]"
+          />
+          <span className="text-sm font-bold tabular-nums">
+            × {formatCrystalMeso(info.crystalMeso)}
+          </span>
+        </div>
+      ) : null}
+
+      {info.drops.length > 0 ? (
+        <div className="mt-2 flex flex-wrap justify-center gap-2 border-t border-white/10 pt-2">
+          {info.drops.map((drop) => (
+            <div
+              key={`${drop.name}-${drop.amount}-${drop.personal}`}
+              className="relative"
+              title={`${drop.name}${drop.amount > 1 ? ` ×${drop.amount}` : ""}${drop.personal ? " (personal)" : ""}`}
+            >
+              {drop.img ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={drop.img}
+                  alt={drop.name}
+                  width={28}
+                  height={28}
+                  className="h-7 w-7"
+                />
+              ) : (
+                <span className="inline-flex h-7 max-w-[4.5rem] items-center rounded bg-white/10 px-1 text-[9px] leading-tight">
+                  {drop.name}
+                </span>
+              )}
+              {drop.amount > 1 ? (
+                <span
+                  className={`absolute -bottom-1 -right-1 min-w-[1.1rem] rounded-full border border-black bg-white px-0.5 text-center text-[9px] font-bold leading-4 ${
+                    drop.personal ? "text-rose-600" : "text-sky-700"
+                  }`}
+                >
+                  {drop.amount}
+                </span>
+              ) : null}
+            </div>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function BossClearCard({ row }: { row: BossClearRow }) {
   const pctColor =
     row.clearPercent >= 200
@@ -83,23 +209,13 @@ function BossClearCard({ row }: { row: BossClearRow }) {
         ? "border-orange-400/80"
         : "border-border/40";
 
-  const tip = [
-    `${row.difficulty} ${row.nameEn}`,
-    `Status: ${row.label}`,
-    `Your stat: ${formatNum(Math.round(row.userStat))}`,
-    `Clear: ${formatPercent(row.clearPercent)}`,
-    `Cut: ${formatNum(row.cut)}`,
-    row.isPartyBoss ? "Party cut" : "Solo cut",
-    row.cantEnter ? "Force or level gap" : null,
-  ]
-    .filter(Boolean)
-    .join(" · ");
-
   return (
     <div
-      title={tip}
-      className={`group flex w-full flex-col items-center gap-1 rounded-lg border bg-surface p-1.5 text-center shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${borderClass}`}
+      tabIndex={0}
+      className={`group relative z-0 flex w-full flex-col items-center gap-1 rounded-lg border bg-surface p-1.5 text-center shadow-sm transition hover:z-30 hover:-translate-y-0.5 hover:shadow-md focus-within:z-30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent ${borderClass}`}
     >
+      <BossHoverPanel row={row} />
+
       <div className="relative w-full overflow-hidden rounded-md bg-surface-muted">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
@@ -340,7 +456,7 @@ export default function ScouterDetailedResultPage() {
 
           <StatBlock
             title="Boss Clear (Cut)"
-            hint="Hover a card for full details. Green/blue % = comfortable, red = under cut."
+            hint="Hover a boss for GMS HP by phase, crystal value, and drops."
             action={
               <div className="flex flex-wrap gap-2 text-xs">
                 <button
@@ -396,7 +512,7 @@ export default function ScouterDetailedResultPage() {
                 .
               </p>
             ) : (
-              <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7">
+              <div className="relative z-0 grid grid-cols-3 gap-2 overflow-visible sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7">
                 {bossRows.map((row) => (
                   <BossClearCard
                     key={`${row.id}-${row.difficulty}-${row.isPartyBoss ? "p" : "s"}-${row.rank}`}
