@@ -186,14 +186,6 @@ export const BUFF_DEFS: BuffDef[] = [
     defaultOn: false,
   },
   {
-    id: "superVip",
-    label: "VIP Super Power Coupon",
-    bonus: "+30 Attack",
-    icon: "/doping_v2/superVip.png",
-    control: "check",
-    defaultOn: false,
-  },
-  {
     id: "shiningRed",
     label: "Sparkling Red Star Potion",
     bonus: "+20% Damage",
