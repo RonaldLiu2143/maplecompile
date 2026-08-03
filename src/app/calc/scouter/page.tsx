@@ -730,7 +730,7 @@ export default function ScouterPage() {
                   onChange={(damagePercent) => patch({ damagePercent })}
                 />
               </FieldCell>
-              <FieldCell label="Final Damage (skill-excl.)">
+              <FieldCell label="Final Damage">
                 <NumInput
                   value={Math.round(input.finalDamagePercent * 100) / 100}
                   onChange={(finalDamagePercent) =>
