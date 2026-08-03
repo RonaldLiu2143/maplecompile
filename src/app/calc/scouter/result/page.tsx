@@ -511,7 +511,7 @@ export default function ScouterDetailedResultPage() {
           <aside className="w-full shrink-0 lg:w-64 xl:w-72">
             <StatBlock
               title="Boss Converted Stat"
-              hint={`HEXA drives clear %. Clear window: ${fightLabel}.`}
+              hint={`HEXA drives clear %. ${fightLabel} (GMS HP is often ~1.5× KMS, so many % stay similar).`}
               action={
                 <div className="inline-flex overflow-hidden rounded-full border border-border/50 text-xs">
                   <button
