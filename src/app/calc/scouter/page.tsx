@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
-  BOSS_PDR_PRESETS,
   BUFF_DEFS,
   calculateScouter,
   computeClassFinalDamage,
@@ -174,7 +173,6 @@ export default function ScouterPage() {
   const [buffs, setBuffs] = useState<BuffState>(() => defaultBuffState());
   const [links, setLinks] = useState<LinkState>(() => defaultLinkState());
   const [hexa, setHexa] = useState<number[]>(() => defaultHexaLevels());
-  const [pdrPreset, setPdrPreset] = useState("normal");
   const [showResult, setShowResult] = useState(true);
   const [presetMsg, setPresetMsg] = useState<string | null>(null);
 
@@ -249,12 +247,6 @@ export default function ScouterPage() {
     setHexa(defaultHexaLevels());
   };
 
-  const onPdrPreset = (id: string) => {
-    setPdrPreset(id);
-    const preset = BOSS_PDR_PRESETS.find((p) => p.id === id);
-    if (preset && preset.value >= 0) patch({ bossPdrPercent: preset.value });
-  };
-
   const allBuffsOn = BUFF_DEFS.every((b) =>
     b.control === "check" ? buffs[b.id]?.on : (buffs[b.id]?.level ?? 0) > 0,
   );
@@ -281,7 +273,7 @@ export default function ScouterPage() {
     try {
       localStorage.setItem(
         PRESET_KEY,
-        JSON.stringify({ input, buffs, links, hexa, pdrPreset }),
+        JSON.stringify({ input, buffs, links, hexa }),
       );
       setPresetMsg("Preset saved");
       setTimeout(() => setPresetMsg(null), 2000);
@@ -303,13 +295,11 @@ export default function ScouterPage() {
         buffs: BuffState;
         links: LinkState;
         hexa: number[];
-        pdrPreset?: string;
       };
       if (data.input) setInput(data.input);
       if (data.buffs) setBuffs(data.buffs);
       if (data.links) setLinks(data.links);
       if (data.hexa) setHexa(data.hexa);
-      if (data.pdrPreset) setPdrPreset(data.pdrPreset);
       setPresetMsg("Preset loaded");
       setTimeout(() => setPresetMsg(null), 2000);
     } catch {
@@ -339,7 +329,6 @@ export default function ScouterPage() {
     setBuffs(defaultBuffState());
     setLinks(defaultLinkState());
     setHexa(defaultHexaLevels());
-    setPdrPreset("normal");
     setShowResult(false);
   };
 
@@ -654,28 +643,6 @@ export default function ScouterPage() {
                 />
               </FieldCell>
             </div>
-          </div>
-
-          <div className="grid border-t border-border/30 sm:grid-cols-2">
-            <FieldCell label="Mastery">
-              <NumInput
-                value={input.masteryPercent}
-                onChange={(masteryPercent) => patch({ masteryPercent })}
-              />
-            </FieldCell>
-            <FieldCell label="Boss PDR">
-              <select
-                className={`${cell} w-full`}
-                value={pdrPreset}
-                onChange={(e) => onPdrPreset(e.target.value)}
-              >
-                {BOSS_PDR_PRESETS.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.label}
-                  </option>
-                ))}
-              </select>
-            </FieldCell>
           </div>
         </section>
 
@@ -1022,8 +989,8 @@ export default function ScouterPage() {
               {formatNum(result.convertedMain, 1)}
             </p>
             <p className="mt-2 text-xs opacity-60">
-              vs {input.bossPdrPercent}% boss PDR · buff toggles are UI for now;
-              converted stat uses entered damage options
+              Buff toggles are UI for now; converted stat uses entered damage
+              options
             </p>
           </div>
 
