@@ -1,8 +1,6 @@
 /** MapleScouter GMS Boss Clear (Cut) standards (`e_` list) + clear-rate math. */
 
-import { getBossHoverInfo } from "./boss-info";
-
-/** Fight window used for burst/ascent adjust and GMS HP clear ratio. */
+/** Fight window used for burst/ascent adjust (MapleScouter default is 20). */
 export const BOSS_CLEAR_FIGHT_MINUTES = 30;
 
 export type BossCutDifficulty =
@@ -1280,13 +1278,14 @@ export type BossClearCalcInput = {
 };
 
 /**
- * Clear rate (GMS HP + 30 min when HP is known):
+ * MapleScouter clearRate (GMS cut list), with a 30-minute fight window:
  *   I = dmg * forceGaps / denom   (CALC_DMG with is30min)
- *   requiredHp = totalHp  (or totalHp / partyLimit for party-only bosses)
- *   z = I / requiredHp
+ *   E = splineDamage(spline, bossCut||partyBossCut)
+ *   z = I/E * easyRate * L
  *   O = z * (1 + timerAdjust(ascentConst, 30 min))
  *
- * Fallback (no GMS HP): MapleScouter cut/spline path with the same 30 min timer.
+ * Note: do not divide by raw boss HP — CALC_DMG damage and wiki HP are
+ * different units; that path zeroes every clear %.
  */
 export function evaluateBossClears(args: BossClearCalcInput): BossClearRow[] {
   const {
@@ -1305,7 +1304,7 @@ export function evaluateBossClears(args: BossClearCalcInput): BossClearRow[] {
   } = args;
 
   const rows: BossClearRow[] = BOSS_CUTS.map((entry, rank) => {
-    const isPartyBoss = entry.partyBossCut != null && entry.bossCut == null;
+    const isPartyBoss = entry.partyBossCut != null;
     const cut = (entry.bossCut ?? entry.partyBossCut) || 0;
     const dmg = entry.guard === 380 ? damage380 : damage300;
     const fallbackStat = entry.guard === 380 ? boss380Stat : boss300Stat;
@@ -1322,33 +1321,21 @@ export function evaluateBossClears(args: BossClearCalcInput): BossClearRow[] {
     const I = (dmg * aGap * sGap * lGap) / denom;
     let clearRate = 0;
     let userStat = fallbackStat;
-
-    const gmsHp = getBossHoverInfo(entry.imgKey)?.hp?.totalHp ?? 0;
-    const burstSlotsFor = (z: number) =>
-      entry.nameKo === "루시드" && entry.difficulty === "Hard"
-        ? 0.4
-        : Math.min(
-            3,
-            Math.ceil(BOSS_CLEAR_FIGHT_MINUTES / Math.max(z, 1e-9) / 5.667),
-          );
-
-    if (gmsHp > 0 && I > 0) {
-      // Party-only cuts are fair-share sized; scale HP the same way.
-      const requiredHp = isPartyBoss
-        ? gmsHp / Math.max(entry.partyLimit, 1)
-        : gmsHp;
-      const z = (I / requiredHp) * L;
-      if (spline && Array.isArray(spline.x) && spline.x.length > 0) {
-        userStat = splineStat(spline, I * L);
-      }
-      const G = (3 * R) / burstSlotsFor(z) - R || 0;
-      clearRate = z * (1 + G) || 0;
-    } else if (spline && cut > 0 && Array.isArray(spline.x) && spline.x.length > 0) {
+    if (spline && cut > 0 && Array.isArray(spline.x) && spline.x.length > 0) {
       const E = splineDamage(spline, cut);
       userStat = splineStat(spline, I * L);
       if (E > 0) {
         const z = (I / (E < 0 ? 1e4 : E)) * (entry.easyRate || 1) * L;
-        const G = (3 * R) / burstSlotsFor(z) - R || 0;
+        const burstSlots =
+          entry.nameKo === "루시드" && entry.difficulty === "Hard"
+            ? 0.4
+            : Math.min(
+                3,
+                Math.ceil(
+                  BOSS_CLEAR_FIGHT_MINUTES / Math.max(z, 1e-9) / 5.667,
+                ),
+              );
+        const G = (3 * R) / burstSlots - R || 0;
         clearRate = z * (1 + G) || 0;
       }
     } else if (cut > 0) {

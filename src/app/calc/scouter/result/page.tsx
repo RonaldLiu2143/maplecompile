@@ -525,7 +525,7 @@ export default function ScouterDetailedResultPage() {
             {showDestinyChampion ? (
               <StatBlock
                 title="Destiny & Champion"
-                hint="Solo-mode Destiny and Champion · GMS HP · 30 min."
+                hint="Solo-mode Destiny and Champion · 30 min window."
                 action={
                   <button
                     type="button"
@@ -551,7 +551,7 @@ export default function ScouterDetailedResultPage() {
 
             <StatBlock
               title="Boss Clear (Cut)"
-              hint="Clear % from GMS HP over 30 min. Hover for HP, crystal, and drops."
+              hint="Clear % uses GMS cut standards over 30 min. Hover for GMS HP, crystal, and drops."
               action={
                 <div className="flex flex-wrap items-center gap-2 text-xs">
                   <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-border/50 bg-surface px-3 py-1.5 font-semibold">
