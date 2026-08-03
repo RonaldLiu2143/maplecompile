@@ -30,7 +30,7 @@ export default function RootLayout({
     <html lang="en" className={`${outfit.variable} ${sourceSans.variable} h-full`}>
       <body className="min-h-full flex flex-col antialiased">
         <header className="sticky top-0 z-20 border-b-2 border-border bg-surface-muted/90 backdrop-blur-md">
-          <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
+          <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3">
             <Link href="/" className="font-display text-2xl font-bold tracking-tight text-accent">
               Maplehub
             </Link>
@@ -62,7 +62,7 @@ export default function RootLayout({
             </nav>
           </div>
         </header>
-        <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6">{children}</main>
+        <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6">{children}</main>
         <footer className="border-t border-border/40 px-4 py-4 text-center text-sm opacity-70">
           Maplehub calculators — equipment, flames, cubing, and scouter
         </footer>

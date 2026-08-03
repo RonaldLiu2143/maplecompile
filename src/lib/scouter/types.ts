@@ -30,6 +30,24 @@ export type ScouterInput = {
   /** Boss PDR as percent (300 = 300%) */
   bossPdrPercent: number;
   useMagicAttack: boolean;
+  /** Character-window style extras (MapleScouter layout) */
+  generalRange: number;
+  displayedAttack: number;
+  displayedMagicAttack: number;
+  cooldownReductionSeconds: number;
+  cooldownReductionPercent: number;
+  buffDurationPercent: number;
+  cooldownSkipPercent: number;
+  ignoreElementalResistancePercent: number;
+  additionalStatusDamagePercent: number;
+  summonDurationPercent: number;
+  arcaneForce: number;
+  sacredForce: number;
+  wildHunterLegion: number;
+  reboot: boolean;
+  liberation: boolean;
+  firstLegacy: boolean;
+  mugongSoul: boolean;
 };
 
 export type ScouterResult = {
@@ -87,5 +105,22 @@ export function defaultScouterInput(
     masteryPercent: 60,
     bossPdrPercent: 300,
     useMagicAttack: jobType === "magician",
+    generalRange: 0,
+    displayedAttack: 0,
+    displayedMagicAttack: 0,
+    cooldownReductionSeconds: 0,
+    cooldownReductionPercent: 0,
+    buffDurationPercent: 0,
+    cooldownSkipPercent: 0,
+    ignoreElementalResistancePercent: 0,
+    additionalStatusDamagePercent: 0,
+    summonDurationPercent: 0,
+    arcaneForce: 0,
+    sacredForce: 0,
+    wildHunterLegion: 0,
+    reboot: false,
+    liberation: false,
+    firstLegacy: false,
+    mugongSoul: false,
   };
 }

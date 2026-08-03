@@ -1,11 +1,20 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import {
   BOSS_PDR_PRESETS,
+  BUFF_DEFS,
   calculateScouter,
+  defaultBuffState,
+  defaultHexaLevels,
+  defaultLinkState,
   defaultScouterInput,
+  hexaIconPath,
+  LINK_DEFS,
   resolveMainSecondary,
+  SCOUTER_CDN,
+  type BuffState,
+  type LinkState,
   type ScouterInput,
   type StatKey,
   type StatTriple,
@@ -17,10 +26,12 @@ import {
   parseClassValue,
 } from "@/lib/jobs";
 
+const PRESET_KEY = "maplehub-scouter-preset";
+
 const cell =
   "border border-border/50 bg-background px-2 py-1.5 text-sm outline-none focus:relative focus:z-10 focus:border-accent";
 const labelCell =
-  "border border-border/50 bg-surface-muted/60 px-2 py-1.5 text-sm font-medium";
+  "border border-border/50 bg-surface-muted/50 px-2 py-1.5 text-sm font-medium";
 const headCell =
   "border border-border/50 bg-surface-muted px-2 py-1.5 text-sm font-medium";
 
@@ -40,28 +51,22 @@ function formatNum(n: number, digits = 0): string {
   });
 }
 
-function applyTriple(t: StatTriple): number {
-  return t.base * (1 + t.percent / 100) + t.flat;
-}
-
 function NumInput({
   value,
   onChange,
-  readOnly,
   className = "",
+  placeholder,
 }: {
   value: number;
   onChange?: (n: number) => void;
-  readOnly?: boolean;
   className?: string;
+  placeholder?: string;
 }) {
   return (
     <input
       type="number"
-      readOnly={readOnly}
-      className={`${cell} w-full min-w-0 text-right tabular-nums ${
-        readOnly ? "bg-surface-muted/40 text-foreground/80" : ""
-      } ${className}`}
+      placeholder={placeholder}
+      className={`${cell} w-full min-w-0 text-right tabular-nums ${className}`}
       value={Number.isFinite(value) ? value : 0}
       onChange={
         onChange
@@ -102,20 +107,31 @@ function TripleRow({
 
 function FieldCell({
   label,
-  value,
-  onChange,
-  readOnly,
+  children,
 }: {
   label: string;
-  value: number;
-  onChange?: (n: number) => void;
-  readOnly?: boolean;
+  children: ReactNode;
 }) {
   return (
-    <div className="grid min-w-0 grid-cols-[minmax(7rem,1.1fr)_minmax(4.5rem,0.9fr)]">
+    <div className="grid min-w-0 grid-cols-[minmax(6.5rem,1.15fr)_minmax(4rem,0.85fr)]">
       <div className={labelCell}>{label}</div>
-      <NumInput value={value} onChange={onChange} readOnly={readOnly} />
+      {children}
     </div>
+  );
+}
+
+function CdnIcon({ src, alt }: { src: string; alt: string }) {
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={`${SCOUTER_CDN}${src}`}
+      alt={alt}
+      width={32}
+      height={32}
+      className="size-8 object-contain"
+      loading="lazy"
+      referrerPolicy="no-referrer"
+    />
   );
 }
 
@@ -123,8 +139,12 @@ export default function ScouterPage() {
   const [input, setInput] = useState<ScouterInput>(() =>
     defaultScouterInput(DEFAULT_JOB, DEFAULT_CHAR),
   );
+  const [buffs, setBuffs] = useState<BuffState>(() => defaultBuffState());
+  const [links, setLinks] = useState<LinkState>(() => defaultLinkState());
+  const [hexa, setHexa] = useState<number[]>(() => defaultHexaLevels());
   const [pdrPreset, setPdrPreset] = useState("normal");
   const [showResult, setShowResult] = useState(true);
+  const [presetMsg, setPresetMsg] = useState<string | null>(null);
 
   const classValue = `${input.jobType}:${input.charType}`;
   const { mainKeys, secondaryKeys, isXenon, isDa } = useMemo(
@@ -151,13 +171,74 @@ export default function ScouterPage() {
       charType: parsed.charType,
       useMagicAttack: parsed.jobType === "magician",
     }));
+    setHexa(defaultHexaLevels());
   };
 
   const onPdrPreset = (id: string) => {
     setPdrPreset(id);
     const preset = BOSS_PDR_PRESETS.find((p) => p.id === id);
-    if (preset && preset.value >= 0) {
-      patch({ bossPdrPercent: preset.value });
+    if (preset && preset.value >= 0) patch({ bossPdrPercent: preset.value });
+  };
+
+  const allBuffsOn = BUFF_DEFS.every((b) =>
+    b.control === "check" ? buffs[b.id]?.on : (buffs[b.id]?.level ?? 0) > 0,
+  );
+
+  const toggleSelectAllBuffs = () => {
+    const nextOn = !allBuffsOn;
+    setBuffs((prev) => {
+      const next = { ...prev };
+      for (const b of BUFF_DEFS) {
+        if (b.control === "check") {
+          next[b.id] = { ...next[b.id], on: nextOn };
+        } else if (b.control === "level") {
+          next[b.id] = {
+            on: nextOn,
+            level: nextOn ? (b.defaultLevel ?? b.maxLevel ?? 1) : 0,
+          };
+        }
+      }
+      return next;
+    });
+  };
+
+  const savePreset = () => {
+    try {
+      localStorage.setItem(
+        PRESET_KEY,
+        JSON.stringify({ input, buffs, links, hexa, pdrPreset }),
+      );
+      setPresetMsg("Preset saved");
+      setTimeout(() => setPresetMsg(null), 2000);
+    } catch {
+      setPresetMsg("Could not save");
+    }
+  };
+
+  const recallPreset = () => {
+    try {
+      const raw = localStorage.getItem(PRESET_KEY);
+      if (!raw) {
+        setPresetMsg("No saved preset");
+        setTimeout(() => setPresetMsg(null), 2000);
+        return;
+      }
+      const data = JSON.parse(raw) as {
+        input: ScouterInput;
+        buffs: BuffState;
+        links: LinkState;
+        hexa: number[];
+        pdrPreset?: string;
+      };
+      if (data.input) setInput(data.input);
+      if (data.buffs) setBuffs(data.buffs);
+      if (data.links) setLinks(data.links);
+      if (data.hexa) setHexa(data.hexa);
+      if (data.pdrPreset) setPdrPreset(data.pdrPreset);
+      setPresetMsg("Preset loaded");
+      setTimeout(() => setPresetMsg(null), 2000);
+    } catch {
+      setPresetMsg("Could not load");
     }
   };
 
@@ -171,17 +252,23 @@ export default function ScouterPage() {
       stats: prev.stats,
       attack: prev.attack,
       magicAttack: prev.magicAttack,
+      reboot: prev.reboot,
+      liberation: prev.liberation,
+      firstLegacy: prev.firstLegacy,
+      mugongSoul: prev.mugongSoul,
     }));
     setShowResult(false);
   };
 
   const resetHard = () => {
     setInput(defaultScouterInput(DEFAULT_JOB, DEFAULT_CHAR));
+    setBuffs(defaultBuffState());
+    setLinks(defaultLinkState());
+    setHexa(defaultHexaLevels());
     setPdrPreset("normal");
     setShowResult(false);
   };
 
-  /** MapleScouter order: secondary first, then primary, then Attack */
   const tripleRows: { label: string; key?: StatKey; kind?: "att" | "matt" }[] =
     (() => {
       if (isDa) {
@@ -214,214 +301,459 @@ export default function ScouterPage() {
       ];
     })();
 
-  const singleFields: {
-    label: string;
-    value: number;
-    onChange?: (n: number) => void;
-    readOnly?: boolean;
-  }[] = [
-    {
-      label: "General Range",
-      value: Math.round(result.displayedMax),
-      readOnly: true,
-    },
-    {
-      label: "Damage",
-      value: input.damagePercent,
-      onChange: (damagePercent) => patch({ damagePercent }),
-    },
-    {
-      label: "Final Damage",
-      value: input.finalDamagePercent,
-      onChange: (finalDamagePercent) => patch({ finalDamagePercent }),
-    },
-    {
-      label: "Boss Damage",
-      value: input.bossDamagePercent,
-      onChange: (bossDamagePercent) => patch({ bossDamagePercent }),
-    },
-    {
-      label: "Ignore Enemy Defense",
-      value: input.ignoreDefensePercent,
-      onChange: (ignoreDefensePercent) => patch({ ignoreDefensePercent }),
-    },
-    {
-      label: "Normal Enemy Damage",
-      value: input.normalEnemyDamagePercent,
-      onChange: (normalEnemyDamagePercent) =>
-        patch({ normalEnemyDamagePercent }),
-    },
-    {
-      label: "Attack",
-      value: Math.round(applyTriple(input.attack)),
-      readOnly: true,
-    },
-    {
-      label: "Critical Rate",
-      value: input.criticalRatePercent,
-      onChange: (criticalRatePercent) => patch({ criticalRatePercent }),
-    },
-    {
-      label: "M.Attack",
-      value: Math.round(applyTriple(input.magicAttack)),
-      readOnly: true,
-    },
-    {
-      label: "Critical Damage",
-      value: input.criticalDamagePercent,
-      onChange: (criticalDamagePercent) => patch({ criticalDamagePercent }),
-    },
-  ];
-
   return (
-    <div className="space-y-6">
-      <header>
-        <h1 className="font-display text-3xl font-bold tracking-tight">
-          Scouter
-        </h1>
-        <p className="mt-2 max-w-2xl text-sm opacity-75">
-          Enter character stats directly (same layout as MapleScouter) to
-          calculate converted main stat (환산주스탯).
-        </p>
+    <div className="space-y-5">
+      <header className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="font-display text-3xl font-bold tracking-tight">
+            Scouter
+          </h1>
+          <p className="mt-1 max-w-2xl text-sm opacity-75">
+            Same layout as MapleScouter — stats on the left, buffs / links /
+            HEXA on the right.
+          </p>
+        </div>
+        {presetMsg ? (
+          <span className="text-sm font-medium text-accent">{presetMsg}</span>
+        ) : null}
       </header>
 
-      <div className="overflow-hidden rounded-lg border border-border/60 bg-surface/80">
-        {/* Level / Class */}
-        <div className="grid grid-cols-2 sm:grid-cols-4">
-          <div className={labelCell}>Level</div>
-          <NumInput
-            value={input.level}
-            onChange={(level) => patch({ level })}
-          />
-          <div className={labelCell}>Class</div>
-          <select
-            className={`${cell} w-full min-w-0`}
-            value={classValue}
-            onChange={(e) => onClassChange(e.target.value)}
-          >
-            {CLASS_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.name}
-              </option>
-            ))}
-          </select>
-        </div>
+      <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.95fr)]">
+        {/* —— Left: Enter Directly —— */}
+        <section className="overflow-hidden rounded-lg border border-border/60 bg-surface/90">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/40 px-3 py-2">
+            <h2 className="text-sm font-semibold">
+              Enter Directly (Character Stats Changes)
+            </h2>
+            <div className="flex flex-wrap gap-1.5">
+              <button
+                type="button"
+                onClick={recallPreset}
+                className="rounded border border-border/50 bg-background px-2.5 py-1 text-xs font-semibold transition hover:bg-surface-muted"
+              >
+                Recall Saved Preset
+              </button>
+              <button
+                type="button"
+                onClick={savePreset}
+                className="rounded border border-border/50 bg-background px-2.5 py-1 text-xs font-semibold transition hover:bg-surface-muted"
+              >
+                Save Preset
+              </button>
+            </div>
+          </div>
 
-        <p className="border-b border-border/40 px-3 py-2 text-xs leading-relaxed opacity-65">
-          General: no temporary buffs; links equipped (no stacks); Oz ring on;
-          summons on; Combat Orders / Sharp Eyes on. Class: Maple Warrior and
-          class blessings as applicable.
-        </p>
-
-        {/* Base / % / Flat header + stat triples */}
-        <div className="grid grid-cols-4">
-          <div className={`${headCell} rounded-none`} />
-          <div className={headCell}>Base Value</div>
-          <div className={headCell}>% Value</div>
-          <div className={headCell}>% Value Not Applied</div>
-        </div>
-
-        {tripleRows.map((row) => {
-          if (row.key) {
-            return (
-              <TripleRow
-                key={row.key}
-                label={row.label}
-                value={input.stats[row.key]}
-                onChange={(t) => setStat(row.key!, t)}
-              />
-            );
-          }
-          if (row.kind === "matt") {
-            return (
-              <TripleRow
-                key="matt"
-                label={row.label}
-                value={input.magicAttack}
-                onChange={(magicAttack) => patch({ magicAttack })}
-              />
-            );
-          }
-          return (
-            <TripleRow
-              key="att"
-              label={row.label}
-              value={input.attack}
-              onChange={(attack) => patch({ attack })}
+          <div className="grid grid-cols-2 sm:grid-cols-4">
+            <div className={labelCell}>Level</div>
+            <NumInput
+              value={input.level}
+              onChange={(level) => patch({ level })}
             />
-          );
-        })}
-
-        {/* MapleScouter-style 2-column damage / option fields */}
-        <div className="grid sm:grid-cols-2">
-          {singleFields.map((f) => (
-            <FieldCell
-              key={f.label}
-              label={f.label}
-              value={f.value}
-              onChange={f.onChange}
-              readOnly={f.readOnly}
-            />
-          ))}
-        </div>
-
-        {/* Extra options MapleScouter shows — kept compact */}
-        <div className="grid sm:grid-cols-2">
-          <FieldCell
-            label="Mastery"
-            value={input.masteryPercent}
-            onChange={(masteryPercent) => patch({ masteryPercent })}
-          />
-          <div className="grid min-w-0 grid-cols-[minmax(7rem,1.1fr)_minmax(4.5rem,0.9fr)]">
-            <div className={labelCell}>Boss PDR</div>
+            <div className={labelCell}>Class</div>
             <select
               className={`${cell} w-full min-w-0`}
-              value={pdrPreset}
-              onChange={(e) => onPdrPreset(e.target.value)}
+              value={classValue}
+              onChange={(e) => onClassChange(e.target.value)}
             >
-              {BOSS_PDR_PRESETS.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.label}
+              {CLASS_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.name}
                 </option>
               ))}
             </select>
           </div>
-          {pdrPreset === "custom" ? (
-            <FieldCell
-              label="Custom PDR %"
-              value={input.bossPdrPercent}
-              onChange={(bossPdrPercent) => patch({ bossPdrPercent })}
-            />
-          ) : (
-            <FieldCell
-              label="PDR %"
-              value={input.bossPdrPercent}
-              readOnly
-            />
-          )}
-          <div className="grid min-w-0 grid-cols-[minmax(7rem,1.1fr)_minmax(4.5rem,0.9fr)]">
-            <div className={labelCell}>Use Magic ATT</div>
-            <label
-              className={`${cell} flex cursor-pointer items-center justify-end gap-2`}
-            >
-              <input
-                type="checkbox"
-                className="size-4 accent-[var(--accent)]"
-                checked={input.useMagicAttack}
-                onChange={(e) =>
-                  patch({ useMagicAttack: e.target.checked })
+
+          <p className="border-b border-border/40 bg-accent-soft/25 px-3 py-2 text-xs leading-relaxed text-accent">
+            General Requirements: No Buffs, Link Equipped (No Stacks), Oz Ring
+            Equipped / Summons On / (Decent) Combat Orders, Sharp Eyes On /
+            Soul Gauge 0/1000 / Familiars On. Class Specific: Maple Warrior,
+            Ancient Warding, Elvish Blessing, 0 Stacks.
+          </p>
+
+          <div className="flex flex-wrap gap-x-4 gap-y-2 border-b border-border/40 px-3 py-2 text-sm">
+            {(
+              [
+                ["reboot", "Reboot", input.reboot],
+                ["liberation", "Liberation", input.liberation],
+                ["firstLegacy", "최초의 유산", input.firstLegacy],
+                ["mugongSoul", "Mugong Soul", input.mugongSoul],
+              ] as const
+            ).map(([key, label, checked]) => (
+              <label key={key} className="flex items-center gap-1.5">
+                <input
+                  type="checkbox"
+                  className="size-3.5 accent-[var(--accent)]"
+                  checked={checked}
+                  onChange={(e) => patch({ [key]: e.target.checked })}
+                />
+                {label}
+              </label>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-4">
+            <div className={headCell} />
+            <div className={headCell}>Base Value</div>
+            <div className={headCell}>% Value</div>
+            <div className={headCell}>% Value Not Applied</div>
+          </div>
+
+          {tripleRows.map((row) => {
+            if (row.key) {
+              return (
+                <TripleRow
+                  key={row.key}
+                  label={row.label}
+                  value={input.stats[row.key]}
+                  onChange={(t) => setStat(row.key!, t)}
+                />
+              );
+            }
+            if (row.kind === "matt") {
+              return (
+                <TripleRow
+                  key="matt"
+                  label={row.label}
+                  value={input.magicAttack}
+                  onChange={(magicAttack) => patch({ magicAttack })}
+                />
+              );
+            }
+            return (
+              <TripleRow
+                key="att"
+                label={row.label}
+                value={input.attack}
+                onChange={(attack) => patch({ attack })}
+              />
+            );
+          })}
+
+          <div className="grid sm:grid-cols-2">
+            <FieldCell label="General Range">
+              <NumInput
+                value={input.generalRange || Math.round(result.displayedMax)}
+                onChange={(generalRange) => patch({ generalRange })}
+              />
+            </FieldCell>
+            <FieldCell label="Damage">
+              <NumInput
+                value={input.damagePercent}
+                onChange={(damagePercent) => patch({ damagePercent })}
+              />
+            </FieldCell>
+            <FieldCell label="Final Damage">
+              <NumInput
+                value={input.finalDamagePercent}
+                onChange={(finalDamagePercent) =>
+                  patch({ finalDamagePercent })
                 }
               />
-            </label>
+            </FieldCell>
+            <FieldCell label="Boss Damage">
+              <NumInput
+                value={input.bossDamagePercent}
+                onChange={(bossDamagePercent) => patch({ bossDamagePercent })}
+              />
+            </FieldCell>
+            <FieldCell label="Ignore Enemy Defense">
+              <NumInput
+                value={input.ignoreDefensePercent}
+                onChange={(ignoreDefensePercent) =>
+                  patch({ ignoreDefensePercent })
+                }
+              />
+            </FieldCell>
+            <FieldCell label="Normal Enemy Damage">
+              <NumInput
+                value={input.normalEnemyDamagePercent}
+                onChange={(normalEnemyDamagePercent) =>
+                  patch({ normalEnemyDamagePercent })
+                }
+              />
+            </FieldCell>
+            <FieldCell label="Attack">
+              <NumInput
+                value={input.displayedAttack}
+                onChange={(displayedAttack) => patch({ displayedAttack })}
+              />
+            </FieldCell>
+            <FieldCell label="Critical Rate">
+              <NumInput
+                value={input.criticalRatePercent}
+                onChange={(criticalRatePercent) =>
+                  patch({ criticalRatePercent })
+                }
+              />
+            </FieldCell>
+            <FieldCell label="M.Attack">
+              <NumInput
+                value={input.displayedMagicAttack}
+                onChange={(displayedMagicAttack) =>
+                  patch({ displayedMagicAttack })
+                }
+              />
+            </FieldCell>
+            <FieldCell label="Critical Damage">
+              <NumInput
+                value={input.criticalDamagePercent}
+                onChange={(criticalDamagePercent) =>
+                  patch({ criticalDamagePercent })
+                }
+              />
+            </FieldCell>
+            <FieldCell label="Cooldown Reduction">
+              <div className="flex min-w-0">
+                <NumInput
+                  value={input.cooldownReductionSeconds}
+                  onChange={(cooldownReductionSeconds) =>
+                    patch({ cooldownReductionSeconds })
+                  }
+                  className="border-r-0"
+                />
+                <span
+                  className={`${labelCell} flex shrink-0 items-center px-1 text-xs`}
+                >
+                  Second
+                </span>
+                <NumInput
+                  value={input.cooldownReductionPercent}
+                  onChange={(cooldownReductionPercent) =>
+                    patch({ cooldownReductionPercent })
+                  }
+                />
+                <span
+                  className={`${labelCell} flex shrink-0 items-center px-1 text-xs`}
+                >
+                  %
+                </span>
+              </div>
+            </FieldCell>
+            <FieldCell label="Buff Duration">
+              <NumInput
+                value={input.buffDurationPercent}
+                onChange={(buffDurationPercent) =>
+                  patch({ buffDurationPercent })
+                }
+              />
+            </FieldCell>
+            <FieldCell label="Cooldown Skip">
+              <NumInput
+                value={input.cooldownSkipPercent}
+                onChange={(cooldownSkipPercent) =>
+                  patch({ cooldownSkipPercent })
+                }
+              />
+            </FieldCell>
+            <FieldCell label="Ignore Elemental Resistance">
+              <NumInput
+                value={input.ignoreElementalResistancePercent}
+                onChange={(ignoreElementalResistancePercent) =>
+                  patch({ ignoreElementalResistancePercent })
+                }
+              />
+            </FieldCell>
+            <FieldCell label="Additional Status Damage">
+              <NumInput
+                value={input.additionalStatusDamagePercent}
+                onChange={(additionalStatusDamagePercent) =>
+                  patch({ additionalStatusDamagePercent })
+                }
+              />
+            </FieldCell>
+            <FieldCell label="Summon Duration">
+              <NumInput
+                value={input.summonDurationPercent}
+                onChange={(summonDurationPercent) =>
+                  patch({ summonDurationPercent })
+                }
+              />
+            </FieldCell>
+            <FieldCell label="Arcane Force">
+              <NumInput
+                value={input.arcaneForce}
+                onChange={(arcaneForce) => patch({ arcaneForce })}
+              />
+            </FieldCell>
+            <FieldCell label="Sacred Force">
+              <NumInput
+                value={input.sacredForce}
+                onChange={(sacredForce) => patch({ sacredForce })}
+              />
+            </FieldCell>
           </div>
+
+          <div className="grid border-t border-border/30 sm:grid-cols-2">
+            <FieldCell label="Mastery">
+              <NumInput
+                value={input.masteryPercent}
+                onChange={(masteryPercent) => patch({ masteryPercent })}
+              />
+            </FieldCell>
+            <FieldCell label="Boss PDR">
+              <select
+                className={`${cell} w-full`}
+                value={pdrPreset}
+                onChange={(e) => onPdrPreset(e.target.value)}
+              >
+                {BOSS_PDR_PRESETS.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.label}
+                  </option>
+                ))}
+              </select>
+            </FieldCell>
+          </div>
+        </section>
+
+        {/* —— Right: Buffs / Links / HEXA —— */}
+        <div className="space-y-4">
+          <section className="overflow-hidden rounded-lg border border-border/60 bg-surface/90">
+            <div className="flex items-center justify-between border-b border-border/40 px-3 py-2">
+              <h2 className="text-sm font-semibold">Buffs</h2>
+              <label className="flex items-center gap-1.5 text-xs font-medium">
+                <input
+                  type="checkbox"
+                  className="size-3.5 accent-[var(--accent)]"
+                  checked={allBuffsOn}
+                  onChange={toggleSelectAllBuffs}
+                />
+                Select All
+              </label>
+            </div>
+            <div className="grid grid-cols-5 gap-2 p-3 sm:grid-cols-6">
+              {BUFF_DEFS.map((b) => {
+                const st = buffs[b.id] ?? { on: false, level: 0 };
+                const active =
+                  b.control === "check"
+                    ? st.on
+                    : b.control === "champion"
+                      ? st.level > 0
+                      : st.level > 0;
+                return (
+                  <div
+                    key={b.id}
+                    title={b.label}
+                    className={`flex flex-col items-center gap-1 rounded border p-1.5 ${
+                      active
+                        ? "border-accent bg-accent-soft/40"
+                        : "border-border/40 bg-background"
+                    }`}
+                  >
+                    <CdnIcon src={b.icon} alt={b.label} />
+                    {b.control === "check" ? (
+                      <input
+                        type="checkbox"
+                        className="size-3.5 accent-[var(--accent)]"
+                        checked={st.on}
+                        onChange={(e) =>
+                          setBuffs((prev) => ({
+                            ...prev,
+                            [b.id]: { ...st, on: e.target.checked },
+                          }))
+                        }
+                      />
+                    ) : (
+                      <input
+                        type="number"
+                        min={0}
+                        max={b.maxLevel ?? 99}
+                        className="w-full rounded border border-border/40 bg-background px-0.5 py-0.5 text-center text-[11px] tabular-nums outline-none focus:border-accent"
+                        value={st.level}
+                        onChange={(e) =>
+                          setBuffs((prev) => ({
+                            ...prev,
+                            [b.id]: {
+                              on: true,
+                              level: Number(e.target.value) || 0,
+                            },
+                          }))
+                        }
+                      />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+
+          <section className="overflow-hidden rounded-lg border border-border/60 bg-surface/90">
+            <div className="border-b border-border/40 px-3 py-2">
+              <h2 className="text-sm font-semibold">Links/Legion</h2>
+            </div>
+            <div className="grid grid-cols-4 gap-2 p-3 sm:grid-cols-5">
+              {LINK_DEFS.map((l) => (
+                <div
+                  key={l.id}
+                  title={l.label}
+                  className="flex flex-col items-center gap-1 rounded border border-border/40 bg-background p-1.5"
+                >
+                  <CdnIcon src={l.icon} alt={l.label} />
+                  <input
+                    type="number"
+                    min={0}
+                    max={l.maxLevel}
+                    className="w-full rounded border border-border/40 bg-background px-0.5 py-0.5 text-center text-[11px] tabular-nums outline-none focus:border-accent"
+                    value={links[l.id] ?? 0}
+                    onChange={(e) =>
+                      setLinks((prev) => ({
+                        ...prev,
+                        [l.id]: Number(e.target.value) || 0,
+                      }))
+                    }
+                  />
+                </div>
+              ))}
+            </div>
+            <div className="grid grid-cols-[1fr_5rem] border-t border-border/30">
+              <div className={labelCell}>Wild Hunter Legion</div>
+              <NumInput
+                value={input.wildHunterLegion}
+                onChange={(wildHunterLegion) => patch({ wildHunterLegion })}
+              />
+            </div>
+          </section>
+
+          <section className="overflow-hidden rounded-lg border border-border/60 bg-surface/90">
+            <div className="border-b border-border/40 px-3 py-2">
+              <h2 className="text-sm font-semibold">HEXA Enhancement</h2>
+            </div>
+            <div className="grid grid-cols-4 gap-2 p-3 sm:grid-cols-6">
+              {hexa.map((level, i) => (
+                <div
+                  key={i}
+                  className="flex flex-col items-center gap-1 rounded border border-border/40 bg-background p-1.5"
+                >
+                  <CdnIcon
+                    src={hexaIconPath(input.charType, i + 1)}
+                    alt={`HEXA ${i + 1}`}
+                  />
+                  <input
+                    type="number"
+                    min={0}
+                    max={30}
+                    className="w-full rounded border border-border/40 bg-background px-0.5 py-0.5 text-center text-[11px] tabular-nums outline-none focus:border-accent"
+                    value={level}
+                    onChange={(e) => {
+                      const v = Number(e.target.value) || 0;
+                      setHexa((prev) => {
+                        const next = [...prev];
+                        next[i] = v;
+                        return next;
+                      });
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+          </section>
         </div>
       </div>
 
-      {/* Actions — MapleScouter: Challenge Verification / Result / Reset / Hard Reset */}
       <div className="flex flex-wrap gap-2">
         <button
           type="button"
-          className="rounded-md border border-border/60 bg-surface px-4 py-2 text-sm font-semibold transition hover:bg-surface-muted"
+          className="rounded-md bg-accent px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90 dark:text-zinc-900"
           onClick={() => setShowResult(true)}
         >
           Result
@@ -443,22 +775,23 @@ export default function ScouterPage() {
       </div>
 
       {showResult ? (
-        <section className="space-y-4 overflow-hidden rounded-lg border border-border/60 bg-surface/80 p-4">
+        <section className="space-y-4 overflow-hidden rounded-lg border border-border/60 bg-surface/90 p-4">
           <div className="text-center">
             <p className="text-sm font-medium opacity-70">환산주스탯</p>
             <p className="font-display mt-1 text-4xl font-bold tracking-tight text-accent tabular-nums sm:text-5xl">
               {formatNum(result.convertedMain, 1)}
             </p>
             <p className="mt-2 text-xs opacity-60">
-              vs {input.bossPdrPercent}% boss PDR
+              vs {input.bossPdrPercent}% boss PDR · buff toggles are UI for now;
+              converted stat uses entered damage options
             </p>
           </div>
 
           <div className="grid gap-px overflow-hidden rounded-md border border-border/40 sm:grid-cols-2">
             {(
               [
-                ["General Range (max)", formatNum(result.displayedMax)],
-                ["General Range (min)", formatNum(result.displayedMin)],
+                ["General Range (calc max)", formatNum(result.displayedMax)],
+                ["General Range (calc min)", formatNum(result.displayedMin)],
                 ["Expected (boss)", formatNum(result.expectedBoss)],
                 ["Expected (normal)", formatNum(result.expectedNormal)],
                 ["Total main", formatNum(result.totalMain, 1)],
@@ -474,36 +807,11 @@ export default function ScouterPage() {
               </div>
             ))}
           </div>
-
-          <div>
-            <h3 className="mb-2 text-sm font-semibold opacity-80">
-              Stat equivalences (+1 ≈ main)
-            </h3>
-            <div className="grid gap-px overflow-hidden rounded-md border border-border/40 sm:grid-cols-2">
-              {(
-                [
-                  ["Attack", result.equiv.oneAttack],
-                  ["Boss Damage", result.equiv.oneBossPercent],
-                  ["Critical Damage", result.equiv.oneCritDamage],
-                  ["Final Damage", result.equiv.oneFinalDamage],
-                  ["Ignore Enemy Defense", result.equiv.oneIedPercent],
-                ] as const
-              ).map(([label, value]) => (
-                <div
-                  key={label}
-                  className="flex items-center justify-between gap-3 bg-background px-3 py-2 text-sm"
-                >
-                  <span className="opacity-70">{label}</span>
-                  <span className="tabular-nums">{formatNum(value, 2)}</span>
-                </div>
-              ))}
-            </div>
-          </div>
         </section>
       ) : null}
 
       <p className="text-xs opacity-60">
-        Format matched to{" "}
+        Layout matched to{" "}
         <a
           href="https://maplescouter.com/en/input"
           target="_blank"
@@ -512,7 +820,7 @@ export default function ScouterPage() {
         >
           MapleScouter
         </a>
-        . Math is a simplified GMS model; class-specific edge cases may differ.
+        . Buff / link / HEXA icons load from their CDN for visual parity.
       </p>
     </div>
   );
