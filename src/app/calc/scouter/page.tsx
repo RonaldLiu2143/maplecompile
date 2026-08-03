@@ -259,12 +259,33 @@ export default function ScouterPage() {
       const next = { ...prev };
       for (const b of BUFF_DEFS) {
         if (b.control === "check") {
-          next[b.id] = { ...next[b.id], on: nextOn };
+          // Don't auto-enable mutually exclusive consumables together
+          const enable = nextOn && !b.mutexGroup;
+          next[b.id] = { ...next[b.id], on: enable };
         } else {
           next[b.id] = {
             on: nextOn,
             level: nextOn ? (b.defaultLevel ?? b.maxLevel ?? 1) : 0,
           };
+        }
+      }
+      return next;
+    });
+  };
+
+  const setBuffChecked = (id: string, on: boolean) => {
+    setBuffs((prev) => {
+      const def = BUFF_DEFS.find((b) => b.id === id);
+      const next = { ...prev, [id]: { ...(prev[id] ?? { level: 0 }), on } };
+      if (on && def?.mutexGroup) {
+        for (const other of BUFF_DEFS) {
+          if (
+            other.id !== id &&
+            other.mutexGroup === def.mutexGroup &&
+            next[other.id]
+          ) {
+            next[other.id] = { ...next[other.id], on: false };
+          }
         }
       }
       return next;
@@ -692,12 +713,7 @@ export default function ScouterPage() {
                         title={tip}
                         className="size-3.5 accent-[var(--accent)]"
                         checked={st.on}
-                        onChange={(e) =>
-                          setBuffs((prev) => ({
-                            ...prev,
-                            [b.id]: { ...st, on: e.target.checked },
-                          }))
-                        }
+                        onChange={(e) => setBuffChecked(b.id, e.target.checked)}
                       />
                     ) : (
                       <input

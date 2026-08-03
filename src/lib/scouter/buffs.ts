@@ -16,6 +16,11 @@ export type BuffDef = {
   maxLevel?: number;
   /** Default checked for checkbox buffs */
   defaultOn?: boolean;
+  /**
+   * Mutually exclusive group — enabling one turns the others off
+   * (e.g. Onyx Apple vs Tengu's Judgement).
+   */
+  mutexGroup?: string;
 };
 
 /**
@@ -165,30 +170,6 @@ export const BUFF_DEFS: BuffDef[] = [
     defaultOn: false,
   },
   {
-    id: "rainbow",
-    label: "Rainbow Magic",
-    bonus: "+20 Attack",
-    icon: "/doping_v2/rainbow.png",
-    control: "check",
-    defaultOn: false,
-  },
-  {
-    id: "hyperRainbow",
-    label: "Hyper Rainbow Magic",
-    bonus: "+40 Attack",
-    icon: "/doping_v2/rainbow.png",
-    control: "check",
-    defaultOn: false,
-  },
-  {
-    id: "thanks",
-    label: "Thank You Maple",
-    bonus: "+30 Attack",
-    icon: "/doping_v2/thanks.png",
-    control: "check",
-    defaultOn: false,
-  },
-  {
     id: "candy",
     label: "Candied Apple",
     bonus: "+7 All Stat",
@@ -205,50 +186,10 @@ export const BUFF_DEFS: BuffDef[] = [
     defaultOn: false,
   },
   {
-    id: "wedding",
-    label: "Wedding Bouquet",
-    bonus: "+30 Attack",
-    icon: "/doping_v2/wedding.png",
-    control: "check",
-    defaultOn: false,
-  },
-  {
-    id: "specialWedding",
-    label: "Special Wedding Bouquet",
-    bonus: "+60 Attack",
-    icon: "/doping_v2/specialWedding.png",
-    control: "check",
-    defaultOn: false,
-  },
-  {
-    id: "ultraVip",
-    label: "VIP Ultra Power Coupon",
-    bonus: "+50 Attack",
-    icon: "/doping_v2/ultraVip.png",
-    control: "check",
-    defaultOn: false,
-  },
-  {
     id: "superVip",
     label: "VIP Super Power Coupon",
     bonus: "+30 Attack",
     icon: "/doping_v2/superVip.png",
-    control: "check",
-    defaultOn: false,
-  },
-  {
-    id: "truffle",
-    label: "Truffle Chocolate",
-    bonus: "+40 Attack",
-    icon: "/doping_v2/truffle.png",
-    control: "check",
-    defaultOn: false,
-  },
-  {
-    id: "medal",
-    label: "Medal Chocolate",
-    bonus: "+120 Attack",
-    icon: "/doping_v2/medal.png",
     control: "check",
     defaultOn: false,
   },
@@ -267,6 +208,7 @@ export const BUFF_DEFS: BuffDef[] = [
     icon: "/doping_v2/bighero.png",
     control: "check",
     defaultOn: false,
+    mutexGroup: "weaponTemp",
   },
   {
     id: "legendHero",
@@ -275,6 +217,7 @@ export const BUFF_DEFS: BuffDef[] = [
     icon: "/doping_v2/legendhero.png",
     control: "check",
     defaultOn: false,
+    mutexGroup: "weaponTemp",
   },
   {
     id: "jangBi",
@@ -283,6 +226,7 @@ export const BUFF_DEFS: BuffDef[] = [
     icon: "/doping_v2/jangbi.png",
     control: "check",
     defaultOn: false,
+    mutexGroup: "weaponTemp",
   },
   {
     id: "shiningBlue",
@@ -291,6 +235,7 @@ export const BUFF_DEFS: BuffDef[] = [
     icon: "/doping_v2/shiningblue.png",
     control: "check",
     defaultOn: false,
+    mutexGroup: "weaponTemp",
   },
   {
     id: "fish",
@@ -299,6 +244,7 @@ export const BUFF_DEFS: BuffDef[] = [
     icon: "/doping_v2/fish.png",
     control: "check",
     defaultOn: false,
+    mutexGroup: "atkFood",
   },
   {
     id: "whiteBear",
@@ -307,6 +253,7 @@ export const BUFF_DEFS: BuffDef[] = [
     icon: "/doping_v2/whiteBear.png",
     control: "check",
     defaultOn: false,
+    mutexGroup: "atkFood",
   },
   {
     id: "dragonsMeal",
@@ -315,6 +262,7 @@ export const BUFF_DEFS: BuffDef[] = [
     icon: "/doping_v2/dragonsmeal.png",
     control: "check",
     defaultOn: false,
+    mutexGroup: "atkFood",
   },
   {
     id: "apple",
@@ -323,14 +271,7 @@ export const BUFF_DEFS: BuffDef[] = [
     icon: "/doping_v2/apple.png",
     control: "check",
     defaultOn: false,
-  },
-  {
-    id: "cake",
-    label: "Slice of Cream Cake",
-    bonus: "+40 Attack",
-    icon: "/doping_v2/cake.png",
-    control: "check",
-    defaultOn: false,
+    mutexGroup: "atkFood",
   },
   {
     id: "tengu",
@@ -339,12 +280,13 @@ export const BUFF_DEFS: BuffDef[] = [
     icon: "/doping_v2/tengu.png",
     control: "check",
     defaultOn: false,
+    mutexGroup: "atkFood",
   },
   {
     id: "authenticDmg",
     label: "Max Authentic Symbol Damage",
     bonus: "+20% Damage",
-    icon: "/doping_v2/champion.png",
+    icon: "/images/authentic_symbol.png",
     control: "check",
     defaultOn: false,
   },
