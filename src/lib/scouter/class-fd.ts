@@ -84,7 +84,8 @@ function pickBaseFd(row: ClassFdRow, passiveSkillPlus1: boolean): number {
 }
 
 /**
- * Compute displayed Final Damage % (MapleScouter formula).
+ * Compute displayed Final Damage % (MapleScouter iN formula).
+ * Keep full precision — rounding here skews General Range.
  */
 export function computeClassFinalDamage(
   charType: string,
@@ -92,15 +93,11 @@ export function computeClassFinalDamage(
 ): number {
   const row = CLASS_FD[charType] ?? { fd: 45, fd2: 45, fd3: 45, fd4: 45 };
   const base = pickBaseFd(row, !!opts.passiveSkillPlus1);
-  const rebootMult = opts.reboot
-    ? opts.level > 250
-      ? 1.45
-      : 1.35
-    : 1;
+  // MapleScouter: 250 > level ? 1.35 : 1.45  → level >= 250 uses 1.45
+  const rebootMult = opts.reboot ? (opts.level < 250 ? 1.35 : 1.45) : 1;
   const liberMult = opts.liberation ? 1.1 : 1;
   const value = ((1 + base / 100) * liberMult * rebootMult - 1) * 100;
-  // Match MapleScouter display precision (Adele reboot+liber ≈ 168.91)
-  return Math.round(value * 100) / 100;
+  return Number(value.toFixed(10));
 }
 
 /** @deprecated use computeClassFinalDamage */

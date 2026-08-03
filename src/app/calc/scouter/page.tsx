@@ -560,7 +560,10 @@ export default function ScouterPage() {
                 />
               </FieldCell>
               <FieldCell label="Final Damage">
-                <NumInput value={input.finalDamagePercent} readOnly />
+                <NumInput
+                  value={Math.round(input.finalDamagePercent * 100) / 100}
+                  readOnly
+                />
               </FieldCell>
               <FieldCell label="Boss Damage">
                 <NumInput

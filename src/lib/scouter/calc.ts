@@ -1,4 +1,5 @@
 import { getPrimarySecondary } from "@/lib/flames";
+import { computeClassFinalDamage } from "./class-fd";
 import { getWeaponConstant } from "./weapon-constant";
 import type { ScouterInput, ScouterResult, StatKey, StatTriple } from "./types";
 
@@ -174,18 +175,30 @@ export function calculateScouter(input: ScouterInput): ScouterResult {
       : 4 * totalMain + totalSecondary;
 
   const mastery = clamp01(input.masteryPercent / 100);
-  // Khali passive adds flat Damage% into General Range (MapleScouter)
-  const rangeDamagePercent =
-    input.damagePercent + (input.charType === "khali" ? 31 : 0);
+  // Kanna adds +31 Damage% into General Range (+32 with Passive Skills +1)
+  const kannaBonus =
+    input.charType === "kanna"
+      ? input.specialInnerAbility === "passivePlus1"
+        ? 32
+        : 31
+      : 0;
+  const rangeDamagePercent = input.damagePercent + kannaBonus;
   const rangeDamageMultiplier = 1 + rangeDamagePercent / 100;
-  const finalMultiplier = 1 + input.finalDamagePercent / 100;
+  // Recompute FD at full precision (avoid rounded input.finalDamagePercent drift)
+  const rangeFinalDamage = computeClassFinalDamage(input.charType, {
+    level: input.level,
+    reboot: input.reboot,
+    liberation: input.liberation,
+    passiveSkillPlus1: input.specialInnerAbility === "passivePlus1",
+  });
+  const finalMultiplier = 1 + rangeFinalDamage / 100;
 
   /**
    * MapleScouter General Range (스공):
    * floor( round(⌊ATT⌋ × WC × statNum/100) × (1+DMG%) × (1+FD%) )
    */
   const upperRange = Math.round(
-    (attackFinal * weaponConstant * statNumerator) / 100,
+    attackFinal * weaponConstant * (statNumerator / 100),
   );
   const displayedMax = Math.floor(
     upperRange * rangeDamageMultiplier * finalMultiplier,
@@ -193,7 +206,7 @@ export function calculateScouter(input: ScouterInput): ScouterResult {
   const displayedMin = Math.floor(displayedMax * mastery);
 
   // Upper range before Damage%/FD (for expected damage; includes WC)
-  const baseMax = (attackFinal * weaponConstant * statNumerator) / 100;
+  const baseMax = attackFinal * weaponConstant * (statNumerator / 100);
 
   const critMultiplier = critExpectedMultiplier(
     input.criticalRatePercent,
@@ -261,7 +274,7 @@ export function calculateScouter(input: ScouterInput): ScouterResult {
    */
   const combatFdMult =
     (input.liberation ? 1.1 : 1) *
-    (input.reboot ? (input.level > 250 ? 1.45 : 1.35) : 1);
+    (input.reboot ? (input.level < 250 ? 1.35 : 1.45) : 1);
   const combatCd = 1.35 + input.criticalDamagePercent / 100;
   const combatPower = Math.floor(
     statTerm * attackFinal * bossMultiplier * combatFdMult * combatCd,
