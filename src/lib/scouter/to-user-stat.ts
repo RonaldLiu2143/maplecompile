@@ -179,7 +179,7 @@ export function toMapleScouterUserStat(args: {
       statFourth: "0",
       continuosRing: String(continuousUse ? input.ozContinuousLevel : 0),
       challenge: false,
-      is30min: true,
+      is30min: false,
       destiny2ndSkill: false,
       famPassiveUp: false,
     },
