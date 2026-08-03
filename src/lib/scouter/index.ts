@@ -30,6 +30,10 @@ export {
   CLASS_FD,
 } from "./class-fd";
 export {
+  computeCombatPower,
+  combatExceptionFinalDamagePercent,
+} from "./combat-power";
+export {
   CLASS_WEAPON_CONSTANT,
   getWeaponConstant,
 } from "./weapon-constant";

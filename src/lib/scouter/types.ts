@@ -1,4 +1,4 @@
-import { computeClassFinalDamage } from "./class-fd";
+import { combatExceptionFinalDamagePercent } from "./combat-power";
 
 export type StatKey = "str" | "dex" | "int" | "luk" | "hp";
 
@@ -113,7 +113,9 @@ export function defaultScouterInput(
     magicAttack: { ...EMPTY_TRIPLE },
     damagePercent: 0,
     bossDamagePercent: 0,
-    finalDamagePercent: computeClassFinalDamage(charType, {
+    // Skill-excluded FD for Combat Power (Reboot / Liberation / equip). Class
+    // skill FD is applied only inside General Range via computeClassFinalDamage.
+    finalDamagePercent: combatExceptionFinalDamagePercent({
       level: 275,
       reboot: false,
       liberation: false,

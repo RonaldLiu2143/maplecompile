@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   BUFF_DEFS,
   calculateScouter,
+  combatExceptionFinalDamagePercent,
   computeClassFinalDamage,
   defaultBuffState,
   defaultHexaLevels,
@@ -210,21 +211,15 @@ export default function ScouterPage() {
     [input.magicAttack],
   );
 
-  const computedFinalDamage = useMemo(
+  /** Skill-excluded FD (Reboot / Liberation). Class skill FD is only for General Range. */
+  const exceptionFinalDamage = useMemo(
     () =>
-      computeClassFinalDamage(input.charType, {
+      combatExceptionFinalDamagePercent({
         level: input.level,
         reboot: input.reboot,
         liberation: input.liberation,
-        passiveSkillPlus1: input.specialInnerAbility === "passivePlus1",
       }),
-    [
-      input.charType,
-      input.level,
-      input.reboot,
-      input.liberation,
-      input.specialInnerAbility,
-    ],
+    [input.level, input.reboot, input.liberation],
   );
 
   useEffect(() => {
@@ -232,7 +227,22 @@ export default function ScouterPage() {
     if (last?.input) {
       const job = last.input.jobType || DEFAULT_JOB;
       const char = last.input.charType || DEFAULT_CHAR;
-      setInput({ ...defaultScouterInput(job, char), ...last.input });
+      const merged = { ...defaultScouterInput(job, char), ...last.input };
+      // Older drafts stored class skill FD here; CP needs skill-excluded FD.
+      const classFd = computeClassFinalDamage(merged.charType, {
+        level: merged.level,
+        reboot: merged.reboot,
+        liberation: merged.liberation,
+        passiveSkillPlus1: merged.specialInnerAbility === "passivePlus1",
+      });
+      if (Math.abs(merged.finalDamagePercent - classFd) < 0.05) {
+        merged.finalDamagePercent = combatExceptionFinalDamagePercent({
+          level: merged.level,
+          reboot: merged.reboot,
+          liberation: merged.liberation,
+        });
+      }
+      setInput(merged);
     }
     if (last?.buffs) setBuffs(last.buffs);
     if (last?.links) setLinks(last.links);
@@ -240,13 +250,28 @@ export default function ScouterPage() {
     setDraftReady(true);
   }, []);
 
+  // When Reboot / Liberation / level changes, multiply/divide the exception
+  // portion so equipment FD in the same field stays intact.
+  const prevExceptionFd = useRef<number | null>(null);
   useEffect(() => {
-    setInput((prev) =>
-      prev.finalDamagePercent === computedFinalDamage
-        ? prev
-        : { ...prev, finalDamagePercent: computedFinalDamage },
-    );
-  }, [computedFinalDamage]);
+    const next = exceptionFinalDamage;
+    if (prevExceptionFd.current === null) {
+      prevExceptionFd.current = next;
+      return;
+    }
+    const prev = prevExceptionFd.current;
+    if (Math.abs(next - prev) < 1e-12) return;
+    setInput((cur) => {
+      const withoutPrev =
+        (1 + cur.finalDamagePercent / 100) / (1 + prev / 100);
+      const withNext = withoutPrev * (1 + next / 100);
+      return {
+        ...cur,
+        finalDamagePercent: Number(((withNext - 1) * 100).toFixed(10)),
+      };
+    });
+    prevExceptionFd.current = next;
+  }, [exceptionFinalDamage]);
 
   useEffect(() => {
     if (!draftReady) return;
@@ -270,12 +295,6 @@ export default function ScouterPage() {
       jobType: parsed.jobType,
       charType: parsed.charType,
       useMagicAttack: parsed.jobType === "magician",
-      finalDamagePercent: computeClassFinalDamage(parsed.charType, {
-        level: prev.level,
-        reboot: prev.reboot,
-        liberation: prev.liberation,
-        passiveSkillPlus1: prev.specialInnerAbility === "passivePlus1",
-      }),
     }));
     setHexa(defaultHexaLevels());
   };
@@ -539,7 +558,9 @@ export default function ScouterPage() {
               <FieldCell label="Final Damage">
                 <NumInput
                   value={Math.round(input.finalDamagePercent * 100) / 100}
-                  readOnly
+                  onChange={(finalDamagePercent) =>
+                    patch({ finalDamagePercent })
+                  }
                 />
               </FieldCell>
               <FieldCell label="Boss Damage">

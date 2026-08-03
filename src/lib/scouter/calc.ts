@@ -1,5 +1,6 @@
 import { getPrimarySecondary } from "@/lib/flames";
 import { computeClassFinalDamage } from "./class-fd";
+import { computeCombatPower } from "./combat-power";
 import { getWeaponConstant } from "./weapon-constant";
 import type { ScouterInput, ScouterResult, StatKey, StatTriple } from "./types";
 
@@ -267,18 +268,18 @@ export function calculateScouter(input: ScouterInput): ScouterResult {
     iedMultiplier > 0 ? convertedMain * (dIedMult / iedMultiplier) : 0;
 
   /**
-   * Combat Power (전투력) — community-verified:
-   * floor( (4main+sub)/100 × ⌊ATT⌋ × (1+DMG+BD) × (1+FD_noskill) × (1.35+CD) )
-   * Skill FD is excluded; Reboot + Liberation (genesis) FD are included.
-   * Weapon→bow ATT conversion omitted (needs weapon base ATT split).
+   * In-game Combat Power (전투력) — community formula, not MapleScouter.
+   * Uses skill-excluded Final Damage from the editable field.
+   * Does not use weapon constant (bow ATT conversion when weapon split exists).
    */
-  const combatFdMult =
-    (input.liberation ? 1.1 : 1) *
-    (input.reboot ? (input.level < 250 ? 1.35 : 1.45) : 1);
-  const combatCd = 1.35 + input.criticalDamagePercent / 100;
-  const combatPower = Math.floor(
-    statTerm * attackFinal * bossMultiplier * combatFdMult * combatCd,
-  );
+  const combatPower = computeCombatPower({
+    statTerm,
+    attackFloor: attackFinal,
+    damagePercent: input.damagePercent,
+    bossDamagePercent: input.bossDamagePercent,
+    finalDamagePercent: input.finalDamagePercent,
+    criticalDamagePercent: input.criticalDamagePercent,
+  });
 
   return {
     totalMain,
