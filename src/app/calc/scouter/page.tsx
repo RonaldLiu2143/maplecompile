@@ -385,6 +385,24 @@ export default function ScouterPage() {
     [input.level, input.reboot, input.liberation],
   );
 
+  // Full class FD (skills + reboot/liberation) — display only; CP keeps skill-excluded.
+  const displayedFinalDamage = useMemo(
+    () =>
+      computeClassFinalDamage(input.charType, {
+        level: input.level,
+        reboot: input.reboot,
+        liberation: input.liberation,
+        passiveSkillPlus1: input.specialInnerAbility === "passivePlus1",
+      }),
+    [
+      input.charType,
+      input.level,
+      input.reboot,
+      input.liberation,
+      input.specialInnerAbility,
+    ],
+  );
+
   // Tracks last Reboot/Liberation FD baseline (must be declared before load effect).
   const prevExceptionFd = useRef<number | null>(null);
 
@@ -731,12 +749,7 @@ export default function ScouterPage() {
                 />
               </FieldCell>
               <FieldCell label="Final Damage">
-                <NumInput
-                  value={Math.round(input.finalDamagePercent * 100) / 100}
-                  onChange={(finalDamagePercent) =>
-                    patch({ finalDamagePercent })
-                  }
-                />
+                <NumInput value={displayedFinalDamage} readOnly />
               </FieldCell>
               <FieldCell label="Boss Damage">
                 <NumInput
