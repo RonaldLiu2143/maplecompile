@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
-  calculateScouter,
   defaultBuffState,
   defaultHexaLevels,
   defaultLinkState,
@@ -23,20 +22,6 @@ function formatNum(n: number, digits = 0): string {
     maximumFractionDigits: digits,
     minimumFractionDigits: digits,
   });
-}
-
-/** MapleScouter-style 억/만 compact label for large item stats. */
-function formatCompactStat(n: number): string {
-  if (!Number.isFinite(n) || n <= 0) return "—";
-  const abs = Math.floor(Math.abs(n));
-  const eok = Math.floor(abs / 100_000_000);
-  const man = Math.floor((abs % 100_000_000) / 10_000);
-  const rest = abs % 10_000;
-  const parts: string[] = [];
-  if (eok > 0) parts.push(`${eok}억`);
-  if (man > 0) parts.push(`${man}만`);
-  if (rest > 0 || parts.length === 0) parts.push(formatNum(rest));
-  return parts.join(" ");
 }
 
 function StatBlock({
@@ -176,7 +161,6 @@ export default function ScouterDetailedResultPage() {
   const [data, setData] = useState<MapleScouterCalculatedData | null>(null);
   const [level, setLevel] = useState(275);
   const [charLabel, setCharLabel] = useState("Adele");
-  const [generalRange, setGeneralRange] = useState({ max: 0, min: 0 });
 
   useEffect(() => {
     let cancelled = false;
@@ -198,11 +182,6 @@ export default function ScouterDetailedResultPage() {
         if (!cancelled) {
           setLevel(input.level);
           setCharLabel(getCharName(input.jobType, input.charType));
-          const local = calculateScouter(input);
-          setGeneralRange({
-            max: local.displayedMax,
-            min: local.displayedMin,
-          });
         }
 
         const res = await fetch("/api/scouter/result", {
@@ -343,115 +322,44 @@ export default function ScouterDetailedResultPage() {
 
       {!loading && !error && data ? (
         <>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <StatBlock title="ITEM STAT">
-              <p className="font-display text-2xl font-bold tabular-nums text-accent">
-                {formatCompactStat(data.exchangePower ?? 0)}
-              </p>
-              <p className="mt-1 text-xs opacity-50 tabular-nums">
-                {formatNum(data.exchangePower ?? 0)}
-              </p>
-              <div className="mt-3 space-y-0">
-                <MetricRow label="Normal" value={data.exchangePower ?? 0} />
-                <MetricRow label="HEXA" value={data.exchangePowerHexa ?? 0} />
-              </div>
-            </StatBlock>
-
-            <StatBlock title="HEXA STAT">
-              <p className="font-display text-2xl font-bold tabular-nums">
-                {formatCompactStat(data.exchangePowerHexa ?? 0)}
-              </p>
-              <p className="mt-1 text-xs opacity-50 tabular-nums">
-                {formatNum(data.exchangePowerHexa ?? 0)}
-              </p>
-              <div className="mt-3 space-y-0">
-                <MetricRow
-                  label="Increased by HEXA"
-                  value={`${formatNum((data.increasedByHexa ?? 0) * 100, 2)}%`}
-                />
-                <MetricRow
-                  label="Erda used"
-                  value={(data.hexaUsed ?? []).reduce((a, b) => a + b, 0)}
-                />
-              </div>
-            </StatBlock>
-
-            <StatBlock title="Dojo">
-              <p className="font-display text-2xl font-bold tabular-nums">
-                {formatCompactStat(data.mr_hexaStat ?? 0)}
-              </p>
-              <p className="mt-1 text-xs opacity-50 tabular-nums">
-                {formatNum(data.mr_hexaStat ?? 0)}
-              </p>
-              <div className="mt-3 space-y-0">
-                <MetricRow label="HEXA" value={data.mr_hexaStat ?? 0} />
-                <MetricRow label="Normal" value={data.mr_stat ?? 0} />
-              </div>
-            </StatBlock>
-
-            <StatBlock title="General Range">
-              <div className="space-y-0">
-                <MetricRow label="Max" value={generalRange.max} />
-                <MetricRow label="Min" value={generalRange.min} />
-              </div>
-            </StatBlock>
-          </div>
-
-          <div className="grid gap-3 sm:grid-cols-2">
-            <StatBlock title="Boss 300">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <p className="text-xs opacity-60">Normal</p>
-                  <p className="font-display text-3xl font-bold tabular-nums">
-                    {formatNum(data.boss300_stat ?? 0)}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs opacity-60">HEXA</p>
-                  <p className="font-display text-3xl font-bold tabular-nums">
-                    {formatNum(data.boss300_hexaStat ?? 0)}
-                  </p>
+          <StatBlock title="Boss Converted Stat">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <p className="mb-2 text-sm font-semibold">Boss 300</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <p className="text-xs opacity-60">Normal</p>
+                    <p className="font-display text-3xl font-bold tabular-nums">
+                      {formatNum(data.boss300_stat ?? 0)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs opacity-60">HEXA</p>
+                    <p className="font-display text-3xl font-bold tabular-nums">
+                      {formatNum(data.boss300_hexaStat ?? 0)}
+                    </p>
+                  </div>
                 </div>
               </div>
-              <div className="mt-3 space-y-0">
-                <MetricRow
-                  label="Expected DMG"
-                  value={data.calculatedDamage_300 ?? 0}
-                />
-                <MetricRow
-                  label="HEXA Expected DMG"
-                  value={data.calculatedHexaDamage_300 ?? 0}
-                />
-              </div>
-            </StatBlock>
-
-            <StatBlock title="Boss 380">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <p className="text-xs opacity-60">Normal</p>
-                  <p className="font-display text-3xl font-bold tabular-nums">
-                    {formatNum(data.boss380_stat ?? 0)}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs opacity-60">HEXA</p>
-                  <p className="font-display text-3xl font-bold tabular-nums">
-                    {formatNum(data.boss380_hexaStat ?? 0)}
-                  </p>
+              <div>
+                <p className="mb-2 text-sm font-semibold">Boss 380</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <p className="text-xs opacity-60">Normal</p>
+                    <p className="font-display text-3xl font-bold tabular-nums">
+                      {formatNum(data.boss380_stat ?? 0)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs opacity-60">HEXA</p>
+                    <p className="font-display text-3xl font-bold tabular-nums">
+                      {formatNum(data.boss380_hexaStat ?? 0)}
+                    </p>
+                  </div>
                 </div>
               </div>
-              <div className="mt-3 space-y-0">
-                <MetricRow
-                  label="Expected DMG"
-                  value={data.calculatedDamage_380 ?? 0}
-                />
-                <MetricRow
-                  label="HEXA Expected DMG"
-                  value={data.calculatedHexaDamage_380 ?? 0}
-                />
-              </div>
-            </StatBlock>
-          </div>
+            </div>
+          </StatBlock>
 
           <div className="grid gap-3 lg:grid-cols-2">
             <StatBlock title="Scouter Graph">
