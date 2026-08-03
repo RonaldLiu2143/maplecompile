@@ -436,16 +436,6 @@ export const LINK_DEFS: LinkDef[] = [
     maxLevel: 3,
     defaultLevel: 0,
   },
-  {
-    id: "lynn",
-    label: "Lynn (Spirit Guide Blessing)",
-    short: "LYN",
-    bonus: "+Boss Damage / Crit Rate / Max HP·MP (max 3)",
-    // MapleScouter's lynn.png is identical to illium.png — use text fallback
-    icon: null,
-    maxLevel: 3,
-    defaultLevel: 0,
-  },
 ];
 
 /** charType → MapleScouter HEXA folder prefix */
