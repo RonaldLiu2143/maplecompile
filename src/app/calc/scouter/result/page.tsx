@@ -522,21 +522,21 @@ export default function ScouterDetailedResultPage() {
           </aside>
 
           <div className="min-w-0 flex-1 space-y-3">
-            {showDestinyChampion ? (
-              <StatBlock
-                title="Destiny & Champion"
-                hint="Solo-mode Destiny and Champion · 30 min window."
-                action={
-                  <button
-                    type="button"
-                    className="rounded-full border border-border/50 bg-surface px-3 py-1.5 text-xs font-semibold transition hover:bg-surface-muted"
-                    onClick={() => setShowDestinyChampion(false)}
-                  >
-                    Hide
-                  </button>
-                }
-              >
-                {destinyChampionRows.length === 0 ? (
+            <StatBlock
+              title="Destiny & Champion"
+              hint="Solo-mode Destiny and Champion · 30 min window."
+              action={
+                <button
+                  type="button"
+                  className="rounded-full border border-border/50 bg-surface px-3 py-1.5 text-xs font-semibold transition hover:bg-surface-muted"
+                  onClick={() => setShowDestinyChampion((v) => !v)}
+                >
+                  {showDestinyChampion ? "Hide" : "Show"}
+                </button>
+              }
+            >
+              {showDestinyChampion ? (
+                destinyChampionRows.length === 0 ? (
                   <p className="py-6 text-center text-sm opacity-60">
                     No Destiny or Champion bosses in the list.
                   </p>
@@ -545,24 +545,19 @@ export default function ScouterDetailedResultPage() {
                     rows={destinyChampionRows}
                     columnsClass="grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-5 xl:grid-cols-6"
                   />
-                )}
-              </StatBlock>
-            ) : null}
+                )
+              ) : (
+                <p className="py-2 text-center text-xs opacity-55">
+                  Hidden — press Show to view Destiny & Champion clears.
+                </p>
+              )}
+            </StatBlock>
 
             <StatBlock
               title="Boss Clear (Cut)"
               hint="Clear % uses GMS cut standards over 30 min. Hover for GMS HP, crystal, and drops."
               action={
                 <div className="flex flex-wrap items-center gap-2 text-xs">
-                  <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-border/50 bg-surface px-3 py-1.5 font-semibold">
-                    <input
-                      type="checkbox"
-                      className="size-3.5 accent-[var(--accent,#c2410c)]"
-                      checked={showDestinyChampion}
-                      onChange={(e) => setShowDestinyChampion(e.target.checked)}
-                    />
-                    Destiny / Champion
-                  </label>
                   <button
                     type="button"
                     className={`rounded-full px-3 py-1.5 font-semibold transition ${
