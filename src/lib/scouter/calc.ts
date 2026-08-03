@@ -147,44 +147,53 @@ export function calculateScouter(input: ScouterInput): ScouterResult {
         );
 
   /**
-   * Stat term `c` from MapleScouter:
-   * DA: (⌊baseHP/3.5⌋ + 0.8×⌊(HP-baseHP)/3.5⌋ + STR) / 100
-   * Xenon: (STR+DEX+LUK)×4 / 100
-   * else: (4×main + sub [+ sub2]) / 100
+   * Stat numerator from MapleScouter (before /100):
+   * DA: ⌊baseHP/3.5⌋ + 0.8×⌊(HP-baseHP)/3.5⌋ + STR
+   * Xenon: (STR+DEX+LUK)×4
+   * else: 4×main + sub [+ sub2]
    */
-  let statTerm: number;
+  let statNumerator: number;
   if (isDa) {
     const baseHp = 90 * input.level + 545;
     const hp = mainFloored;
-    statTerm =
-      (Math.floor(baseHp / 3.5) +
-        0.8 * Math.floor((hp - baseHp) / 3.5) +
-        secFloored) /
-      100;
+    statNumerator =
+      Math.floor(baseHp / 3.5) +
+      0.8 * Math.floor((hp - baseHp) / 3.5) +
+      secFloored;
   } else if (isXenon) {
-    statTerm = (mainFloored * 4) / 100;
+    statNumerator = mainFloored * 4;
   } else {
-    statTerm = (4 * mainFloored + secFloored) / 100;
+    statNumerator = 4 * mainFloored + secFloored;
   }
+  const statTerm = statNumerator / 100;
 
   const statValue = isXenon
     ? 4 * totalMain
     : isDa
-      ? statTerm * 100
+      ? statNumerator
       : 4 * totalMain + totalSecondary;
 
-  // Upper range before Damage%/FD: ATT × weaponConstant × statTerm
-  const baseMax = attackFinal * weaponConstant * statTerm;
   const mastery = clamp01(input.masteryPercent / 100);
-  const damageMultiplier = 1 + input.damagePercent / 100;
+  // Khali passive adds flat Damage% into General Range (MapleScouter)
+  const rangeDamagePercent =
+    input.damagePercent + (input.charType === "khali" ? 31 : 0);
+  const rangeDamageMultiplier = 1 + rangeDamagePercent / 100;
   const finalMultiplier = 1 + input.finalDamagePercent / 100;
 
-  // MapleScouter General Range:
-  // floor( round(ATT × WC × c) × (1+DMG%) × (1+FD%) )
+  /**
+   * MapleScouter General Range (스공):
+   * floor( round(⌊ATT⌋ × WC × statNum/100) × (1+DMG%) × (1+FD%) )
+   */
+  const upperRange = Math.round(
+    (attackFinal * weaponConstant * statNumerator) / 100,
+  );
   const displayedMax = Math.floor(
-    Math.round(baseMax) * damageMultiplier * finalMultiplier,
+    upperRange * rangeDamageMultiplier * finalMultiplier,
   );
   const displayedMin = Math.floor(displayedMax * mastery);
+
+  // Upper range before Damage%/FD (for expected damage; includes WC)
+  const baseMax = (attackFinal * weaponConstant * statNumerator) / 100;
 
   const critMultiplier = critExpectedMultiplier(
     input.criticalRatePercent,
@@ -244,11 +253,18 @@ export function calculateScouter(input: ScouterInput): ScouterResult {
   const equivIed =
     iedMultiplier > 0 ? convertedMain * (dIedMult / iedMultiplier) : 0;
 
+  /**
+   * Combat Power (전투력) — community-verified:
+   * floor( (4main+sub)/100 × ⌊ATT⌋ × (1+DMG+BD) × (1+FD_noskill) × (1.35+CD) )
+   * Skill FD is excluded; Reboot + Liberation (genesis) FD are included.
+   * Weapon→bow ATT conversion omitted (needs weapon base ATT split).
+   */
+  const combatFdMult =
+    (input.liberation ? 1.1 : 1) *
+    (input.reboot ? (input.level > 250 ? 1.45 : 1.35) : 1);
   const combatCd = 1.35 + input.criticalDamagePercent / 100;
-  // Combat Power excludes skill Final Damage (our FD field is class skill FD).
-  // floor( (4main+sub)/100 × ⌊ATT⌋ × (1+DMG+BD) × (1.35+CD) )
   const combatPower = Math.floor(
-    statTerm * attackFinal * bossMultiplier * combatCd,
+    statTerm * attackFinal * bossMultiplier * combatFdMult * combatCd,
   );
 
   return {
