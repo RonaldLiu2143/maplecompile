@@ -172,66 +172,6 @@ export function getHexaSlots(charType: string): HexaSlot[] {
 export const HEXA_SLOT_COUNT = 14;
 export const HEXA_MAX_LEVEL = 30;
 
-/** Approximate job-inherent final damage % (read-only per class). */
-export const CLASS_FINAL_DAMAGE: Record<string, number> = {
-  adele: 55,
-  aran: 50,
-  blaster: 48,
-  dk: 45,
-  da: 40,
-  ds: 48,
-  hayato: 45,
-  hero: 50,
-  len: 50,
-  mihile: 42,
-  kaiser: 48,
-  paladin: 45,
-  sm: 45,
-  zero: 48,
-  bam: 45,
-  bs: 40,
-  evan: 48,
-  fp: 48,
-  fw: 48,
-  il: 48,
-  illium: 50,
-  kanna: 45,
-  kinesis: 48,
-  lara: 48,
-  lumi: 48,
-  lynn: 42,
-  sia: 45,
-  bm: 48,
-  xbm: 48,
-  kain: 50,
-  merc: 48,
-  pf: 48,
-  wh: 45,
-  wb: 48,
-  cadena: 50,
-  db: 48,
-  hy: 50,
-  khali: 50,
-  nl: 50,
-  nw: 48,
-  phantom: 48,
-  sdw: 48,
-  xenon: 45,
-  ab: 50,
-  ark: 50,
-  cm: 48,
-  captain: 48,
-  eunwol: 48,
-  mech: 45,
-  mx: 48,
-  striker: 48,
-  viper: 48,
-};
-
-export function classFinalDamage(charType: string): number {
-  return CLASS_FINAL_DAMAGE[charType] ?? 45;
-}
-
 export type BuffState = Record<string, { on: boolean; level: number }>;
 export type LinkState = Record<string, number>;
 

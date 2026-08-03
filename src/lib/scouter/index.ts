@@ -16,7 +16,6 @@ export {
   HEXA_MAX_LEVEL,
   getHexaSlots,
   hexaIconPath,
-  classFinalDamage,
   defaultBuffState,
   defaultLinkState,
   defaultHexaLevels,
@@ -25,6 +24,11 @@ export {
   type LinkState,
   type HexaSlot,
 } from "./buffs";
+export {
+  computeClassFinalDamage,
+  classFinalDamage,
+  CLASS_FD,
+} from "./class-fd";
 export {
   OZ_RINGS,
   OZ_CONTINUOUS_STATUS,

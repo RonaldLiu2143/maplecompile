@@ -1,4 +1,4 @@
-import { classFinalDamage } from "./buffs";
+import { computeClassFinalDamage } from "./class-fd";
 
 export type StatKey = "str" | "dex" | "int" | "luk" | "hp";
 
@@ -109,7 +109,11 @@ export function defaultScouterInput(
     magicAttack: { ...EMPTY_TRIPLE },
     damagePercent: 0,
     bossDamagePercent: 0,
-    finalDamagePercent: classFinalDamage(charType),
+    finalDamagePercent: computeClassFinalDamage(charType, {
+      level: 275,
+      reboot: false,
+      liberation: false,
+    }),
     ignoreDefensePercent: 0,
     normalEnemyDamagePercent: 0,
     criticalRatePercent: 100,

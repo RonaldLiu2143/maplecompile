@@ -1,11 +1,11 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   BOSS_PDR_PRESETS,
   BUFF_DEFS,
   calculateScouter,
-  classFinalDamage,
+  computeClassFinalDamage,
   defaultBuffState,
   defaultHexaLevels,
   defaultLinkState,
@@ -193,6 +193,31 @@ export default function ScouterPage() {
     return Math.round(applyTriple(src));
   }, [input.attack, input.magicAttack, input.useMagicAttack]);
 
+  const computedFinalDamage = useMemo(
+    () =>
+      computeClassFinalDamage(input.charType, {
+        level: input.level,
+        reboot: input.reboot,
+        liberation: input.liberation,
+        passiveSkillPlus1: input.specialInnerAbility === "passivePlus1",
+      }),
+    [
+      input.charType,
+      input.level,
+      input.reboot,
+      input.liberation,
+      input.specialInnerAbility,
+    ],
+  );
+
+  useEffect(() => {
+    setInput((prev) =>
+      prev.finalDamagePercent === computedFinalDamage
+        ? prev
+        : { ...prev, finalDamagePercent: computedFinalDamage },
+    );
+  }, [computedFinalDamage]);
+
   const patch = (partial: Partial<ScouterInput>) =>
     setInput((prev) => ({ ...prev, ...partial }));
 
@@ -210,7 +235,12 @@ export default function ScouterPage() {
       jobType: parsed.jobType,
       charType: parsed.charType,
       useMagicAttack: parsed.jobType === "magician",
-      finalDamagePercent: classFinalDamage(parsed.charType),
+      finalDamagePercent: computeClassFinalDamage(parsed.charType, {
+        level: prev.level,
+        reboot: prev.reboot,
+        liberation: prev.liberation,
+        passiveSkillPlus1: prev.specialInnerAbility === "passivePlus1",
+      }),
     }));
     setHexa(defaultHexaLevels());
   };
@@ -313,8 +343,8 @@ export default function ScouterPage() {
     (() => {
       if (isDa) {
         return [
-          { label: "STR", key: "str" as StatKey },
           { label: "Max HP", key: "hp" as StatKey },
+          { label: "STR", key: "str" as StatKey },
           { label: "Attack", kind: "att" as const },
         ];
       }
@@ -326,14 +356,14 @@ export default function ScouterPage() {
           { label: "Attack", kind: "att" as const },
         ];
       }
+      const pri = mainKeys.map((k) => ({ label: STAT_LABELS[k], key: k }));
       const sec = secondaryKeys.map((k) => ({
         label: STAT_LABELS[k],
         key: k,
       }));
-      const pri = mainKeys.map((k) => ({ label: STAT_LABELS[k], key: k }));
       return [
-        ...sec,
         ...pri,
+        ...sec,
         {
           label: input.useMagicAttack ? "M.Attack" : "Attack",
           kind: input.useMagicAttack ? ("matt" as const) : ("att" as const),
