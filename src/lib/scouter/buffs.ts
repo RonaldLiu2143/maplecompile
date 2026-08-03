@@ -400,36 +400,144 @@ export type LinkDef = {
   label: string;
   /** Short label when CDN icon is missing */
   short: string;
+  /** Bonus summary for hover tooltip */
+  bonus: string;
   icon: string | null;
   maxLevel: number;
   defaultLevel: number;
 };
 
 /**
- * Links/Legion grid — MapleScouter Adele-style set plus common damage links.
- * Icons that aren't on the CDN use a text fallback (`short`).
+ * MapleScouter Links/Legion grid (icons from maplescouter.com/linkskill).
+ * Caps from their UI validation messages. Defaults start at 0.
  */
 export const LINK_DEFS: LinkDef[] = [
-  { id: "pirate", label: "Explorer Pirate (Pirate Blessing)", short: "PIR", icon: null, maxLevel: 3, defaultLevel: 3 },
-  { id: "thief", label: "Explorer Thief (Thief's Cunning)", short: "THF", icon: "/linkskill/thief.png", maxLevel: 3, defaultLevel: 0 },
-  { id: "resistance", label: "Resistance (Spirit of Freedom)", short: "RES", icon: null, maxLevel: 3, defaultLevel: 0 },
-  { id: "da", label: "Demon Avenger (Wild Rage)", short: "DA", icon: null, maxLevel: 3, defaultLevel: 0 },
-  { id: "ark", label: "Ark (Solus)", short: "ARK", icon: "/linkskill/ark.png", maxLevel: 10, defaultLevel: 3 },
-  { id: "illium", label: "Illium (Tide of Battle)", short: "ILM", icon: "/linkskill/illium.png", maxLevel: 10, defaultLevel: 3 },
-  { id: "adele", label: "Adele (Noble Fire)", short: "ADL", icon: null, maxLevel: 3, defaultLevel: 3 },
-  { id: "kanna", label: "Kanna (Elementalism)", short: "KAN", icon: "/linkskill/kanna.png", maxLevel: 3, defaultLevel: 3 },
-  { id: "ds", label: "Demon Slayer (Fury Unleashed)", short: "DS", icon: null, maxLevel: 3, defaultLevel: 3 },
-  { id: "xenon", label: "Xenon (Hybrid Logic)", short: "XEN", icon: null, maxLevel: 3, defaultLevel: 0 },
-  { id: "magician", label: "Explorer Mage (Empirical Knowledge)", short: "MAG", icon: "/linkskill/magician.png", maxLevel: 10, defaultLevel: 3 },
-  { id: "kadena", label: "Cadena (Unpleasant Insult)", short: "CAD", icon: "/linkskill/kadena.png", maxLevel: 3, defaultLevel: 0 },
-  { id: "kain", label: "Kain", short: "KAI", icon: "/linkskill/kain.png", maxLevel: 3, defaultLevel: 0 },
-  { id: "angel", label: "Angelic Buster", short: "AB", icon: "/linkskill/angel.png", maxLevel: 3, defaultLevel: 0 },
-  { id: "hoyoung", label: "Ho Young", short: "HY", icon: "/linkskill/hoyoung.png", maxLevel: 3, defaultLevel: 0 },
-  { id: "kaiser", label: "Kaiser", short: "KSR", icon: "/linkskill/kaiser.png", maxLevel: 3, defaultLevel: 0 },
-  { id: "mihile", label: "Mihile", short: "MIH", icon: "/linkskill/mihile.png", maxLevel: 3, defaultLevel: 0 },
-  { id: "hayato", label: "Hayato", short: "HAY", icon: "/linkskill/hayato.png", maxLevel: 3, defaultLevel: 0 },
-  { id: "lynn", label: "Lynn", short: "LYN", icon: "/linkskill/lynn.png", maxLevel: 3, defaultLevel: 0 },
-  { id: "mukhyun", label: "Mo Xuan", short: "MX", icon: "/linkskill/mukhyun.png", maxLevel: 3, defaultLevel: 0 },
+  {
+    id: "kadena",
+    label: "Cadena (Intensive Insult)",
+    short: "CAD",
+    bonus: "Damage vs statused / lower-level foes (max 3)",
+    icon: "/linkskill/kadena.png",
+    maxLevel: 3,
+    defaultLevel: 0,
+  },
+  {
+    id: "illium",
+    label: "Illium (Tide of Battle)",
+    short: "ILM",
+    bonus: "Damage while moving, stacking (max 2)",
+    icon: "/linkskill/illium.png",
+    maxLevel: 2,
+    defaultLevel: 0,
+  },
+  {
+    id: "ark",
+    label: "Ark (Solus)",
+    short: "ARK",
+    bonus: "Damage over combat duration (max 3)",
+    icon: "/linkskill/ark.png",
+    maxLevel: 3,
+    defaultLevel: 0,
+  },
+  {
+    id: "kain",
+    label: "Kain (Judgment)",
+    short: "KAI",
+    bonus: "Boss Damage after defeats (max 3)",
+    icon: "/linkskill/kain.png",
+    maxLevel: 3,
+    defaultLevel: 0,
+  },
+  {
+    id: "magician",
+    label: "Explorer Mage (Empirical Knowledge)",
+    short: "MAG",
+    bonus: "Damage / Boss / IED stacks (max 9)",
+    icon: "/linkskill/magician.png",
+    maxLevel: 9,
+    defaultLevel: 0,
+  },
+  {
+    id: "thief",
+    label: "Explorer Thief (Thief's Cunning)",
+    short: "THF",
+    bonus: "Damage after attacking (max 9)",
+    icon: "/linkskill/thief.png",
+    maxLevel: 9,
+    defaultLevel: 0,
+  },
+  {
+    id: "angel",
+    label: "Angelic Buster (Terms and Conditions)",
+    short: "AB",
+    bonus: "+Damage (max 3)",
+    icon: "/linkskill/angel.png",
+    maxLevel: 3,
+    defaultLevel: 0,
+  },
+  {
+    id: "kanna",
+    label: "Kanna (Elementalism)",
+    short: "KAN",
+    bonus: "+% Damage (max 3)",
+    icon: "/linkskill/kanna.png",
+    maxLevel: 3,
+    defaultLevel: 0,
+  },
+  {
+    id: "mukhyun",
+    label: "Mo Xuan",
+    short: "MX",
+    bonus: "Damage link (max 3)",
+    icon: "/linkskill/mukhyun.png",
+    maxLevel: 3,
+    defaultLevel: 0,
+  },
+  {
+    id: "hoyoung",
+    label: "Ho Young (Invincible Barricade)",
+    short: "HY",
+    bonus: "Ignore damage chance (max 3)",
+    icon: "/linkskill/hoyoung.png",
+    maxLevel: 3,
+    defaultLevel: 0,
+  },
+  {
+    id: "hayato",
+    label: "Hayato (Keen Edge)",
+    short: "HAY",
+    bonus: "Crit Damage (max 3)",
+    icon: "/linkskill/hayato.png",
+    maxLevel: 3,
+    defaultLevel: 0,
+  },
+  {
+    id: "lynn",
+    label: "Lynn",
+    short: "LYN",
+    bonus: "Damage link (max 3)",
+    icon: "/linkskill/lynn.png",
+    maxLevel: 3,
+    defaultLevel: 0,
+  },
+  {
+    id: "mihile",
+    label: "Mihile (Knight's Watch)",
+    short: "MIH",
+    bonus: "Invincibility duration (max 2)",
+    icon: "/linkskill/mihile.png",
+    maxLevel: 2,
+    defaultLevel: 0,
+  },
+  {
+    id: "kaiser",
+    label: "Kaiser (Iron Will)",
+    short: "KSR",
+    bonus: "Max HP / damage link (max 2)",
+    icon: "/linkskill/kaiser.png",
+    maxLevel: 2,
+    defaultLevel: 0,
+  },
 ];
 
 /** charType → MapleScouter HEXA folder prefix */

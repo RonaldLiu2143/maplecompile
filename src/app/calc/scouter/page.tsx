@@ -730,28 +730,33 @@ export default function ScouterPage() {
             <div className="border-b border-border/40 px-3 py-2">
               <h2 className="text-sm font-semibold">Links/Legion</h2>
             </div>
-            <div className="grid grid-cols-4 gap-2 p-3 sm:grid-cols-5">
-              {LINK_DEFS.map((l) => (
-                <div
-                  key={l.id}
-                  title={l.label}
-                  className="flex flex-col items-center gap-1 rounded border border-border/40 bg-background p-1.5"
-                >
-                  <CdnIcon src={l.icon} alt={l.label} fallback={l.short} />
-                  <input
-                    type="number"
-                    min={0}
-                    max={l.maxLevel}
-                    className="w-full rounded border border-border/40 bg-background px-0.5 py-0.5 text-center text-[11px] tabular-nums outline-none focus:border-accent"
-                    value={links[l.id] ?? 0}
-                    onChange={(e) => {
-                      const raw = Number(e.target.value) || 0;
-                      const capped = Math.min(Math.max(0, raw), l.maxLevel);
-                      setLinks((prev) => ({ ...prev, [l.id]: capped }));
-                    }}
-                  />
-                </div>
-              ))}
+            <div className="grid grid-cols-6 gap-2 p-3 sm:grid-cols-8">
+              {LINK_DEFS.map((l) => {
+                const tip = `${l.label} — ${l.bonus}`;
+                return (
+                  <div
+                    key={l.id}
+                    className="flex flex-col items-center gap-1 rounded border border-border/40 bg-background p-1.5"
+                  >
+                    <span title={tip} className="cursor-help">
+                      <CdnIcon src={l.icon} alt={l.label} fallback={l.short} />
+                    </span>
+                    <input
+                      type="number"
+                      title={tip}
+                      min={0}
+                      max={l.maxLevel}
+                      className="w-full rounded border border-border/40 bg-background px-0.5 py-0.5 text-center text-[11px] tabular-nums outline-none focus:border-accent"
+                      value={links[l.id] ?? 0}
+                      onChange={(e) => {
+                        const raw = Number(e.target.value) || 0;
+                        const capped = Math.min(Math.max(0, raw), l.maxLevel);
+                        setLinks((prev) => ({ ...prev, [l.id]: capped }));
+                      }}
+                    />
+                  </div>
+                );
+              })}
             </div>
             <div className="grid grid-cols-[1fr_5rem] border-t border-border/30">
               <div className={labelCell}>Wild Hunter Legion</div>
