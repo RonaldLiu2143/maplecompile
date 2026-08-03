@@ -16,7 +16,7 @@ const sourceSans = Source_Sans_3({
 });
 
 export const metadata: Metadata = {
-  title: "Maplehub — MapleStory Calculators",
+  title: "MapleCompile — MapleStory Calculators",
   description:
     "Equipment setup, flame odds, cubing, and scouter tools for MapleStory.",
 };
@@ -32,7 +32,7 @@ export default function RootLayout({
         <header className="sticky top-0 z-20 border-b-2 border-border bg-surface-muted/90 backdrop-blur-md">
           <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3">
             <Link href="/" className="font-display text-2xl font-bold tracking-tight text-accent">
-              Maplehub
+              MapleCompile
             </Link>
             <nav className="flex flex-wrap items-center gap-1 text-sm font-semibold sm:gap-2 sm:text-base">
               <Link
@@ -64,7 +64,7 @@ export default function RootLayout({
         </header>
         <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6">{children}</main>
         <footer className="border-t border-border/40 px-4 py-4 text-center text-sm opacity-70">
-          Maplehub calculators — equipment, flames, cubing, and scouter
+          MapleCompile calculators — equipment, flames, cubing, and scouter
         </footer>
       </body>
     </html>

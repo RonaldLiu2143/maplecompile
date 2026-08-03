@@ -1,4 +1,4 @@
-# Maplehub
+# MapleCompile
 
 Equipment Setup + Flame Calculator for MapleStory (inspired by WhackyBeanz).
 

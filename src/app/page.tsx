@@ -9,7 +9,7 @@ export default function Home() {
           className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,var(--accent-soft),transparent_55%)]"
         />
         <p className="font-display text-5xl font-bold tracking-tight text-accent sm:text-6xl">
-          Maplehub
+          MapleCompile
         </p>
         <h1 className="mt-4 max-w-xl text-2xl font-semibold leading-snug sm:text-3xl">
           Plan your gear, flames, cubes, and scouter stats in one place.

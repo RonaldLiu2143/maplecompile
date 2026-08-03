@@ -37,7 +37,8 @@ import {
 import { storage } from "@/lib/storage";
 import type { MapleScouterCalculatedData } from "@/lib/scouter/to-user-stat";
 
-const PRESET_KEY = "maplehub-scouter-preset";
+const PRESET_KEY = "maplecompile-scouter-preset";
+const PRESET_KEY_LEGACY = "maplehub-scouter-preset";
 
 const cell =
   "border border-border/50 bg-background px-2 py-1.5 text-sm outline-none focus:relative focus:z-10 focus:border-accent";
@@ -552,7 +553,11 @@ export default function ScouterPage() {
 
   const recallPreset = () => {
     try {
-      const raw = localStorage.getItem(PRESET_KEY);
+      let raw = localStorage.getItem(PRESET_KEY);
+      if (!raw) {
+        raw = localStorage.getItem(PRESET_KEY_LEGACY);
+        if (raw) localStorage.setItem(PRESET_KEY, raw);
+      }
       if (!raw) {
         setPresetMsg("No saved preset");
         setTimeout(() => setPresetMsg(null), 2000);

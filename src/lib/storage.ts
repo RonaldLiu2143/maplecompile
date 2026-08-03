@@ -25,7 +25,19 @@ export type ScouterLastState = {
   hexa: number[];
 };
 
-const SCOUTER_LAST_KEY = "maplehub-scouter-last";
+const SCOUTER_LAST_KEY = "maplecompile-scouter-last";
+const SCOUTER_LAST_KEY_LEGACY = "maplehub-scouter-last";
+
+function readJsonMigrating<T>(key: string, legacyKey: string, fallback: T): T {
+  const next = readJson<T | null>(key, null);
+  if (next != null) return next;
+  const legacy = readJson<T | null>(legacyKey, null);
+  if (legacy != null) {
+    writeJson(key, legacy);
+    return legacy;
+  }
+  return fallback;
+}
 
 export const storage = {
   getJobType: () => readJson<JobType | "">("jobType", ""),
@@ -59,6 +71,10 @@ export const storage = {
   },
 
   getScouterLast: () =>
-    readJson<ScouterLastState | null>(SCOUTER_LAST_KEY, null),
+    readJsonMigrating<ScouterLastState | null>(
+      SCOUTER_LAST_KEY,
+      SCOUTER_LAST_KEY_LEGACY,
+      null,
+    ),
   setScouterLast: (v: ScouterLastState) => writeJson(SCOUTER_LAST_KEY, v),
 };
