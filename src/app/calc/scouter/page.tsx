@@ -34,6 +34,7 @@ import {
   parseClassValue,
 } from "@/lib/jobs";
 import { storage } from "@/lib/storage";
+import type { MapleScouterCalculatedData } from "@/lib/scouter/to-user-stat";
 
 const PRESET_KEY = "maplehub-scouter-preset";
 
@@ -80,29 +81,53 @@ function ResultStatRow({
 function ResultPanel({
   level,
   className,
-  result,
+  data,
+  generalRangeMax,
+  generalRangeMin,
+  loading,
+  error,
 }: {
   level: number;
   className: string;
-  result: ReturnType<typeof calculateScouter>;
+  data: MapleScouterCalculatedData | null;
+  generalRangeMax: number;
+  generalRangeMin: number;
+  loading?: boolean;
+  error?: string | null;
 }) {
+  const eff = data?.specEfficiency ?? {};
   const attPer40Bd =
-    result.equiv.oneAttack > 0
-      ? (40 * result.equiv.oneBossPercent) / result.equiv.oneAttack
+    (eff.atkeff1 ?? 0) > 0 && (eff.dmgeff1 ?? 0) > 0
+      ? (40 * (eff.dmgeff1 as number)) / (eff.atkeff1 as number)
       : 0;
-  const attPer45Bd =
-    result.equiv.oneAttack > 0
-      ? (45 * result.equiv.oneBossPercent) / result.equiv.oneAttack
+  const mainPerAtt =
+    (eff.mainStateff1 ?? 0) > 0 && (eff.atkeff1 ?? 0) > 0
+      ? (eff.atkeff1 as number) / (eff.mainStateff1 as number)
       : 0;
-  const attPer40Ied =
-    result.equiv.oneAttack > 0
-      ? (40 * result.equiv.oneIedPercent) / result.equiv.oneAttack
+  const mainPerCd =
+    (eff.mainStateff1 ?? 0) > 0 && (eff.cridmgeff1 ?? 0) > 0
+      ? (eff.cridmgeff1 as number) / (eff.mainStateff1 as number)
       : 0;
-  const statPerAtt = result.equiv.oneAttack;
-  const statPctPer3Cd =
-    result.totalMain > 0
-      ? (3 * result.equiv.oneCritDamage) / (result.totalMain * 0.01)
-      : 0;
+
+  if (loading) {
+    return (
+      <p className="py-8 text-center text-sm opacity-70">
+        Calculating via MapleScouter…
+      </p>
+    );
+  }
+  if (error) {
+    return (
+      <p className="py-8 text-center text-sm text-red-600">{error}</p>
+    );
+  }
+  if (!data) {
+    return (
+      <p className="py-8 text-center text-sm opacity-70">
+        Click Result to calculate.
+      </p>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -110,46 +135,38 @@ function ResultPanel({
         <p className="text-lg font-bold">
           Lv.{level} {className}
         </p>
-      </div>
-
-      <div className="grid gap-3 sm:grid-cols-2">
-        <div className="space-y-1.5 rounded-md border border-border/50 bg-background/60 p-3 sm:col-span-2">
-          <p className="text-xs font-semibold uppercase tracking-wide opacity-60">
-            Converted Main
-          </p>
-          <p className="font-display text-2xl font-bold tabular-nums">
-            {formatNum(result.convertedMain)}
-          </p>
-        </div>
+        <p className="mt-0.5 text-xs opacity-60">
+          Results from MapleScouter CALC_DMG
+        </p>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-3">
         <div className="space-y-1 rounded-md border border-border/50 p-3">
           <p className="text-xs font-semibold opacity-60">ITEM STAT</p>
-          <ResultStatRow label="Normal" value={result.itemStat} />
-          <ResultStatRow label="HEXA" value={result.hexaStat} />
+          <ResultStatRow label="Normal" value={data.exchangePower ?? 0} />
+          <ResultStatRow label="HEXA" value={data.exchangePowerHexa ?? 0} />
         </div>
         <div className="space-y-1 rounded-md border border-border/50 p-3">
           <p className="text-xs font-semibold opacity-60">Dojo</p>
-          <ResultStatRow label="Damage" value={result.dojoStat} />
+          <ResultStatRow label="HEXA" value={data.mr_hexaStat ?? 0} />
         </div>
         <div className="space-y-1 rounded-md border border-border/50 p-3">
           <p className="text-xs font-semibold opacity-60">General Range</p>
-          <ResultStatRow label="Max" value={result.displayedMax} />
-          <ResultStatRow label="Min" value={result.displayedMin} />
+          <ResultStatRow label="Max" value={generalRangeMax} />
+          <ResultStatRow label="Min" value={generalRangeMin} />
         </div>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-1 rounded-md border border-border/50 p-3">
           <p className="text-xs font-semibold opacity-60">Boss 300</p>
-          <ResultStatRow label="Normal" value={result.boss300Stat} />
-          <ResultStatRow label="HEXA" value={result.boss300Stat} />
+          <ResultStatRow label="Normal" value={data.boss300_stat ?? 0} />
+          <ResultStatRow label="HEXA" value={data.boss300_hexaStat ?? 0} />
         </div>
         <div className="space-y-1 rounded-md border border-border/50 p-3">
           <p className="text-xs font-semibold opacity-60">Boss 380</p>
-          <ResultStatRow label="Normal" value={result.boss380Stat} />
-          <ResultStatRow label="HEXA" value={result.boss380Stat} />
+          <ResultStatRow label="Normal" value={data.boss380_stat ?? 0} />
+          <ResultStatRow label="HEXA" value={data.boss380_hexaStat ?? 0} />
         </div>
       </div>
 
@@ -157,29 +174,8 @@ function ResultPanel({
         <p className="mb-2 text-xs font-semibold opacity-60">Stat Efficiency</p>
         <div className="grid gap-1 sm:grid-cols-2">
           <ResultStatRow label="ATT per 40% BD" value={attPer40Bd} digits={1} />
-          <ResultStatRow label="ATT per 45% BD" value={attPer45Bd} digits={1} />
-          <ResultStatRow label="ATT per 40% IED" value={attPer40Ied} digits={1} />
-          <ResultStatRow label="STAT per 1 ATT" value={statPerAtt} digits={1} />
-          <ResultStatRow
-            label="STAT% per 3% CD"
-            value={statPctPer3Cd}
-            digits={2}
-          />
-          <ResultStatRow
-            label="Main per 1% FD"
-            value={result.equiv.oneFinalDamage}
-            digits={1}
-          />
-          <ResultStatRow
-            label="Main per 1% BD"
-            value={result.equiv.oneBossPercent}
-            digits={1}
-          />
-          <ResultStatRow
-            label="Main per 1% IED"
-            value={result.equiv.oneIedPercent}
-            digits={1}
-          />
+          <ResultStatRow label="STAT per 1 ATT" value={mainPerAtt} digits={2} />
+          <ResultStatRow label="STAT per 1% CD" value={mainPerCd} digits={2} />
         </div>
       </div>
     </div>
@@ -315,12 +311,43 @@ export default function ScouterPage() {
   const [presetMsg, setPresetMsg] = useState<string | null>(null);
   const [draftReady, setDraftReady] = useState(false);
   const [showResult, setShowResult] = useState(false);
+  const [resultLoading, setResultLoading] = useState(false);
+  const [resultError, setResultError] = useState<string | null>(null);
+  const [msResult, setMsResult] = useState<MapleScouterCalculatedData | null>(
+    null,
+  );
   const resultRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     if (!showResult) return;
     resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, [showResult]);
+
+  const runResult = async () => {
+    setShowResult(true);
+    setResultLoading(true);
+    setResultError(null);
+    try {
+      const res = await fetch("/api/scouter/result", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ input, buffs, links, hexa }),
+      });
+      const json = (await res.json()) as {
+        calculatedData?: MapleScouterCalculatedData | null;
+        error?: string;
+      };
+      if (!res.ok || !json.calculatedData) {
+        throw new Error(json.error || `Request failed (${res.status})`);
+      }
+      setMsResult(json.calculatedData);
+    } catch (err) {
+      setMsResult(null);
+      setResultError(err instanceof Error ? err.message : "Result failed");
+    } finally {
+      setResultLoading(false);
+    }
+  };
 
   const classValue = `${input.jobType}:${input.charType}`;
   const { mainKeys, secondaryKeys, isXenon, isDa } = useMemo(
@@ -847,10 +874,11 @@ export default function ScouterPage() {
           <div className="border-t border-border/40 px-3 py-3">
             <button
               type="button"
-              className="w-full rounded-md bg-accent px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90"
-              onClick={() => setShowResult(true)}
+              className="w-full rounded-md bg-accent px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
+              disabled={resultLoading}
+              onClick={() => void runResult()}
             >
-              Result
+              {resultLoading ? "Calculating…" : "Result"}
             </button>
           </div>
         </section>
@@ -1181,7 +1209,11 @@ export default function ScouterPage() {
           <ResultPanel
             level={input.level}
             className={getCharName(input.jobType, input.charType)}
-            result={result}
+            data={msResult}
+            generalRangeMax={result.displayedMax}
+            generalRangeMin={result.displayedMin}
+            loading={resultLoading}
+            error={resultError}
           />
         </section>
       )}
