@@ -9,9 +9,11 @@ import {
   defaultScouterInput,
 } from "@/lib/scouter";
 import {
+  BOSS_CLEAR_FIGHT_MINUTES_DEFAULT,
   evaluateBossClears,
   difficultyRibbonClass,
   labelPillClass,
+  type BossClearFightMinutes,
   type BossClearRow,
 } from "@/lib/scouter/boss-cuts";
 import {
@@ -339,6 +341,9 @@ export default function ScouterDetailedResultPage() {
   const [authenticForce, setAuthenticForce] = useState(0);
   const [relevantOnly, setRelevantOnly] = useState(true);
   const [showDestinyChampion, setShowDestinyChampion] = useState(true);
+  const [fightMinutes, setFightMinutes] = useState<BossClearFightMinutes>(
+    BOSS_CLEAR_FIGHT_MINUTES_DEFAULT,
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -409,8 +414,12 @@ export default function ScouterDetailedResultPage() {
 
   const allBossRows = useMemo(() => {
     if (!clearInput) return [];
-    return evaluateBossClears({ ...clearInput, relevantOnly: false });
-  }, [clearInput]);
+    return evaluateBossClears({
+      ...clearInput,
+      fightMinutes,
+      relevantOnly: false,
+    });
+  }, [clearInput, fightMinutes]);
 
   const destinyChampionRows = useMemo(
     () => allBossRows.filter(isDestinyOrChampion),
@@ -420,13 +429,17 @@ export default function ScouterDetailedResultPage() {
   const bossRows = useMemo(() => {
     if (!clearInput) return [];
     const base = relevantOnly
-      ? evaluateBossClears({ ...clearInput, relevantOnly: true })
+      ? evaluateBossClears({
+          ...clearInput,
+          fightMinutes,
+          relevantOnly: true,
+        })
       : allBossRows;
     if (showDestinyChampion) {
       return base.filter((row) => !isDestinyOrChampion(row));
     }
     return base;
-  }, [allBossRows, clearInput, relevantOnly, showDestinyChampion]);
+  }, [allBossRows, clearInput, fightMinutes, relevantOnly, showDestinyChampion]);
 
   return (
     <div className="mx-auto max-w-7xl space-y-5 pb-12">
@@ -524,7 +537,7 @@ export default function ScouterDetailedResultPage() {
           <div className="min-w-0 flex-1 space-y-3">
             <StatBlock
               title="Destiny & Champion"
-              hint="Solo-mode Destiny and Champion · 30 min window."
+              hint={`Solo-mode Destiny and Champion · ${fightMinutes} min window.`}
               action={
                 <button
                   type="button"
@@ -555,9 +568,33 @@ export default function ScouterDetailedResultPage() {
 
             <StatBlock
               title="Boss Clear (Cut)"
-              hint="Clear % uses GMS cut standards over 30 min. Hover for GMS HP, crystal, and drops."
+              hint={`Clear % uses GMS cut standards over ${fightMinutes} min. Hover for GMS HP, crystal, and drops.`}
               action={
                 <div className="flex flex-wrap items-center gap-2 text-xs">
+                  <div className="inline-flex overflow-hidden rounded-full border border-border/50">
+                    <button
+                      type="button"
+                      className={`px-3 py-1.5 font-semibold transition ${
+                        fightMinutes === 20
+                          ? "bg-accent text-white"
+                          : "bg-surface hover:bg-surface-muted"
+                      }`}
+                      onClick={() => setFightMinutes(20)}
+                    >
+                      20 min
+                    </button>
+                    <button
+                      type="button"
+                      className={`px-3 py-1.5 font-semibold transition ${
+                        fightMinutes === 30
+                          ? "bg-accent text-white"
+                          : "bg-surface hover:bg-surface-muted"
+                      }`}
+                      onClick={() => setFightMinutes(30)}
+                    >
+                      30 min
+                    </button>
+                  </div>
                   <button
                     type="button"
                     className={`rounded-full px-3 py-1.5 font-semibold transition ${

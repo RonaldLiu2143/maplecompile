@@ -54,7 +54,7 @@ export {
 export {
   BOSS_CUTS,
   BOSS_ICON_CDN,
-  BOSS_CLEAR_FIGHT_MINUTES,
+  BOSS_CLEAR_FIGHT_MINUTES_DEFAULT,
   evaluateBossClears,
   bossClearLabelEn,
   labelTone,
@@ -63,6 +63,7 @@ export {
   type BossCutEntry,
   type BossClearRow,
   type BossClearLabel,
+  type BossClearFightMinutes,
 } from "./boss-cuts";
 export {
   getBossHoverInfo,

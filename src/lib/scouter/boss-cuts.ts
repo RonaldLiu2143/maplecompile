@@ -1,7 +1,8 @@
 /** MapleScouter GMS Boss Clear (Cut) standards (`e_` list) + clear-rate math. */
 
-/** Fight window used for burst/ascent adjust (MapleScouter default is 20). */
-export const BOSS_CLEAR_FIGHT_MINUTES = 30;
+/** Supported fight windows for burst/ascent adjust (MapleScouter uses 20). */
+export type BossClearFightMinutes = 20 | 30;
+export const BOSS_CLEAR_FIGHT_MINUTES_DEFAULT: BossClearFightMinutes = 20;
 
 export type BossCutDifficulty =
   | "Easy"
@@ -1273,16 +1274,18 @@ export type BossClearCalcInput = {
   spline380?: Spline | null;
   /** ascent_const from CALC_DMG (timer adjust). */
   ascentConst?: number;
+  /** Fight window for burst/ascent adjust (default 20). */
+  fightMinutes?: BossClearFightMinutes;
   relevantOnly?: boolean;
   newbieMode?: boolean;
 };
 
 /**
- * MapleScouter clearRate (GMS cut list), with a 30-minute fight window:
- *   I = dmg * forceGaps / denom   (CALC_DMG with is30min)
+ * MapleScouter clearRate (GMS cut list):
+ *   I = dmg * forceGaps / denom
  *   E = splineDamage(spline, bossCut||partyBossCut)
  *   z = I/E * easyRate * L
- *   O = z * (1 + timerAdjust(ascentConst, 30 min))
+ *   O = z * (1 + timerAdjust(ascentConst, fightMinutes))
  *
  * Note: do not divide by raw boss HP — CALC_DMG damage and wiki HP are
  * different units; that path zeroes every clear %.
@@ -1299,6 +1302,7 @@ export function evaluateBossClears(args: BossClearCalcInput): BossClearRow[] {
     spline300,
     spline380,
     ascentConst = 0,
+    fightMinutes = BOSS_CLEAR_FIGHT_MINUTES_DEFAULT,
     relevantOnly = true,
     newbieMode = false,
   } = args;
@@ -1331,9 +1335,7 @@ export function evaluateBossClears(args: BossClearCalcInput): BossClearRow[] {
             ? 0.4
             : Math.min(
                 3,
-                Math.ceil(
-                  BOSS_CLEAR_FIGHT_MINUTES / Math.max(z, 1e-9) / 5.667,
-                ),
+                Math.ceil(fightMinutes / Math.max(z, 1e-9) / 5.667),
               );
         const G = (3 * R) / burstSlots - R || 0;
         clearRate = z * (1 + G) || 0;
