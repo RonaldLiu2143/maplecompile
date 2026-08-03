@@ -127,9 +127,15 @@ export function calculateScouter(input: ScouterInput): ScouterResult {
     ? 4 * totalMain
     : 4 * totalMain + totalSecondary;
 
-  const displayedMax = (statValue * attackFinal) / 100;
+  // Base range before Damage% / FD (used for expected / converted main)
+  const baseMax = (statValue * attackFinal) / 100;
   const mastery = clamp01(input.masteryPercent / 100);
-  const displayedMin = displayedMax * mastery;
+  const damageMultiplier = 1 + input.damagePercent / 100;
+  const finalMultiplier = 1 + input.finalDamagePercent / 100;
+
+  // Character-window General Range includes Damage% + Final Damage (not Boss Damage)
+  const displayedMax = Math.floor(baseMax * damageMultiplier * finalMultiplier);
+  const displayedMin = Math.floor(displayedMax * mastery);
 
   const critMultiplier = critExpectedMultiplier(
     input.criticalRatePercent,
@@ -141,7 +147,6 @@ export function calculateScouter(input: ScouterInput): ScouterResult {
     1 +
     input.damagePercent / 100 +
     input.normalEnemyDamagePercent / 100;
-  const finalMultiplier = 1 + input.finalDamagePercent / 100;
   const iedMultiplier = iedDamageMultiplier(
     input.ignoreDefensePercent,
     input.bossPdrPercent,
@@ -149,14 +154,14 @@ export function calculateScouter(input: ScouterInput): ScouterResult {
   const masteryAvg = (1 + mastery) / 2;
 
   const expectedBoss =
-    displayedMax *
+    baseMax *
     critMultiplier *
     bossMultiplier *
     finalMultiplier *
     iedMultiplier *
     masteryAvg;
   const expectedNormal =
-    displayedMax *
+    baseMax *
     critMultiplier *
     normalMultiplier *
     finalMultiplier *

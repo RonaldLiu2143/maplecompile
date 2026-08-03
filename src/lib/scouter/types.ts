@@ -68,6 +68,7 @@ export type ScouterResult = {
   totalSecondary: number;
   statValue: number;
   attackFinal: number;
+  /** Character-window General Range max (includes Damage% + FD) */
   displayedMax: number;
   displayedMin: number;
   critMultiplier: number;

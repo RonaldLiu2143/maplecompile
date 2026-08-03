@@ -533,11 +533,8 @@ export default function ScouterPage() {
           {/* Middle: combat stats — MapleStory character window order */}
           <div className="mx-2 mb-2 overflow-hidden rounded-md border border-border/50">
             <div className="grid sm:grid-cols-2">
-              <FieldCell label="Damage Range">
-                <NumInput
-                  value={input.generalRange || Math.round(result.displayedMax)}
-                  onChange={(generalRange) => patch({ generalRange })}
-                />
+              <FieldCell label="General Range">
+                <NumInput value={result.displayedMax} readOnly />
               </FieldCell>
               <FieldCell label="Damage">
                 <NumInput
@@ -809,60 +806,41 @@ export default function ScouterPage() {
             <div className="border-b border-border/40 px-2 py-1">
               <h2 className="text-xs font-semibold">HEXA Enhancement</h2>
             </div>
-            {(
-              [
-                ["mastery", "HEXA Mastery Core"],
-                ["reinforcement", "Reinforcement Core"],
-                ["skill", "Skill Core"],
-                ["common", "Common Core"],
-              ] as const
-            ).map(([group, title]) => {
-              const slots = hexaSlots
-                .map((slot, i) => ({ slot, i }))
-                .filter(({ slot }) => slot.group === group);
-              return (
-                <div key={group} className="border-b border-border/30 last:border-b-0">
-                  <p className="px-2 pt-1 text-[10px] font-semibold uppercase tracking-wide opacity-60">
-                    {title}
-                  </p>
-                  <div className="grid grid-cols-6 gap-1 p-1.5 sm:grid-cols-7">
-                    {slots.map(({ slot, i }) => (
-                      <div
-                        key={slot.id}
-                        title={slot.label}
-                        className="flex flex-col items-center gap-0.5 rounded border border-border/40 bg-background p-1"
-                      >
-                        <CdnIcon
-                          src={slot.iconSuffix}
-                          alt={slot.label}
-                          fallback={slot.label.slice(0, 3)}
-                          size={24}
-                        />
-                        <input
-                          type="number"
-                          min={0}
-                          max={HEXA_MAX_LEVEL}
-                          className="w-full rounded border border-border/40 bg-background px-0 py-0 text-center text-[10px] tabular-nums outline-none focus:border-accent"
-                          value={hexa[i] ?? 0}
-                          onChange={(e) => {
-                            const raw = Number(e.target.value) || 0;
-                            const capped = Math.min(
-                              Math.max(0, raw),
-                              HEXA_MAX_LEVEL,
-                            );
-                            setHexa((prev) => {
-                              const next = [...prev];
-                              next[i] = capped;
-                              return next;
-                            });
-                          }}
-                        />
-                      </div>
-                    ))}
-                  </div>
+            <div className="grid grid-cols-6 gap-1 p-1.5 sm:grid-cols-7">
+              {hexaSlots.map((slot, i) => (
+                <div
+                  key={slot.id}
+                  title={slot.label}
+                  className="flex flex-col items-center gap-0.5 rounded border border-border/40 bg-background p-1"
+                >
+                  <CdnIcon
+                    src={slot.iconSuffix}
+                    alt={slot.label}
+                    fallback={slot.label.slice(0, 3)}
+                    size={24}
+                  />
+                  <input
+                    type="number"
+                    min={0}
+                    max={HEXA_MAX_LEVEL}
+                    className="w-full rounded border border-border/40 bg-background px-0 py-0 text-center text-[10px] tabular-nums outline-none focus:border-accent"
+                    value={hexa[i] ?? 0}
+                    onChange={(e) => {
+                      const raw = Number(e.target.value) || 0;
+                      const capped = Math.min(
+                        Math.max(0, raw),
+                        HEXA_MAX_LEVEL,
+                      );
+                      setHexa((prev) => {
+                        const next = [...prev];
+                        next[i] = capped;
+                        return next;
+                      });
+                    }}
+                  />
                 </div>
-              );
-            })}
+              ))}
+            </div>
           </section>
 
           <section className="overflow-hidden rounded-lg border border-border/60 bg-surface/90">
@@ -1051,8 +1029,8 @@ export default function ScouterPage() {
           <div className="grid gap-px overflow-hidden rounded-md border border-border/40 sm:grid-cols-2">
             {(
               [
-                ["General Range (calc max)", formatNum(result.displayedMax)],
-                ["General Range (calc min)", formatNum(result.displayedMin)],
+                ["General Range", formatNum(result.displayedMax)],
+                ["General Range (min)", formatNum(result.displayedMin)],
                 ["Expected (boss)", formatNum(result.expectedBoss)],
                 ["Expected (normal)", formatNum(result.expectedNormal)],
                 ["Total main", formatNum(result.totalMain, 1)],

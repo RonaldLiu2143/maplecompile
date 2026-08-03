@@ -1,0 +1,18 @@
+---
+description: Auto commit/push after changes and include the live site link
+alwaysApply: true
+---
+
+# Auto deploy workflow
+
+After finishing work for a user prompt that changed the repo:
+
+1. **Commit** relevant source changes (never commit secrets, `.env`, or scratch `tmp_*` research files unless asked).
+2. **Push** to `origin` on the current branch.
+3. Follow the repo’s existing git commit/push safety rules (no force push to main, no config changes, no hook skips).
+4. End the reply with the live site link (and a path link when the change is page-specific):
+
+- Site: https://maplecompile.vercel.app
+- Scouter: https://maplecompile.vercel.app/calc/scouter
+
+Do this even when the user did not explicitly say “commit” or “push”, unless they ask not to deploy that change.
