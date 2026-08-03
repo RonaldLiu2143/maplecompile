@@ -48,6 +48,8 @@ export {
   INNER_ABILITY_OPTIONS,
   getVisibleOzRings,
   OZ_RING_MAX,
+  type OzContinuousStatus,
+  type OzRingField,
 } from "./oz";
 export {
   BOSS_CUTS,
