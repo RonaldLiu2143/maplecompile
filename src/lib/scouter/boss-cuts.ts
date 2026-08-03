@@ -1,6 +1,8 @@
 /** MapleScouter GMS Boss Clear (Cut) standards (`e_` list) + clear-rate math. */
 
-/** Fight window: 20 = MapleScouter parity; 30 = ×1.5 clear (more time). */
+import { getBossRegionHpTotals } from "./boss-info";
+
+/** 20 = MapleScouter / KMS; 30 = GMS HP + 30 min window. */
 export type BossClearFightMinutes = 20 | 30;
 export const BOSS_CLEAR_FIGHT_MINUTES_DEFAULT: BossClearFightMinutes = 20;
 
@@ -1285,10 +1287,10 @@ export type BossClearCalcInput = {
   /** ascent_const from CALC_DMG (timer adjust). */
   ascentConst?: number;
   /**
-   * Fight window for clear %.
-   * 20 → MapleScouter parity; 30 → ×(30/20) time scale (no region-HP ratio —
-   * that canceled ~1.5× GMS inflation and uniquely crushed Kaling).
-   * Hover HP still switches KMS/GMS in the UI from this toggle.
+   * Fight window for clear % + hover HP region.
+   * 20 → MapleScouter parity (KMS HP, scale 1).
+   * 30 → GMS HP: z *= (kmsHp/gmsHp)*(30/20). Flat ×1.5 alone inflates
+   * clears; GMS HP is often ~1.5× KMS so many % stay similar.
    */
   fightMinutes?: BossClearFightMinutes;
   relevantOnly?: boolean;
@@ -1313,10 +1315,11 @@ function damageForBoss(
 }
 
 /**
- * MapleScouter clearRate (cut/spline) + optional fight-time scale:
+ * MapleScouter clearRate (cut/spline), then region HP + fight-time scale:
  *   z0 = I/E * easyRate * L
- *   z  = z0 * (fightMinutes / 20)
- *   O  = z * (1 + ascentAdjust) with burst from ceil(fightMinutes/z/5.667)
+ *   z  = z0 * (kmsHp / targetHp) * (fightMinutes / 20)
+ *        targetHp = KMS @ 20 min, GMS @ 30 min
+ *   O  = z * (1 + ascentAdjust)
  */
 export function evaluateBossClears(args: BossClearCalcInput): BossClearRow[] {
   const {
@@ -1336,8 +1339,6 @@ export function evaluateBossClears(args: BossClearCalcInput): BossClearRow[] {
     relevantOnly = true,
     newbieMode = false,
   } = args;
-
-  const timeScale = fightMinutes / MS_CLEAR_BASE_MINUTES;
 
   const rows: BossClearRow[] = BOSS_CUTS.map((entry, rank) => {
     const isPartyBoss = entry.partyBossCut != null;
@@ -1364,12 +1365,19 @@ export function evaluateBossClears(args: BossClearCalcInput): BossClearRow[] {
     let clearRate = 0;
     let userStat = fallbackStat;
 
+    const { kms: kmsHp, gms: gmsHp } = getBossRegionHpTotals(entry.imgKey);
+    const targetHp = fightMinutes === 30 ? gmsHp : kmsHp;
+    const regionScale =
+      kmsHp > 0 && targetHp > 0
+        ? (kmsHp / targetHp) * (fightMinutes / MS_CLEAR_BASE_MINUTES)
+        : fightMinutes / MS_CLEAR_BASE_MINUTES;
+
     if (spline && cut > 0 && Array.isArray(spline.x) && spline.x.length > 0) {
       const E = splineDamage(spline, cut);
       userStat = splineStat(spline, I * L);
       if (E > 0) {
         const z0 = (I / (E < 0 ? 1e4 : E)) * (entry.easyRate || 1) * L;
-        const z = z0 * timeScale;
+        const z = z0 * regionScale;
         const burstSlots =
           entry.nameKo === "루시드" && entry.difficulty === "Hard"
             ? 0.4
@@ -1382,7 +1390,7 @@ export function evaluateBossClears(args: BossClearCalcInput): BossClearRow[] {
       }
     } else if (cut > 0) {
       clearRate =
-        (fallbackStat / cut) * (entry.easyRate || 1) * timeScale;
+        (fallbackStat / cut) * (entry.easyRate || 1) * regionScale;
       userStat = fallbackStat;
     }
 

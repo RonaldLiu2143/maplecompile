@@ -505,7 +505,7 @@ export default function ScouterDetailedResultPage() {
           <aside className="w-full shrink-0 lg:w-64 xl:w-72">
             <StatBlock
               title="Boss Converted Stat"
-              hint="HEXA drives clear %. 20 min = MapleScouter; 30 min = ×1.5 time (hover HP KMS ↔ GMS)."
+              hint="20 min = MapleScouter (KMS). 30 min = GMS HP × time; ~1.5× HP often cancels the extra 10 min."
               action={
                 <div className="inline-flex overflow-hidden rounded-full border border-border/50 text-xs">
                   <button
@@ -516,7 +516,7 @@ export default function ScouterDetailedResultPage() {
                         : "bg-surface hover:bg-surface-muted"
                     }`}
                     onClick={() => setFightMinutes(20)}
-                    title="MapleScouter parity · KMS hover HP"
+                    title="MapleScouter parity · KMS HP"
                   >
                     20 min
                   </button>
@@ -528,7 +528,7 @@ export default function ScouterDetailedResultPage() {
                         : "bg-surface hover:bg-surface-muted"
                     }`}
                     onClick={() => setFightMinutes(30)}
-                    title="×1.5 clear time · GMS hover HP"
+                    title="GMS HP × (30/20) time scale"
                   >
                     30 min
                   </button>
