@@ -363,29 +363,6 @@ export default function ScouterPage() {
     }
   };
 
-  const resetSoft = () => {
-    setInput((prev) => ({
-      ...defaultScouterInput(prev.jobType, prev.charType),
-      level: prev.level,
-      jobType: prev.jobType,
-      charType: prev.charType,
-      useMagicAttack: prev.useMagicAttack,
-      stats: prev.stats,
-      attack: prev.attack,
-      magicAttack: prev.magicAttack,
-      reboot: prev.reboot,
-      liberation: prev.liberation,
-      mugongSoul: prev.mugongSoul,
-    }));
-  };
-
-  const resetHard = () => {
-    setInput(defaultScouterInput(DEFAULT_JOB, DEFAULT_CHAR));
-    setBuffs(defaultBuffState());
-    setLinks(defaultLinkState());
-    setHexa(defaultHexaLevels());
-  };
-
   const tripleRows: { label: string; key?: StatKey; kind?: "att" | "matt" }[] =
     (() => {
       if (isDa) {
@@ -699,6 +676,13 @@ export default function ScouterPage() {
               </FieldCell>
             </div>
           </div>
+
+          <div className="border-t border-border/40 px-3 py-4 text-center">
+            <p className="text-sm font-medium opacity-70">Combat Power</p>
+            <p className="font-display mt-1 text-4xl font-bold tracking-tight tabular-nums sm:text-5xl">
+              {formatNum(result.combatPower)}
+            </p>
+          </div>
         </section>
 
         {/* —— Right: Buffs / Links / HEXA —— */}
@@ -1008,30 +992,6 @@ export default function ScouterPage() {
           </section>
         </div>
       </div>
-
-      <div className="flex flex-wrap gap-2">
-        <button
-          type="button"
-          className="rounded-md border border-border/60 bg-surface px-4 py-2 text-sm font-semibold transition hover:bg-surface-muted"
-          onClick={resetSoft}
-        >
-          Reset
-        </button>
-        <button
-          type="button"
-          className="rounded-md border border-border/60 bg-surface px-4 py-2 text-sm font-semibold transition hover:bg-surface-muted"
-          onClick={resetHard}
-        >
-          Hard Reset
-        </button>
-      </div>
-
-      <section className="overflow-hidden rounded-lg border border-border/60 bg-surface/90 px-4 py-5 text-center">
-        <p className="text-sm font-medium opacity-70">Combat Power</p>
-        <p className="font-display mt-1 text-4xl font-bold tracking-tight tabular-nums sm:text-5xl">
-          {formatNum(result.combatPower)}
-        </p>
-      </section>
 
       <p className="text-xs opacity-60">
         Layout matched to{" "}
