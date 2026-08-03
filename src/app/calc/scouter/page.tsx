@@ -17,6 +17,7 @@ import {
   OZ_RING_MAX,
   getVisibleOzRings,
   resolveMainSecondary,
+  resolveOzRingStats,
   SCOUTER_CDN,
   type BuffState,
   type LinkState,
@@ -188,6 +189,10 @@ export default function ScouterPage() {
   const classValue = `${input.jobType}:${input.charType}`;
   const { mainKeys, secondaryKeys, isXenon, isDa } = useMemo(
     () => resolveMainSecondary(input),
+    [input],
+  );
+  const { keys: ozStatKeys, weaponLabel: ozWeaponLabel } = useMemo(
+    () => resolveOzRingStats(input),
     [input],
   );
   const result = useMemo(() => calculateScouter(input), [input]);
@@ -700,47 +705,51 @@ export default function ScouterPage() {
                 const active =
                   b.control === "check" ? st.on : st.level > 0;
                 const tip = `${b.label} — ${b.bonus}`;
-                return (
-                  <div
-                    key={b.id}
-                    className={`flex flex-col items-center gap-0.5 rounded border p-1 ${
-                      active
-                        ? "border-accent bg-accent-soft/40"
-                        : "border-border/40 bg-background"
-                    }`}
-                  >
-                    <span title={tip} className="cursor-help">
+                const cardClass = `flex flex-col items-center gap-0.5 rounded border p-1 ${
+                  active
+                    ? "border-accent bg-accent-soft/40"
+                    : "border-border/40 bg-background"
+                }`;
+                if (b.control === "check") {
+                  return (
+                    <label
+                      key={b.id}
+                      title={tip}
+                      className={`${cardClass} cursor-pointer`}
+                    >
                       <CdnIcon src={b.icon} alt={b.label} size={24} />
-                    </span>
-                    {b.control === "check" ? (
                       <input
                         type="checkbox"
-                        title={tip}
-                        className="size-3 accent-[var(--accent)]"
+                        className="pointer-events-none size-3 accent-[var(--accent)]"
                         checked={st.on}
-                        onChange={(e) => setBuffChecked(b.id, e.target.checked)}
+                        onChange={(e) =>
+                          setBuffChecked(b.id, e.target.checked)
+                        }
                       />
-                    ) : (
-                      <input
-                        type="number"
-                        title={tip}
-                        min={0}
-                        max={b.maxLevel ?? 99}
-                        className="w-full rounded border border-border/40 bg-background px-0 py-0 text-center text-[10px] tabular-nums outline-none focus:border-accent"
-                        value={st.level}
-                        onChange={(e) => {
-                          const raw = Number(e.target.value) || 0;
-                          const capped = Math.min(
-                            Math.max(0, raw),
-                            b.maxLevel ?? 99,
-                          );
-                          setBuffs((prev) => ({
-                            ...prev,
-                            [b.id]: { on: true, level: capped },
-                          }));
-                        }}
-                      />
-                    )}
+                    </label>
+                  );
+                }
+                return (
+                  <div key={b.id} title={tip} className={cardClass}>
+                    <CdnIcon src={b.icon} alt={b.label} size={24} />
+                    <input
+                      type="number"
+                      min={0}
+                      max={b.maxLevel ?? 99}
+                      className="w-full rounded border border-border/40 bg-background px-0 py-0 text-center text-[10px] tabular-nums outline-none focus:border-accent"
+                      value={st.level}
+                      onChange={(e) => {
+                        const raw = Number(e.target.value) || 0;
+                        const capped = Math.min(
+                          Math.max(0, raw),
+                          b.maxLevel ?? 99,
+                        );
+                        setBuffs((prev) => ({
+                          ...prev,
+                          [b.id]: { on: true, level: capped },
+                        }));
+                      }}
+                    />
                   </div>
                 );
               })}
@@ -962,7 +971,7 @@ export default function ScouterPage() {
               <div className="overflow-hidden rounded border border-border/40">
                 <div className="grid grid-cols-[1fr_4.5rem]">
                   <div className={`${labelCell} !py-1 text-xs`}>
-                    Weapon Total ATT
+                    Weapon Total {ozWeaponLabel}
                   </div>
                   <NumInput
                     value={input.ozWeaponTotalAtt}
@@ -972,34 +981,30 @@ export default function ScouterPage() {
                     className="!py-1 text-xs"
                   />
                 </div>
-                <div className="grid grid-cols-[1fr_4.5rem]">
-                  <div className={`${labelCell} !py-1 text-xs`}>
-                    {isDa
-                      ? "Max HP"
-                      : isXenon
-                        ? "STR"
-                        : STAT_LABELS[mainKeys[0] ?? "str"]}
-                  </div>
-                  <NumInput
-                    value={input.ozPrimaryStat}
-                    onChange={(ozPrimaryStat) => patch({ ozPrimaryStat })}
-                    className="!py-1 text-xs"
-                  />
-                </div>
-                <div className="grid grid-cols-[1fr_4.5rem]">
-                  <div className={`${labelCell} !py-1 text-xs`}>
-                    {isXenon
-                      ? "DEX"
-                      : isDa
-                        ? "STR"
-                        : STAT_LABELS[secondaryKeys[0] ?? "dex"]}
-                  </div>
-                  <NumInput
-                    value={input.ozSecondaryStat}
-                    onChange={(ozSecondaryStat) => patch({ ozSecondaryStat })}
-                    className="!py-1 text-xs"
-                  />
-                </div>
+                {ozStatKeys.slice(0, 2).map((key, i) => {
+                  const value =
+                    i === 0 ? input.ozPrimaryStat : input.ozSecondaryStat;
+                  const onChange =
+                    i === 0
+                      ? (ozPrimaryStat: number) => patch({ ozPrimaryStat })
+                      : (ozSecondaryStat: number) =>
+                          patch({ ozSecondaryStat });
+                  return (
+                    <div
+                      key={key}
+                      className="grid grid-cols-[1fr_4.5rem]"
+                    >
+                      <div className={`${labelCell} !py-1 text-xs`}>
+                        {STAT_LABELS[key]}
+                      </div>
+                      <NumInput
+                        value={value}
+                        onChange={onChange}
+                        className="!py-1 text-xs"
+                      />
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </section>
@@ -1065,6 +1070,17 @@ export default function ScouterPage() {
           </div>
         </section>
       ) : null}
+
+      <section className="overflow-hidden rounded-lg border border-border/60 bg-surface/90 px-4 py-5 text-center">
+        <p className="text-sm font-medium opacity-70">Combat Power</p>
+        <p className="font-display mt-1 text-4xl font-bold tracking-tight tabular-nums sm:text-5xl">
+          {formatNum(result.combatPower)}
+        </p>
+        <p className="mx-auto mt-2 max-w-xl text-xs opacity-60">
+          (4×main + sub) × 0.01 × ⌊ATT⌋ × (1+DMG+BD) × (1+FD) × (1.35+CD).
+          Excludes IED, crit rate, and weapon→bow ATT conversion.
+        </p>
+      </section>
 
       <p className="text-xs opacity-60">
         Layout matched to{" "}

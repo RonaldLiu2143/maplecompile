@@ -6,6 +6,7 @@ export {
 export {
   calculateScouter,
   resolveMainSecondary,
+  resolveOzRingStats,
   BOSS_PDR_PRESETS,
 } from "./calc";
 export {

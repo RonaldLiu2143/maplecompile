@@ -79,6 +79,8 @@ export type ScouterResult = {
   expectedNormal: number;
   /** Converted main stat (환산 주스탯) vs boss PDR */
   convertedMain: number;
+  /** In-game Combat Power estimate (전투력) */
+  combatPower: number;
   /** Rough main-stat equivalents */
   equiv: {
     oneAttack: number;

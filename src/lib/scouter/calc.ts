@@ -56,6 +56,39 @@ export function resolveMainSecondary(input: ScouterInput): {
   return { mainKeys, secondaryKeys, isXenon, isDa };
 }
 
+const OZ_PRIMARY_STATS: StatKey[] = ["str", "dex", "int", "luk"];
+
+/**
+ * Oz Ring asks for the primary stats not used as main/sub on the left
+ * (e.g. STR main + DEX sub → INT + LUK), plus weapon ATT/MATT separately.
+ */
+export function resolveOzRingStats(input: ScouterInput): {
+  keys: StatKey[];
+  weaponLabel: "ATT" | "MATT";
+} {
+  const { mainKeys, secondaryKeys, isXenon, isDa } = resolveMainSecondary(input);
+  const weaponLabel: "ATT" | "MATT" =
+    input.useMagicAttack || input.jobType === "magician" ? "MATT" : "ATT";
+
+  const used = new Set<StatKey>();
+  for (const k of mainKeys) {
+    if (k !== "hp") used.add(k);
+  }
+  for (const k of secondaryKeys) used.add(k);
+  // DA left column also enters STR alongside Max HP
+  if (isDa) used.add("str");
+  if (isXenon) {
+    used.add("str");
+    used.add("dex");
+    used.add("luk");
+  }
+
+  return {
+    keys: OZ_PRIMARY_STATS.filter((k) => !used.has(k)),
+    weaponLabel,
+  };
+}
+
 /**
  * MapleStory damage model (simplified community / wiki form):
  * range = (4*main + sec) * ATT / 100
@@ -157,6 +190,38 @@ export function calculateScouter(input: ScouterInput): ScouterResult {
   const equivIed =
     iedMultiplier > 0 ? convertedMain * (dIedMult / iedMultiplier) : 0;
 
+  /**
+   * In-game Combat Power (전투력):
+   * floor( (4*main+sec)*0.01 * floor(ATT*(1+ATT%)) * (1+DMG+BD) * (1+FD) * (1.35+CD) )
+   * Excludes IED, crit rate, mastery. Weapon→bow ATT conversion omitted (needs weapon base).
+   * DA / Xenon use their special main-stat terms.
+   */
+  let combatStatTerm: number;
+  if (isDa) {
+    const hpTerm = Math.floor(applyTriple(input.stats.hp) / 3.5);
+    const strTerm = Math.floor(applyTriple(input.stats.str));
+    combatStatTerm = (hpTerm + strTerm) * 0.01;
+  } else if (isXenon) {
+    combatStatTerm =
+      (Math.floor(applyTriple(input.stats.str)) +
+        Math.floor(applyTriple(input.stats.dex)) +
+        Math.floor(applyTriple(input.stats.luk))) *
+      4 *
+      0.01;
+  } else {
+    combatStatTerm =
+      (4 * Math.floor(totalMain) + Math.floor(totalSecondary)) * 0.01;
+  }
+  const combatAtt = Math.floor(attackFinal);
+  const combatCd = 1.35 + input.criticalDamagePercent / 100;
+  const combatPower = Math.floor(
+    combatStatTerm *
+      combatAtt *
+      bossMultiplier *
+      finalMultiplier *
+      combatCd,
+  );
+
   return {
     totalMain,
     totalSecondary,
@@ -172,6 +237,7 @@ export function calculateScouter(input: ScouterInput): ScouterResult {
     expectedBoss,
     expectedNormal,
     convertedMain,
+    combatPower,
     equiv: {
       oneAttack: equivAttack,
       oneBossPercent: equivBoss,
