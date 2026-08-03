@@ -248,7 +248,9 @@ export default function ScouterPage() {
   };
 
   const allBuffsOn = BUFF_DEFS.every((b) =>
-    b.control === "check" ? buffs[b.id]?.on : (buffs[b.id]?.level ?? 0) > 0,
+    b.control === "check"
+      ? buffs[b.id]?.on
+      : (buffs[b.id]?.level ?? 0) > 0,
   );
 
   const toggleSelectAllBuffs = () => {
@@ -258,7 +260,7 @@ export default function ScouterPage() {
       for (const b of BUFF_DEFS) {
         if (b.control === "check") {
           next[b.id] = { ...next[b.id], on: nextOn };
-        } else if (b.control === "level") {
+        } else {
           next[b.id] = {
             on: nextOn,
             level: nextOn ? (b.defaultLevel ?? b.maxLevel ?? 1) : 0,
@@ -662,7 +664,7 @@ export default function ScouterPage() {
                 Select All
               </label>
             </div>
-            <div className="grid grid-cols-5 gap-2 p-3 sm:grid-cols-6">
+            <div className="grid grid-cols-6 gap-2 p-3 sm:grid-cols-8">
               {BUFF_DEFS.map((b) => {
                 const st = buffs[b.id] ?? { on: false, level: 0 };
                 const active =
@@ -671,20 +673,23 @@ export default function ScouterPage() {
                     : b.control === "champion"
                       ? st.level > 0
                       : st.level > 0;
+                const tip = `${b.label} — ${b.bonus}`;
                 return (
                   <div
                     key={b.id}
-                    title={b.label}
                     className={`flex flex-col items-center gap-1 rounded border p-1.5 ${
                       active
                         ? "border-accent bg-accent-soft/40"
                         : "border-border/40 bg-background"
                     }`}
                   >
-                    <CdnIcon src={b.icon} alt={b.label} />
+                    <span title={tip} className="cursor-help">
+                      <CdnIcon src={b.icon} alt={b.label} />
+                    </span>
                     {b.control === "check" ? (
                       <input
                         type="checkbox"
+                        title={tip}
                         className="size-3.5 accent-[var(--accent)]"
                         checked={st.on}
                         onChange={(e) =>
@@ -697,6 +702,7 @@ export default function ScouterPage() {
                     ) : (
                       <input
                         type="number"
+                        title={tip}
                         min={0}
                         max={b.maxLevel ?? 99}
                         className="w-full rounded border border-border/40 bg-background px-0.5 py-0.5 text-center text-[11px] tabular-nums outline-none focus:border-accent"

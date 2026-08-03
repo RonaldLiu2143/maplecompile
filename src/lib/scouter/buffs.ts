@@ -1,4 +1,4 @@
-/** MapleScouter-style doping / link / hexa catalogs (icons hosted by maplescouter.com). */
+/** MapleScouter doping / link / hexa catalogs (icons hosted by maplescouter.com). */
 
 export const SCOUTER_CDN = "https://maplescouter.com";
 
@@ -6,41 +6,393 @@ export type BuffControl = "check" | "level" | "champion";
 
 export type BuffDef = {
   id: string;
+  /** Display / hover name */
   label: string;
+  /** Short bonus summary (shown in tooltip) */
+  bonus: string;
   icon: string;
   control: BuffControl;
   defaultLevel?: number;
   maxLevel?: number;
+  /** Default checked for checkbox buffs */
+  defaultOn?: boolean;
 };
 
-/** Order matches MapleScouter doping_v2 grid. */
+/**
+ * Full MapleScouter doping_v2 grid (order + bonuses from their calculator JS).
+ * Hover shows label + bonus.
+ */
 export const BUFF_DEFS: BuffDef[] = [
-  { id: "noblessboss", label: "Noblesse Boss", icon: "/doping_v2/noblessboss.png", control: "level", defaultLevel: 15, maxLevel: 15 },
-  { id: "noblessignore", label: "Noblesse IED", icon: "/doping_v2/noblessignore.png", control: "level", defaultLevel: 15, maxLevel: 15 },
-  { id: "noblessdam", label: "Noblesse Damage", icon: "/doping_v2/noblessdam.png", control: "level", defaultLevel: 15, maxLevel: 15 },
-  { id: "noblesscridam", label: "Noblesse Crit DMG", icon: "/doping_v2/noblesscridam.png", control: "level", defaultLevel: 15, maxLevel: 15 },
-  { id: "statpotion", label: "Stat Potion", icon: "/doping_v2/statpotion.png", control: "level", defaultLevel: 30, maxLevel: 30 },
-  { id: "sayram", label: "Sayram's Elixir", icon: "/doping_v2/sayram.png", control: "check" },
-  { id: "collector", label: "Aurelia's Elixir", icon: "/doping_v2/collector.png", control: "check" },
-  { id: "buff300", label: "Guild Blessing", icon: "/doping_v2/buff300.png", control: "check" },
-  { id: "hero", label: "Hero's Echo", icon: "/doping_v2/hero.png", control: "check" },
-  { id: "union", label: "Legion's Might", icon: "/doping_v2/union.png", control: "check" },
-  { id: "urus", label: "Ursus Buff", icon: "/doping_v2/urus.png", control: "check" },
-  { id: "extreme", label: "Extreme Red/Green", icon: "/doping_v2/extreme.png", control: "check" },
-  { id: "superpower", label: "Advanced Blessing", icon: "/doping_v2/superpower.png", control: "check" },
-  { id: "vipbuff", label: "VIP Buff", icon: "/doping_v2/vipbuff.png", control: "check" },
-  { id: "moonshine", label: "Moonlight / Event", icon: "/doping_v2/moonshine.png", control: "check" },
-  { id: "rainbow", label: "Rainbow Week", icon: "/doping_v2/rainbow.png", control: "check" },
-  { id: "thanks", label: "Thanks Event", icon: "/doping_v2/thanks.png", control: "check" },
-  { id: "shiningred", label: "Sparkling Red Star", icon: "/doping_v2/shiningred.png", control: "check" },
-  { id: "bighero", label: "Big Hero", icon: "/doping_v2/bighero.png", control: "check" },
-  { id: "legendhero", label: "Legendary Hero", icon: "/doping_v2/legendhero.png", control: "check" },
-  { id: "jangbi", label: "Weapon Tempering", icon: "/doping_v2/jangbi.png", control: "check" },
-  { id: "shiningblue", label: "Sparkling Blue Star", icon: "/doping_v2/shiningblue.png", control: "check" },
-  { id: "fish", label: "Fish Buff", icon: "/doping_v2/fish.png", control: "check" },
-  { id: "whiteBear", label: "White Bear", icon: "/doping_v2/whiteBear.png", control: "check" },
-  { id: "dragonsmeal", label: "Dragon's Meal", icon: "/doping_v2/dragonsmeal.png", control: "check" },
-  { id: "champion", label: "Champion", icon: "/doping_v2/champion.png", control: "champion", defaultLevel: 0, maxLevel: 5 },
+  {
+    id: "noblessBoss",
+    label: "Boss Killing Machine",
+    bonus: "+1% Boss Damage / level (max 15)",
+    icon: "/doping_v2/noblessboss.png",
+    control: "level",
+    defaultLevel: 15,
+    maxLevel: 15,
+  },
+  {
+    id: "noblessIgnore",
+    label: "Defense Is Just a Number",
+    bonus: "+2% IED / level (max 15)",
+    icon: "/doping_v2/noblessignore.png",
+    control: "level",
+    defaultLevel: 15,
+    maxLevel: 15,
+  },
+  {
+    id: "noblessDmg",
+    label: "In the Name of the Guild",
+    bonus: "+1% Damage / level (max 15)",
+    icon: "/doping_v2/noblessdam.png",
+    control: "level",
+    defaultLevel: 15,
+    maxLevel: 15,
+  },
+  {
+    id: "noblessCriDmg",
+    label: "Crit with a Bang",
+    bonus: "+2% Crit Damage / level (max 15)",
+    icon: "/doping_v2/noblesscridam.png",
+    control: "level",
+    defaultLevel: 15,
+    maxLevel: 15,
+  },
+  {
+    id: "statPotion",
+    label: "Enhanced 10-Stage Potion",
+    bonus: "+Main & Sub stat / level (max 30)",
+    icon: "/doping_v2/statpotion.png",
+    control: "level",
+    defaultLevel: 30,
+    maxLevel: 30,
+  },
+  {
+    id: "sayram",
+    label: "Sayram's Elixir",
+    bonus: "+8~10 ATT / class-based flat stats",
+    icon: "/doping_v2/sayram.png",
+    control: "check",
+    defaultOn: true,
+  },
+  {
+    id: "collector",
+    label: "Collector's Elixir",
+    bonus: "+All-stat style flat bonuses",
+    icon: "/doping_v2/collector.png",
+    control: "check",
+    defaultOn: true,
+  },
+  {
+    id: "buff275",
+    label: "Elixir of Honor",
+    bonus: "+60 flat main stat",
+    icon: "/doping_v2/buff300.png",
+    control: "check",
+    defaultOn: true,
+  },
+  {
+    id: "heroesHawl",
+    label: "Hero's Echo",
+    bonus: "+4% Attack",
+    icon: "/doping_v2/hero.png",
+    control: "check",
+    defaultOn: true,
+  },
+  {
+    id: "unionsPower",
+    label: "Legion's Might",
+    bonus: "+30 Attack",
+    icon: "/doping_v2/union.png",
+    control: "check",
+    defaultOn: true,
+  },
+  {
+    id: "urus",
+    label: "Ursus Buff",
+    bonus: "+30 Attack",
+    icon: "/doping_v2/urus.png",
+    control: "check",
+    defaultOn: true,
+  },
+  {
+    id: "guildBlessing",
+    label: "Guild Blessing",
+    bonus: "+30 Attack",
+    icon: "/doping_v2/guild.png",
+    control: "check",
+    defaultOn: true,
+  },
+  {
+    id: "extreme",
+    label: "Extreme Red Potion",
+    bonus: "+30 Attack, +2000 HP",
+    icon: "/doping_v2/extreme.png",
+    control: "check",
+    defaultOn: true,
+  },
+  {
+    id: "superPower",
+    label: "Super Power",
+    bonus: "+30 Attack",
+    icon: "/doping_v2/superpower.png",
+    control: "check",
+    defaultOn: true,
+  },
+  {
+    id: "additional1",
+    label: "VIP Buff",
+    bonus: "+ATT / Boss Damage (preset)",
+    icon: "/doping_v2/vipbuff.png",
+    control: "check",
+    defaultOn: true,
+  },
+  {
+    id: "genePass",
+    label: "Adversary's Power (Gene Pass)",
+    bonus: "Adversary buff (region)",
+    icon: "/images/opponent.png",
+    control: "check",
+    defaultOn: false,
+  },
+  {
+    id: "moonshine",
+    label: "Exceptional Boost Potion",
+    bonus: "+20 Attack, +2000 HP",
+    icon: "/doping_v2/moonshine.png",
+    control: "check",
+    defaultOn: false,
+  },
+  {
+    id: "rainbow",
+    label: "Rainbow Magic",
+    bonus: "+20 Attack",
+    icon: "/doping_v2/rainbow.png",
+    control: "check",
+    defaultOn: false,
+  },
+  {
+    id: "hyperRainbow",
+    label: "Hyper Rainbow Magic",
+    bonus: "+40 Attack",
+    icon: "/doping_v2/rainbow.png",
+    control: "check",
+    defaultOn: false,
+  },
+  {
+    id: "thanks",
+    label: "Thank You Maple",
+    bonus: "+30 Attack",
+    icon: "/doping_v2/thanks.png",
+    control: "check",
+    defaultOn: false,
+  },
+  {
+    id: "candy",
+    label: "Candied Apple",
+    bonus: "+7 All Stat",
+    icon: "/doping_v2/candy.png",
+    control: "check",
+    defaultOn: false,
+  },
+  {
+    id: "house",
+    label: "Caretaker's Support",
+    bonus: "+15% Damage",
+    icon: "/doping_v2/house.png",
+    control: "check",
+    defaultOn: false,
+  },
+  {
+    id: "wedding",
+    label: "Wedding Bouquet",
+    bonus: "+30 Attack",
+    icon: "/doping_v2/wedding.png",
+    control: "check",
+    defaultOn: false,
+  },
+  {
+    id: "specialWedding",
+    label: "Special Wedding Bouquet",
+    bonus: "+60 Attack",
+    icon: "/doping_v2/specialWedding.png",
+    control: "check",
+    defaultOn: false,
+  },
+  {
+    id: "ultraVip",
+    label: "VIP Ultra Power Coupon",
+    bonus: "+50 Attack",
+    icon: "/doping_v2/ultraVip.png",
+    control: "check",
+    defaultOn: false,
+  },
+  {
+    id: "superVip",
+    label: "VIP Super Power Coupon",
+    bonus: "+30 Attack",
+    icon: "/doping_v2/superVip.png",
+    control: "check",
+    defaultOn: false,
+  },
+  {
+    id: "truffle",
+    label: "Truffle Chocolate",
+    bonus: "+40 Attack",
+    icon: "/doping_v2/truffle.png",
+    control: "check",
+    defaultOn: false,
+  },
+  {
+    id: "medal",
+    label: "Medal Chocolate",
+    bonus: "+120 Attack",
+    icon: "/doping_v2/medal.png",
+    control: "check",
+    defaultOn: false,
+  },
+  {
+    id: "shiningRed",
+    label: "Sparkling Red Star Potion",
+    bonus: "+20% Damage",
+    icon: "/doping_v2/shiningred.png",
+    control: "check",
+    defaultOn: false,
+  },
+  {
+    id: "bigHero",
+    label: "Advanced Great Hero Potion",
+    bonus: "+10% Damage",
+    icon: "/doping_v2/bighero.png",
+    control: "check",
+    defaultOn: false,
+  },
+  {
+    id: "legendHero",
+    label: "Legendary Hero Potion",
+    bonus: "+30 Attack",
+    icon: "/doping_v2/legendhero.png",
+    control: "check",
+    defaultOn: false,
+  },
+  {
+    id: "jangBi",
+    label: "Advanced Weapon Tempering",
+    bonus: "+5% Crit Damage",
+    icon: "/doping_v2/jangbi.png",
+    control: "check",
+    defaultOn: false,
+  },
+  {
+    id: "shiningBlue",
+    label: "Sparkling Blue Star Potion",
+    bonus: "+20% IED",
+    icon: "/doping_v2/shiningblue.png",
+    control: "check",
+    defaultOn: false,
+  },
+  {
+    id: "fish",
+    label: "Fish Bun Sprinkle",
+    bonus: "+30 Attack",
+    icon: "/doping_v2/fish.png",
+    control: "check",
+    defaultOn: false,
+  },
+  {
+    id: "whiteBear",
+    label: "Polar Friends",
+    bonus: "+80 Attack",
+    icon: "/doping_v2/whiteBear.png",
+    control: "check",
+    defaultOn: false,
+  },
+  {
+    id: "dragonsMeal",
+    label: "Baby Dragon's Food",
+    bonus: "+7 Attack (non-INT)",
+    icon: "/doping_v2/dragonsmeal.png",
+    control: "check",
+    defaultOn: false,
+  },
+  {
+    id: "apple",
+    label: "Onyx Apple",
+    bonus: "+100 Attack",
+    icon: "/doping_v2/apple.png",
+    control: "check",
+    defaultOn: false,
+  },
+  {
+    id: "cake",
+    label: "Slice of Cream Cake",
+    bonus: "+40 Attack",
+    icon: "/doping_v2/cake.png",
+    control: "check",
+    defaultOn: false,
+  },
+  {
+    id: "tengu",
+    label: "Tengu's Judgement",
+    bonus: "+20 Attack",
+    icon: "/doping_v2/tengu.png",
+    control: "check",
+    defaultOn: false,
+  },
+  {
+    id: "authenticDmg",
+    label: "Max Authentic Symbol Damage",
+    bonus: "+20% Damage",
+    icon: "/doping_v2/champion.png",
+    control: "check",
+    defaultOn: false,
+  },
+  {
+    id: "championAll",
+    label: "Champion All Stat / HP",
+    bonus: "Champion stamp level (max 5)",
+    icon: "/doping_v2/champion.png",
+    control: "champion",
+    defaultLevel: 0,
+    maxLevel: 5,
+  },
+  {
+    id: "championAtk",
+    label: "Champion Attack",
+    bonus: "+5 Attack / level (max 5)",
+    icon: "/doping_v2/champion.png",
+    control: "champion",
+    defaultLevel: 0,
+    maxLevel: 5,
+  },
+  {
+    id: "championBoss",
+    label: "Champion Boss Damage",
+    bonus: "+2% Boss Damage / level (max 5)",
+    icon: "/doping_v2/champion.png",
+    control: "champion",
+    defaultLevel: 0,
+    maxLevel: 5,
+  },
+  {
+    id: "championCriDmg",
+    label: "Champion Crit Damage",
+    bonus: "Champion Crit Damage level (max 5)",
+    icon: "/doping_v2/champion.png",
+    control: "champion",
+    defaultLevel: 0,
+    maxLevel: 5,
+  },
+  {
+    id: "championIgnore",
+    label: "Champion IED",
+    bonus: "Champion IED level (max 5)",
+    icon: "/doping_v2/champion.png",
+    control: "champion",
+    defaultLevel: 0,
+    maxLevel: 5,
+  },
 ];
 
 export type LinkDef = {
@@ -179,7 +531,7 @@ export function defaultBuffState(): BuffState {
   const state: BuffState = {};
   for (const b of BUFF_DEFS) {
     state[b.id] = {
-      on: b.control === "check",
+      on: b.control === "check" ? !!b.defaultOn : false,
       level: b.defaultLevel ?? 0,
     };
   }
@@ -201,8 +553,6 @@ export function defaultHexaLevels(): number[] {
   });
 }
 
-/** @deprecated use getHexaSlots */
-export function hexaIconPath(charType: string, index: number): string {
-  const slots = getHexaSlots(charType);
-  return slots[index - 1]?.iconSuffix ?? `/hexaskill/Adele_${index}.png`;
+export function hexaIconPath(slot: HexaSlot): string | null {
+  return slot.iconSuffix;
 }
