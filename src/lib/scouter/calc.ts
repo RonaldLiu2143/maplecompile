@@ -239,17 +239,38 @@ export function calculateScouter(input: ScouterInput): ScouterResult {
     finalMultiplier *
     masteryAvg;
 
-  // ∂expected/∂main ≈ 4 * ATT * WC / 100 * multipliers
-  const perMain =
-    (4 * attackFinal * weaponConstant) /
-    100 *
-    critMultiplier *
-    bossMultiplier *
-    finalMultiplier *
-    iedMultiplier *
-    masteryAvg;
+  // ∂expected/∂main ≈ 4 * ATT * WC / 100 * multipliers (at current PDR)
+  const perMainAt = (pdrPercent: number) => {
+    const ied = iedDamageMultiplier(input.ignoreDefensePercent, pdrPercent);
+    return (
+      ((4 * attackFinal * weaponConstant) / 100) *
+      critMultiplier *
+      bossMultiplier *
+      finalMultiplier *
+      ied *
+      masteryAvg
+    );
+  };
+  const expectedBossAt = (pdrPercent: number) => {
+    const ied = iedDamageMultiplier(input.ignoreDefensePercent, pdrPercent);
+    return (
+      baseMax *
+      critMultiplier *
+      bossMultiplier *
+      finalMultiplier *
+      ied *
+      masteryAvg
+    );
+  };
+  const convertedAt = (pdrPercent: number) => {
+    const per = perMainAt(pdrPercent);
+    return per > 0 ? expectedBossAt(pdrPercent) / per : 0;
+  };
 
+  const perMain = perMainAt(input.bossPdrPercent);
   const convertedMain = perMain > 0 ? expectedBoss / perMain : 0;
+  const boss300Stat = convertedAt(300);
+  const boss380Stat = convertedAt(380);
 
   // Equivalence: how much main equals +1 of each option at current stats
   const equivAttack =
@@ -281,6 +302,17 @@ export function calculateScouter(input: ScouterInput): ScouterResult {
     criticalDamagePercent: input.criticalDamagePercent,
   });
 
+  /**
+   * MapleScouter Result popup fields (local analogues of CALC_DMG):
+   * - ITEM STAT / 환산  → expected boss damage index
+   * - HEXA STAT        → same until hexa skill DPM is modeled
+   * - Dojo / 무릉      → expected normal-enemy damage
+   * - Boss 300 / 380   → converted main at that PDR
+   */
+  const itemStat = expectedBoss;
+  const hexaStat = expectedBoss;
+  const dojoStat = expectedNormal;
+
   return {
     totalMain,
     totalSecondary,
@@ -296,6 +328,11 @@ export function calculateScouter(input: ScouterInput): ScouterResult {
     expectedBoss,
     expectedNormal,
     convertedMain,
+    boss300Stat,
+    boss380Stat,
+    itemStat,
+    hexaStat,
+    dojoStat,
     combatPower,
     equiv: {
       oneAttack: equivAttack,

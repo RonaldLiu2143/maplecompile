@@ -30,6 +30,7 @@ import {
   CLASS_OPTIONS,
   DEFAULT_CHAR,
   DEFAULT_JOB,
+  getCharName,
   parseClassValue,
 } from "@/lib/jobs";
 import { storage } from "@/lib/storage";
@@ -57,6 +58,143 @@ function formatNum(n: number, digits = 0): string {
     maximumFractionDigits: digits,
     minimumFractionDigits: digits,
   });
+}
+
+function ResultStatRow({
+  label,
+  value,
+  digits = 0,
+}: {
+  label: string;
+  value: number;
+  digits?: number;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3 text-sm">
+      <span className="opacity-70">{label}</span>
+      <span className="font-semibold tabular-nums">{formatNum(value, digits)}</span>
+    </div>
+  );
+}
+
+function ResultPanel({
+  level,
+  className,
+  result,
+}: {
+  level: number;
+  className: string;
+  result: ReturnType<typeof calculateScouter>;
+}) {
+  const attPer40Bd =
+    result.equiv.oneAttack > 0
+      ? (40 * result.equiv.oneBossPercent) / result.equiv.oneAttack
+      : 0;
+  const attPer45Bd =
+    result.equiv.oneAttack > 0
+      ? (45 * result.equiv.oneBossPercent) / result.equiv.oneAttack
+      : 0;
+  const attPer40Ied =
+    result.equiv.oneAttack > 0
+      ? (40 * result.equiv.oneIedPercent) / result.equiv.oneAttack
+      : 0;
+  const statPerAtt = result.equiv.oneAttack;
+  const statPctPer3Cd =
+    result.totalMain > 0
+      ? (3 * result.equiv.oneCritDamage) / (result.totalMain * 0.01)
+      : 0;
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <p className="text-lg font-bold">
+          Lv.{level} {className}
+        </p>
+        <p className="mt-0.5 text-xs opacity-60">
+          Local analogues of MapleScouter Result (CALC_DMG)
+        </p>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="space-y-1.5 rounded-md border border-border/50 bg-background/60 p-3">
+          <p className="text-xs font-semibold uppercase tracking-wide opacity-60">
+            Combat Power
+          </p>
+          <p className="font-display text-2xl font-bold tabular-nums">
+            {formatNum(result.combatPower)}
+          </p>
+        </div>
+        <div className="space-y-1.5 rounded-md border border-border/50 bg-background/60 p-3">
+          <p className="text-xs font-semibold uppercase tracking-wide opacity-60">
+            Converted Main
+          </p>
+          <p className="font-display text-2xl font-bold tabular-nums">
+            {formatNum(result.convertedMain)}
+          </p>
+        </div>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-3">
+        <div className="space-y-1 rounded-md border border-border/50 p-3">
+          <p className="text-xs font-semibold opacity-60">ITEM STAT</p>
+          <ResultStatRow label="Normal" value={result.itemStat} />
+          <ResultStatRow label="HEXA" value={result.hexaStat} />
+        </div>
+        <div className="space-y-1 rounded-md border border-border/50 p-3">
+          <p className="text-xs font-semibold opacity-60">Dojo</p>
+          <ResultStatRow label="Damage" value={result.dojoStat} />
+        </div>
+        <div className="space-y-1 rounded-md border border-border/50 p-3">
+          <p className="text-xs font-semibold opacity-60">General Range</p>
+          <ResultStatRow label="Max" value={result.displayedMax} />
+          <ResultStatRow label="Min" value={result.displayedMin} />
+        </div>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="space-y-1 rounded-md border border-border/50 p-3">
+          <p className="text-xs font-semibold opacity-60">Boss 300</p>
+          <ResultStatRow label="Normal" value={result.boss300Stat} />
+          <ResultStatRow label="HEXA" value={result.boss300Stat} />
+        </div>
+        <div className="space-y-1 rounded-md border border-border/50 p-3">
+          <p className="text-xs font-semibold opacity-60">Boss 380</p>
+          <ResultStatRow label="Normal" value={result.boss380Stat} />
+          <ResultStatRow label="HEXA" value={result.boss380Stat} />
+        </div>
+      </div>
+
+      <div className="rounded-md border border-border/50 p-3">
+        <p className="mb-2 text-xs font-semibold opacity-60">Stat Efficiency</p>
+        <div className="grid gap-1 sm:grid-cols-2">
+          <ResultStatRow label="ATT per 40% BD" value={attPer40Bd} digits={1} />
+          <ResultStatRow label="ATT per 45% BD" value={attPer45Bd} digits={1} />
+          <ResultStatRow label="ATT per 40% IED" value={attPer40Ied} digits={1} />
+          <ResultStatRow label="STAT per 1 ATT" value={statPerAtt} digits={1} />
+          <ResultStatRow
+            label="STAT% per 3% CD"
+            value={statPctPer3Cd}
+            digits={2}
+          />
+          <ResultStatRow
+            label="Main per 1% FD"
+            value={result.equiv.oneFinalDamage}
+            digits={1}
+          />
+          <ResultStatRow
+            label="Main per 1% BD"
+            value={result.equiv.oneBossPercent}
+            digits={1}
+          />
+          <ResultStatRow
+            label="Main per 1% IED"
+            value={result.equiv.oneIedPercent}
+            digits={1}
+          />
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function applyTriple(t: StatTriple): number {
@@ -187,6 +325,7 @@ export default function ScouterPage() {
   const [hexa, setHexa] = useState<number[]>(() => defaultHexaLevels());
   const [presetMsg, setPresetMsg] = useState<string | null>(null);
   const [draftReady, setDraftReady] = useState(false);
+  const [showResult, setShowResult] = useState(false);
 
   const classValue = `${input.jobType}:${input.charType}`;
   const { mainKeys, secondaryKeys, isXenon, isDa } = useMemo(
@@ -703,6 +842,13 @@ export default function ScouterPage() {
             <p className="font-display mt-1 text-4xl font-bold tracking-tight tabular-nums sm:text-5xl">
               {formatNum(result.combatPower)}
             </p>
+            <button
+              type="button"
+              className="mt-4 w-full rounded-md bg-accent px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90"
+              onClick={() => setShowResult(true)}
+            >
+              Result
+            </button>
           </div>
         </section>
 
@@ -1013,6 +1159,57 @@ export default function ScouterPage() {
           </section>
         </div>
       </div>
+
+      {showResult && (
+        <section className="overflow-hidden rounded-lg border border-border/60 bg-surface/90 p-4 sm:p-5">
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <h2 className="text-sm font-semibold">Result</h2>
+            <button
+              type="button"
+              className="rounded border border-border/50 px-2 py-1 text-xs font-medium hover:bg-surface-muted"
+              onClick={() => setShowResult(false)}
+            >
+              Close
+            </button>
+          </div>
+          <ResultPanel
+            level={input.level}
+            className={getCharName(input.jobType, input.charType)}
+            result={result}
+          />
+        </section>
+      )}
+
+      {showResult && (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-3 sm:items-center"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Scouter Result"
+          onClick={() => setShowResult(false)}
+        >
+          <div
+            className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border border-border/60 bg-surface p-4 shadow-xl sm:p-5"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <h2 className="text-sm font-semibold">Result</h2>
+              <button
+                type="button"
+                className="rounded border border-border/50 px-2 py-1 text-xs font-medium hover:bg-surface-muted"
+                onClick={() => setShowResult(false)}
+              >
+                Close
+              </button>
+            </div>
+            <ResultPanel
+              level={input.level}
+              className={getCharName(input.jobType, input.charType)}
+              result={result}
+            />
+          </div>
+        </div>
+      )}
 
       <p className="text-xs opacity-60">
         Layout matched to{" "}

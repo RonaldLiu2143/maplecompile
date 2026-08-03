@@ -78,8 +78,20 @@ export type ScouterResult = {
   iedMultiplier: number;
   expectedBoss: number;
   expectedNormal: number;
-  /** Converted main stat (환산 주스탯) vs boss PDR */
+  /** Converted main stat (환산 주스탯) vs current boss PDR */
   convertedMain: number;
+  /** Converted main at 300% / 380% PDR (MapleScouter Boss 300 / 380 Normal) */
+  boss300Stat: number;
+  boss380Stat: number;
+  /**
+   * MapleScouter Result popup analogues:
+   * ITEM STAT ≈ expected boss damage index
+   * HEXA STAT ≈ same until hexa skill model exists
+   * Dojo ≈ expected normal-enemy damage
+   */
+  itemStat: number;
+  hexaStat: number;
+  dojoStat: number;
   /** In-game Combat Power estimate (전투력) */
   combatPower: number;
   /** Rough main-stat equivalents */
