@@ -152,10 +152,21 @@ function CdnIcon({
       </div>
     );
   }
+  const href =
+    src.startsWith("http://") ||
+    src.startsWith("https://") ||
+    src.startsWith("/")
+      ? src.startsWith("/linkskill/") ||
+        src.startsWith("/doping_v2/") ||
+        src.startsWith("/hexaskill/") ||
+        src.startsWith("/images/")
+        ? `${SCOUTER_CDN}${src}`
+        : src
+      : `${SCOUTER_CDN}${src}`;
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
-      src={`${SCOUTER_CDN}${src}`}
+      src={href}
       alt={alt}
       width={32}
       height={32}
