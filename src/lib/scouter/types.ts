@@ -55,8 +55,9 @@ export type ScouterInput = {
   specialInnerAbility: "none" | "passivePlus1" | "mobTargeted";
   ozContinuousStatus: "noUse" | "use";
   ozContinuousLevel: number;
+  ozRestraintLevel: number;
   ozWeaponJumpLevel: number;
-  ozRiskTakerLevel: number;
+  ozRingOfSumLevel: number;
   ozWeaponTotalAtt: number;
   ozPrimaryStat: number;
   ozSecondaryStat: number;
@@ -142,8 +143,9 @@ export function defaultScouterInput(
     specialInnerAbility: "none",
     ozContinuousStatus: "noUse",
     ozContinuousLevel: 0,
+    ozRestraintLevel: 0,
     ozWeaponJumpLevel: 0,
-    ozRiskTakerLevel: 0,
+    ozRingOfSumLevel: 0,
     ozWeaponTotalAtt: 0,
     ozPrimaryStat: 0,
     ozSecondaryStat: 0,

@@ -33,4 +33,6 @@ export {
   OZ_RINGS,
   OZ_CONTINUOUS_STATUS,
   INNER_ABILITY_OPTIONS,
+  getVisibleOzRings,
+  OZ_RING_MAX,
 } from "./oz";

@@ -931,15 +931,18 @@ export default function ScouterPage() {
               </label>
 
               <div className="grid grid-cols-3 gap-2">
-                {OZ_RINGS.map((ring) => (
+                {getVisibleOzRings(input.ozContinuousStatus).map((ring) => (
                   <div
                     key={ring.id}
                     title={ring.label}
                     className="flex flex-col items-center gap-1 rounded border border-border/40 bg-background p-1.5"
                   >
-                    <CdnIcon src={ring.icon} alt={ring.label} />
+                    <span title={ring.label} className="cursor-help">
+                      <CdnIcon src={ring.icon} alt={ring.label} />
+                    </span>
                     <input
                       type="number"
+                      title={ring.label}
                       min={0}
                       max={ring.max}
                       className="w-full rounded border border-border/40 bg-background px-0.5 py-0.5 text-center text-[11px] tabular-nums outline-none focus:border-accent"
