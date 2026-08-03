@@ -184,7 +184,6 @@ export default function ScouterPage() {
   const [buffs, setBuffs] = useState<BuffState>(() => defaultBuffState());
   const [links, setLinks] = useState<LinkState>(() => defaultLinkState());
   const [hexa, setHexa] = useState<number[]>(() => defaultHexaLevels());
-  const [showResult, setShowResult] = useState(true);
   const [presetMsg, setPresetMsg] = useState<string | null>(null);
   const [draftReady, setDraftReady] = useState(false);
 
@@ -378,7 +377,6 @@ export default function ScouterPage() {
       liberation: prev.liberation,
       mugongSoul: prev.mugongSoul,
     }));
-    setShowResult(false);
   };
 
   const resetHard = () => {
@@ -386,7 +384,6 @@ export default function ScouterPage() {
     setBuffs(defaultBuffState());
     setLinks(defaultLinkState());
     setHexa(defaultHexaLevels());
-    setShowResult(false);
   };
 
   const tripleRows: { label: string; key?: StatKey; kind?: "att" | "matt" }[] =
@@ -1012,13 +1009,6 @@ export default function ScouterPage() {
       <div className="flex flex-wrap gap-2">
         <button
           type="button"
-          className="rounded-md bg-accent px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90 dark:text-zinc-900"
-          onClick={() => setShowResult(true)}
-        >
-          Result
-        </button>
-        <button
-          type="button"
           className="rounded-md border border-border/60 bg-surface px-4 py-2 text-sm font-semibold transition hover:bg-surface-muted"
           onClick={resetSoft}
         >
@@ -1033,50 +1023,10 @@ export default function ScouterPage() {
         </button>
       </div>
 
-      {showResult ? (
-        <section className="space-y-4 overflow-hidden rounded-lg border border-border/60 bg-surface/90 p-4">
-          <div className="text-center">
-            <p className="text-sm font-medium opacity-70">Converted Main Stat</p>
-            <p className="font-display mt-1 text-4xl font-bold tracking-tight text-accent tabular-nums sm:text-5xl">
-              {formatNum(result.convertedMain, 1)}
-            </p>
-            <p className="mt-2 text-xs opacity-60">
-              Buff toggles are UI for now; converted stat uses entered damage
-              options
-            </p>
-          </div>
-
-          <div className="grid gap-px overflow-hidden rounded-md border border-border/40 sm:grid-cols-2">
-            {(
-              [
-                ["General Range", formatNum(result.displayedMax)],
-                ["General Range (min)", formatNum(result.displayedMin)],
-                ["Expected (boss)", formatNum(result.expectedBoss)],
-                ["Expected (normal)", formatNum(result.expectedNormal)],
-                ["Total main", formatNum(result.totalMain, 1)],
-                ["Final ATT / MATT", formatNum(result.attackFinal, 1)],
-              ] as const
-            ).map(([label, value]) => (
-              <div
-                key={label}
-                className="flex items-center justify-between gap-3 bg-background px-3 py-2 text-sm"
-              >
-                <span className="opacity-70">{label}</span>
-                <span className="font-semibold tabular-nums">{value}</span>
-              </div>
-            ))}
-          </div>
-        </section>
-      ) : null}
-
       <section className="overflow-hidden rounded-lg border border-border/60 bg-surface/90 px-4 py-5 text-center">
         <p className="text-sm font-medium opacity-70">Combat Power</p>
         <p className="font-display mt-1 text-4xl font-bold tracking-tight tabular-nums sm:text-5xl">
           {formatNum(result.combatPower)}
-        </p>
-        <p className="mx-auto mt-2 max-w-xl text-xs opacity-60">
-          (4×main + sub) × 0.01 × ⌊ATT⌋ × (1+DMG+BD) × (1+FD) × (1.35+CD).
-          Excludes IED, crit rate, and weapon→bow ATT conversion.
         </p>
       </section>
 

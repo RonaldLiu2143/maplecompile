@@ -245,12 +245,10 @@ export function calculateScouter(input: ScouterInput): ScouterResult {
     iedMultiplier > 0 ? convertedMain * (dIedMult / iedMultiplier) : 0;
 
   const combatCd = 1.35 + input.criticalDamagePercent / 100;
+  // Combat Power excludes skill Final Damage (our FD field is class skill FD).
+  // floor( (4main+sub)/100 × ⌊ATT⌋ × (1+DMG+BD) × (1.35+CD) )
   const combatPower = Math.floor(
-    statTerm *
-      attackFinal *
-      bossMultiplier *
-      finalMultiplier *
-      combatCd,
+    statTerm * attackFinal * bossMultiplier * combatCd,
   );
 
   return {
