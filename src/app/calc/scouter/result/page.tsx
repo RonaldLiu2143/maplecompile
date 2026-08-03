@@ -353,8 +353,6 @@ export default function ScouterDetailedResultPage() {
     BOSS_CLEAR_FIGHT_MINUTES_DEFAULT,
   );
   const hpRegion: BossHpRegion = fightMinutes === 30 ? "gms" : "kms";
-  const fightLabel =
-    fightMinutes === 30 ? "30 min · GMS HP" : "20 min · KMS HP";
 
   useEffect(() => {
     let cancelled = false;
