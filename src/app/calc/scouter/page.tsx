@@ -113,15 +113,7 @@ function ResultPanel({
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2">
-        <div className="space-y-1.5 rounded-md border border-border/50 bg-background/60 p-3">
-          <p className="text-xs font-semibold uppercase tracking-wide opacity-60">
-            Combat Power
-          </p>
-          <p className="font-display text-2xl font-bold tabular-nums">
-            {formatNum(result.combatPower)}
-          </p>
-        </div>
-        <div className="space-y-1.5 rounded-md border border-border/50 bg-background/60 p-3">
+        <div className="space-y-1.5 rounded-md border border-border/50 bg-background/60 p-3 sm:col-span-2">
           <p className="text-xs font-semibold uppercase tracking-wide opacity-60">
             Converted Main
           </p>
@@ -852,14 +844,10 @@ export default function ScouterPage() {
             </div>
           </div>
 
-          <div className="border-t border-border/40 px-3 py-4 text-center">
-            <p className="text-sm font-medium opacity-70">Combat Power</p>
-            <p className="font-display mt-1 text-4xl font-bold tracking-tight tabular-nums sm:text-5xl">
-              {formatNum(result.combatPower)}
-            </p>
+          <div className="border-t border-border/40 px-3 py-3">
             <button
               type="button"
-              className="mt-4 w-full rounded-md bg-accent px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90"
+              className="w-full rounded-md bg-accent px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90"
               onClick={() => setShowResult(true)}
             >
               Result
