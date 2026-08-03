@@ -268,6 +268,7 @@ export type MapleScouterCalculatedData = {
   exchangePower?: number;
   exchangePowerHexa?: number;
   mr_hexaStat?: number;
+  mr_stat?: number;
   boss300_stat?: number;
   boss380_stat?: number;
   boss300_hexaStat?: number;
@@ -276,8 +277,26 @@ export type MapleScouterCalculatedData = {
   calculatedDamage_380?: number;
   calculatedHexaDamage_300?: number;
   calculatedHexaDamage_380?: number;
+  calculatedHexaDamage_kaling?: number;
   combatPower?: number;
-  specEfficiency?: Record<string, number>;
+  class?: string;
+  restraintEff1?: number;
+  weaponEff1?: number;
   increasedByHexa?: number;
+  hexaUsed?: number[];
+  dojo_floor?: number | null;
+  dojo_image_url?: string;
+  specEfficiency?: Record<string, number>;
+  maple_scouter_const?: {
+    stat_score?: number;
+    attack_score?: number;
+    attackPer_score?: number;
+    damage_score?: number;
+    criDamage_score?: number;
+    def_score?: number;
+  };
+  hexaEffect?: Record<string, number>;
+  hexaPoss?: Record<string, number>;
+  myClassData?: Record<string, unknown>;
   [key: string]: unknown;
 };

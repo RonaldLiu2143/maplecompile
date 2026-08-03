@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   BUFF_DEFS,
@@ -302,6 +303,7 @@ function CdnIcon({
 }
 
 export default function ScouterPage() {
+  const router = useRouter();
   const [input, setInput] = useState<ScouterInput>(() =>
     defaultScouterInput(DEFAULT_JOB, DEFAULT_CHAR),
   );
@@ -871,7 +873,7 @@ export default function ScouterPage() {
             </div>
           </div>
 
-          <div className="border-t border-border/40 px-3 py-3">
+          <div className="space-y-2 border-t border-border/40 px-3 py-3">
             <button
               type="button"
               className="w-full rounded-md bg-accent px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
@@ -879,6 +881,16 @@ export default function ScouterPage() {
               onClick={() => void runResult()}
             >
               {resultLoading ? "Calculating…" : "Result"}
+            </button>
+            <button
+              type="button"
+              className="w-full rounded-md border-2 border-border bg-surface px-4 py-2.5 text-sm font-semibold transition hover:bg-surface-muted"
+              onClick={() => {
+                storage.setScouterLast({ input, buffs, links, hexa });
+                router.push("/calc/scouter/result");
+              }}
+            >
+              Detailed Information
             </button>
           </div>
         </section>
