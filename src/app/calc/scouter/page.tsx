@@ -528,11 +528,12 @@ export default function ScouterPage() {
                 />
               </FieldCell>
               <FieldCell label="Normal Enemy Damage">
-                <NumInput
-                  value={input.normalEnemyDamagePercent}
-                  onChange={(normalEnemyDamagePercent) =>
-                    patch({ normalEnemyDamagePercent })
-                  }
+                <input
+                  type="text"
+                  readOnly
+                  disabled
+                  value=""
+                  className={`${cell} w-full min-w-0 cursor-not-allowed bg-surface-muted/40 text-right text-foreground/40`}
                 />
               </FieldCell>
               <FieldCell label="Attack Power">
