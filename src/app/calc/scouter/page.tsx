@@ -188,10 +188,14 @@ export default function ScouterPage() {
     () => getHexaSlots(input.charType),
     [input.charType],
   );
-  const attackTotal = useMemo(() => {
-    const src = input.useMagicAttack ? input.magicAttack : input.attack;
-    return Math.round(applyTriple(src));
-  }, [input.attack, input.magicAttack, input.useMagicAttack]);
+  const attackPowerTotal = useMemo(
+    () => Math.round(applyTriple(input.attack)),
+    [input.attack],
+  );
+  const magicAttackTotal = useMemo(
+    () => Math.round(applyTriple(input.magicAttack)),
+    [input.magicAttack],
+  );
 
   const computedFinalDamage = useMemo(
     () =>
@@ -460,183 +464,196 @@ export default function ScouterPage() {
             ))}
           </div>
 
-          <div className="grid grid-cols-4">
-            <div className={headCell} />
-            <div className={headCell}>Base Value</div>
-            <div className={headCell}>% Value</div>
-            <div className={headCell}>% Value Not Applied</div>
+          {/* Top: main / sub / attack (character window style) */}
+          <div className="m-2 overflow-hidden rounded-md border border-border/50">
+            <div className="grid grid-cols-4">
+              <div className={headCell} />
+              <div className={headCell}>Base Value</div>
+              <div className={headCell}>% Value</div>
+              <div className={headCell}>% Value Not Applied</div>
+            </div>
+            {tripleRows.map((row) => {
+              if (row.key) {
+                return (
+                  <TripleRow
+                    key={row.key}
+                    label={row.label}
+                    value={input.stats[row.key]}
+                    onChange={(t) => setStat(row.key!, t)}
+                  />
+                );
+              }
+              if (row.kind === "matt") {
+                return (
+                  <TripleRow
+                    key="matt"
+                    label={row.label}
+                    value={input.magicAttack}
+                    onChange={(magicAttack) => patch({ magicAttack })}
+                  />
+                );
+              }
+              return (
+                <TripleRow
+                  key="att"
+                  label={row.label}
+                  value={input.attack}
+                  onChange={(attack) => patch({ attack })}
+                />
+              );
+            })}
           </div>
 
-          {tripleRows.map((row) => {
-            if (row.key) {
-              return (
-                <TripleRow
-                  key={row.key}
-                  label={row.label}
-                  value={input.stats[row.key]}
-                  onChange={(t) => setStat(row.key!, t)}
+          {/* Middle: combat stats — MapleStory character window order */}
+          <div className="mx-2 mb-2 overflow-hidden rounded-md border border-border/50">
+            <div className="grid sm:grid-cols-2">
+              <FieldCell label="Damage Range">
+                <NumInput
+                  value={input.generalRange || Math.round(result.displayedMax)}
+                  onChange={(generalRange) => patch({ generalRange })}
                 />
-              );
-            }
-            if (row.kind === "matt") {
-              return (
-                <TripleRow
-                  key="matt"
-                  label={row.label}
-                  value={input.magicAttack}
-                  onChange={(magicAttack) => patch({ magicAttack })}
+              </FieldCell>
+              <FieldCell label="Damage">
+                <NumInput
+                  value={input.damagePercent}
+                  onChange={(damagePercent) => patch({ damagePercent })}
                 />
-              );
-            }
-            return (
-              <TripleRow
-                key="att"
-                label={row.label}
-                value={input.attack}
-                onChange={(attack) => patch({ attack })}
-              />
-            );
-          })}
+              </FieldCell>
+              <FieldCell label="Final Damage">
+                <NumInput value={input.finalDamagePercent} readOnly />
+              </FieldCell>
+              <FieldCell label="Boss Damage">
+                <NumInput
+                  value={input.bossDamagePercent}
+                  onChange={(bossDamagePercent) =>
+                    patch({ bossDamagePercent })
+                  }
+                />
+              </FieldCell>
+              <FieldCell label="Ignore Defense">
+                <NumInput
+                  value={input.ignoreDefensePercent}
+                  onChange={(ignoreDefensePercent) =>
+                    patch({ ignoreDefensePercent })
+                  }
+                />
+              </FieldCell>
+              <FieldCell label="Normal Enemy Damage">
+                <NumInput
+                  value={input.normalEnemyDamagePercent}
+                  onChange={(normalEnemyDamagePercent) =>
+                    patch({ normalEnemyDamagePercent })
+                  }
+                />
+              </FieldCell>
+              <FieldCell label="Attack Power">
+                <NumInput value={attackPowerTotal} readOnly />
+              </FieldCell>
+              <FieldCell label="Critical Rate">
+                <NumInput
+                  value={input.criticalRatePercent}
+                  onChange={(criticalRatePercent) =>
+                    patch({ criticalRatePercent })
+                  }
+                />
+              </FieldCell>
+              <FieldCell label="Magic Att">
+                <NumInput value={magicAttackTotal} readOnly />
+              </FieldCell>
+              <FieldCell label="Critical Damage">
+                <NumInput
+                  value={input.criticalDamagePercent}
+                  onChange={(criticalDamagePercent) =>
+                    patch({ criticalDamagePercent })
+                  }
+                />
+              </FieldCell>
+              <FieldCell label="Cooldown Reduction">
+                <div className="flex min-w-0">
+                  <NumInput
+                    value={input.cooldownReductionSeconds}
+                    onChange={(cooldownReductionSeconds) =>
+                      patch({ cooldownReductionSeconds })
+                    }
+                    className="border-r-0"
+                  />
+                  <span
+                    className={`${labelCell} flex shrink-0 items-center px-1 text-xs`}
+                  >
+                    sec
+                  </span>
+                  <NumInput
+                    value={input.cooldownReductionPercent}
+                    onChange={(cooldownReductionPercent) =>
+                      patch({ cooldownReductionPercent })
+                    }
+                  />
+                  <span
+                    className={`${labelCell} flex shrink-0 items-center px-1 text-xs`}
+                  >
+                    %
+                  </span>
+                </div>
+              </FieldCell>
+              <FieldCell label="Buff Duration">
+                <NumInput
+                  value={input.buffDurationPercent}
+                  onChange={(buffDurationPercent) =>
+                    patch({ buffDurationPercent })
+                  }
+                />
+              </FieldCell>
+              <FieldCell label="Cooldown Not Applied">
+                <NumInput
+                  value={input.cooldownSkipPercent}
+                  onChange={(cooldownSkipPercent) =>
+                    patch({ cooldownSkipPercent })
+                  }
+                />
+              </FieldCell>
+              <FieldCell label="Ignore Elemental Resistance">
+                <NumInput
+                  value={input.ignoreElementalResistancePercent}
+                  onChange={(ignoreElementalResistancePercent) =>
+                    patch({ ignoreElementalResistancePercent })
+                  }
+                />
+              </FieldCell>
+              <FieldCell label="Additional Status Damage">
+                <NumInput
+                  value={input.additionalStatusDamagePercent}
+                  onChange={(additionalStatusDamagePercent) =>
+                    patch({ additionalStatusDamagePercent })
+                  }
+                />
+              </FieldCell>
+              <FieldCell label="Summons Duration Increase">
+                <NumInput
+                  value={input.summonDurationPercent}
+                  onChange={(summonDurationPercent) =>
+                    patch({ summonDurationPercent })
+                  }
+                />
+              </FieldCell>
+            </div>
+          </div>
 
-          <div className="grid sm:grid-cols-2">
-            <FieldCell label="General Range">
-              <NumInput
-                value={input.generalRange || Math.round(result.displayedMax)}
-                onChange={(generalRange) => patch({ generalRange })}
-              />
-            </FieldCell>
-            <FieldCell label="Damage">
-              <NumInput
-                value={input.damagePercent}
-                onChange={(damagePercent) => patch({ damagePercent })}
-              />
-            </FieldCell>
-            <FieldCell label="Final Damage">
-              <NumInput value={input.finalDamagePercent} readOnly />
-            </FieldCell>
-            <FieldCell label="Boss Damage">
-              <NumInput
-                value={input.bossDamagePercent}
-                onChange={(bossDamagePercent) => patch({ bossDamagePercent })}
-              />
-            </FieldCell>
-            <FieldCell label="Ignore Enemy Defense">
-              <NumInput
-                value={input.ignoreDefensePercent}
-                onChange={(ignoreDefensePercent) =>
-                  patch({ ignoreDefensePercent })
-                }
-              />
-            </FieldCell>
-            <FieldCell label="Normal Enemy Damage">
-              <NumInput
-                value={input.normalEnemyDamagePercent}
-                onChange={(normalEnemyDamagePercent) =>
-                  patch({ normalEnemyDamagePercent })
-                }
-              />
-            </FieldCell>
-            <FieldCell label="Attack">
-              <NumInput value={attackTotal} readOnly />
-            </FieldCell>
-            <FieldCell label="Critical Rate">
-              <NumInput
-                value={input.criticalRatePercent}
-                onChange={(criticalRatePercent) =>
-                  patch({ criticalRatePercent })
-                }
-              />
-            </FieldCell>
-            <FieldCell label="M.Attack">
-              <NumInput value={attackTotal} readOnly />
-            </FieldCell>
-            <FieldCell label="Critical Damage">
-              <NumInput
-                value={input.criticalDamagePercent}
-                onChange={(criticalDamagePercent) =>
-                  patch({ criticalDamagePercent })
-                }
-              />
-            </FieldCell>
-            <FieldCell label="Cooldown Reduction">
-              <div className="flex min-w-0">
+          {/* Bottom: Arcane / Sacred only */}
+          <div className="mx-2 mb-2 overflow-hidden rounded-md border border-border/50">
+            <div className="grid sm:grid-cols-2">
+              <FieldCell label="Arcane Force">
                 <NumInput
-                  value={input.cooldownReductionSeconds}
-                  onChange={(cooldownReductionSeconds) =>
-                    patch({ cooldownReductionSeconds })
-                  }
-                  className="border-r-0"
+                  value={input.arcaneForce}
+                  onChange={(arcaneForce) => patch({ arcaneForce })}
                 />
-                <span
-                  className={`${labelCell} flex shrink-0 items-center px-1 text-xs`}
-                >
-                  Second
-                </span>
+              </FieldCell>
+              <FieldCell label="Sacred Force">
                 <NumInput
-                  value={input.cooldownReductionPercent}
-                  onChange={(cooldownReductionPercent) =>
-                    patch({ cooldownReductionPercent })
-                  }
+                  value={input.sacredForce}
+                  onChange={(sacredForce) => patch({ sacredForce })}
                 />
-                <span
-                  className={`${labelCell} flex shrink-0 items-center px-1 text-xs`}
-                >
-                  %
-                </span>
-              </div>
-            </FieldCell>
-            <FieldCell label="Buff Duration">
-              <NumInput
-                value={input.buffDurationPercent}
-                onChange={(buffDurationPercent) =>
-                  patch({ buffDurationPercent })
-                }
-              />
-            </FieldCell>
-            <FieldCell label="Cooldown Skip">
-              <NumInput
-                value={input.cooldownSkipPercent}
-                onChange={(cooldownSkipPercent) =>
-                  patch({ cooldownSkipPercent })
-                }
-              />
-            </FieldCell>
-            <FieldCell label="Ignore Elemental Resistance">
-              <NumInput
-                value={input.ignoreElementalResistancePercent}
-                onChange={(ignoreElementalResistancePercent) =>
-                  patch({ ignoreElementalResistancePercent })
-                }
-              />
-            </FieldCell>
-            <FieldCell label="Additional Status Damage">
-              <NumInput
-                value={input.additionalStatusDamagePercent}
-                onChange={(additionalStatusDamagePercent) =>
-                  patch({ additionalStatusDamagePercent })
-                }
-              />
-            </FieldCell>
-            <FieldCell label="Summon Duration">
-              <NumInput
-                value={input.summonDurationPercent}
-                onChange={(summonDurationPercent) =>
-                  patch({ summonDurationPercent })
-                }
-              />
-            </FieldCell>
-            <FieldCell label="Arcane Force">
-              <NumInput
-                value={input.arcaneForce}
-                onChange={(arcaneForce) => patch({ arcaneForce })}
-              />
-            </FieldCell>
-            <FieldCell label="Sacred Force">
-              <NumInput
-                value={input.sacredForce}
-                onChange={(sacredForce) => patch({ sacredForce })}
-              />
-            </FieldCell>
+              </FieldCell>
+            </div>
           </div>
 
           <div className="grid border-t border-border/30 sm:grid-cols-2">
