@@ -27,6 +27,7 @@ import {
 } from "@/lib/jobs";
 import { storage } from "@/lib/storage";
 import type { MapleScouterCalculatedData } from "@/lib/scouter/to-user-stat";
+import { AdditionalSpecSimulation } from "./additional-spec-sim";
 
 function formatNum(n: number, digits = 0): string {
   if (!Number.isFinite(n)) return "—";
@@ -474,7 +475,7 @@ export default function ScouterDetailedResultPage() {
 
       {!loading && !error && data ? (
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
-          <aside className="w-full shrink-0 lg:sticky lg:top-4 lg:w-64 xl:w-72">
+          <aside className="w-full shrink-0 lg:w-64 xl:w-72">
             <StatBlock
               title="Boss Converted Stat"
               hint="HEXA drives clear %."
@@ -629,6 +630,8 @@ export default function ScouterDetailedResultPage() {
                 · [Party] means the party cut table
               </p>
             </StatBlock>
+
+            <AdditionalSpecSimulation baseline={data} />
           </div>
         </div>
       ) : null}
