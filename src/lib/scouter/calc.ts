@@ -1,4 +1,5 @@
 import { getPrimarySecondary } from "@/lib/flames";
+import { bowConvertAttackBase } from "./bow-att";
 import { computeClassFinalDamage } from "./class-fd";
 import { computeCombatPower } from "./combat-power";
 import { getWeaponConstant } from "./weapon-constant";
@@ -290,12 +291,24 @@ export function calculateScouter(input: ScouterInput): ScouterResult {
 
   /**
    * In-game Combat Power (전투력) — community formula, not MapleScouter.
-   * Uses skill-excluded Final Damage from the editable field.
-   * Does not use weapon constant (bow ATT conversion when weapon split exists).
+   * ATT is bow-normalized when Oz weapon total is filled; FD is skill-excluded
+   * from the Final Damage field (Reboot / Liberation / gear).
    */
+  const combatAttBase = bowConvertAttackBase(
+    input.charType,
+    attackSource.base,
+    input.ozWeaponTotalAtt,
+  );
+  const combatAttackFloor = Math.floor(
+    Number(
+      (combatAttBase * (1 + attackSource.percent / 100) + attackSource.flat).toFixed(
+        10,
+      ),
+    ),
+  );
   const combatPower = computeCombatPower({
-    statTerm,
-    attackFloor: attackFinal,
+    statNumerator,
+    attackFloor: combatAttackFloor,
     damagePercent: input.damagePercent,
     bossDamagePercent: input.bossDamagePercent,
     finalDamagePercent: input.finalDamagePercent,

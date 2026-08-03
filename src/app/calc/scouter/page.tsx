@@ -110,9 +110,6 @@ function ResultPanel({
         <p className="text-lg font-bold">
           Lv.{level} {className}
         </p>
-        <p className="mt-0.5 text-xs opacity-60">
-          Local analogues of MapleScouter Result (CALC_DMG)
-        </p>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2">
@@ -326,6 +323,12 @@ export default function ScouterPage() {
   const [presetMsg, setPresetMsg] = useState<string | null>(null);
   const [draftReady, setDraftReady] = useState(false);
   const [showResult, setShowResult] = useState(false);
+  const resultRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    if (!showResult) return;
+    resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [showResult]);
 
   const classValue = `${input.jobType}:${input.charType}`;
   const { mainKeys, secondaryKeys, isXenon, isDa } = useMemo(
@@ -694,7 +697,7 @@ export default function ScouterPage() {
                   onChange={(damagePercent) => patch({ damagePercent })}
                 />
               </FieldCell>
-              <FieldCell label="Final Damage">
+              <FieldCell label="Final Damage (skill-excl.)">
                 <NumInput
                   value={Math.round(input.finalDamagePercent * 100) / 100}
                   onChange={(finalDamagePercent) =>
@@ -1161,7 +1164,10 @@ export default function ScouterPage() {
       </div>
 
       {showResult && (
-        <section className="overflow-hidden rounded-lg border border-border/60 bg-surface/90 p-4 sm:p-5">
+        <section
+          ref={resultRef}
+          className="overflow-hidden rounded-lg border border-border/60 bg-surface/90 p-4 sm:p-5"
+        >
           <div className="mb-3 flex items-center justify-between gap-2">
             <h2 className="text-sm font-semibold">Result</h2>
             <button
@@ -1178,37 +1184,6 @@ export default function ScouterPage() {
             result={result}
           />
         </section>
-      )}
-
-      {showResult && (
-        <div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-3 sm:items-center"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Scouter Result"
-          onClick={() => setShowResult(false)}
-        >
-          <div
-            className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border border-border/60 bg-surface p-4 shadow-xl sm:p-5"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="mb-3 flex items-center justify-between gap-2">
-              <h2 className="text-sm font-semibold">Result</h2>
-              <button
-                type="button"
-                className="rounded border border-border/50 px-2 py-1 text-xs font-medium hover:bg-surface-muted"
-                onClick={() => setShowResult(false)}
-              >
-                Close
-              </button>
-            </div>
-            <ResultPanel
-              level={input.level}
-              className={getCharName(input.jobType, input.charType)}
-              result={result}
-            />
-          </div>
-        </div>
       )}
 
       <p className="text-xs opacity-60">

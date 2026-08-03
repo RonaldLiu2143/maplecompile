@@ -34,6 +34,11 @@ export {
   combatExceptionFinalDamagePercent,
 } from "./combat-power";
 export {
+  bowConvertAttackBase,
+  BOW_EQUIVALENT_CLASSES,
+  GENESIS_BOW_BASE,
+} from "./bow-att";
+export {
   CLASS_WEAPON_CONSTANT,
   getWeaponConstant,
 } from "./weapon-constant";
