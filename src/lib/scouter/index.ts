@@ -55,6 +55,8 @@ export {
   evaluateBossClears,
   bossClearLabelEn,
   labelTone,
+  labelPillClass,
+  difficultyRibbonClass,
   type BossCutEntry,
   type BossClearRow,
   type BossClearLabel,

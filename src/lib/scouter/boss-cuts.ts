@@ -1252,6 +1252,8 @@ export type BossClearRow = BossCutEntry & {
   label: BossClearLabel;
   imgUrl: string;
   cantEnter: boolean;
+  /** Index in MapleScouter GMS difficulty order. */
+  rank: number;
 };
 
 export type BossClearCalcInput = {
@@ -1295,7 +1297,7 @@ export function evaluateBossClears(args: BossClearCalcInput): BossClearRow[] {
     newbieMode = false,
   } = args;
 
-  const rows: BossClearRow[] = BOSS_CUTS.map((entry) => {
+  const rows: BossClearRow[] = BOSS_CUTS.map((entry, rank) => {
     const isPartyBoss = entry.partyBossCut != null;
     const cut = (entry.bossCut ?? entry.partyBossCut) || 0;
     const dmg = entry.guard === 380 ? damage380 : damage300;
@@ -1355,6 +1357,7 @@ export function evaluateBossClears(args: BossClearCalcInput): BossClearRow[] {
       label,
       imgUrl: `${BOSS_ICON_CDN}/${entry.imgKey}.png`,
       cantEnter,
+      rank,
     };
   });
 
@@ -1372,7 +1375,59 @@ export function evaluateBossClears(args: BossClearCalcInput): BossClearRow[] {
       })
     : rows;
 
-  return filtered.sort((a, b) => b.cut - a.cut);
+  // MapleScouter GMS list order = boss difficulty ranking (hardest first)
+  return filtered.sort((a, b) => a.rank - b.rank);
+}
+
+/** Difficulty ribbon colors (MapleScouter-style). */
+export function difficultyRibbonClass(difficulty: string): string {
+  switch (difficulty) {
+    case "Extreme":
+      return "bg-red-600 text-white";
+    case "Destiny":
+      return "bg-zinc-900 text-white";
+    case "Chaos":
+      return "bg-stone-700 text-white";
+    case "Hard":
+      return "bg-fuchsia-700 text-white";
+    case "Champion":
+      return "bg-orange-500 text-white";
+    case "Normal":
+      return "bg-teal-600 text-white";
+    case "Easy":
+      return "bg-emerald-600 text-white";
+    default:
+      return "bg-zinc-600 text-white";
+  }
+}
+
+/** Status pill styles for clear labels. */
+export function labelPillClass(label: BossClearLabel): string {
+  switch (label) {
+    case "Easy":
+    case "[Newbie] Easy":
+      return "bg-emerald-500 text-white";
+    case "Possible":
+    case "[Newbie] Solo":
+      return "bg-lime-600 text-white";
+    case "Solo Min":
+      return "bg-zinc-700 text-white";
+    case "Party-able":
+    case "2p Min Cut":
+    case "3p Min Cut":
+    case "4p Min Cut":
+    case "6p Min Cut":
+    case "[Newbie] 2p":
+    case "[Newbie] 4p":
+    case "[Newbie] 6p":
+      return "bg-blue-700 text-white";
+    case "Party Min":
+      return "bg-indigo-800 text-white";
+    case "Can't Enter":
+    case "Impossible":
+    default:
+      return "bg-zinc-800 text-zinc-200";
+  }
 }
 
 export function labelTone(label: BossClearLabel): string {

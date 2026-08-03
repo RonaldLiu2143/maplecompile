@@ -10,7 +10,8 @@ import {
 } from "@/lib/scouter";
 import {
   evaluateBossClears,
-  labelTone,
+  difficultyRibbonClass,
+  labelPillClass,
   type BossClearRow,
 } from "@/lib/scouter/boss-cuts";
 import {
@@ -60,45 +61,64 @@ function StatBlock({
 }
 
 function BossClearCard({ row }: { row: BossClearRow }) {
+  const pctColor =
+    row.clearPercent >= 200
+      ? "text-sky-400"
+      : row.clearPercent >= 100
+        ? "text-sky-500"
+        : row.clearPercent >= 90
+          ? "text-amber-500"
+          : "text-rose-500";
+
+  const borderClass =
+    row.label === "Can't Enter" || row.label === "Impossible"
+      ? "border-rose-500/70"
+      : row.difficulty === "Champion"
+        ? "border-orange-400/70"
+        : "border-border/50";
+
   return (
-    <div className="flex flex-col items-center gap-1.5 rounded-lg border border-border/40 bg-background/50 p-2.5 text-center">
-      <div className="relative">
+    <div
+      className={`flex w-full flex-col items-center gap-1 rounded-md border bg-zinc-950/80 p-1.5 text-center dark:bg-zinc-900/80 ${borderClass}`}
+    >
+      <div className="relative w-full overflow-hidden rounded-sm bg-zinc-800">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={row.imgUrl}
           alt={`${row.difficulty} ${row.nameEn}`}
-          width={56}
-          height={56}
-          className="size-14 rounded object-contain"
+          width={72}
+          height={72}
+          className="aspect-square w-full object-cover"
           loading="lazy"
         />
-        {row.isPartyBoss ? (
-          <span className="absolute -right-1 -top-1 rounded bg-accent px-1 text-[9px] font-bold text-white">
-            P
-          </span>
+        {row.cantEnter ? (
+          <div className="absolute left-0.5 top-0.5 flex gap-0.5">
+            <span className="rounded-full bg-rose-600 px-1 text-[8px] font-bold leading-4 text-white">
+              {row.level > 0 ? "LV" : "F"}
+            </span>
+          </div>
         ) : null}
+        <div
+          className={`absolute inset-x-0 bottom-0 py-0.5 text-center text-[9px] font-extrabold uppercase tracking-wide ${difficultyRibbonClass(row.difficulty)}`}
+        >
+          {row.difficulty}
+        </div>
       </div>
-      <p className="text-[11px] font-semibold leading-tight">
-        {row.difficulty} {row.nameEn}
-      </p>
-      <p className={`text-xs font-bold ${labelTone(row.label)}`}>{row.label}</p>
-      <p className="text-sm font-semibold tabular-nums">
+
+      <span
+        className={`max-w-full truncate rounded px-1.5 py-0.5 text-[9px] font-bold leading-tight ${labelPillClass(row.label)}`}
+        title={row.label}
+      >
+        {row.label}
+      </span>
+
+      <p className="text-[11px] font-semibold tabular-nums text-zinc-100">
         {formatNum(Math.round(row.userStat))}
       </p>
-      <p
-        className={`text-sm font-bold tabular-nums ${
-          row.clearPercent >= 100
-            ? "text-emerald-600 dark:text-emerald-400"
-            : row.clearPercent >= 90
-              ? "text-amber-600 dark:text-amber-400"
-              : "text-rose-600 dark:text-rose-400"
-        }`}
-      >
+
+      <p className={`text-[10px] font-bold tabular-nums ${pctColor}`}>
+        {row.isPartyBoss ? "[Party] " : ""}
         {formatPercent(row.clearPercent)}
-      </p>
-      <p className="text-[10px] opacity-50 tabular-nums">
-        Cut {formatNum(row.cut)}
-        {row.cantEnter ? " · Force/Lv gap" : ""}
       </p>
     </div>
   );
@@ -310,39 +330,22 @@ export default function ScouterDetailedResultPage() {
                 No bosses in range — try All bosses.
               </p>
             ) : (
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+              <div className="grid grid-cols-4 gap-1.5 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-7 xl:grid-cols-8">
                 {bossRows.map((row) => (
                   <BossClearCard
-                    key={`${row.id}-${row.difficulty}-${row.isPartyBoss ? "p" : "s"}`}
+                    key={`${row.id}-${row.difficulty}-${row.isPartyBoss ? "p" : "s"}-${row.rank}`}
                     row={row}
                   />
                 ))}
               </div>
             )}
-            <div className="mt-4 flex flex-wrap gap-3 text-[11px] opacity-60">
-              <span>
-                <span className="font-bold text-emerald-600">Easy</span> ≥200%
-                solo
-              </span>
-              <span>
-                <span className="font-bold text-sky-600">Possible</span> ≥110%
-              </span>
-              <span>
-                <span className="font-bold text-amber-600">Solo Min</span> ≥90%
-              </span>
-              <span>
-                <span className="font-bold text-orange-600">Party-able</span> /
-                Party Min
-              </span>
-              <span>
-                <span className="font-bold text-rose-600">Np Min Cut</span> party
-                cuts
-              </span>
+            <div className="mt-3 flex flex-wrap gap-3 text-[11px] opacity-60">
+              <span>Sorted by MapleScouter boss difficulty (hardest first)</span>
               <span>
                 <span className="rounded bg-accent px-1 text-[9px] font-bold text-white">
-                  P
+                  [Party]
                 </span>{" "}
-                uses partyBossCut
+                party cut
               </span>
             </div>
           </StatBlock>
