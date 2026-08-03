@@ -11,7 +11,6 @@ import {
 import {
   BOSS_CLEAR_FIGHT_MINUTES_DEFAULT,
   evaluateBossClears,
-  difficultyRibbonClass,
   labelPillClass,
   type BossClearFightMinutes,
   type BossClearRow,
@@ -229,6 +228,7 @@ function BossClearCard({
   return (
     <div
       tabIndex={0}
+      title={`${row.difficulty} ${row.nameEn}`}
       className={`group relative z-0 flex w-full flex-col items-center gap-1 rounded-lg border bg-surface p-1.5 text-center shadow-sm transition hover:z-30 hover:-translate-y-0.5 hover:shadow-md focus-within:z-30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent ${borderClass}`}
     >
       <BossHoverPanel row={row} hpRegion={hpRegion} />
@@ -250,28 +250,19 @@ function BossClearCard({
             </span>
           </div>
         ) : null}
-        <div
-          className={`absolute inset-x-0 bottom-0 py-0.5 text-center text-[9px] font-extrabold uppercase tracking-wide ${difficultyRibbonClass(row.difficulty)}`}
-        >
-          {row.difficulty}
-        </div>
       </div>
 
-      <p className="line-clamp-1 w-full px-0.5 text-[10px] font-semibold leading-tight opacity-80">
-        {row.nameEn}
+      <p className="text-sm font-bold tabular-nums tracking-tight">
+        {formatNum(Math.round(row.userStat))}
       </p>
 
       <span
-        className={`max-w-full truncate rounded-full px-1.5 py-0.5 text-[9px] font-bold leading-tight ${labelPillClass(row.label)}`}
+        className={`max-w-full truncate rounded-full px-1.5 py-0.5 text-[10px] font-bold leading-tight ${labelPillClass(row.label)}`}
       >
         {row.label}
       </span>
 
-      <p className="text-xs font-bold tabular-nums tracking-tight">
-        {formatNum(Math.round(row.userStat))}
-      </p>
-
-      <p className={`text-[11px] font-bold tabular-nums ${pctColor}`}>
+      <p className={`text-xs font-bold tabular-nums ${pctColor}`}>
         {row.isPartyBoss ? (
           <span className="opacity-70">[Party] </span>
         ) : null}
