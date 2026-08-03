@@ -9,6 +9,11 @@ import {
   defaultScouterInput,
 } from "@/lib/scouter";
 import {
+  evaluateBossClears,
+  labelTone,
+  type BossClearRow,
+} from "@/lib/scouter/boss-cuts";
+import {
   DEFAULT_CHAR,
   DEFAULT_JOB,
   getCharName,
@@ -24,134 +29,78 @@ function formatNum(n: number, digits = 0): string {
   });
 }
 
+function formatPercent(n: number): string {
+  if (!Number.isFinite(n)) return "—";
+  return `${n.toLocaleString(undefined, {
+    maximumFractionDigits: n >= 100 ? 1 : 2,
+    minimumFractionDigits: n >= 100 ? 1 : 2,
+  })}%`;
+}
+
 function StatBlock({
   title,
   children,
+  action,
 }: {
   title: string;
   children: ReactNode;
+  action?: ReactNode;
 }) {
   return (
     <section className="rounded-lg border border-border/50 bg-surface/90 p-4">
-      <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide opacity-60">
-        {title}
-      </h2>
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <h2 className="text-xs font-semibold uppercase tracking-wide opacity-60">
+          {title}
+        </h2>
+        {action}
+      </div>
       {children}
     </section>
   );
 }
 
-function MetricRow({
-  label,
-  value,
-  digits = 0,
-  sub,
-}: {
-  label: string;
-  value: number | string;
-  digits?: number;
-  sub?: string;
-}) {
-  const display =
-    typeof value === "number" ? formatNum(value, digits) : value;
+function BossClearCard({ row }: { row: BossClearRow }) {
   return (
-    <div className="flex items-baseline justify-between gap-3 border-b border-border/30 py-1.5 last:border-0">
-      <span className="text-sm opacity-70">{label}</span>
-      <div className="text-right">
-        <span className="font-semibold tabular-nums">{display}</span>
-        {sub ? (
-          <p className="text-[11px] opacity-50 tabular-nums">{sub}</p>
+    <div className="flex flex-col items-center gap-1.5 rounded-lg border border-border/40 bg-background/50 p-2.5 text-center">
+      <div className="relative">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={row.imgUrl}
+          alt={`${row.difficulty} ${row.nameEn}`}
+          width={56}
+          height={56}
+          className="size-14 rounded object-contain"
+          loading="lazy"
+        />
+        {row.isPartyBoss ? (
+          <span className="absolute -right-1 -top-1 rounded bg-accent px-1 text-[9px] font-bold text-white">
+            P
+          </span>
         ) : null}
       </div>
+      <p className="text-[11px] font-semibold leading-tight">
+        {row.difficulty} {row.nameEn}
+      </p>
+      <p className={`text-xs font-bold ${labelTone(row.label)}`}>{row.label}</p>
+      <p className="text-sm font-semibold tabular-nums">
+        {formatNum(Math.round(row.userStat))}
+      </p>
+      <p
+        className={`text-sm font-bold tabular-nums ${
+          row.clearPercent >= 100
+            ? "text-emerald-600 dark:text-emerald-400"
+            : row.clearPercent >= 90
+              ? "text-amber-600 dark:text-amber-400"
+              : "text-rose-600 dark:text-rose-400"
+        }`}
+      >
+        {formatPercent(row.clearPercent)}
+      </p>
+      <p className="text-[10px] opacity-50 tabular-nums">
+        Cut {formatNum(row.cut)}
+        {row.cantEnter ? " · Force/Lv gap" : ""}
+      </p>
     </div>
-  );
-}
-
-function RadarChart({
-  scores,
-}: {
-  scores: {
-    label: string;
-    value: number;
-  }[];
-}) {
-  const size = 220;
-  const cx = size / 2;
-  const cy = size / 2;
-  const radius = 78;
-  const max = Math.max(...scores.map((s) => s.value), 1);
-  const n = scores.length;
-  const point = (i: number, r: number) => {
-    const angle = -Math.PI / 2 + (i * 2 * Math.PI) / n;
-    return {
-      x: cx + r * Math.cos(angle),
-      y: cy + r * Math.sin(angle),
-    };
-  };
-  const poly = scores
-    .map((s, i) => {
-      const p = point(i, (s.value / max) * radius);
-      return `${p.x},${p.y}`;
-    })
-    .join(" ");
-  const rings = [0.33, 0.66, 1];
-
-  return (
-    <svg
-      viewBox={`0 0 ${size} ${size}`}
-      className="mx-auto h-56 w-56"
-      role="img"
-      aria-label="Scouter hexagon graph"
-    >
-      {rings.map((t) => (
-        <polygon
-          key={t}
-          fill="none"
-          stroke="currentColor"
-          strokeOpacity={0.15}
-          points={Array.from({ length: n }, (_, i) => {
-            const p = point(i, radius * t);
-            return `${p.x},${p.y}`;
-          }).join(" ")}
-        />
-      ))}
-      {scores.map((s, i) => {
-        const p = point(i, radius);
-        return (
-          <line
-            key={s.label}
-            x1={cx}
-            y1={cy}
-            x2={p.x}
-            y2={p.y}
-            stroke="currentColor"
-            strokeOpacity={0.12}
-          />
-        );
-      })}
-      <polygon
-        points={poly}
-        fill="var(--accent)"
-        fillOpacity={0.28}
-        stroke="var(--accent)"
-        strokeWidth={2}
-      />
-      {scores.map((s, i) => {
-        const p = point(i, radius + 16);
-        return (
-          <text
-            key={s.label}
-            x={p.x}
-            y={p.y}
-            textAnchor="middle"
-            dominantBaseline="middle"
-            className="fill-current text-[10px] font-semibold opacity-70"
-          >
-            {s.label}
-          </text>
-        );
-      })}
-    </svg>
   );
 }
 
@@ -161,6 +110,9 @@ export default function ScouterDetailedResultPage() {
   const [data, setData] = useState<MapleScouterCalculatedData | null>(null);
   const [level, setLevel] = useState(275);
   const [charLabel, setCharLabel] = useState("Adele");
+  const [arcaneForce, setArcaneForce] = useState(0);
+  const [authenticForce, setAuthenticForce] = useState(0);
+  const [relevantOnly, setRelevantOnly] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
@@ -182,6 +134,8 @@ export default function ScouterDetailedResultPage() {
         if (!cancelled) {
           setLevel(input.level);
           setCharLabel(getCharName(input.jobType, input.charType));
+          setArcaneForce(input.arcaneForce);
+          setAuthenticForce(input.sacredForce);
         }
 
         const res = await fetch("/api/scouter/result", {
@@ -211,70 +165,19 @@ export default function ScouterDetailedResultPage() {
     };
   }, []);
 
-  const eff = data?.specEfficiency ?? {};
-  const scores = useMemo(() => {
-    const c = data?.maple_scouter_const ?? {};
-    return [
-      { label: "STAT", value: c.stat_score ?? 0 },
-      { label: "ATT", value: c.attack_score ?? 0 },
-      { label: "ATT%", value: c.attackPer_score ?? 0 },
-      { label: "DMG", value: c.damage_score ?? 0 },
-      { label: "CD", value: c.criDamage_score ?? 0 },
-      { label: "IED", value: c.def_score ?? 0 },
-    ];
-  }, [data]);
-
-  const attPer40Bd =
-    (eff.atkeff1 ?? 0) > 0 && (eff.dmgeff1 ?? 0) > 0
-      ? (40 * (eff.dmgeff1 as number)) / (eff.atkeff1 as number)
-      : 0;
-  const attPer45Bd =
-    (eff.atkeff1 ?? 0) > 0 && (eff.dmgeff1 ?? 0) > 0
-      ? (45 * (eff.dmgeff1 as number)) / (eff.atkeff1 as number)
-      : 0;
-  const mainPerAtt =
-    (eff.mainStateff1 ?? 0) > 0 && (eff.atkeff1 ?? 0) > 0
-      ? (eff.atkeff1 as number) / (eff.mainStateff1 as number)
-      : 0;
-  const mainPerCd =
-    (eff.mainStateff1 ?? 0) > 0 && (eff.cridmgeff1 ?? 0) > 0
-      ? (eff.cridmgeff1 as number) / (eff.mainStateff1 as number)
-      : 0;
-  const mainPerAllStat =
-    (eff.mainStateff1 ?? 0) > 0 && (eff.allStatEff ?? 0) > 0
-      ? (eff.allStatEff as number) / (eff.mainStateff1 as number)
-      : 0;
-  const attPer40Ied =
-    (eff.atkeff1 ?? 0) > 0 && (eff.igreffminus40 ?? 0) > 0
-      ? ((eff.igreffminus40 as number) * 40) / (eff.atkeff1 as number)
-      : 0;
-
-  const hexaRows = useMemo(() => {
-    const effect = data?.hexaEffect ?? {};
-    const labels: Record<string, string> = {
-      masteryCore1: "Mastery 1",
-      masteryCore2: "Mastery 2",
-      masteryCore3: "Mastery 3",
-      masteryCore4: "Mastery 4",
-      reinCore1: "Reinforcement 1",
-      reinCore2: "Reinforcement 2",
-      reinCore3: "Reinforcement 3",
-      reinCore4: "Reinforcement 4",
-      skillCore1: "Skill Core 1",
-      skillCore2: "Skill Core 2",
-      skillCore3: "Skill Core 3",
-      generalCore2: "Sol Hecate",
-      generalCore3: "Class Common",
-      generalCore4: "General 4",
-    };
-    return Object.entries(labels)
-      .map(([key, label]) => ({
-        key,
-        label,
-        mult: effect[key] ?? 0,
-      }))
-      .filter((r) => r.mult > 0 && Math.abs(r.mult - 1) > 0.0001);
-  }, [data]);
+  const bossRows = useMemo(() => {
+    if (!data) return [];
+    const boss300 = Number(data.boss300_hexaStat ?? data.boss300_stat ?? 0);
+    const boss380 = Number(data.boss380_hexaStat ?? data.boss380_stat ?? 0);
+    return evaluateBossClears({
+      boss300,
+      boss380,
+      level,
+      arcaneForce,
+      authenticForce,
+      relevantOnly,
+    });
+  }, [data, level, arcaneForce, authenticForce, relevantOnly]);
 
   return (
     <div className="space-y-5 pb-10">
@@ -287,7 +190,7 @@ export default function ScouterDetailedResultPage() {
             Lv.{level} {charLabel}
           </h1>
           <p className="mt-1 text-sm opacity-60">
-            Full MapleScouter-style result breakdown
+            MapleScouter-style boss clear standards
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -361,149 +264,79 @@ export default function ScouterDetailedResultPage() {
             </div>
           </StatBlock>
 
-          <div className="grid gap-3 lg:grid-cols-2">
-            <StatBlock title="Scouter Graph">
-              <RadarChart scores={scores} />
-              <div className="mt-2 grid grid-cols-3 gap-2 text-center text-xs">
-                {scores.map((s) => (
-                  <div key={s.label} className="rounded bg-surface-muted/50 px-1 py-1.5">
-                    <p className="opacity-60">{s.label}</p>
-                    <p className="font-semibold tabular-nums">
-                      {formatNum(s.value)}
-                    </p>
-                  </div>
+          <StatBlock
+            title="Boss Clear (Cut)"
+            action={
+              <div className="flex flex-wrap gap-2 text-xs">
+                <button
+                  type="button"
+                  className={`rounded-md px-2.5 py-1 font-semibold transition ${
+                    relevantOnly
+                      ? "bg-accent text-white"
+                      : "border border-border/50 bg-surface hover:bg-surface-muted"
+                  }`}
+                  onClick={() => setRelevantOnly(true)}
+                >
+                  Relevant
+                </button>
+                <button
+                  type="button"
+                  className={`rounded-md px-2.5 py-1 font-semibold transition ${
+                    !relevantOnly
+                      ? "bg-accent text-white"
+                      : "border border-border/50 bg-surface hover:bg-surface-muted"
+                  }`}
+                  onClick={() => setRelevantOnly(false)}
+                >
+                  All bosses
+                </button>
+              </div>
+            }
+          >
+            <p className="mb-3 text-xs opacity-60">
+              Icons from MapleScouter. Clear % uses your HEXA Boss 300/380 vs
+              their cut × timer rate. Labels match their Solo Min / Possible /
+              Easy / Party tiers.
+            </p>
+            {bossRows.length === 0 ? (
+              <p className="py-8 text-center text-sm opacity-60">
+                No bosses in range — try All bosses.
+              </p>
+            ) : (
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+                {bossRows.map((row) => (
+                  <BossClearCard
+                    key={`${row.id}-${row.difficulty}-${row.isPartyBoss ? "p" : "s"}`}
+                    row={row}
+                  />
                 ))}
               </div>
-            </StatBlock>
-
-            <StatBlock title="Stat Efficiency">
-              <div className="space-y-0">
-                <MetricRow
-                  label="ATT/MATT per 40% BD"
-                  value={attPer40Bd}
-                  digits={1}
-                />
-                <MetricRow
-                  label="ATT/MATT per 45% BD"
-                  value={attPer45Bd}
-                  digits={1}
-                />
-                <MetricRow
-                  label="ATT/MATT per 40% IED"
-                  value={attPer40Ied}
-                  digits={1}
-                />
-                <MetricRow
-                  label="STAT per 1 ATT/MATT"
-                  value={mainPerAtt}
-                  digits={2}
-                />
-                <MetricRow
-                  label="STAT per 1% Crit Damage"
-                  value={mainPerCd}
-                  digits={2}
-                />
-                <MetricRow
-                  label="STAT per 1% All Stat"
-                  value={mainPerAllStat}
-                  digits={2}
-                />
-                <MetricRow
-                  label="Main Stat Eff."
-                  value={eff.mainStateff1 ?? 0}
-                  digits={2}
-                />
-                <MetricRow
-                  label="ATT Eff."
-                  value={eff.atkeff1 ?? 0}
-                  digits={2}
-                />
-                <MetricRow
-                  label="Crit Damage Eff."
-                  value={eff.cridmgeff1 ?? 0}
-                  digits={2}
-                />
-                <MetricRow
-                  label="IED Eff."
-                  value={eff.igreff1 ?? 0}
-                  digits={2}
-                />
-              </div>
-            </StatBlock>
-          </div>
-
-          <div className="grid gap-3 lg:grid-cols-2">
-            <StatBlock title="Special Efficiency (Seed Rings)">
-              <div className="space-y-0">
-                <MetricRow
-                  label="Restraint Ring"
-                  value={`${formatNum(((data.restraintEff1 ?? 1) - 1) * 100, 2)}%`}
-                  sub={`×${formatNum(data.restraintEff1 ?? 1, 3)}`}
-                />
-                <MetricRow
-                  label="Weapon Jump Ring"
-                  value={`${formatNum(((data.weaponEff1 ?? 1) - 1) * 100, 2)}%`}
-                  sub={`×${formatNum(data.weaponEff1 ?? 1, 3)}`}
-                />
-              </div>
-              <p className="mt-3 text-xs opacity-50">
-                Efficiency vs continuous / alternate seed setups from MapleScouter
-                CALC_DMG.
-              </p>
-            </StatBlock>
-
-            <StatBlock title="HEXA Core Multipliers">
-              {hexaRows.length === 0 ? (
-                <p className="text-sm opacity-60">No active HEXA multipliers.</p>
-              ) : (
-                <div className="max-h-64 space-y-0 overflow-y-auto">
-                  {hexaRows.map((r) => (
-                    <MetricRow
-                      key={r.key}
-                      label={r.label}
-                      value={`×${formatNum(r.mult, 4)}`}
-                    />
-                  ))}
-                </div>
-              )}
-            </StatBlock>
-          </div>
-
-          <StatBlock title="Boss Clear (Cut)">
-            <p className="mb-3 text-sm opacity-70">
-              Reference converted stats used for boss standards. Compare these to
-              MapleScouter boss cuts (Normal uses Boss 300 / 380).
-            </p>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              <div className="rounded-md border border-border/40 bg-background/60 p-3">
-                <p className="text-xs opacity-60">Boss 300 Normal</p>
-                <p className="font-display text-2xl font-bold tabular-nums">
-                  {formatNum(data.boss300_stat ?? 0)}
-                </p>
-              </div>
-              <div className="rounded-md border border-border/40 bg-background/60 p-3">
-                <p className="text-xs opacity-60">Boss 300 HEXA</p>
-                <p className="font-display text-2xl font-bold tabular-nums">
-                  {formatNum(data.boss300_hexaStat ?? 0)}
-                </p>
-              </div>
-              <div className="rounded-md border border-border/40 bg-background/60 p-3">
-                <p className="text-xs opacity-60">Boss 380 Normal</p>
-                <p className="font-display text-2xl font-bold tabular-nums">
-                  {formatNum(data.boss380_stat ?? 0)}
-                </p>
-              </div>
-              <div className="rounded-md border border-border/40 bg-background/60 p-3">
-                <p className="text-xs opacity-60">Boss 380 HEXA</p>
-                <p className="font-display text-2xl font-bold tabular-nums">
-                  {formatNum(data.boss380_hexaStat ?? 0)}
-                </p>
-              </div>
+            )}
+            <div className="mt-4 flex flex-wrap gap-3 text-[11px] opacity-60">
+              <span>
+                <span className="font-bold text-emerald-600">Easy</span> ≥200%
+              </span>
+              <span>
+                <span className="font-bold text-sky-600">Possible</span> ≥110%
+              </span>
+              <span>
+                <span className="font-bold text-amber-600">Solo Min</span> ≥90%
+              </span>
+              <span>
+                <span className="font-bold text-orange-600">Party-able</span> party
+                range
+              </span>
+              <span>
+                <span className="font-bold text-rose-600">Party Min</span> low
+                party
+              </span>
+              <span>
+                <span className="rounded bg-accent px-1 text-[9px] font-bold text-white">
+                  P
+                </span>{" "}
+                party cut
+              </span>
             </div>
-            <p className="mt-3 text-xs opacity-50">
-              Full per-boss clear grid (party / solo / force checks) matches
-              MapleScouter&apos;s boss standard tables and can be expanded later.
-            </p>
           </StatBlock>
         </>
       ) : null}
