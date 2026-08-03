@@ -39,10 +39,8 @@ export type SpecSimFields = {
   ignoreGuard: string;
   mainStat: string;
   mainStatPer: string;
-  mainStatAbs: string;
   subStat: string;
   subStatPer: string;
-  subStatAbs: string;
   criRate: string;
   allStatPer: string;
   coolTimeReduce: string;
@@ -63,10 +61,8 @@ export const EMPTY_SPEC_SIM: SpecSimFields = {
   ignoreGuard: "",
   mainStat: "",
   mainStatPer: "",
-  mainStatAbs: "",
   subStat: "",
   subStatPer: "",
-  subStatAbs: "",
   criRate: "",
   allStatPer: "",
   coolTimeReduce: "",
@@ -164,7 +160,6 @@ export function applySpecSimToInput(
       ...next.stats[key],
       base: next.stats[key].base + num(sim.mainStat),
       percent: next.stats[key].percent + num(sim.mainStatPer) + allPer,
-      flat: next.stats[key].flat + num(sim.mainStatAbs),
     };
   }
   for (const key of secondaryKeys) {
@@ -172,7 +167,6 @@ export function applySpecSimToInput(
       ...next.stats[key],
       base: next.stats[key].base + num(sim.subStat),
       percent: next.stats[key].percent + num(sim.subStatPer) + allPer,
-      flat: next.stats[key].flat + num(sim.subStatAbs),
     };
   }
   if (allPer) {
@@ -818,11 +812,6 @@ export function AdditionalSpecSimulation({ baseline }: Props) {
               onChange={(v) => setField("mainStatPer", v)}
             />
             <SimField
-              label={`Flat ${draftMeta.mainLabel}`}
-              value={sim.mainStatAbs}
-              onChange={(v) => setField("mainStatAbs", v)}
-            />
-            <SimField
               label={draftMeta.subLabel}
               value={sim.subStat}
               onChange={(v) => setField("subStat", v)}
@@ -831,11 +820,6 @@ export function AdditionalSpecSimulation({ baseline }: Props) {
               label={`${draftMeta.subLabel} %`}
               value={sim.subStatPer}
               onChange={(v) => setField("subStatPer", v)}
-            />
-            <SimField
-              label={`Flat ${draftMeta.subLabel}`}
-              value={sim.subStatAbs}
-              onChange={(v) => setField("subStatAbs", v)}
             />
             <SimField
               label="Crit Rate %"

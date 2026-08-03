@@ -54,6 +54,7 @@ export {
 export {
   BOSS_CUTS,
   BOSS_ICON_CDN,
+  BOSS_CLEAR_FIGHT_MINUTES,
   evaluateBossClears,
   bossClearLabelEn,
   labelTone,
