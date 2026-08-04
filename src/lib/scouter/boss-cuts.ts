@@ -4,7 +4,7 @@ import { getBossRegionHpTotals } from "./boss-info";
 
 /** 20 = MapleScouter / KMS; 30 = GMS HP + 30 min window. */
 export type BossClearFightMinutes = 20 | 30;
-export const BOSS_CLEAR_FIGHT_MINUTES_DEFAULT: BossClearFightMinutes = 20;
+export const BOSS_CLEAR_FIGHT_MINUTES_DEFAULT: BossClearFightMinutes = 30;
 
 /** MapleScouter cut / burst calibration baseline. */
 const MS_CLEAR_BASE_MINUTES = 20;

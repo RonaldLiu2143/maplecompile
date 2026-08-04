@@ -460,6 +460,7 @@ export function AdditionalSpecSimulation({ baseline }: Props) {
           buffs: simBuffs,
           links: draftMeta.links,
           hexa: simHexa,
+          is30min: true,
         }),
       });
       const json = (await res.json()) as {

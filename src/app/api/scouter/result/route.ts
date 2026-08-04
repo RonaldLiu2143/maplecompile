@@ -12,12 +12,20 @@ export async function POST(req: Request) {
       buffs: BuffState;
       links: LinkState;
       hexa: number[];
+      /** When set, overrides GMS default (true). Ties to Result 20/30 min toggle. */
+      is30min?: boolean;
     };
     if (!body?.input) {
       return NextResponse.json({ error: "Missing input" }, { status: 400 });
     }
 
-    const userStat = toMapleScouterUserStat(body);
+    const userStat = toMapleScouterUserStat({
+      input: body.input,
+      buffs: body.buffs,
+      links: body.links,
+      hexa: body.hexa,
+      is30min: body.is30min,
+    });
     const upstream = await fetch(CALC_DMG_URL, {
       method: "POST",
       headers: {

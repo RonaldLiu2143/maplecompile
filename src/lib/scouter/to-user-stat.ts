@@ -36,8 +36,11 @@ export function toMapleScouterUserStat(args: {
   buffs: BuffState;
   links: LinkState;
   hexa: number[];
+  /** MapleScouter `special.is30min` — changes Boss Converted Stat. GMS default true. */
+  is30min?: boolean;
 }): Record<string, unknown> {
   const { input, buffs, links, hexa } = args;
+  const is30min = args.is30min ?? true;
   const { mainKeys, secondaryKeys, isXenon, isDa } =
     resolveMainSecondary(input);
 
@@ -180,7 +183,8 @@ export function toMapleScouterUserStat(args: {
       statFourth: "0",
       continuosRing: String(continuousUse ? input.ozContinuousLevel : 0),
       challenge: false,
-      is30min: false,
+      // GMS MapleScouter expects this checked ("30분 체크바람"); it changes Boss Converted Stat.
+      is30min,
       destiny2ndSkill: false,
       famPassiveUp: false,
     },

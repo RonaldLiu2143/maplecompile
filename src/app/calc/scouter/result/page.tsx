@@ -381,7 +381,14 @@ export default function ScouterDetailedResultPage() {
         const res = await fetch("/api/scouter/result", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ input, buffs, links, hexa }),
+          body: JSON.stringify({
+            input,
+            buffs,
+            links,
+            hexa,
+            // MapleScouter's 30-min checkbox — required for GMS Boss Converted Stat parity
+            is30min: fightMinutes === 30,
+          }),
         });
         const json = (await res.json()) as {
           calculatedData?: MapleScouterCalculatedData | null;
@@ -403,7 +410,7 @@ export default function ScouterDetailedResultPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [fightMinutes]);
 
   const clearInput = useMemo(() => {
     if (!data) return null;
@@ -505,7 +512,7 @@ export default function ScouterDetailedResultPage() {
           <aside className="w-full shrink-0 lg:w-64 xl:w-72">
             <StatBlock
               title="Boss Converted Stat"
-              hint="20 min = MapleScouter (KMS). 30 min = GMS HP × time; ~1.5× HP often cancels the extra 10 min."
+              hint="30 min matches MapleScouter GMS with the 30-min box checked. 20 min matches unchecked (KMS-style)."
               action={
                 <div className="inline-flex overflow-hidden rounded-full border border-border/50 text-xs">
                   <button
@@ -516,7 +523,7 @@ export default function ScouterDetailedResultPage() {
                         : "bg-surface hover:bg-surface-muted"
                     }`}
                     onClick={() => setFightMinutes(20)}
-                    title="MapleScouter parity · KMS HP"
+                    title="MapleScouter without 30-min · KMS HP clears"
                   >
                     20 min
                   </button>
@@ -528,7 +535,7 @@ export default function ScouterDetailedResultPage() {
                         : "bg-surface hover:bg-surface-muted"
                     }`}
                     onClick={() => setFightMinutes(30)}
-                    title="GMS HP × (30/20) time scale"
+                    title="MapleScouter GMS 30-min · GMS HP clears"
                   >
                     30 min
                   </button>
