@@ -213,16 +213,6 @@ export function EquipItemTooltip({
           )}
         </div>
       )}
-
-      {!compact && (
-        <p
-          className="mt-2 border-t border-[#333] pt-1.5 text-[9px] leading-snug"
-          style={{ color: "#666" }}
-        >
-          White = base · Yellow = Star Force · Cyan = flames. SF class/ATT/HP
-          from wiki tables; DEF is +5%/★ compounded (approx).
-        </p>
-      )}
     </div>
   );
 }
