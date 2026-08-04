@@ -82,7 +82,13 @@ export async function POST(req: Request) {
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
-    const status = message.includes("too large") ? 413 : 500;
+    const status = message.includes("too large")
+      ? 413
+      : message.includes("already exists")
+        ? 409
+        : message.includes("unique name")
+          ? 400
+          : 500;
     return NextResponse.json({ error: message }, { status });
   }
 }

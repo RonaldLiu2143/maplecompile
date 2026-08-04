@@ -8,6 +8,8 @@ export const SHARE_MAX_BYTES = 64 * 1024;
 
 const SHARE_KEY_PREFIX = "scouter:share:";
 export const SHARE_PUBLIC_SET = "scouter:share:public";
+/** NX keys: scouter:share:public:name:{normalized} → id (unique public names). */
+const SHARE_PUBLIC_NAME_PREFIX = "scouter:share:public:name:";
 
 const ID_ALPHABET =
   "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
@@ -71,6 +73,14 @@ export function estimateJsonBytes(value: unknown): number {
   return new TextEncoder().encode(JSON.stringify(value)).length;
 }
 
+export function normalizePublicShareName(name: string): string {
+  return name.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+function publicNameKey(normalizedName: string): string {
+  return `${SHARE_PUBLIC_NAME_PREFIX}${normalizedName}`;
+}
+
 export async function createShare(args: {
   name: string;
   state: ScouterShareState;
@@ -101,6 +111,22 @@ export async function createShare(args: {
     id = newShareId();
   }
 
+  const normalizedName = normalizePublicShareName(name);
+  if (isPublic) {
+    if (!normalizedName || normalizedName === "untitled") {
+      throw new Error("Choose a unique name before sharing to the gallery");
+    }
+    // Atomic reserve so two public shares can't claim the same name.
+    const reserved = await redis.set(publicNameKey(normalizedName), id, {
+      nx: true,
+    });
+    if (!reserved) {
+      throw new Error(
+        `A public loadout named “${name}” already exists. Pick another name.`,
+      );
+    }
+  }
+
   const record: ScouterShareRecord = {
     id,
     name,
@@ -109,7 +135,15 @@ export async function createShare(args: {
     state,
   };
 
-  await redis.set(shareKey(id), record);
+  try {
+    await redis.set(shareKey(id), record);
+  } catch (err) {
+    if (isPublic) {
+      await redis.del(publicNameKey(normalizedName)).catch(() => undefined);
+    }
+    throw err;
+  }
+
   if (isPublic) {
     // Listing is best-effort; share link still works if SADD fails.
     try {

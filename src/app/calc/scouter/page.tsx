@@ -189,7 +189,6 @@ export default function ScouterPage() {
   const [loadedPresetId, setLoadedPresetId] = useState("");
   const [presetName, setPresetName] = useState("");
   const [shareUrl, setShareUrl] = useState<string | null>(null);
-  const [sharePublic, setSharePublic] = useState(false);
   const [sharing, setSharing] = useState(false);
   const [draftReady, setDraftReady] = useState(false);
   const [showHexaEff, setShowHexaEff] = useState(false);
@@ -526,21 +525,32 @@ export default function ScouterPage() {
     }
   };
 
-  const shareLoadout = async () => {
+  const shareLoadout = async (asPublic: boolean) => {
     if (sharing) return;
+    const name =
+      presetName.trim() ||
+      presets.find((p) => p.id === selectedPresetId)?.name ||
+      "";
+    if (asPublic) {
+      if (!name.trim() || name.trim().toLowerCase() === "untitled") {
+        flashPresetMsg("Enter a unique name before sharing to the gallery");
+        return;
+      }
+      const ok = window.confirm(
+        `Share “${name.trim()}” to the public gallery?\n\nAnyone can browse and open it. Gallery names must be unique.`,
+      );
+      if (!ok) return;
+    }
     setSharing(true);
     setShareUrl(null);
     try {
-      const name =
-        presetName.trim() ||
-        presets.find((p) => p.id === selectedPresetId)?.name ||
-        "Untitled";
+      const shareName = name.trim() || "Untitled";
       const res = await fetch("/api/scouter/share", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name,
-          public: sharePublic,
+          name: shareName,
+          public: asPublic,
           state: {
             input: structuredClone(input),
             buffs: structuredClone(buffs),
@@ -739,25 +749,23 @@ export default function ScouterPage() {
                 aria-hidden
               />
 
-              <label
-                className="inline-flex cursor-pointer items-center gap-1.5 rounded border border-border/50 bg-background px-2 py-1.5 text-xs font-semibold"
-                title="List this share in the public gallery. Anyone with the link can open private shares."
-              >
-                <input
-                  type="checkbox"
-                  className="accent-[var(--accent)]"
-                  checked={sharePublic}
-                  onChange={(e) => setSharePublic(e.target.checked)}
-                />
-                Public
-              </label>
               <button
                 type="button"
-                onClick={() => void shareLoadout()}
+                onClick={() => void shareLoadout(false)}
                 disabled={sharing}
                 className="rounded border border-border/50 bg-background px-2.5 py-1.5 text-xs font-semibold transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
+                title="Create a private link anyone can open if they have it"
               >
                 {sharing ? "Sharing…" : "Share link"}
+              </button>
+              <button
+                type="button"
+                onClick={() => void shareLoadout(true)}
+                disabled={sharing}
+                className="rounded border border-border/50 bg-background px-2.5 py-1.5 text-xs font-semibold transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
+                title="Post to the public gallery (asks for confirmation; name must be unique)"
+              >
+                Share to gallery
               </button>
               <Link
                 href="/calc/scouter/gallery"
