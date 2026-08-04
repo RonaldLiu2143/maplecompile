@@ -2,6 +2,10 @@ import { Redis } from "@upstash/redis";
 import { getCharName } from "@/lib/jobs";
 import { clampHexaForGms } from "./buffs";
 import type { BuffState, LinkState } from "./buffs";
+import {
+  fetchBossConvertedHexaStats,
+  normalizeBossConvertedHexaStat,
+} from "./maple-dmg";
 import type { ScouterInput } from "./types";
 
 /** Max JSON body size for share payloads (~64 KB). */
@@ -46,6 +50,12 @@ export type ScouterShareRecord = {
   public: boolean;
   /** Short gallery blurb (achievement / explanation). */
   achievement?: string;
+  /**
+   * Boss Converted Stat HEXA (20 min / KMS default) for gallery display.
+   * Optional on legacy shares created before this field existed.
+   */
+  boss300HexaStat?: number;
+  boss380HexaStat?: number;
   /**
    * Cached view count (may lag the Redis INCR key). Prefer `views` from
    * gallery/list helpers which merge the live counter.
@@ -179,6 +189,9 @@ export async function createShare(args: {
   /** Gallery attribution. Defaults to `ign` when public + name given; private links ignore. */
   identity?: ShareIdentity;
   ign?: string;
+  /** Precomputed BCS HEXA (20 min / KMS). Computed server-side when public and missing. */
+  boss300HexaStat?: number;
+  boss380HexaStat?: number;
 }): Promise<CreateShareResult> {
   if (!args?.state?.input) {
     throw new Error("Missing state.input");
@@ -187,6 +200,24 @@ export async function createShare(args: {
   const isPublic = args.public === true;
   const achievement = normalizeAchievement(args.achievement);
   const state = normalizeShareState(args.state);
+
+  let boss300HexaStat = normalizeBossConvertedHexaStat(args.boss300HexaStat);
+  let boss380HexaStat = normalizeBossConvertedHexaStat(args.boss380HexaStat);
+  if (
+    isPublic &&
+    (boss300HexaStat == null || boss380HexaStat == null)
+  ) {
+    try {
+      const bcs = await fetchBossConvertedHexaStats({
+        ...state,
+        is30min: false,
+      });
+      boss300HexaStat ??= bcs.boss300HexaStat;
+      boss380HexaStat ??= bcs.boss380HexaStat;
+    } catch {
+      // Gallery can still list the share; BCS column shows — until re-shared.
+    }
+  }
 
   let identity: ShareIdentity = args.identity === "anonymous" ? "anonymous" : "ign";
   if (!isPublic) {
@@ -216,6 +247,8 @@ export async function createShare(args: {
     identity,
     ...(ign ? { ign } : {}),
     achievement,
+    ...(boss300HexaStat != null ? { boss300HexaStat } : {}),
+    ...(boss380HexaStat != null ? { boss380HexaStat } : {}),
     views: 0,
     state,
   };
@@ -267,6 +300,8 @@ export async function createShare(args: {
     createdAt: Date.now(),
     public: isPublic,
     ...(achievement ? { achievement } : {}),
+    ...(boss300HexaStat != null ? { boss300HexaStat } : {}),
+    ...(boss380HexaStat != null ? { boss380HexaStat } : {}),
     views: 0,
     state,
   };
@@ -342,7 +377,10 @@ export type ScouterGalleryItem = {
   jobType: string;
   charType: string;
   achievement: string;
-  hexa: number[];
+  /** Boss Converted Stat HEXA @ 300% PDR (20 min / KMS). Null if unknown. */
+  boss300HexaStat: number | null;
+  /** Boss Converted Stat HEXA @ 380% PDR (20 min / KMS). Null if unknown. */
+  boss380HexaStat: number | null;
   views: number;
 };
 
@@ -381,11 +419,6 @@ export async function listPublicShares(): Promise<ScouterGalleryItem[]> {
       continue;
     }
     const input = raw.state.input;
-    const hexa = clampHexaForGms(
-      Array.isArray(raw.state.hexa)
-        ? raw.state.hexa.map((n) => Number(n) || 0)
-        : [],
-    );
     const viewsFromKey = Number(viewsList[i] ?? NaN);
     const views = Number.isFinite(viewsFromKey)
       ? Math.max(0, viewsFromKey)
@@ -399,7 +432,8 @@ export async function listPublicShares(): Promise<ScouterGalleryItem[]> {
       jobType: String(input.jobType || ""),
       charType: String(input.charType || ""),
       achievement: normalizeAchievement(raw.achievement),
-      hexa,
+      boss300HexaStat: normalizeBossConvertedHexaStat(raw.boss300HexaStat),
+      boss380HexaStat: normalizeBossConvertedHexaStat(raw.boss380HexaStat),
       views,
     });
   }

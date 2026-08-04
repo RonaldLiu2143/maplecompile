@@ -56,6 +56,8 @@ export async function POST(req: Request) {
       achievement?: string;
       identity?: ShareIdentity;
       ign?: string;
+      boss300HexaStat?: number;
+      boss380HexaStat?: number;
     };
 
     if (!body?.state?.input) {
@@ -80,6 +82,8 @@ export async function POST(req: Request) {
       achievement: body.achievement,
       identity,
       ign: body.ign ?? body.name,
+      boss300HexaStat: body.boss300HexaStat,
+      boss380HexaStat: body.boss380HexaStat,
     });
 
     const origin = new URL(req.url).origin;
