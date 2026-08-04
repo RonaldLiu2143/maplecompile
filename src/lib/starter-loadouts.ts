@@ -52,7 +52,7 @@ const GOLLUX_ACC = [
  * - faf — CRA: Highness / Eagle Eye / Trickster armor + Fafnir weapons
  * - abs — Absolabs
  * - acs — Arcane Umbra (catalog may say Arcaneshade; renamed on load)
- * - eternal — Eternal / Destiny (Brilliant) weapons
+ * - eternal — Eternal armor
  * - genesis — Genesis weapons (name match; setType is also eternal)
  *
  * Presets 3–6 follow Adele Heroic screenshots (class gear variants per catalog).
@@ -243,14 +243,15 @@ export const STARTER_LOADOUTS: StarterLoadout[] = [
     id: "heroic-eternal",
     name: "Endgame (Brilliant)",
     description:
-      "Full Eternal armor, Destiny (Brilliant) weapon, pitched + Oz rings, Dreamy Belt.",
+      "Full Eternal armor, Genesis weapon, pitched accessories, Oz rings, Daybreak, Dreamy Belt.",
     armorMatchers: ["eternal"],
-    weaponMatchers: ["destiny"],
+    weaponMatchers: ["genesis"],
     accessoryMatchers: [
       ...PITCHED_ACC,
+      "breath of divinity",
       "ring of restraint",
-      "continuous ring",
       "guardian angel ring",
+      "daybreak",
       "radiantBossAcc",
       "black heart",
     ],
@@ -262,28 +263,25 @@ export const STARTER_LOADOUTS: StarterLoadout[] = [
       gloves: ["eternal"],
       shoes: ["eternal"],
       shoulder: ["eternal"],
-      weapon: ["destiny"],
+      weapon: ["genesis"],
+      // Adele Heroic screenshot order (ring-1 → ring-4).
       ring: [
-        "guardian-angel-ring",
+        "breath of divinity",
         "endless terror",
+        "guardian-angel-ring",
         "ring-of-restraint",
-        "continuous-ring",
       ],
-      pendant: [
-        "source of suffering",
-        "oath of death",
-        "superior-gollux-pendant",
-      ],
+      pendant: ["source of suffering", "daybreak"],
       face: ["berserked"],
       eye: ["magic eyepatch"],
       earring: ["commanding force"],
       belt: ["dreamy belt"],
-      pocket: ["cursed yellow spellbook", "cursed red spellbook"],
+      pocket: ["cursed red spellbook"],
       badge: ["genesis badge"],
       emblem: ["mitra's rage"],
       heart: ["black heart"],
-      secondary: ["astra", "terminus", "princess nou", "deimos"],
-      medal: ["seven-day monster parker", "monsterPark"],
+      secondary: ["astra", "terminus", "princess nou", "deimos", "ruin force"],
+      medal: ["immortal legacy", "radiantBossAcc"],
     },
   },
 ];

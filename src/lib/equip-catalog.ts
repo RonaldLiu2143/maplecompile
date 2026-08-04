@@ -32,6 +32,9 @@ const GMS_NAME_REPLACEMENTS: ReadonlyArray<readonly [RegExp, string]> = [
   [/Complete Under Control/gi, "Total Control"],
   [/Superior Engraved Gollux/gi, "Superior Gollux"],
   [/Reinforced Engraved Gollux/gi, "Reinforced Gollux"],
+  // Adele Bladebinder secondaries (WhackyBeanz uses "Bracelet").
+  [/Astra Bracelet/gi, "Astra Bladebinder"],
+  [/Princess Nou's Bracelet/gi, "Princess No's Immortal Bladebinder"],
 ];
 
 /** WhackyBeanz / MSEA spellings → GMS item names. */
