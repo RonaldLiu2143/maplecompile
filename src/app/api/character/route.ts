@@ -64,14 +64,14 @@ export async function GET(req: Request) {
     const message = err instanceof Error ? err.message : "";
     if (message === "UPSTREAM_TIMEOUT") {
       return errorJson(
-        "Nexon rankings timed out. Try again in a moment.",
+        "Character lookup timed out. Try again in a moment.",
         "upstream_timeout",
         504,
       );
     }
     console.error("[api/character]", err);
     return errorJson(
-      "Could not reach Nexon rankings. Try again later.",
+      "Could not reach character data sources. Try again later.",
       "upstream_error",
       502,
     );
