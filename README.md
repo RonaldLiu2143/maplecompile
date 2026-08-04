@@ -36,6 +36,7 @@ Until these are set, the Share button returns a clear “sharing not configured�
 - `/calc/equips/flames` — flame tables, saved lines, better-flame probability
 - `/calc/cubing` — cubing probability (cubes / mesos for desired lines)
 - `/calc/scouter` — character scouter: range, expected damage, converted main stat
+- `/calc/planner` — Heroic upgrade ranking (SF / flame / cube) — shell live; ranking next
 - `/calc/scouter/gallery` — public shared scouter loadouts
 - `/calc/scouter/s/[id]` — open a shared scouter loadout by id
 

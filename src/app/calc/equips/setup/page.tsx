@@ -14,6 +14,11 @@ import {
 import { inferNormalFlame } from "@/lib/flames";
 import { SLOT_CAPACITY, SLOT_LABELS, slotToEquipType } from "@/lib/slots";
 import { storage } from "@/lib/storage";
+import {
+  STARTER_LOADOUTS,
+  buildStarterSetup,
+  countFilledSlots,
+} from "@/lib/starter-loadouts";
 import type {
   Equip,
   EquipSetup,
@@ -37,6 +42,8 @@ export default function SetupClient() {
   const [error, setError] = useState("");
   const [pickerSlot, setPickerSlot] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
+  const [starterId, setStarterId] = useState("");
+  const [starterMsg, setStarterMsg] = useState<string | null>(null);
 
   const classValue = `${jobType}:${charType}`;
 
@@ -151,6 +158,29 @@ export default function SetupClient() {
     });
   };
 
+  const applyStarter = () => {
+    const loadout = STARTER_LOADOUTS.find((l) => l.id === starterId);
+    if (!loadout) {
+      setStarterMsg("Pick a starter loadout");
+      return;
+    }
+    if (status !== "ready") {
+      setStarterMsg("Wait for equipment list to load");
+      return;
+    }
+    const next = buildStarterSetup(equipByType, loadout);
+    const filled = countFilledSlots(next);
+    if (!filled) {
+      setStarterMsg(
+        `No catalog matches for “${loadout.name}” on this class — try another stage.`,
+      );
+      return;
+    }
+    setSetup(next);
+    setStarterMsg(`Applied “${loadout.name}” (${filled} pieces).`);
+    setTimeout(() => setStarterMsg(null), 3000);
+  };
+
   return (
     <div className="space-y-8">
       <header>
@@ -188,17 +218,54 @@ export default function SetupClient() {
           <h2 className="text-sm font-bold uppercase tracking-wide opacity-70">
             2) Fill in your equipment setup
           </h2>
-          <button
-            type="button"
-            onClick={() => {
-              setSetup({});
-              storage.clearSetup();
-            }}
-            className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold hover:bg-surface-muted"
-          >
-            Clear setup
-          </button>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <select
+              value={starterId}
+              onChange={(e) => setStarterId(e.target.value)}
+              className="rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs font-semibold outline-none focus:border-accent"
+              aria-label="Starter loadout"
+              disabled={status !== "ready"}
+            >
+              <option value="">Starter loadout…</option>
+              {STARTER_LOADOUTS.map((l) => (
+                <option key={l.id} value={l.id} title={l.description}>
+                  {l.name}
+                </option>
+              ))}
+            </select>
+            <button
+              type="button"
+              onClick={applyStarter}
+              disabled={status !== "ready" || !starterId}
+              className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
+              title={
+                STARTER_LOADOUTS.find((l) => l.id === starterId)?.description ??
+                "Apply a Heroic progression starter"
+              }
+            >
+              Apply starter
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setSetup({});
+                storage.clearSetup();
+                setStarterMsg(null);
+              }}
+              className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold hover:bg-surface-muted"
+            >
+              Clear setup
+            </button>
+          </div>
         </div>
+        {starterMsg ? (
+          <p className="text-xs font-medium text-accent">{starterMsg}</p>
+        ) : (
+          <p className="text-xs opacity-60">
+            Starters auto-fill matching pieces from this class catalog (Heroic
+            progression ladder). Empty slots mean no match in the list.
+          </p>
+        )}
         {status === "loading" && (
           <p className="text-sm opacity-70">Loading equipment list…</p>
         )}

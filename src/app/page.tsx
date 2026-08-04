@@ -44,6 +44,12 @@ export default function Home() {
             Scouter
           </Link>
           <Link
+            href="/calc/planner"
+            className="rounded-lg border-2 border-border bg-surface px-5 py-2.5 font-semibold transition hover:bg-surface-muted"
+          >
+            Upgrade Planner
+          </Link>
+          <Link
             href="/calc/scouter/gallery"
             className="rounded-lg border-2 border-border bg-surface px-5 py-2.5 font-semibold transition hover:bg-surface-muted"
           >
@@ -79,6 +85,13 @@ export default function Home() {
           <p className="mt-2 text-sm opacity-80">
             Enter character stats to estimate range, expected boss damage, and
             converted main stat for build comparison.
+          </p>
+        </div>
+        <div className="rounded-xl border border-border/50 bg-surface/80 p-5">
+          <h2 className="font-display text-lg font-semibold">Upgrade Planner</h2>
+          <p className="mt-2 text-sm opacity-80">
+            Heroic-first ranking of Star Force, flame, and cube upgrades by meso
+            efficiency — coming next on top of your equipment setup.
           </p>
         </div>
       </section>
