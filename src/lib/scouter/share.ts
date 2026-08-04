@@ -111,7 +111,12 @@ export async function createShare(args: {
 
   await redis.set(shareKey(id), record);
   if (isPublic) {
-    await redis.sadd(SHARE_PUBLIC_SET, id);
+    // Listing is best-effort; share link still works if SADD fails.
+    try {
+      await redis.sadd(SHARE_PUBLIC_SET, id);
+    } catch {
+      // ignore
+    }
   }
   return record;
 }
@@ -141,13 +146,17 @@ export type ScouterGalleryItem = {
   liberation: boolean;
 };
 
+/** Cap gallery responses so unbounded public sets stay usable. */
+const GALLERY_LIST_LIMIT = 500;
+
 export async function listPublicShares(): Promise<ScouterGalleryItem[]> {
   const redis = getRedis();
   const ids = await redis.smembers(SHARE_PUBLIC_SET);
   if (!ids.length) return [];
 
-  const keys = ids.map((id) => shareKey(id));
-  const rawList = (await redis.mget(...keys)) as (ScouterShareRecord | null)[];
+  const rawList = (await redis.mget(
+    ...ids.map((id) => shareKey(id)),
+  )) as (ScouterShareRecord | null)[];
 
   const stale: string[] = [];
   const items: ScouterGalleryItem[] = [];
@@ -155,7 +164,12 @@ export async function listPublicShares(): Promise<ScouterGalleryItem[]> {
   for (let i = 0; i < ids.length; i++) {
     const id = ids[i]!;
     const raw = rawList[i];
-    if (!raw || typeof raw !== "object" || !raw.state?.input || raw.public === false) {
+    if (
+      !raw ||
+      typeof raw !== "object" ||
+      !raw.state?.input ||
+      raw.public === false
+    ) {
       stale.push(id);
       continue;
     }
@@ -173,9 +187,10 @@ export async function listPublicShares(): Promise<ScouterGalleryItem[]> {
   }
 
   if (stale.length) {
-    await redis.srem(SHARE_PUBLIC_SET, ...stale);
+    // Don't block the gallery response on index cleanup.
+    void redis.srem(SHARE_PUBLIC_SET, ...stale).catch(() => undefined);
   }
 
   items.sort((a, b) => b.createdAt - a.createdAt);
-  return items;
+  return items.slice(0, GALLERY_LIST_LIMIT);
 }

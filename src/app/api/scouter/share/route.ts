@@ -58,6 +58,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing state.input" }, { status: 400 });
     }
 
+    const bodyBytes = new TextEncoder().encode(JSON.stringify(body)).length;
+    if (bodyBytes > SHARE_MAX_BYTES) {
+      return NextResponse.json(
+        { error: `Payload too large (max ${SHARE_MAX_BYTES} bytes)` },
+        { status: 413 },
+      );
+    }
+
     const record = await createShare({
       name: body.name ?? "Untitled",
       state: body.state,

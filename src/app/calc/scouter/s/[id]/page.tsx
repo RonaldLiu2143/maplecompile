@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { storage } from "@/lib/storage";
 import type { ScouterShareRecord } from "@/lib/scouter/share";
@@ -56,12 +57,12 @@ export default function ScouterShareLoadPage() {
         <>
           <h1 className="font-display text-2xl font-bold">Share not found</h1>
           <p className="mt-2 text-sm opacity-75">{error}</p>
-          <a
+          <Link
             href="/calc/scouter"
             className="mt-6 inline-block text-sm font-semibold text-accent underline"
           >
             Open Scouter
-          </a>
+          </Link>
         </>
       ) : (
         <>
