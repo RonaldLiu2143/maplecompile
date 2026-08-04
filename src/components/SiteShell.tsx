@@ -38,6 +38,9 @@ const PROGRESSION_LINKS: NavLink[] = [
 
 function linkActive(pathname: string, link: NavLink): boolean {
   if (link.match === "exact") {
+    if (link.href === "/dashboard") {
+      return pathname === "/dashboard" || pathname === "/roster";
+    }
     return (
       pathname === link.href ||
       pathname.startsWith(`${link.href}/result`) ||
