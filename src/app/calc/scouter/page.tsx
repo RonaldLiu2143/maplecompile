@@ -187,6 +187,8 @@ export default function ScouterPage() {
   /** Preset id currently reflected in the form — Overwrite only writes here. */
   const [loadedPresetId, setLoadedPresetId] = useState("");
   const [presetName, setPresetName] = useState("");
+  const [shareUrl, setShareUrl] = useState<string | null>(null);
+  const [sharing, setSharing] = useState(false);
   const [draftReady, setDraftReady] = useState(false);
   const [showHexaEff, setShowHexaEff] = useState(false);
   const hexaEffRef = useRef<HTMLDivElement | null>(null);
@@ -534,6 +536,59 @@ export default function ScouterPage() {
     }
   };
 
+  const shareLoadout = async () => {
+    if (sharing) return;
+    setSharing(true);
+    setShareUrl(null);
+    try {
+      const name =
+        presetName.trim() ||
+        presets.find((p) => p.id === selectedPresetId)?.name ||
+        "Untitled";
+      const res = await fetch("/api/scouter/share", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name,
+          public: true,
+          state: {
+            input: structuredClone(input),
+            buffs: structuredClone(buffs),
+            links: structuredClone(links),
+            hexa: clampHexaForGms(hexa),
+          },
+        }),
+      });
+      const data = (await res.json()) as { id?: string; url?: string; error?: string };
+      if (!res.ok || !data.url) {
+        throw new Error(data.error || `Share failed (${res.status})`);
+      }
+      setShareUrl(data.url);
+      try {
+        await navigator.clipboard.writeText(data.url);
+        flashPresetMsg("Share link copied");
+      } catch {
+        flashPresetMsg("Share link ready");
+      }
+    } catch (err) {
+      flashPresetMsg(
+        err instanceof Error ? err.message : "Could not share",
+      );
+    } finally {
+      setSharing(false);
+    }
+  };
+
+  const copyShareUrl = async () => {
+    if (!shareUrl) return;
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      flashPresetMsg("Link copied");
+    } catch {
+      flashPresetMsg("Could not copy");
+    }
+  };
+
   const tripleRows: { label: string; key?: StatKey; kind?: "att" | "matt" }[] =
     (() => {
       if (isDa) {
@@ -662,7 +717,34 @@ export default function ScouterPage() {
               >
                 Delete
               </button>
+              <button
+                type="button"
+                onClick={() => void shareLoadout()}
+                disabled={sharing}
+                className="rounded border border-border/50 bg-background px-2.5 py-1 text-xs font-semibold transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                {sharing ? "Sharing…" : "Share"}
+              </button>
             </div>
+            {shareUrl ? (
+              <div className="flex flex-wrap items-center gap-1.5">
+                <input
+                  type="text"
+                  readOnly
+                  value={shareUrl}
+                  className="min-w-0 flex-1 rounded border border-border/50 bg-background px-2 py-1 text-xs outline-none focus:border-accent"
+                  aria-label="Share link"
+                  onFocus={(e) => e.currentTarget.select()}
+                />
+                <button
+                  type="button"
+                  onClick={() => void copyShareUrl()}
+                  className="rounded border border-border/50 bg-background px-2.5 py-1 text-xs font-semibold transition hover:bg-surface-muted"
+                >
+                  Copy link
+                </button>
+              </div>
+            ) : null}
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-4">
