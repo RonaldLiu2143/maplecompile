@@ -1,0 +1,1591 @@
+{
+  "belt": {
+    "rare": [
+      {
+        "id": "hpPercent",
+        "values": [
+          3
+        ]
+      },
+      {
+        "id": "mainStatPercent",
+        "values": [
+          3
+        ]
+      }
+    ],
+    "epic": [
+      {
+        "id": "allStatPercent",
+        "values": [
+          3
+        ]
+      },
+      {
+        "id": "hpPercent",
+        "values": [
+          6,
+          3
+        ]
+      },
+      {
+        "id": "mainStatPercent",
+        "values": [
+          6,
+          3
+        ]
+      }
+    ],
+    "unique": [
+      {
+        "id": "allStatPercent",
+        "values": [
+          6,
+          3
+        ]
+      },
+      {
+        "id": "hpPercent",
+        "values": [
+          9,
+          6
+        ]
+      },
+      {
+        "id": "mainStatPercent",
+        "values": [
+          9,
+          6
+        ]
+      }
+    ],
+    "legendary": [
+      {
+        "id": "allStatPercent",
+        "values": [
+          9,
+          6
+        ]
+      },
+      {
+        "id": "hpPercent",
+        "values": [
+          12,
+          9
+        ]
+      },
+      {
+        "id": "mainStatPercent",
+        "values": [
+          12,
+          9
+        ]
+      }
+    ]
+  },
+  "bottom": {
+    "rare": [
+      {
+        "id": "hpPercent",
+        "values": [
+          3
+        ]
+      },
+      {
+        "id": "mainStatPercent",
+        "values": [
+          3
+        ]
+      }
+    ],
+    "epic": [
+      {
+        "id": "allStatPercent",
+        "values": [
+          3
+        ]
+      },
+      {
+        "id": "hpPercent",
+        "values": [
+          6,
+          3
+        ]
+      },
+      {
+        "id": "mainStatPercent",
+        "values": [
+          6,
+          3
+        ]
+      }
+    ],
+    "unique": [
+      {
+        "id": "allStatPercent",
+        "values": [
+          6,
+          3
+        ]
+      },
+      {
+        "id": "hpPercent",
+        "values": [
+          9,
+          6
+        ]
+      },
+      {
+        "id": "mainStatPercent",
+        "values": [
+          9,
+          6
+        ]
+      }
+    ],
+    "legendary": [
+      {
+        "id": "allStatPercent",
+        "values": [
+          9,
+          6
+        ]
+      },
+      {
+        "id": "hpPercent",
+        "values": [
+          12,
+          9
+        ]
+      },
+      {
+        "id": "mainStatPercent",
+        "values": [
+          12,
+          9
+        ]
+      }
+    ]
+  },
+  "cape": {
+    "rare": [
+      {
+        "id": "hpPercent",
+        "values": [
+          3
+        ]
+      },
+      {
+        "id": "mainStatPercent",
+        "values": [
+          3
+        ]
+      }
+    ],
+    "epic": [
+      {
+        "id": "allStatPercent",
+        "values": [
+          3
+        ]
+      },
+      {
+        "id": "hpPercent",
+        "values": [
+          6,
+          3
+        ]
+      },
+      {
+        "id": "mainStatPercent",
+        "values": [
+          6,
+          3
+        ]
+      }
+    ],
+    "unique": [
+      {
+        "id": "allStatPercent",
+        "values": [
+          6,
+          3
+        ]
+      },
+      {
+        "id": "hpPercent",
+        "values": [
+          9,
+          6
+        ]
+      },
+      {
+        "id": "mainStatPercent",
+        "values": [
+          9,
+          6
+        ]
+      }
+    ],
+    "legendary": [
+      {
+        "id": "allStatPercent",
+        "values": [
+          9,
+          6
+        ]
+      },
+      {
+        "id": "hpPercent",
+        "values": [
+          12,
+          9
+        ]
+      },
+      {
+        "id": "mainStatPercent",
+        "values": [
+          12,
+          9
+        ]
+      }
+    ]
+  },
+  "emblem": {
+    "rare": [
+      {
+        "id": "attPercent",
+        "values": [
+          3
+        ]
+      },
+      {
+        "id": "critChance",
+        "values": [
+          4
+        ]
+      },
+      {
+        "id": "damagePercent",
+        "values": [
+          3
+        ]
+      },
+      {
+        "id": "iedPercent",
+        "values": [
+          15
+        ]
+      },
+      {
+        "id": "mainStatPercent",
+        "values": [
+          3
+        ]
+      },
+      {
+        "id": "mattPercent",
+        "values": [
+          3
+        ]
+      }
+    ],
+    "epic": [
+      {
+        "id": "allStatPercent",
+        "values": [
+          3
+        ]
+      },
+      {
+        "id": "attPercent",
+        "values": [
+          6,
+          3
+        ]
+      },
+      {
+        "id": "critChance",
+        "values": [
+          8,
+          4
+        ]
+      },
+      {
+        "id": "damagePercent",
+        "values": [
+          6,
+          3
+        ]
+      },
+      {
+        "id": "hpPercent",
+        "values": [
+          6
+        ]
+      },
+      {
+        "id": "iedPercent",
+        "values": [
+          15
+        ]
+      },
+      {
+        "id": "mainStatPercent",
+        "values": [
+          6,
+          3
+        ]
+      },
+      {
+        "id": "mattPercent",
+        "values": [
+          6,
+          3
+        ]
+      }
+    ],
+    "unique": [
+      {
+        "id": "allStatPercent",
+        "values": [
+          6,
+          3
+        ]
+      },
+      {
+        "id": "attPercent",
+        "values": [
+          9,
+          6
+        ]
+      },
+      {
+        "id": "critChance",
+        "values": [
+          9,
+          8
+        ]
+      },
+      {
+        "id": "damagePercent",
+        "values": [
+          9,
+          6
+        ]
+      },
+      {
+        "id": "hpPercent",
+        "values": [
+          6
+        ]
+      },
+      {
+        "id": "iedPercent",
+        "values": [
+          30,
+          15
+        ]
+      },
+      {
+        "id": "mainStatPercent",
+        "values": [
+          9,
+          6
+        ]
+      },
+      {
+        "id": "mattPercent",
+        "values": [
+          9,
+          6
+        ]
+      }
+    ],
+    "legendary": [
+      {
+        "id": "allStatPercent",
+        "values": [
+          9,
+          6
+        ]
+      },
+      {
+        "id": "attPercent",
+        "values": [
+          12,
+          9
+        ]
+      },
+      {
+        "id": "critChance",
+        "values": [
+          12,
+          9
+        ]
+      },
+      {
+        "id": "damagePercent",
+        "values": [
+          12,
+          9
+        ]
+      },
+      {
+        "id": "iedPercent",
+        "values": [
+          40,
+          35,
+          30
+        ]
+      },
+      {
+        "id": "mainStatPercent",
+        "values": [
+          12,
+          9
+        ]
+      },
+      {
+        "id": "mattPercent",
+        "values": [
+          12,
+          9
+        ]
+      }
+    ]
+  },
+  "gloves": {
+    "rare": [
+      {
+        "id": "hpPercent",
+        "values": [
+          3
+        ]
+      },
+      {
+        "id": "mainStatPercent",
+        "values": [
+          3
+        ]
+      }
+    ],
+    "epic": [
+      {
+        "id": "allStatPercent",
+        "values": [
+          3
+        ]
+      },
+      {
+        "id": "hpPercent",
+        "values": [
+          6,
+          3
+        ]
+      },
+      {
+        "id": "mainStatPercent",
+        "values": [
+          6,
+          3
+        ]
+      }
+    ],
+    "unique": [
+      {
+        "id": "allStatPercent",
+        "values": [
+          6,
+          3
+        ]
+      },
+      {
+        "id": "hpPercent",
+        "values": [
+          9,
+          6
+        ]
+      },
+      {
+        "id": "mainStatPercent",
+        "values": [
+          9,
+          6
+        ]
+      }
+    ],
+    "legendary": [
+      {
+        "id": "allStatPercent",
+        "values": [
+          9,
+          6
+        ]
+      },
+      {
+        "id": "critDamage",
+        "values": [
+          8
+        ]
+      },
+      {
+        "id": "hpPercent",
+        "values": [
+          12,
+          9
+        ]
+      },
+      {
+        "id": "mainStatPercent",
+        "values": [
+          12,
+          9
+        ]
+      }
+    ]
+  },
+  "hat": {
+    "rare": [
+      {
+        "id": "hpPercent",
+        "values": [
+          3
+        ]
+      },
+      {
+        "id": "mainStatPercent",
+        "values": [
+          3
+        ]
+      }
+    ],
+    "epic": [
+      {
+        "id": "allStatPercent",
+        "values": [
+          3
+        ]
+      },
+      {
+        "id": "hpPercent",
+        "values": [
+          6,
+          3
+        ]
+      },
+      {
+        "id": "mainStatPercent",
+        "values": [
+          6,
+          3
+        ]
+      }
+    ],
+    "unique": [
+      {
+        "id": "allStatPercent",
+        "values": [
+          6,
+          3
+        ]
+      },
+      {
+        "id": "hpPercent",
+        "values": [
+          9,
+          6
+        ]
+      },
+      {
+        "id": "mainStatPercent",
+        "values": [
+          9,
+          6
+        ]
+      }
+    ],
+    "legendary": [
+      {
+        "id": "allStatPercent",
+        "values": [
+          9,
+          6
+        ]
+      },
+      {
+        "id": "hpPercent",
+        "values": [
+          12,
+          9
+        ]
+      },
+      {
+        "id": "mainStatPercent",
+        "values": [
+          12,
+          9
+        ]
+      },
+      {
+        "id": "skillCooldown",
+        "values": [
+          2,
+          1
+        ]
+      }
+    ]
+  },
+  "heart": {
+    "rare": [
+      {
+        "id": "hpPercent",
+        "values": [
+          3
+        ]
+      },
+      {
+        "id": "mainStatPercent",
+        "values": [
+          3
+        ]
+      }
+    ],
+    "epic": [
+      {
+        "id": "allStatPercent",
+        "values": [
+          3
+        ]
+      },
+      {
+        "id": "hpPercent",
+        "values": [
+          6,
+          3
+        ]
+      },
+      {
+        "id": "mainStatPercent",
+        "values": [
+          6,
+          3
+        ]
+      }
+    ],
+    "unique": [
+      {
+        "id": "allStatPercent",
+        "values": [
+          6,
+          3
+        ]
+      },
+      {
+        "id": "hpPercent",
+        "values": [
+          9,
+          6
+        ]
+      },
+      {
+        "id": "mainStatPercent",
+        "values": [
+          9,
+          6
+        ]
+      }
+    ],
+    "legendary": [
+      {
+        "id": "allStatPercent",
+        "values": [
+          9,
+          6
+        ]
+      },
+      {
+        "id": "hpPercent",
+        "values": [
+          12,
+          9
+        ]
+      },
+      {
+        "id": "mainStatPercent",
+        "values": [
+          12,
+          9
+        ]
+      }
+    ]
+  },
+  "overall": {
+    "rare": [
+      {
+        "id": "hpPercent",
+        "values": [
+          3
+        ]
+      },
+      {
+        "id": "mainStatPercent",
+        "values": [
+          3
+        ]
+      }
+    ],
+    "epic": [
+      {
+        "id": "allStatPercent",
+        "values": [
+          3
+        ]
+      },
+      {
+        "id": "hpPercent",
+        "values": [
+          6,
+          3
+        ]
+      },
+      {
+        "id": "mainStatPercent",
+        "values": [
+          6,
+          3
+        ]
+      }
+    ],
+    "unique": [
+      {
+        "id": "allStatPercent",
+        "values": [
+          6,
+          3
+        ]
+      },
+      {
+        "id": "hpPercent",
+        "values": [
+          9,
+          6
+        ]
+      },
+      {
+        "id": "mainStatPercent",
+        "values": [
+          9,
+          6
+        ]
+      }
+    ],
+    "legendary": [
+      {
+        "id": "allStatPercent",
+        "values": [
+          9,
+          6
+        ]
+      },
+      {
+        "id": "hpPercent",
+        "values": [
+          12,
+          9
+        ]
+      },
+      {
+        "id": "mainStatPercent",
+        "values": [
+          12,
+          9
+        ]
+      }
+    ]
+  },
+  "ring": {
+    "rare": [
+      {
+        "id": "hpPercent",
+        "values": [
+          3
+        ]
+      },
+      {
+        "id": "mainStatPercent",
+        "values": [
+          3
+        ]
+      }
+    ],
+    "epic": [
+      {
+        "id": "allStatPercent",
+        "values": [
+          3
+        ]
+      },
+      {
+        "id": "hpPercent",
+        "values": [
+          6,
+          3
+        ]
+      },
+      {
+        "id": "mainStatPercent",
+        "values": [
+          6,
+          3
+        ]
+      }
+    ],
+    "unique": [
+      {
+        "id": "allStatPercent",
+        "values": [
+          6,
+          3
+        ]
+      },
+      {
+        "id": "hpPercent",
+        "values": [
+          9,
+          6
+        ]
+      },
+      {
+        "id": "mainStatPercent",
+        "values": [
+          9,
+          6
+        ]
+      }
+    ],
+    "legendary": [
+      {
+        "id": "allStatPercent",
+        "values": [
+          9,
+          6
+        ]
+      },
+      {
+        "id": "dropPercent",
+        "values": [
+          20
+        ]
+      },
+      {
+        "id": "hpPercent",
+        "values": [
+          12,
+          9
+        ]
+      },
+      {
+        "id": "mainStatPercent",
+        "values": [
+          12,
+          9
+        ]
+      },
+      {
+        "id": "mesoPercent",
+        "values": [
+          20
+        ]
+      }
+    ]
+  },
+  "secondary": {
+    "rare": [
+      {
+        "id": "attPercent",
+        "values": [
+          3
+        ]
+      },
+      {
+        "id": "critChance",
+        "values": [
+          4
+        ]
+      },
+      {
+        "id": "damagePercent",
+        "values": [
+          3
+        ]
+      },
+      {
+        "id": "iedPercent",
+        "values": [
+          15
+        ]
+      },
+      {
+        "id": "mainStatPercent",
+        "values": [
+          3
+        ]
+      },
+      {
+        "id": "mattPercent",
+        "values": [
+          3
+        ]
+      }
+    ],
+    "epic": [
+      {
+        "id": "allStatPercent",
+        "values": [
+          3
+        ]
+      },
+      {
+        "id": "attPercent",
+        "values": [
+          6,
+          3
+        ]
+      },
+      {
+        "id": "critChance",
+        "values": [
+          8,
+          4
+        ]
+      },
+      {
+        "id": "damagePercent",
+        "values": [
+          6,
+          3
+        ]
+      },
+      {
+        "id": "hpPercent",
+        "values": [
+          6
+        ]
+      },
+      {
+        "id": "iedPercent",
+        "values": [
+          15
+        ]
+      },
+      {
+        "id": "mainStatPercent",
+        "values": [
+          6,
+          3
+        ]
+      },
+      {
+        "id": "mattPercent",
+        "values": [
+          6,
+          3
+        ]
+      }
+    ],
+    "unique": [
+      {
+        "id": "allStatPercent",
+        "values": [
+          6,
+          3
+        ]
+      },
+      {
+        "id": "attPercent",
+        "values": [
+          9,
+          6
+        ]
+      },
+      {
+        "id": "bossPercent",
+        "values": [
+          30
+        ]
+      },
+      {
+        "id": "critChance",
+        "values": [
+          9,
+          8
+        ]
+      },
+      {
+        "id": "damagePercent",
+        "values": [
+          9,
+          6
+        ]
+      },
+      {
+        "id": "hpPercent",
+        "values": [
+          6
+        ]
+      },
+      {
+        "id": "iedPercent",
+        "values": [
+          30,
+          15
+        ]
+      },
+      {
+        "id": "mainStatPercent",
+        "values": [
+          9,
+          6
+        ]
+      },
+      {
+        "id": "mattPercent",
+        "values": [
+          9,
+          6
+        ]
+      }
+    ],
+    "legendary": [
+      {
+        "id": "allStatPercent",
+        "values": [
+          9,
+          6
+        ]
+      },
+      {
+        "id": "attPercent",
+        "values": [
+          12,
+          9
+        ]
+      },
+      {
+        "id": "bossPercent",
+        "values": [
+          40,
+          35,
+          30
+        ]
+      },
+      {
+        "id": "critChance",
+        "values": [
+          12,
+          9
+        ]
+      },
+      {
+        "id": "damagePercent",
+        "values": [
+          12,
+          9
+        ]
+      },
+      {
+        "id": "iedPercent",
+        "values": [
+          40,
+          35,
+          30
+        ]
+      },
+      {
+        "id": "mainStatPercent",
+        "values": [
+          12,
+          9
+        ]
+      },
+      {
+        "id": "mattPercent",
+        "values": [
+          12,
+          9
+        ]
+      }
+    ]
+  },
+  "shoes": {
+    "rare": [
+      {
+        "id": "hpPercent",
+        "values": [
+          3
+        ]
+      },
+      {
+        "id": "mainStatPercent",
+        "values": [
+          3
+        ]
+      }
+    ],
+    "epic": [
+      {
+        "id": "allStatPercent",
+        "values": [
+          3
+        ]
+      },
+      {
+        "id": "hpPercent",
+        "values": [
+          6,
+          3
+        ]
+      },
+      {
+        "id": "mainStatPercent",
+        "values": [
+          6,
+          3
+        ]
+      }
+    ],
+    "unique": [
+      {
+        "id": "allStatPercent",
+        "values": [
+          6,
+          3
+        ]
+      },
+      {
+        "id": "hpPercent",
+        "values": [
+          9,
+          6
+        ]
+      },
+      {
+        "id": "mainStatPercent",
+        "values": [
+          9,
+          6
+        ]
+      }
+    ],
+    "legendary": [
+      {
+        "id": "allStatPercent",
+        "values": [
+          9,
+          6
+        ]
+      },
+      {
+        "id": "hpPercent",
+        "values": [
+          12,
+          9
+        ]
+      },
+      {
+        "id": "mainStatPercent",
+        "values": [
+          12,
+          9
+        ]
+      }
+    ]
+  },
+  "shoulder": {
+    "rare": [
+      {
+        "id": "hpPercent",
+        "values": [
+          3
+        ]
+      },
+      {
+        "id": "mainStatPercent",
+        "values": [
+          3
+        ]
+      }
+    ],
+    "epic": [
+      {
+        "id": "allStatPercent",
+        "values": [
+          3
+        ]
+      },
+      {
+        "id": "hpPercent",
+        "values": [
+          6,
+          3
+        ]
+      },
+      {
+        "id": "mainStatPercent",
+        "values": [
+          6,
+          3
+        ]
+      }
+    ],
+    "unique": [
+      {
+        "id": "allStatPercent",
+        "values": [
+          6,
+          3
+        ]
+      },
+      {
+        "id": "hpPercent",
+        "values": [
+          9,
+          6
+        ]
+      },
+      {
+        "id": "mainStatPercent",
+        "values": [
+          9,
+          6
+        ]
+      }
+    ],
+    "legendary": [
+      {
+        "id": "allStatPercent",
+        "values": [
+          9,
+          6
+        ]
+      },
+      {
+        "id": "hpPercent",
+        "values": [
+          12,
+          9
+        ]
+      },
+      {
+        "id": "mainStatPercent",
+        "values": [
+          12,
+          9
+        ]
+      }
+    ]
+  },
+  "top": {
+    "rare": [
+      {
+        "id": "hpPercent",
+        "values": [
+          3
+        ]
+      },
+      {
+        "id": "mainStatPercent",
+        "values": [
+          3
+        ]
+      }
+    ],
+    "epic": [
+      {
+        "id": "allStatPercent",
+        "values": [
+          3
+        ]
+      },
+      {
+        "id": "hpPercent",
+        "values": [
+          6,
+          3
+        ]
+      },
+      {
+        "id": "mainStatPercent",
+        "values": [
+          6,
+          3
+        ]
+      }
+    ],
+    "unique": [
+      {
+        "id": "allStatPercent",
+        "values": [
+          6,
+          3
+        ]
+      },
+      {
+        "id": "hpPercent",
+        "values": [
+          9,
+          6
+        ]
+      },
+      {
+        "id": "mainStatPercent",
+        "values": [
+          9,
+          6
+        ]
+      }
+    ],
+    "legendary": [
+      {
+        "id": "allStatPercent",
+        "values": [
+          9,
+          6
+        ]
+      },
+      {
+        "id": "hpPercent",
+        "values": [
+          12,
+          9
+        ]
+      },
+      {
+        "id": "mainStatPercent",
+        "values": [
+          12,
+          9
+        ]
+      }
+    ]
+  },
+  "weapon": {
+    "rare": [
+      {
+        "id": "attPercent",
+        "values": [
+          3
+        ]
+      },
+      {
+        "id": "critChance",
+        "values": [
+          4
+        ]
+      },
+      {
+        "id": "damagePercent",
+        "values": [
+          3
+        ]
+      },
+      {
+        "id": "iedPercent",
+        "values": [
+          15
+        ]
+      },
+      {
+        "id": "mainStatPercent",
+        "values": [
+          3
+        ]
+      },
+      {
+        "id": "mattPercent",
+        "values": [
+          3
+        ]
+      }
+    ],
+    "epic": [
+      {
+        "id": "allStatPercent",
+        "values": [
+          3
+        ]
+      },
+      {
+        "id": "attPercent",
+        "values": [
+          6,
+          3
+        ]
+      },
+      {
+        "id": "critChance",
+        "values": [
+          8,
+          4
+        ]
+      },
+      {
+        "id": "damagePercent",
+        "values": [
+          6,
+          3
+        ]
+      },
+      {
+        "id": "hpPercent",
+        "values": [
+          6
+        ]
+      },
+      {
+        "id": "iedPercent",
+        "values": [
+          15
+        ]
+      },
+      {
+        "id": "mainStatPercent",
+        "values": [
+          6,
+          3
+        ]
+      },
+      {
+        "id": "mattPercent",
+        "values": [
+          6,
+          3
+        ]
+      }
+    ],
+    "unique": [
+      {
+        "id": "allStatPercent",
+        "values": [
+          6,
+          3
+        ]
+      },
+      {
+        "id": "attPercent",
+        "values": [
+          9,
+          6
+        ]
+      },
+      {
+        "id": "bossPercent",
+        "values": [
+          30
+        ]
+      },
+      {
+        "id": "critChance",
+        "values": [
+          9,
+          8
+        ]
+      },
+      {
+        "id": "damagePercent",
+        "values": [
+          9,
+          6
+        ]
+      },
+      {
+        "id": "hpPercent",
+        "values": [
+          6
+        ]
+      },
+      {
+        "id": "iedPercent",
+        "values": [
+          30,
+          15
+        ]
+      },
+      {
+        "id": "mainStatPercent",
+        "values": [
+          9,
+          6
+        ]
+      },
+      {
+        "id": "mattPercent",
+        "values": [
+          9,
+          6
+        ]
+      }
+    ],
+    "legendary": [
+      {
+        "id": "allStatPercent",
+        "values": [
+          9,
+          6
+        ]
+      },
+      {
+        "id": "attPercent",
+        "values": [
+          12,
+          9
+        ]
+      },
+      {
+        "id": "bossPercent",
+        "values": [
+          40,
+          35,
+          30
+        ]
+      },
+      {
+        "id": "critChance",
+        "values": [
+          12,
+          9
+        ]
+      },
+      {
+        "id": "damagePercent",
+        "values": [
+          12,
+          9
+        ]
+      },
+      {
+        "id": "iedPercent",
+        "values": [
+          40,
+          35,
+          30
+        ]
+      },
+      {
+        "id": "mainStatPercent",
+        "values": [
+          12,
+          9
+        ]
+      },
+      {
+        "id": "mattPercent",
+        "values": [
+          12,
+          9
+        ]
+      }
+    ]
+  }
+}

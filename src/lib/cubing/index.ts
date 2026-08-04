@@ -14,3 +14,4 @@ export {
   canPickDesiredStat,
   isWseItem,
 } from "./desiredStats";
+export { equipTypeToCubeCategory, isItemCategory } from "./itemCategory";
