@@ -1,4 +1,7 @@
-export default function BossIncomePage() {
+import Link from "next/link";
+
+/** Hub kept for old links; prefer /calc/bosses and /calc/liberation. */
+export default function BossIncomeHubPage() {
   return (
     <div className="space-y-8">
       <header>
@@ -6,32 +9,32 @@ export default function BossIncomePage() {
           Boss Income &amp; Liberation
         </h1>
         <p className="mt-2 max-w-2xl text-sm opacity-75">
-          Track weekly and monthly boss crystal income alongside Liberation quest
-          and progress tools — coming soon to MapleCompile.
+          Choose a tool — crystal income planner or Genesis / Destiny liberation
+          progress.
         </p>
       </header>
 
       <section className="grid gap-4 sm:grid-cols-2">
-        <div className="rounded-xl border border-border/40 bg-surface/80 p-5">
-          <h2 className="font-display text-lg font-semibold">Boss income</h2>
+        <Link
+          href="/calc/bosses"
+          className="rounded-xl border border-border/40 bg-surface/80 p-5 transition hover:border-accent hover:bg-accent-soft/30"
+        >
+          <h2 className="font-display text-lg font-semibold">Boss Income</h2>
           <p className="mt-2 text-sm opacity-80">
-            Plan which bosses to clear, estimate crystal and meso income, and
-            keep a simple weekly checklist.
+            Weekly crystal sell planner with Heroic / Interactive prices, party
+            splits, and the 14-crystal cap.
           </p>
-          <p className="mt-4 text-xs font-semibold uppercase tracking-wider text-accent opacity-80">
-            Coming soon
-          </p>
-        </div>
-        <div className="rounded-xl border border-border/40 bg-surface/80 p-5">
+        </Link>
+        <Link
+          href="/calc/liberation"
+          className="rounded-xl border border-border/40 bg-surface/80 p-5 transition hover:border-accent hover:bg-accent-soft/30"
+        >
           <h2 className="font-display text-lg font-semibold">Liberation</h2>
           <p className="mt-2 text-sm opacity-80">
-            Follow Genesis / Liberation quest steps and track progress toward
-            weapon liberation milestones.
+            Genesis and Destiny Traces of Darkness calculator with weekly boss
+            selections and ETA.
           </p>
-          <p className="mt-4 text-xs font-semibold uppercase tracking-wider text-accent opacity-80">
-            Coming soon
-          </p>
-        </div>
+        </Link>
       </section>
     </div>
   );

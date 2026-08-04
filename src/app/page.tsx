@@ -59,10 +59,16 @@ export default function Home() {
             Public Gallery
           </Link>
           <Link
-            href="/calc/boss-income"
+            href="/calc/bosses"
             className="rounded-lg border-2 border-border bg-surface px-5 py-2.5 font-semibold transition hover:bg-surface-muted"
           >
-            Boss Income &amp; Liberation
+            Boss Income
+          </Link>
+          <Link
+            href="/calc/liberation"
+            className="rounded-lg border-2 border-border bg-surface px-5 py-2.5 font-semibold transition hover:bg-surface-muted"
+          >
+            Liberation
           </Link>
         </div>
       </section>
@@ -97,12 +103,17 @@ export default function Home() {
           </p>
         </div>
         <div className="rounded-xl border border-border/50 bg-surface/80 p-5">
-          <h2 className="font-display text-lg font-semibold">
-            Boss Income &amp; Liberation
-          </h2>
+          <h2 className="font-display text-lg font-semibold">Boss Income</h2>
           <p className="mt-2 text-sm opacity-80">
-            Upcoming tools for weekly boss crystal income and Liberation quest
-            progress — shell page is live now.
+            Plan weekly crystal sells with Heroic pricing, party splits, and the
+            14-crystal cap.
+          </p>
+        </div>
+        <div className="rounded-xl border border-border/50 bg-surface/80 p-5">
+          <h2 className="font-display text-lg font-semibold">Liberation</h2>
+          <p className="mt-2 text-sm opacity-80">
+            Track Genesis / Destiny Traces of Darkness and estimate weeks to
+            liberation.
           </p>
         </div>
       </section>
