@@ -741,13 +741,23 @@ export default function ScouterPage() {
                   onClick={() => setPresetMenuOpen((o) => !o)}
                 >
                   <span className="min-w-0 truncate">
-                    {selectedPresetId
-                      ? presets.find((p) => p.id === selectedPresetId)?.name ||
-                        presetName ||
-                        "Preset"
-                      : presets.length
-                        ? `Choose a preset (${presets.length})…`
-                        : "No saved presets yet"}
+                    {(() => {
+                      if (!selectedPresetId) {
+                        return presets.length
+                          ? `Choose a preset (${presets.length})…`
+                          : "No saved presets yet";
+                      }
+                      const selected = presets.find(
+                        (p) => p.id === selectedPresetId,
+                      );
+                      const name =
+                        selected?.name || presetName.trim() || "Preset";
+                      const classLabel = getCharName(
+                        selected?.input?.jobType || input.jobType || "",
+                        selected?.input?.charType || input.charType || "",
+                      );
+                      return `${name}(${classLabel})`;
+                    })()}
                   </span>
                   <span className="shrink-0 opacity-50" aria-hidden>
                     ▾
