@@ -5,6 +5,7 @@ import { MAX_STAR_FORCE } from "@/lib/planner";
 
 const STARS_PER_ROW = 15;
 const GROUP_SIZE = 5;
+const SF_PRESETS = [18, 21, 22, 23] as const;
 
 type Props = {
   value: number;
@@ -48,8 +49,8 @@ function starFromPoint(clientX: number, clientY: number): number | null {
 }
 
 /**
- * Interactive Star Force control: number input and click/drag star grid
- * (2×15, groups of 5) — MapleStory-style.
+ * Interactive Star Force control: click/drag star grid first, then type
+ * input + common presets (2×15, groups of 5) — MapleStory-style.
  */
 export function StarForcePicker({
   value,
@@ -107,25 +108,7 @@ export function StarForcePicker({
   });
 
   return (
-    <div className="space-y-2" role="group" aria-label={label}>
-      <div className="flex flex-wrap items-center gap-2">
-        <label className="flex items-center gap-1.5 text-sm text-zinc-200">
-          <span className="opacity-70" aria-hidden>
-            ★
-          </span>
-          <input
-            type="number"
-            min={0}
-            max={max}
-            value={stars}
-            aria-label={`${label} amount`}
-            onChange={(e) => commit(Number(e.target.value) || 0)}
-            className="w-16 rounded border border-[#555] bg-[#1f1f1f] px-2 py-1 text-sm font-semibold tabular-nums text-zinc-100 outline-none focus:border-sky-500"
-          />
-          <span className="text-xs text-zinc-500">/ {max}</span>
-        </label>
-      </div>
-
+    <div className="space-y-2.5" role="group" aria-label={label}>
       <div
         ref={gridRef}
         className={`inline-flex flex-col gap-0.5 select-none ${
@@ -176,6 +159,48 @@ export function StarForcePicker({
             ))}
           </div>
         ))}
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <label className="flex items-center gap-1.5 text-sm text-zinc-200">
+          <span className="opacity-70" aria-hidden>
+            ★
+          </span>
+          <input
+            type="number"
+            min={0}
+            max={max}
+            value={stars}
+            aria-label={`${label} amount`}
+            onChange={(e) => commit(Number(e.target.value) || 0)}
+            className="w-16 rounded border border-[#555] bg-[#1f1f1f] px-2 py-1 text-sm font-semibold tabular-nums text-zinc-100 outline-none focus:border-sky-500"
+          />
+          <span className="text-xs text-zinc-500">/ {max}</span>
+        </label>
+        <div
+          className="flex flex-wrap gap-1"
+          role="group"
+          aria-label="Star Force presets"
+        >
+          {SF_PRESETS.filter((n) => n <= max).map((n) => {
+            const active = stars === n;
+            return (
+              <button
+                key={n}
+                type="button"
+                onClick={() => commit(n)}
+                aria-pressed={active}
+                className={`rounded border px-1.5 py-0.5 text-[11px] font-semibold tabular-nums transition ${
+                  active
+                    ? "border-amber-400/80 bg-amber-500/25 text-amber-100"
+                    : "border-[#555] bg-[#1f1f1f] text-zinc-300 hover:border-[#777] hover:bg-[#353535]"
+                }`}
+              >
+                {n}★
+              </button>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
