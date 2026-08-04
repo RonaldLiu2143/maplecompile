@@ -18,7 +18,7 @@ const sourceSans = Source_Sans_3({
 export const metadata: Metadata = {
   title: "MapleCompile — MapleStory Calculators",
   description:
-    "Equipment setup, flame odds, cubing, scouter, and GMS character lookup for MapleStory.",
+    "Equipment setup, flame odds, cubing, scouter, and GMS roster tools for MapleStory.",
 };
 
 export default function RootLayout({

@@ -231,10 +231,10 @@ export function CharacterProfile({
           Open on MapleHub ↗
         </a>
         <Link
-          href="/calc/character"
+          href="/roster"
           className="rounded-lg border border-border px-3 py-1.5 font-semibold transition hover:bg-surface-muted"
         >
-          New lookup
+          Back to Roster
         </Link>
       </div>
 
