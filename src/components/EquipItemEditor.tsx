@@ -15,7 +15,6 @@ import {
   POTENTIAL_TIER_LABELS,
 } from "@/lib/potential-lines";
 import type { Equip, FlameLine, PotentialLine } from "@/lib/types";
-import { EquipItemTooltip } from "@/components/EquipItemTooltip";
 import { StarForcePicker } from "@/components/StarForcePicker";
 
 export type EquipItemPatch = {
@@ -155,14 +154,6 @@ export function EquipItemEditor({
       </div>
 
       <div className="max-h-[36rem] space-y-4 overflow-y-auto p-3">
-        <section aria-label="Item stat summary">
-          <EquipItemTooltip
-            equip={equip}
-            flames={lines}
-            starForce={starForce}
-          />
-        </section>
-
         {!showAnyEditor && (
           <p className="text-xs text-zinc-500">
             This item cannot take Star Force, flames, or potential.
@@ -182,84 +173,94 @@ export function EquipItemEditor({
         )}
 
         {caps.flames && (
-          <section className="space-y-2">
+          <section className="space-y-2.5">
             <h3 className="text-xs font-bold uppercase tracking-wide text-zinc-400">
               Flames{" "}
-              <span className="font-normal normal-case opacity-70">
+              <span className="font-normal normal-case text-zinc-500">
                 ({lines.length}/4)
               </span>
             </h3>
-            <div
-              className="grid gap-0.5"
-              style={{
-                gridTemplateColumns: "5.5rem repeat(7, minmax(0, 1fr))",
-              }}
-            >
-              <div className="text-[9px] font-semibold text-zinc-500">Stat</div>
-              {[1, 2, 3, 4, 5, 6, 7].map((t) => (
-                <div
-                  key={t}
-                  className="text-center text-[9px] font-semibold text-zinc-500"
-                >
-                  T{t}
-                </div>
-              ))}
-              {selectable.map((stat) => (
-                <div key={stat.id} className="contents">
-                  <div className="flex items-center text-[10px] font-medium leading-tight text-zinc-200">
-                    {stat.name}
-                  </div>
-                  {stat.values.map((value, idx) => {
-                    const tierNum = idx + 1;
-                    const active = lines.some(
-                      (l) => l.id === stat.id && l.tierNum === tierNum,
-                    );
-                    return (
-                      <button
-                        key={tierNum}
-                        type="button"
-                        onClick={() =>
-                          toggleFlame(
-                            stat.id,
-                            tierNum,
-                            value,
-                            stat.mixedStats,
-                          )
-                        }
-                        className={`flex h-7 items-center justify-center rounded border text-[10px] font-semibold tabular-nums transition ${
-                          active
-                            ? "border-sky-400 bg-sky-500 text-zinc-900"
-                            : "border-[#444] bg-[#1f1f1f] text-zinc-200 hover:bg-[#353535]"
-                        }`}
-                      >
-                        {value}
-                      </button>
-                    );
-                  })}
-                </div>
-              ))}
-            </div>
             {lines.length > 0 && (
-              <div className="flex flex-wrap gap-1">
+              <ul className="space-y-1 rounded border border-[#3a3a3a] bg-[#1c1c1c] px-2 py-1.5">
                 {lines.map((line) => {
                   const stat = selectable.find((s) => s.id === line.id);
                   return (
-                    <span
+                    <li
                       key={`${line.id}-${line.tierNum}`}
-                      className="inline-flex items-baseline gap-1 rounded border border-sky-500/30 bg-sky-950/40 px-1.5 py-0.5 text-[10px] text-zinc-100"
+                      className="flex items-baseline justify-between gap-2 text-[11px] leading-snug"
                     >
-                      <span className="opacity-70">
+                      <span className="min-w-0 truncate font-medium text-zinc-200">
                         {stat?.name ?? line.id}
                       </span>
-                      <span className="font-semibold tabular-nums text-sky-300">
-                        +{line.value}
+                      <span className="shrink-0 tabular-nums">
+                        <span className="font-semibold text-cyan-300">
+                          +{line.value}
+                        </span>
+                        <span className="ml-1.5 text-[10px] font-semibold text-zinc-500">
+                          T{line.tierNum}
+                        </span>
                       </span>
-                      <span className="opacity-40">T{line.tierNum}</span>
-                    </span>
+                    </li>
                   );
                 })}
-              </div>
+              </ul>
             )}
+            <div
+              className="overflow-x-auto rounded border border-[#3a3a3a] bg-[#1c1c1c] p-1.5"
+            >
+              <div
+                className="grid gap-x-1 gap-y-1"
+                style={{
+                  gridTemplateColumns: "minmax(4.75rem, 5.75rem) repeat(7, minmax(1.75rem, 1fr))",
+                }}
+              >
+                <div className="px-1 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
+                  Stat
+                </div>
+                {[1, 2, 3, 4, 5, 6, 7].map((t) => (
+                  <div
+                    key={t}
+                    className="py-0.5 text-center text-[10px] font-semibold tabular-nums text-zinc-400"
+                  >
+                    T{t}
+                  </div>
+                ))}
+                {selectable.map((stat) => (
+                  <div key={stat.id} className="contents">
+                    <div className="flex items-center px-1 text-[11px] font-medium leading-tight text-zinc-100">
+                      {stat.name}
+                    </div>
+                    {stat.values.map((value, idx) => {
+                      const tierNum = idx + 1;
+                      const active = lines.some(
+                        (l) => l.id === stat.id && l.tierNum === tierNum,
+                      );
+                      return (
+                        <button
+                          key={tierNum}
+                          type="button"
+                          onClick={() =>
+                            toggleFlame(
+                              stat.id,
+                              tierNum,
+                              value,
+                              stat.mixedStats,
+                            )
+                          }
+                          className={`flex h-8 items-center justify-center rounded border text-[11px] font-semibold tabular-nums transition ${
+                            active
+                              ? "border-cyan-400 bg-cyan-500 text-zinc-950 shadow-sm"
+                              : "border-[#444] bg-[#252525] text-zinc-300 hover:border-[#666] hover:bg-[#353535] hover:text-zinc-100"
+                          }`}
+                        >
+                          {value}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ))}
+              </div>
+            </div>
           </section>
         )}
 
