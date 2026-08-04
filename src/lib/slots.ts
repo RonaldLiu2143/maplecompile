@@ -64,6 +64,20 @@ export function slotToEquipType(slotId: string): string {
   return slotId;
 }
 
+/** 0-based index within a multi-capacity type (ring-2 → 1). */
+export function slotIndex(slotId: string): number {
+  const match = /^(?:ring|pendant)-(\d+)$/.exec(slotId);
+  return match ? Number(match[1]) - 1 : 0;
+}
+
+/** Grid slot id for a setup entry (ring index 0 → ring-1). */
+export function equipTypeToSlotId(equipType: string, index: number): string {
+  if (equipType === "ring" || equipType === "pendant") {
+    return `${equipType}-${index + 1}`;
+  }
+  return equipType;
+}
+
 export const SLOT_LABELS: Record<string, string> = {
   "ring-1": "Ring",
   "ring-2": "Ring",

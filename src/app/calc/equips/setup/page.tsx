@@ -1,7 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { EquipGrid } from "@/components/EquipGrid";
+import { EquipGrid, slotEquip } from "@/components/EquipGrid";
+import {
+  EquipItemEditor,
+  type EquipItemPatch,
+} from "@/components/EquipItemEditor";
 import { EquipPicker } from "@/components/EquipPicker";
 import { SetEffectsPanel } from "@/components/SetEffectsPanel";
 import {
@@ -12,7 +16,18 @@ import {
   parseClassValue,
 } from "@/lib/jobs";
 import { inferNormalFlame } from "@/lib/flames";
-import { SLOT_CAPACITY, SLOT_LABELS, slotToEquipType } from "@/lib/slots";
+import {
+  defaultPotentialTier,
+  defaultStarForce,
+  type PlannerOverrides,
+} from "@/lib/planner";
+import {
+  equipTypeToSlotId,
+  SLOT_CAPACITY,
+  SLOT_LABELS,
+  slotIndex,
+  slotToEquipType,
+} from "@/lib/slots";
 import { storage } from "@/lib/storage";
 import {
   STARTER_LOADOUTS,
@@ -23,6 +38,7 @@ import type {
   Equip,
   EquipSetup,
   EquipsResponse,
+  FlameSetup,
   JobType,
   SetEffect,
   SetEffectsResponse,
@@ -30,22 +46,40 @@ import type {
 
 type LoadStatus = "idle" | "loading" | "ready" | "error";
 
+/** Side panel mode: pick catalog item, or edit SF / flames / potential. */
+type PanelMode =
+  | { kind: "picker"; slot: string }
+  | { kind: "editor"; slot: string }
+  | null;
+
+function withHeroicDefaults(equip: Equip): Equip {
+  return {
+    ...equip,
+    starForce: equip.starForce ?? defaultStarForce(equip.level),
+    potentialTier: equip.potentialTier ?? defaultPotentialTier(equip.level),
+    potentialLines: equip.potentialLines ?? [],
+    isNormalFlame: inferNormalFlame(equip),
+  };
+}
+
 export default function SetupClient() {
   const [jobType, setJobType] = useState<JobType>(DEFAULT_JOB);
   const [charType, setCharType] = useState(DEFAULT_CHAR);
   const [setup, setSetup] = useState<EquipSetup>({});
+  const [flameSetup, setFlameSetup] = useState<FlameSetup>({});
   const [equipByType, setEquipByType] = useState<EquipsResponse["equipByType"]>(
     {},
   );
   const [setList, setSetList] = useState<SetEffect[]>([]);
   const [status, setStatus] = useState<LoadStatus>("idle");
   const [error, setError] = useState("");
-  const [pickerSlot, setPickerSlot] = useState<string | null>(null);
+  const [panel, setPanel] = useState<PanelMode>(null);
   const [hydrated, setHydrated] = useState(false);
   const [starterId, setStarterId] = useState("");
   const [starterMsg, setStarterMsg] = useState<string | null>(null);
 
   const classValue = `${jobType}:${charType}`;
+  const activeSlot = panel?.slot ?? null;
 
   const loadCatalog = useCallback(async (job: JobType, char: string) => {
     if (!job || !char) return;
@@ -100,11 +134,13 @@ export default function SetupClient() {
     const savedJob = storage.getJobType();
     const savedChar = storage.getCharType();
     const savedSetup = storage.getEquipSetup();
+    const savedFlames = storage.getFlameSetup();
     const job = (savedJob || DEFAULT_JOB) as JobType;
     const char = savedChar || DEFAULT_CHAR;
     setJobType(job);
     setCharType(char);
     if (Object.keys(savedSetup).length) setSetup(savedSetup);
+    setFlameSetup(savedFlames);
     setHydrated(true);
     void loadCatalog(job, char);
   }, [loadCatalog]);
@@ -116,6 +152,22 @@ export default function SetupClient() {
     storage.setEquipSetup(setup);
   }, [jobType, charType, setup, hydrated]);
 
+  const syncPlannerOverride = useCallback(
+    (slotId: string, equip: Equip) => {
+      const prev = storage.getPlannerOverrides();
+      const next: PlannerOverrides = {
+        ...prev,
+        [slotId]: {
+          starForce: equip.starForce ?? defaultStarForce(equip.level),
+          potentialTier:
+            equip.potentialTier ?? defaultPotentialTier(equip.level),
+        },
+      };
+      storage.setPlannerOverrides(next);
+    },
+    [],
+  );
+
   const onClassChange = (value: string) => {
     const parsed = parseClassValue(value);
     if (!parsed) return;
@@ -125,37 +177,128 @@ export default function SetupClient() {
     setCharType(parsed.charType);
     if (changed) {
       setSetup({});
+      setFlameSetup({});
       storage.clearSetup();
-      setPickerSlot(null);
+      setPanel(null);
       void loadCatalog(parsed.jobType, parsed.charType);
     }
   };
 
+  const onSlotClick = (slotId: string) => {
+    const equipped = slotEquip(setup, slotId);
+    if (equipped) {
+      setPanel({ kind: "editor", slot: slotId });
+    } else {
+      setPanel({ kind: "picker", slot: slotId });
+    }
+  };
+
+  const pickerSlot = panel?.kind === "picker" ? panel.slot : null;
+  const editorSlot = panel?.kind === "editor" ? panel.slot : null;
   const pickerType = pickerSlot ? slotToEquipType(pickerSlot) : null;
   const pickerEquips = pickerType ? (equipByType[pickerType]?.equips ?? []) : [];
   const selectedForType = new Set(
     (pickerType ? setup[pickerType] ?? [] : []).map((e) => e.id),
   );
 
+  const editingEquip = editorSlot ? slotEquip(setup, editorSlot) : undefined;
+  const editingFlames = editingEquip
+    ? (flameSetup[editingEquip.id] ?? editingEquip.flames ?? [])
+    : [];
+
   const toggleEquip = (equip: Equip) => {
-    const type = equip.equipType;
+    if (!pickerSlot) return;
+    const type = slotToEquipType(pickerSlot);
     const capacity = SLOT_CAPACITY[type] ?? 1;
+    const idx = slotIndex(pickerSlot);
+    const nextEquip = withHeroicDefaults(equip);
+
+    let editorSlotId = pickerSlot;
+    let removed = false;
+
     setSetup((prev) => {
       const current = [...(prev[type] ?? [])];
-      const idx = current.findIndex((e) => e.id === equip.id);
-      if (idx >= 0) {
-        current.splice(idx, 1);
+      const existingIdx = current.findIndex((e) => e.id === equip.id);
+
+      if (existingIdx >= 0) {
+        current.splice(existingIdx, 1);
+        removed = true;
         return { ...prev, [type]: current };
       }
+
       if (capacity === 1) {
-        return { ...prev, [type]: [equip] };
+        editorSlotId = type;
+        return { ...prev, [type]: [nextEquip] };
       }
-      if (current.length >= capacity) {
-        current.pop();
+
+      if (current[idx]) {
+        current[idx] = nextEquip;
+        editorSlotId = pickerSlot;
+        return { ...prev, [type]: current };
       }
-      current.push(equip);
+
+      if (current.length >= capacity) current.pop();
+      current.push(nextEquip);
+      editorSlotId = equipTypeToSlotId(type, current.length - 1);
       return { ...prev, [type]: current };
     });
+
+    if (removed) {
+      setPanel({ kind: "picker", slot: pickerSlot });
+      return;
+    }
+    syncPlannerOverride(editorSlotId, nextEquip);
+    setPanel({ kind: "editor", slot: editorSlotId });
+  };
+
+  const patchEquipped = (slotId: string, patch: EquipItemPatch) => {
+    const type = slotToEquipType(slotId);
+    const idx = slotIndex(slotId);
+    setSetup((prev) => {
+      const list = [...(prev[type] ?? [])];
+      const cur = list[idx];
+      if (!cur) return prev;
+      const next: Equip = { ...cur, ...patch };
+      if (patch.flames) next.flames = patch.flames;
+      list[idx] = next;
+      syncPlannerOverride(slotId, next);
+      if (patch.flames) {
+        setFlameSetup((fp) => {
+          const nf = { ...fp, [cur.id]: patch.flames! };
+          storage.setFlameSetup(nf);
+          return nf;
+        });
+      }
+      return { ...prev, [type]: list };
+    });
+  };
+
+  const unequipSlot = (slotId: string) => {
+    const type = slotToEquipType(slotId);
+    const idx = slotIndex(slotId);
+    const removed = slotEquip(setup, slotId);
+    setSetup((prev) => {
+      const list = [...(prev[type] ?? [])];
+      if (!list[idx]) return prev;
+      list.splice(idx, 1);
+      return { ...prev, [type]: list };
+    });
+    if (removed) {
+      setFlameSetup((prev) => {
+        if (!(removed.id in prev)) return prev;
+        const next = { ...prev };
+        delete next[removed.id];
+        storage.setFlameSetup(next);
+        return next;
+      });
+      const overrides = storage.getPlannerOverrides();
+      if (slotId in overrides) {
+        const next = { ...overrides };
+        delete next[slotId];
+        storage.setPlannerOverrides(next);
+      }
+    }
+    setPanel({ kind: "picker", slot: slotId });
   };
 
   const applyStarter = () => {
@@ -168,7 +311,11 @@ export default function SetupClient() {
       setStarterMsg("Wait for equipment list to load");
       return;
     }
-    const next = buildStarterSetup(equipByType, loadout);
+    const raw = buildStarterSetup(equipByType, loadout);
+    const next: EquipSetup = {};
+    for (const [type, list] of Object.entries(raw)) {
+      next[type] = (list ?? []).map(withHeroicDefaults);
+    }
     const filled = countFilledSlots(next);
     if (!filled) {
       setStarterMsg(
@@ -177,6 +324,7 @@ export default function SetupClient() {
       return;
     }
     setSetup(next);
+    setPanel(null);
     setStarterMsg(`Applied “${loadout.name}” (${filled} pieces).`);
     setTimeout(() => setStarterMsg(null), 3000);
   };
@@ -188,8 +336,9 @@ export default function SetupClient() {
           Equipment Setup & Set Effects
         </h1>
         <p className="mt-2 max-w-2xl text-sm opacity-75">
-          Create your equipment setup on this page. The Flame Calculator will use
-          this setup when available.
+          Build your loadout, then click an equipped piece to set Star Force,
+          flames, and potential lines in one place. Flame Calculator and Upgrade
+          Planner read the same saved setup.
         </p>
       </header>
 
@@ -249,7 +398,9 @@ export default function SetupClient() {
               type="button"
               onClick={() => {
                 setSetup({});
+                setFlameSetup({});
                 storage.clearSetup();
+                setPanel(null);
                 setStarterMsg(null);
               }}
               className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold hover:bg-surface-muted"
@@ -263,7 +414,8 @@ export default function SetupClient() {
         ) : (
           <p className="text-xs opacity-60">
             Starters auto-fill matching pieces from this class catalog (Heroic
-            progression ladder). Empty slots mean no match in the list.
+            progression ladder). Click a filled slot to edit stars, flames, and
+            potential.
           </p>
         )}
         {status === "loading" && (
@@ -276,21 +428,36 @@ export default function SetupClient() {
           <div className="flex flex-col items-start gap-4 lg:flex-row">
             <EquipGrid
               setup={setup}
-              onSlotClick={setPickerSlot}
+              onSlotClick={onSlotClick}
               charLabel={getCharName(jobType, charType)}
+              activeSlot={activeSlot}
             />
-            {pickerSlot && pickerType ? (
+            {panel?.kind === "picker" && pickerType ? (
               <EquipPicker
-                key={pickerSlot}
-                label={SLOT_LABELS[pickerSlot] ?? pickerType}
+                key={pickerSlot!}
+                label={SLOT_LABELS[pickerSlot!] ?? pickerType}
                 equips={pickerEquips}
                 selectedIds={selectedForType}
                 onToggle={toggleEquip}
-                onClose={() => setPickerSlot(null)}
+                onClose={() => setPanel(null)}
+              />
+            ) : panel?.kind === "editor" && editingEquip && editorSlot ? (
+              <EquipItemEditor
+                key={`${editorSlot}-${editingEquip.id}`}
+                slotLabel={SLOT_LABELS[editorSlot] ?? editorSlot}
+                equip={editingEquip}
+                flames={editingFlames}
+                onChange={(patch) => patchEquipped(editorSlot, patch)}
+                onChangeItem={() =>
+                  setPanel({ kind: "picker", slot: editorSlot })
+                }
+                onUnequip={() => unequipSlot(editorSlot)}
+                onClose={() => setPanel(null)}
               />
             ) : (
               <p className="max-w-sm self-center text-sm opacity-70">
-                Click a slot to choose equipment. Rings fill from the top slot;
+                Click an empty slot to choose equipment, or a filled slot to edit
+                Star Force, flames, and potential. Rings fill from the top slot;
                 pendants fill pendant-1 then pendant-2.
               </p>
             )}

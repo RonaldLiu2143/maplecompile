@@ -1,4 +1,5 @@
 import type { Equip, EquipSetup, FlameLine, FlameSetup } from "@/lib/types";
+import { equipTypeToSlotId } from "@/lib/slots";
 import type { FlatEquip, PlannerOverrides, PlannerPieceOverride } from "./types";
 import { defaultStarForce } from "./starforce";
 
@@ -36,11 +37,17 @@ export function flattenEquips(
   overrides: PlannerOverrides,
 ): FlatEquip[] {
   const out: FlatEquip[] = [];
-  for (const [slotKey, list] of Object.entries(setup)) {
+  for (const [equipType, list] of Object.entries(setup)) {
     if (!Array.isArray(list)) continue;
-    for (const equip of list) {
-      if (!equip?.id) continue;
-      const o = overrides[slotKey] ?? overrides[pieceKey(slotKey, equip.id)];
+    list.forEach((equip, index) => {
+      if (!equip?.id) return;
+      const slotKey = equipTypeToSlotId(equipType, index);
+      // Prefer grid slot (ring-1); fall back to legacy type key / pieceKey.
+      const o =
+        overrides[slotKey] ??
+        overrides[equipType] ??
+        overrides[pieceKey(slotKey, equip.id)] ??
+        overrides[pieceKey(equipType, equip.id)];
       const state = resolvePieceState(equip, o);
       const flameLines: FlameLine[] =
         flames[equip.id] ?? equip.flames ?? [];
@@ -51,7 +58,7 @@ export function flattenEquips(
         starForce: state.starForce,
         potentialTier: state.potentialTier,
       });
-    }
+    });
   }
   return out;
 }

@@ -15,6 +15,14 @@ export type EquipStats = {
   [key: string]: number | undefined;
 };
 
+/** One potential line on an equipped item (MVP: up to 3). */
+export type PotentialLine = {
+  /** Stat family id, e.g. attPercent, bossPercent, mainStatPercent. */
+  id: string;
+  /** Numeric value (percent or flat as appropriate for the line). */
+  value: number;
+};
+
 export type Equip = {
   _id?: string;
   id: string;
@@ -37,6 +45,8 @@ export type Equip = {
   starForce?: number;
   /** Potential tier: 0 Rare … 3 Legendary (planner). */
   potentialTier?: 0 | 1 | 2 | 3;
+  /** Main potential lines (up to 3). Optional — empty means unset. */
+  potentialLines?: PotentialLine[];
 };
 
 export type EquipTypeBucket = {

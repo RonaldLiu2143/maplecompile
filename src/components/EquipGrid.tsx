@@ -6,23 +6,25 @@ import {
   APPEARANCE_CELL,
   EQUIP_WINDOW_SLOTS,
   SLOT_LABELS,
+  slotIndex,
   slotToEquipType,
 } from "@/lib/slots";
+import { defaultStarForce } from "@/lib/planner";
 
 type Props = {
   setup: EquipSetup;
   onSlotClick: (slotId: string) => void;
   charLabel?: string;
+  /** Highlight the slot currently being edited / picked. */
+  activeSlot?: string | null;
 };
 
 const SLOT = "3rem";
 
-function slotEquip(setup: EquipSetup, slotId: string): Equip | undefined {
+export function slotEquip(setup: EquipSetup, slotId: string): Equip | undefined {
   const type = slotToEquipType(slotId);
   const list = setup[type] ?? [];
-  const match = /^(?:ring|pendant)-(\d+)$/.exec(slotId);
-  if (match) return list[Number(match[1]) - 1];
-  return list[0];
+  return list[slotIndex(slotId)];
 }
 
 function EquipSlot({
@@ -30,30 +32,41 @@ function EquipSlot({
   setup,
   onSlotClick,
   style,
+  active,
 }: {
   slotId: string;
   setup: EquipSetup;
   onSlotClick: (slotId: string) => void;
   style: CSSProperties;
+  active: boolean;
 }) {
   const equip = slotEquip(setup, slotId);
   const filled = !!equip;
+  const stars = equip
+    ? (equip.starForce ?? defaultStarForce(equip.level))
+    : 0;
 
   return (
     <button
       type="button"
-      title={equip?.name ?? SLOT_LABELS[slotId] ?? slotId}
+      title={
+        equip
+          ? `${equip.name} · ${stars}★`
+          : (SLOT_LABELS[slotId] ?? slotId)
+      }
       onClick={() => onSlotClick(slotId)}
       style={style}
       className={`relative flex items-center justify-center rounded-[2px] border transition ${
-        filled
-          ? "border-[#6CFF6C] bg-[#454545]"
-          : "border-[#999] bg-[#5c5c5c] hover:border-[#ccc] hover:bg-[#686868]"
+        active
+          ? "border-sky-400 bg-[#3a4a5c] ring-1 ring-sky-400/60"
+          : filled
+            ? "border-[#6CFF6C] bg-[#454545]"
+            : "border-[#999] bg-[#5c5c5c] hover:border-[#ccc] hover:bg-[#686868]"
       }`}
     >
       {filled && (
-        <span className="absolute left-0 top-0 z-10 flex h-3.5 min-w-3.5 items-center justify-center bg-[#2ECC40] text-[9px] font-bold leading-none text-white">
-          1
+        <span className="absolute left-0 top-0 z-10 flex h-3.5 min-w-3.5 items-center justify-center bg-[#2ECC40] px-0.5 text-[8px] font-bold leading-none text-white">
+          {stars}★
         </span>
       )}
       {equip ? (
@@ -70,7 +83,12 @@ function EquipSlot({
   );
 }
 
-export function EquipGrid({ setup, onSlotClick, charLabel }: Props) {
+export function EquipGrid({
+  setup,
+  onSlotClick,
+  charLabel,
+  activeSlot,
+}: Props) {
   return (
     <div
       className="inline-grid gap-1 rounded-sm border-2 border-[#111] bg-[#333] p-1.5 shadow-lg"
@@ -137,6 +155,7 @@ export function EquipGrid({ setup, onSlotClick, charLabel }: Props) {
           slotId={slot.id}
           setup={setup}
           onSlotClick={onSlotClick}
+          active={activeSlot === slot.id}
           style={{ gridColumn: slot.col, gridRow: slot.row }}
         />
       ))}
