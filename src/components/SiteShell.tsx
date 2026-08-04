@@ -16,7 +16,6 @@ type NavLink = { href: string; label: string; match?: "exact" | "prefix" };
 
 const PRIMARY_LINKS: NavLink[] = [
   { href: "/dashboard", label: "Dashboard", match: "exact" },
-  { href: "/calc/character", label: "Character Lookup" },
   { href: "/roster", label: "Roster", match: "exact" },
   { href: "/guide", label: "Guide", match: "exact" },
   { href: "/calc/scouter", label: "Scouter", match: "exact" },
