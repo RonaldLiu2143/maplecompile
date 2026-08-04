@@ -114,23 +114,11 @@ function SparkBars({
         >
           {labels!.map((label, i) => {
             if (!shouldShowAxisLabel(i, n, step)) return null;
-            const isFirst = i === 0;
-            const isLast = i === n - 1;
             return (
               <span
                 key={i}
-                className={`absolute top-0 font-mono text-[0.6rem] tabular-nums leading-none opacity-50 ${
-                  isFirst
-                    ? "left-0 translate-x-0 text-left"
-                    : isLast
-                      ? "right-0 translate-x-0 text-right"
-                      : "left-0 -translate-x-1/2 text-center"
-                }`}
-                style={
-                  isFirst || isLast
-                    ? undefined
-                    : { left: `${((i + 0.5) / n) * 100}%` }
-                }
+                className="absolute top-0 -translate-x-1/2 text-center font-mono text-[0.6rem] tabular-nums leading-none opacity-50"
+                style={{ left: `${((i + 0.5) / n) * 100}%` }}
               >
                 {label}
               </span>
