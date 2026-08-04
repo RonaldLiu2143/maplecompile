@@ -721,6 +721,7 @@ export function inferNormalFlame(equip: Equip): boolean {
   const normalNameHints = [
     "Gollux",
     "Utgard",
+    "Pensalir",
     "Fensalir",
     "Sweetwater",
     "Greed Pendant",

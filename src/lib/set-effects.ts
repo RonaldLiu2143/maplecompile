@@ -168,9 +168,10 @@ export function calculateSetEffects(
 
 export const SET_DISPLAY_NAMES: Record<string, string> = {
   eternal: "Eternal Set",
-  acs: "Arcaneshade Set",
+  acs: "Arcane Umbra Set",
   abs: "Absolabs Set",
-  faf: "Root Abyss (Fafnir) Set",
+  faf: "Chaos Root Abyss (Fafnir) Set",
+  pensalir: "Pensalir Set",
   bossAcc: "Boss Accessory Set",
   hardBossAcc: "Hard Boss Accessory Set",
   dawnBossAcc: "Dawn Boss Accessory Set",

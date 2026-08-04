@@ -1,6 +1,8 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { NextResponse } from "next/server";
+import { enrichEquipsResponse } from "@/lib/equip-catalog";
+import type { EquipsResponse } from "@/lib/types";
 
 export async function GET(
   _req: Request,
@@ -16,7 +18,8 @@ export async function GET(
   );
   try {
     const raw = await readFile(file, "utf8");
-    return NextResponse.json(JSON.parse(raw));
+    const data = JSON.parse(raw) as EquipsResponse;
+    return NextResponse.json(enrichEquipsResponse(data, jobType));
   } catch {
     return NextResponse.json(
       { error: `No equip data for ${jobType}/${charType}. Run npm run seed.` },

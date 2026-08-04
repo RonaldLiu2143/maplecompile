@@ -5,48 +5,92 @@ export type StarterLoadout = {
   id: string;
   name: string;
   description: string;
-  /** Prefer setType/name containing any of these (case-insensitive), first match wins. */
+  /**
+   * Prefer setType / name containing any of these (case-insensitive).
+   * First matcher wins; use catalog setType keys when possible.
+   */
   armorMatchers: string[];
+  /** Weapons / secondaries (defaults to armorMatchers when omitted). */
+  weaponMatchers?: string[];
   /** Rings / pendants / face / eye / etc. */
   accessoryMatchers: string[];
 };
 
-/** Heroic progression ladders — resolved against the loaded class catalog. */
+/**
+ * Heroic progression ladders — resolved against the loaded class catalog.
+ *
+ * Catalog setTypes / GMS name cues:
+ * - pensalir — Pensalir (8th) armor (injected; overalls live in `top`)
+ * - faf — CRA: Highness / Eagle Eye / Trickster armor + Fafnir weapons
+ * - abs — Absolabs
+ * - acs — Arcane Umbra (catalog may say Arcaneshade; renamed on load)
+ * - eternal — Eternal
+ */
 export const STARTER_LOADOUTS: StarterLoadout[] = [
   {
     id: "heroic-early",
-    name: "Early (RA / Pensalir)",
-    description: "Root Abyss / Pensalir-style gear for early Heroic.",
-    armorMatchers: ["pensalir", "root abyss", "ra ", "cra"],
-    accessoryMatchers: ["boss", "dawn", "sweetwater", "meister", "superior"],
+    name: "Early (Pensalir / CRA)",
+    description:
+      "Pensalir armor with a Fafnir (CRA) weapon when available — early Heroic.",
+    armorMatchers: ["pensalir"],
+    weaponMatchers: ["faf", "fafnir"],
+    accessoryMatchers: [
+      "superiorGollux",
+      "dawnBossAcc",
+      "bossAcc",
+      "meister",
+      "sweetwater",
+    ],
   },
   {
     id: "heroic-cra",
     name: "Mid (CRA)",
-    description: "Chaos Root Abyss set pieces when available for your class.",
-    armorMatchers: ["cra", "chaos root", "root abyss"],
-    accessoryMatchers: ["dawn", "boss", "sweetwater", "superior", "meister"],
+    description:
+      "Chaos Root Abyss pieces (Highness / Eagle Eye / Trickster / Fafnir).",
+    armorMatchers: ["faf", "fafnir", "highness", "eagle eye", "trickster"],
+    accessoryMatchers: [
+      "dawnBossAcc",
+      "superiorGollux",
+      "bossAcc",
+      "meister",
+      "sweetwater",
+    ],
   },
   {
     id: "heroic-absolab",
-    name: "Mid-late (Absolab)",
-    description: "Absolute Labs armor / weapon ladder.",
-    armorMatchers: ["absolab", "absolute"],
-    accessoryMatchers: ["dawn", "boss", "pitched", "superior"],
+    name: "Mid-late (Absolabs)",
+    description: "Absolabs armor / weapon ladder.",
+    armorMatchers: ["abs", "absolabs", "absolab"],
+    accessoryMatchers: [
+      "dawnBossAcc",
+      "bossAcc",
+      "radiantBossAcc",
+      "superiorGollux",
+    ],
   },
   {
     id: "heroic-arcane",
     name: "Late (Arcane Umbra)",
     description: "Arcane Umbra set for late Heroic progression.",
-    armorMatchers: ["arcane umbra", "arcane"],
-    accessoryMatchers: ["dawn", "pitched", "boss", "eternal"],
+    armorMatchers: ["acs", "arcane umbra", "arcaneshade", "arcane"],
+    accessoryMatchers: [
+      "dawnBossAcc",
+      "radiantBossAcc",
+      "bossAcc",
+      "eternal",
+    ],
   },
   {
     id: "heroic-eternal",
     name: "End (Eternal)",
     description: "Eternal set pieces when available.",
     armorMatchers: ["eternal"],
-    accessoryMatchers: ["pitched", "eternal", "dawn", "boss"],
+    accessoryMatchers: [
+      "radiantBossAcc",
+      "dawnBossAcc",
+      "eternal",
+      "bossAcc",
+    ],
   },
 ];
 
@@ -75,9 +119,9 @@ const EQUIP_TYPES = [
   "pendant",
 ] as const;
 
+const WEAPONISH = new Set(["weapon"]);
+
 const ARMORISH = new Set([
-  "weapon",
-  "secondary",
   "hat",
   "top",
   "bottom",
@@ -90,8 +134,17 @@ const ARMORISH = new Set([
 ]);
 
 function matchesAny(equip: Equip, matchers: string[]): boolean {
-  const hay = `${equip.setType ?? ""} ${equip.name ?? ""}`.toLowerCase();
-  return matchers.some((m) => hay.includes(m.toLowerCase()));
+  const set = (equip.setType ?? "").toLowerCase();
+  const name = (equip.name ?? "").toLowerCase();
+  const id = (equip.id ?? "").toLowerCase();
+  return matchers.some((m) => {
+    const needle = m.toLowerCase();
+    // Exact setType only — avoids bossAcc matching hardBossAcc / dawnBossAcc.
+    if (set === needle) return true;
+    if (id === needle || id.startsWith(`${needle}-`)) return true;
+    if (name.includes(needle)) return true;
+    return false;
+  });
 }
 
 function pickEquips(
@@ -99,7 +152,7 @@ function pickEquips(
   matchers: string[],
   capacity: number,
 ): Equip[] {
-  if (!bucket?.length || capacity <= 0) return [];
+  if (!bucket?.length || capacity <= 0 || !matchers.length) return [];
   const picked: Equip[] = [];
   const used = new Set<string>();
   for (const matcher of matchers) {
@@ -115,6 +168,17 @@ function pickEquips(
   return picked;
 }
 
+function matchersForType(
+  type: string,
+  loadout: StarterLoadout,
+): string[] {
+  if (WEAPONISH.has(type)) {
+    return loadout.weaponMatchers ?? loadout.armorMatchers;
+  }
+  if (ARMORISH.has(type)) return loadout.armorMatchers;
+  return loadout.accessoryMatchers;
+}
+
 /**
  * Build an EquipSetup from the current class catalog using starter matchers.
  * Missing slots stay empty when the catalog has no match.
@@ -128,9 +192,7 @@ export function buildStarterSetup(
     const bucket = equipByType[type]?.equips;
     if (!bucket?.length) continue;
     const capacity = SLOT_CAPACITY[type] ?? 1;
-    const matchers = ARMORISH.has(type)
-      ? loadout.armorMatchers
-      : loadout.accessoryMatchers;
+    const matchers = matchersForType(type, loadout);
     const picked = pickEquips(bucket, matchers, capacity);
     if (picked.length) setup[type] = picked;
   }
