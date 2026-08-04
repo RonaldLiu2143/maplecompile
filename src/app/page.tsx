@@ -59,6 +59,12 @@ export default function Home() {
             Public Gallery
           </Link>
           <Link
+            href="/calc/character"
+            className="rounded-lg border-2 border-border bg-surface px-5 py-2.5 font-semibold transition hover:bg-surface-muted"
+          >
+            Character Lookup
+          </Link>
+          <Link
             href="/calc/bosses"
             className="rounded-lg border-2 border-border bg-surface px-5 py-2.5 font-semibold transition hover:bg-surface-muted"
           >
@@ -100,6 +106,13 @@ export default function Home() {
           <p className="mt-2 text-sm opacity-80">
             Browse shared scouter loadouts and open a character snapshot by
             link.
+          </p>
+        </div>
+        <div className="rounded-xl border border-border/50 bg-surface/80 p-5">
+          <h2 className="font-display text-lg font-semibold">Character Lookup</h2>
+          <p className="mt-2 text-sm opacity-80">
+            Look up a GMS character by name via Nexon’s public rankings — world,
+            job, level, and avatar.
           </p>
         </div>
         <div className="rounded-xl border border-border/50 bg-surface/80 p-5">
