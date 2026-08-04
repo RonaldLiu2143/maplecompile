@@ -189,6 +189,7 @@ export default function ScouterPage() {
   const [loadedPresetId, setLoadedPresetId] = useState("");
   const [presetName, setPresetName] = useState("");
   const [shareUrl, setShareUrl] = useState<string | null>(null);
+  const [shareAchievement, setShareAchievement] = useState("");
   const [sharing, setSharing] = useState(false);
   const [draftReady, setDraftReady] = useState(false);
   const [showHexaEff, setShowHexaEff] = useState(false);
@@ -551,6 +552,7 @@ export default function ScouterPage() {
         body: JSON.stringify({
           name: shareName,
           public: asPublic,
+          achievement: asPublic ? shareAchievement : undefined,
           state: {
             input: structuredClone(input),
             buffs: structuredClone(buffs),
@@ -762,6 +764,16 @@ export default function ScouterPage() {
                 aria-hidden
               />
 
+              <input
+                type="text"
+                placeholder="Achievement / note (gallery)"
+                value={shareAchievement}
+                onChange={(e) => setShareAchievement(e.target.value)}
+                maxLength={120}
+                className="min-w-[10rem] flex-1 rounded border border-border/50 bg-background px-2.5 py-1.5 text-xs outline-none focus:border-accent sm:max-w-xs"
+                aria-label="Gallery achievement or explanation"
+                title="Shown in the public gallery (optional, max 120 chars)"
+              />
               <button
                 type="button"
                 onClick={() => void shareLoadout(false)}

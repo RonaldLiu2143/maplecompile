@@ -52,6 +52,7 @@ export async function POST(req: Request) {
       name?: string;
       state?: ScouterShareState;
       public?: boolean;
+      achievement?: string;
     };
 
     if (!body?.state?.input) {
@@ -70,6 +71,7 @@ export async function POST(req: Request) {
       name: body.name ?? "Untitled",
       state: body.state,
       public: body.public === true,
+      achievement: body.achievement,
     });
 
     const origin = new URL(req.url).origin;

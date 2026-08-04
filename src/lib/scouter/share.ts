@@ -28,8 +28,17 @@ export type ScouterShareRecord = {
   name: string;
   createdAt: number;
   public: boolean;
+  /** Short gallery blurb (achievement / explanation). */
+  achievement?: string;
   state: ScouterShareState;
 };
+
+/** Max length for public gallery achievement text. */
+export const SHARE_ACHIEVEMENT_MAX = 120;
+
+export function normalizeAchievement(raw: string | undefined): string {
+  return (raw ?? "").trim().replace(/\s+/g, " ").slice(0, SHARE_ACHIEVEMENT_MAX);
+}
 
 export function isRedisConfigured(): boolean {
   return Boolean(
@@ -96,6 +105,7 @@ export async function createShare(args: {
   name: string;
   state: ScouterShareState;
   public?: boolean;
+  achievement?: string;
 }): Promise<CreateShareResult> {
   if (!args?.state?.input) {
     throw new Error("Missing state.input");
@@ -104,8 +114,9 @@ export async function createShare(args: {
   const name = (args.name ?? "").trim() || "Untitled";
   // Opt-in: only listed in the public set when explicitly true.
   const isPublic = args.public === true;
+  const achievement = normalizeAchievement(args.achievement);
   const state = normalizeShareState(args.state);
-  const recordDraft = { name, public: isPublic, state };
+  const recordDraft = { name, public: isPublic, achievement, state };
   const bytes = estimateJsonBytes(recordDraft);
   if (bytes > SHARE_MAX_BYTES) {
     throw new Error(
@@ -143,6 +154,7 @@ export async function createShare(args: {
     name,
     createdAt: Date.now(),
     public: isPublic,
+    ...(achievement ? { achievement } : {}),
     state,
   };
   const deleteToken = newShareId(24);
@@ -190,8 +202,7 @@ export type ScouterGalleryItem = {
   level: number;
   jobType: string;
   charType: string;
-  reboot: boolean;
-  liberation: boolean;
+  achievement: string;
 };
 
 /** Cap gallery responses so unbounded public sets stay usable. */
@@ -229,8 +240,7 @@ export async function listPublicShares(): Promise<ScouterGalleryItem[]> {
       level: Number(input.level) || 0,
       jobType: String(input.jobType || ""),
       charType: String(input.charType || ""),
-      reboot: !!input.reboot,
-      liberation: !!input.liberation,
+      achievement: normalizeAchievement(raw.achievement),
     });
   }
 

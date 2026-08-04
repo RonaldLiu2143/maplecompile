@@ -41,7 +41,8 @@ export function GalleryClient({
         item.name.toLowerCase().includes(q) ||
         className.includes(q) ||
         item.id.toLowerCase().includes(q) ||
-        String(item.level).includes(q)
+        String(item.level).includes(q) ||
+        item.achievement.toLowerCase().includes(q)
       );
     });
   }, [items, query]);
@@ -106,7 +107,7 @@ export function GalleryClient({
           type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search name, class, level…"
+          placeholder="Search name, class, achievement…"
           className="min-w-[14rem] flex-1 rounded border border-border/50 bg-background px-3 py-2 text-sm outline-none focus:border-accent"
           aria-label="Search gallery"
         />
@@ -143,7 +144,7 @@ export function GalleryClient({
                 <th className="px-3 py-2.5 font-semibold">Name</th>
                 <th className="px-3 py-2.5 font-semibold">Class</th>
                 <th className="px-3 py-2.5 font-semibold">Level</th>
-                <th className="px-3 py-2.5 font-semibold">Flags</th>
+                <th className="px-3 py-2.5 font-semibold">Achievement</th>
                 <th className="px-3 py-2.5 font-semibold">Shared</th>
                 <th className="px-3 py-2.5 font-semibold">
                   <span className="sr-only">Actions</span>
@@ -153,12 +154,6 @@ export function GalleryClient({
             <tbody>
               {filtered.map((item) => {
                 const className = getCharName(item.jobType, item.charType);
-                const flags = [
-                  item.reboot ? "Reboot" : null,
-                  item.liberation ? "Liberation" : null,
-                ]
-                  .filter(Boolean)
-                  .join(" · ");
                 const canRemove = Boolean(owned[item.id]?.deleteToken);
                 return (
                   <tr
@@ -170,8 +165,10 @@ export function GalleryClient({
                     <td className="px-3 py-2.5 tabular-nums">
                       {item.level || "—"}
                     </td>
-                    <td className="px-3 py-2.5 text-xs opacity-70">
-                      {flags || "—"}
+                    <td className="max-w-[18rem] px-3 py-2.5 text-xs leading-snug opacity-80">
+                      {item.achievement || (
+                        <span className="opacity-50">—</span>
+                      )}
                     </td>
                     <td className="px-3 py-2.5 text-xs opacity-70">
                       {formatSharedAt(item.createdAt)}
