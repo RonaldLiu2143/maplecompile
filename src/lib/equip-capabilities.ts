@@ -98,13 +98,22 @@ function specialStarForceCap(equip: Equip): number | null {
   // Secondary / badge exceptions (badge slot is already non-SF here)
   if (/ghost\s*ship\s*exorcist/i.test(name)) return 22;
 
+  // Genesis / Destiny weapons lock at 22★ (non-weapon Genesis items e.g.
+  // Genesis Badge are excluded via equipType — badge already cannot SF).
+  if (
+    equip.equipType === "weapon" &&
+    /^(Genesis|Destiny)\s/i.test(name.trim())
+  ) {
+    return 22;
+  }
+
   return null;
 }
 
 /**
  * Per-item Star Force cap. Returns 0 when the item cannot take Star Force.
  * Source: MapleStory Wiki Star Force Enhancement (GMS-aligned level bands +
- * Superior / Sweetwater / Ghost Ship exceptions).
+ * Superior / Sweetwater / Ghost Ship / Genesis·Destiny weapon exceptions).
  */
 export function getStarForceCap(equip: Equip): number {
   if (!canStarForce(equip)) return 0;
