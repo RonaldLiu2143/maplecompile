@@ -1,8 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { CharacterSearchBar } from "@/components/dashboard/CharacterSearchBar";
 import { RosterGrid } from "@/components/dashboard/RosterGrid";
+import { RosterReorderList } from "@/components/dashboard/RosterReorderList";
 import { useRoster } from "@/hooks/useRoster";
 
 export default function RosterPage() {
@@ -13,6 +15,8 @@ export default function RosterPage() {
     slots,
     handleRemove,
     handleSetPrimary,
+    handleMoveUp,
+    handleMoveDown,
     handleRetry,
     handleRosterAdded,
     makeDragProps,
@@ -28,17 +32,26 @@ export default function RosterPage() {
 
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-8 py-4">
-      <header className="max-w-2xl">
-        <p className="text-sm font-semibold uppercase tracking-wider text-accent opacity-80">
-          MapleCompile
-        </p>
-        <h1 className="font-display mt-1 text-3xl font-bold tracking-tight sm:text-4xl">
-          Roster
-        </h1>
-        <p className="mt-2 text-sm opacity-80">
-          Manage your characters — reorder, set primary, add or remove. Cards
-          show level, 7d/14d EXP, class rank in world, and legion.
-        </p>
+      <header className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0 max-w-2xl">
+          <p className="text-sm font-semibold uppercase tracking-wider text-accent opacity-80">
+            MapleCompile
+          </p>
+          <h1 className="font-display mt-1 text-3xl font-bold tracking-tight sm:text-4xl">
+            Roster
+          </h1>
+          <p className="mt-2 text-sm opacity-80">
+            Manage your characters — reorder, set primary, add or remove.
+          </p>
+        </div>
+        <Link
+          href="/dashboard"
+          className="shrink-0 rounded-lg border border-border px-3 py-2 text-sm font-semibold transition hover:bg-surface-muted"
+          aria-label="Back to dashboard"
+          title="Close"
+        >
+          ✕
+        </Link>
       </header>
 
       {hydrated ? (
@@ -54,16 +67,21 @@ export default function RosterPage() {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="min-w-0 space-y-1">
               <h2 className="font-display text-lg font-bold tracking-tight">
-                Characters ({roster.length})
+                {managing ? "Reorder Characters" : "Characters"}
+                {roster.length > 0 ? (
+                  <span className="ml-2 text-sm font-semibold opacity-55">
+                    ({roster.length})
+                  </span>
+                ) : null}
               </h2>
               {managing ? (
-                <p className="text-sm opacity-75">
-                  Drag cards to reorder, set primary, or remove. Primary stays
-                  independent of list order.
+                <p className="text-sm opacity-60">
+                  Use the up/down buttons to change the order of characters. Tap
+                  the star to set primary.
                 </p>
               ) : roster.length > 0 ? (
                 <p className="text-xs opacity-55">
-                  Tip: open Manage to set primary, drag to reorder, or remove.
+                  Tip: open Manage to reorder, set primary, or remove.
                 </p>
               ) : null}
             </div>
@@ -77,20 +95,35 @@ export default function RosterPage() {
                   : "bg-accent text-white hover:opacity-90 dark:text-zinc-900",
               ].join(" ")}
             >
-              {managing ? "Done managing" : "Manage roster"}
+              {managing ? "Done" : "Manage roster"}
             </button>
           </div>
 
-          <RosterGrid
-            roster={roster}
-            primary={primary}
-            slots={slots}
-            managing={managing}
-            makeDragProps={(index) => makeDragProps(index, managing)}
-            onRemove={handleRemove}
-            onSetPrimary={handleSetPrimary}
-            onRetry={handleRetry}
-          />
+          {managing ? (
+            <RosterReorderList
+              roster={roster}
+              primary={primary}
+              slots={slots}
+              reorderable
+              managing
+              onMoveUp={handleMoveUp}
+              onMoveDown={handleMoveDown}
+              onSetPrimary={handleSetPrimary}
+              onRemove={handleRemove}
+              onRetry={handleRetry}
+            />
+          ) : (
+            <RosterGrid
+              roster={roster}
+              primary={primary}
+              slots={slots}
+              managing={false}
+              makeDragProps={(index) => makeDragProps(index, false)}
+              onRemove={handleRemove}
+              onSetPrimary={handleSetPrimary}
+              onRetry={handleRetry}
+            />
+          )}
         </section>
       ) : null}
     </div>
