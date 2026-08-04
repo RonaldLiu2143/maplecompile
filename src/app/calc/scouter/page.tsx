@@ -39,6 +39,7 @@ import {
 } from "@/lib/jobs";
 import { storage, type ScouterPreset } from "@/lib/storage";
 import { HexaEfficiencyPanel } from "./hexa-efficiency";
+import { ShareGalleryModal } from "./share-gallery-modal";
 
 const cell =
   "border border-border/50 bg-background px-2 py-1.5 text-sm outline-none focus:relative focus:z-10 focus:border-accent";
@@ -190,6 +191,7 @@ export default function ScouterPage() {
   const [presetName, setPresetName] = useState("");
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [shareAchievement, setShareAchievement] = useState("");
+  const [galleryModalOpen, setGalleryModalOpen] = useState(false);
   const [sharing, setSharing] = useState(false);
   const [draftReady, setDraftReady] = useState(false);
   const [showHexaEff, setShowHexaEff] = useState(false);
@@ -526,33 +528,35 @@ export default function ScouterPage() {
     }
   };
 
-  const shareLoadout = async (asPublic: boolean) => {
+  const shareLoadout = async (args: {
+    asPublic: boolean;
+    name?: string;
+    achievement?: string;
+  }) => {
     if (sharing) return;
     const name =
-      presetName.trim() ||
+      (args.name ?? presetName).trim() ||
       presets.find((p) => p.id === selectedPresetId)?.name ||
       "";
-    if (asPublic) {
+    if (args.asPublic) {
       if (!name.trim() || name.trim().toLowerCase() === "untitled") {
         flashPresetMsg("Enter a unique name before sharing to the gallery");
         return;
       }
-      const ok = window.confirm(
-        `Share “${name.trim()}” to the public gallery?\n\nAnyone can browse and open it. Gallery names must be unique.`,
-      );
-      if (!ok) return;
     }
     setSharing(true);
     setShareUrl(null);
     try {
       const shareName = name.trim() || "Untitled";
+      const achievement =
+        args.achievement ?? shareAchievement;
       const res = await fetch("/api/scouter/share", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: shareName,
-          public: asPublic,
-          achievement: asPublic ? shareAchievement : undefined,
+          public: args.asPublic,
+          achievement: args.asPublic ? achievement : undefined,
           state: {
             input: structuredClone(input),
             buffs: structuredClone(buffs),
@@ -580,6 +584,11 @@ export default function ScouterPage() {
         });
       }
       setShareUrl(data.url);
+      if (args.asPublic) {
+        setPresetName(shareName);
+        setShareAchievement(achievement.trim());
+        setGalleryModalOpen(false);
+      }
       const visibility = data.public ? "Public" : "Link-only";
       try {
         await navigator.clipboard.writeText(data.url);
@@ -598,6 +607,18 @@ export default function ScouterPage() {
     } finally {
       setSharing(false);
     }
+  };
+
+  const openGalleryShareModal = () => {
+    const name =
+      presetName.trim() ||
+      presets.find((p) => p.id === selectedPresetId)?.name ||
+      "";
+    if (!name.trim() || name.trim().toLowerCase() === "untitled") {
+      flashPresetMsg("Enter a unique preset name before sharing to the gallery");
+      return;
+    }
+    setGalleryModalOpen(true);
   };
 
   const copyShareUrl = async () => {
@@ -764,31 +785,21 @@ export default function ScouterPage() {
                 aria-hidden
               />
 
-              <input
-                type="text"
-                placeholder="Achievement / note (gallery)"
-                value={shareAchievement}
-                onChange={(e) => setShareAchievement(e.target.value)}
-                maxLength={120}
-                className="min-w-[10rem] flex-1 rounded border border-border/50 bg-background px-2.5 py-1.5 text-xs outline-none focus:border-accent sm:max-w-xs"
-                aria-label="Gallery achievement or explanation"
-                title="Shown in the public gallery (optional, max 120 chars)"
-              />
               <button
                 type="button"
-                onClick={() => void shareLoadout(false)}
+                onClick={() => void shareLoadout({ asPublic: false })}
                 disabled={sharing}
                 className="rounded border border-border/50 bg-background px-2.5 py-1.5 text-xs font-semibold transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
                 title="Create a private link anyone can open if they have it"
               >
-                {sharing ? "Sharing…" : "Share link"}
+                {sharing && !galleryModalOpen ? "Sharing…" : "Share link"}
               </button>
               <button
                 type="button"
-                onClick={() => void shareLoadout(true)}
+                onClick={openGalleryShareModal}
                 disabled={sharing}
                 className="rounded border border-border/50 bg-background px-2.5 py-1.5 text-xs font-semibold transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
-                title="Post to the public gallery (asks for confirmation; name must be unique)"
+                title="Review and post to the public gallery"
               >
                 Share to gallery
               </button>
@@ -1468,6 +1479,35 @@ export default function ScouterPage() {
         </a>
         . Buff / link / HEXA icons load from their CDN for visual parity.
       </p>
+
+      <ShareGalleryModal
+        open={galleryModalOpen}
+        onClose={() => {
+          if (!sharing) setGalleryModalOpen(false);
+        }}
+        onConfirm={({ name, achievement }) => {
+          void shareLoadout({
+            asPublic: true,
+            name,
+            achievement,
+          });
+        }}
+        submitting={sharing}
+        initialName={
+          presetName.trim() ||
+          presets.find((p) => p.id === selectedPresetId)?.name ||
+          ""
+        }
+        initialAchievement={shareAchievement}
+        level={input.level}
+        jobType={input.jobType}
+        charType={input.charType}
+        hexa={hexa}
+        hexaSlots={hexaSlots}
+        input={input}
+        buffs={buffs}
+        links={links}
+      />
     </div>
   );
 }
