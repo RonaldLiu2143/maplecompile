@@ -81,7 +81,8 @@ export async function createShare(args: {
   }
 
   const name = (args.name ?? "").trim() || "Untitled";
-  const isPublic = args.public !== false;
+  // Opt-in: only listed in the public set when explicitly true.
+  const isPublic = args.public === true;
   const state = normalizeShareState(args.state);
   const recordDraft = { name, public: isPublic, state };
   const bytes = estimateJsonBytes(recordDraft);

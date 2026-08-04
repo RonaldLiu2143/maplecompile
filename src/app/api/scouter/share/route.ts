@@ -39,13 +39,17 @@ export async function POST(req: Request) {
     const record = await createShare({
       name: body.name ?? "Untitled",
       state: body.state,
-      public: body.public !== false,
+      public: body.public === true,
     });
 
     const origin = new URL(req.url).origin;
     const url = `${origin}/calc/scouter/s/${record.id}`;
 
-    return NextResponse.json({ id: record.id, url });
+    return NextResponse.json({
+      id: record.id,
+      url,
+      public: record.public,
+    });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
     const status = message.includes("too large") ? 413 : 500;

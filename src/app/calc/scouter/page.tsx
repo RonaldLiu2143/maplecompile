@@ -188,6 +188,7 @@ export default function ScouterPage() {
   const [loadedPresetId, setLoadedPresetId] = useState("");
   const [presetName, setPresetName] = useState("");
   const [shareUrl, setShareUrl] = useState<string | null>(null);
+  const [sharePublic, setSharePublic] = useState(false);
   const [sharing, setSharing] = useState(false);
   const [draftReady, setDraftReady] = useState(false);
   const [showHexaEff, setShowHexaEff] = useState(false);
@@ -550,7 +551,7 @@ export default function ScouterPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name,
-          public: true,
+          public: sharePublic,
           state: {
             input: structuredClone(input),
             buffs: structuredClone(buffs),
@@ -559,16 +560,22 @@ export default function ScouterPage() {
           },
         }),
       });
-      const data = (await res.json()) as { id?: string; url?: string; error?: string };
+      const data = (await res.json()) as {
+        id?: string;
+        url?: string;
+        public?: boolean;
+        error?: string;
+      };
       if (!res.ok || !data.url) {
         throw new Error(data.error || `Share failed (${res.status})`);
       }
       setShareUrl(data.url);
+      const visibility = data.public ? "Public" : "Link-only";
       try {
         await navigator.clipboard.writeText(data.url);
-        flashPresetMsg("Share link copied");
+        flashPresetMsg(`${visibility} link copied`);
       } catch {
-        flashPresetMsg("Share link ready");
+        flashPresetMsg(`${visibility} link ready`);
       }
     } catch (err) {
       flashPresetMsg(
@@ -717,6 +724,18 @@ export default function ScouterPage() {
               >
                 Delete
               </button>
+              <label
+                className="inline-flex cursor-pointer items-center gap-1 rounded border border-border/50 bg-background px-2 py-1 text-xs font-semibold"
+                title="List this share in the public gallery (anyone with the link can still open private shares)"
+              >
+                <input
+                  type="checkbox"
+                  className="accent-[var(--accent)]"
+                  checked={sharePublic}
+                  onChange={(e) => setSharePublic(e.target.checked)}
+                />
+                Public
+              </label>
               <button
                 type="button"
                 onClick={() => void shareLoadout()}
