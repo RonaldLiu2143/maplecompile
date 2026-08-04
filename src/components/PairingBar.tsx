@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
+import { useMapleDataReload } from "@/hooks/useMapleDataReload";
 import {
   clearPairing,
   formatPairingLabel,
@@ -29,13 +30,11 @@ export function PairingBar({ pairArgs, onChange, compact }: Props) {
   const refresh = useCallback(() => {
     const next = getPairing();
     setPairingState(next);
+    setReady(true);
     return next;
   }, []);
 
-  useEffect(() => {
-    refresh();
-    setReady(true);
-  }, [refresh]);
+  useMapleDataReload(refresh);
 
   const flash = (text: string) => {
     setMsg(text);

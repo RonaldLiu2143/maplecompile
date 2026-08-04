@@ -1,11 +1,12 @@
 import { getCharName } from "./jobs";
+import { notifyMapleDataChanged } from "./maple-events";
 import { storage, type ScouterLastState } from "./storage";
 import { countFilledSlots } from "./starter-loadouts";
 import type { EquipSetup } from "./types";
 import type { ScouterInput } from "./scouter/types";
 import { defaultScouterInput } from "./scouter/types";
 
-const PAIRING_KEY = "maplecompile-scouter-equip-pair";
+export const PAIRING_KEY = "maplecompile-scouter-equip-pair";
 const GUIDE_DISMISSED_KEY = "maplecompile-guide-dismissed";
 
 export type PairedScouterRef =
@@ -50,11 +51,13 @@ export function getPairing(): ScouterEquipPairing | null {
 
 export function setPairing(pairing: ScouterEquipPairing) {
   writeJson(PAIRING_KEY, pairing);
+  notifyMapleDataChanged("pairing");
 }
 
 export function clearPairing() {
   if (typeof window === "undefined") return;
   localStorage.removeItem(PAIRING_KEY);
+  notifyMapleDataChanged("pairing");
 }
 
 export function isGuideDismissed(): boolean {
@@ -180,8 +183,19 @@ export function resolvePairing(): ResolvedPair | null {
   const charType =
     storage.getCharType() || pairing.equip.charType || "adele";
 
+  // Prefer live scouter-last (autosaved while editing). Preset is label + fallback
+  // only — otherwise Planner stays frozen on the preset snapshot after Pair.
   let scouterInput: ScouterInput | null = null;
-  if (pairing.scouter.kind === "preset") {
+  const last = storage.getScouterLast();
+  if (last?.input) {
+    scouterInput = {
+      ...defaultScouterInput(
+        last.input.jobType || jobType,
+        last.input.charType || charType,
+      ),
+      ...last.input,
+    };
+  } else if (pairing.scouter.kind === "preset") {
     const preset = storage.getScouterPreset(pairing.scouter.presetId);
     if (preset?.input) {
       scouterInput = {
@@ -190,18 +204,6 @@ export function resolvePairing(): ResolvedPair | null {
           preset.input.charType || charType,
         ),
         ...preset.input,
-      };
-    }
-  }
-  if (!scouterInput) {
-    const last = storage.getScouterLast();
-    if (last?.input) {
-      scouterInput = {
-        ...defaultScouterInput(
-          last.input.jobType || jobType,
-          last.input.charType || charType,
-        ),
-        ...last.input,
       };
     }
   }
