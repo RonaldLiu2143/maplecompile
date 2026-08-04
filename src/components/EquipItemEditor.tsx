@@ -50,7 +50,7 @@ export function EquipItemEditor({
     equip.potentialTier ?? defaultPotentialTier(equip.level);
   const lines = flames;
   const potLines = normalizePotentialLines(equip.potentialLines);
-  const potOptions = potentialLineOptions(equip, potLines);
+  const potOptions = potentialLineOptions(equip, potLines, potentialTier);
 
   const selectable = useMemo(() => {
     if (!caps.flames) return [];
@@ -312,8 +312,9 @@ export function EquipItemEditor({
               ))}
             </div>
             <p className="text-[10px] leading-snug text-zinc-500">
-              Lines filtered by equip type (cube tables). Invalid saved lines
-              stay selectable. Full rates: Cube Calculator.
+              Lines from GMS cube pools for this slot and tier
+              (level-adjusted). Invalid saved lines stay as (saved). Full
+              rates: Cube Calculator.
             </p>
           </section>
         )}

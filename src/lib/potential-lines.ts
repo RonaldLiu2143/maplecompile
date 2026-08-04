@@ -1,3 +1,5 @@
+import potentialCatalog from "./cubing/potentialCatalog.json";
+import { equipTypeToCubeCategory } from "./cubing/itemCategory";
 import type { Equip, PotentialLine } from "./types";
 
 export const POTENTIAL_TIER_LABELS = [
@@ -7,6 +9,8 @@ export const POTENTIAL_TIER_LABELS = [
   "Legendary",
 ] as const;
 
+const TIER_KEYS = ["rare", "epic", "unique", "legendary"] as const;
+
 export type PotentialLineOption = {
   id: string;
   value: number;
@@ -15,126 +19,136 @@ export type PotentialLineOption = {
 
 const EMPTY: PotentialLineOption = { id: "", value: 0, label: "— empty —" };
 
-/** Equip types that use accessory (ring) cube tables — meso/drop lines. */
-const ACCESSORY_TYPES = new Set([
-  "ring",
-  "pendant",
-  "face",
-  "eye",
-  "earring",
+/**
+ * Heroic-relevant line families for Equip Setup dropdowns.
+ * Catalog is derived from `cubeRates.json` via
+ * `scripts/generate-potential-catalog.mjs` (junk / flats / decent skills /
+ * auto-steal / invincibility omitted — not tracked in setup).
+ */
+const LINE_ORDER: string[] = [
+  "attPercent",
+  "mattPercent",
+  "bossPercent",
+  "iedPercent",
+  "damagePercent",
+  "critDamage",
+  "critChance",
+  "skillCooldown",
+  "mesoPercent",
+  "dropPercent",
+  "mainStatPercent",
+  "allStatPercent",
+  "hpPercent",
+];
+
+/**
+ * % families that gain +1 at item level ≥ 160.
+ * Matches cubing `convertCubeDataForLevel`, plus `damagePercent` (GMS scales
+ * Damage% like ATT%; the calculator adjust set currently omits it).
+ */
+const LEVEL_PLUS_ONE = new Set([
+  "attPercent",
+  "mattPercent",
+  "damagePercent",
+  "mainStatPercent",
+  "allStatPercent",
+  "hpPercent",
 ]);
 
-function pct(id: string, values: number[], noun: string): PotentialLineOption[] {
-  return values.map((value) => ({
-    id,
-    value,
-    label: `${value}% ${noun}`,
-  }));
-}
+type CatalogEntry = { id: string; values: number[] };
+type CatalogRoot = Record<
+  string,
+  Partial<Record<(typeof TIER_KEYS)[number], CatalogEntry[]>>
+>;
 
-function cooldown(values: number[]): PotentialLineOption[] {
-  return values.map((value) => ({
-    id: "skillCooldown",
-    value,
-    label: `-${value}s Skill Cooldown`,
-  }));
-}
+const CATALOG = potentialCatalog as CatalogRoot;
+
+const NOUNS: Record<string, string> = {
+  attPercent: "ATT",
+  mattPercent: "MATT",
+  bossPercent: "Boss Damage",
+  iedPercent: "IED",
+  damagePercent: "Damage",
+  mainStatPercent: "Main Stat",
+  allStatPercent: "All Stats",
+  hpPercent: "Max HP",
+  critDamage: "Critical Damage",
+  mesoPercent: "Mesos Obtained",
+  dropPercent: "Item Drop",
+  critChance: "Critical Chance",
+};
 
 export function formatPotentialLineLabel(line: PotentialLine): string {
   if (line.id === "skillCooldown") return `Skill Cooldowns -${line.value} sec`;
-  const nouns: Record<string, string> = {
-    attPercent: "ATT",
-    mattPercent: "MATT",
-    bossPercent: "Boss Damage",
-    iedPercent: "IED",
-    damagePercent: "Damage",
-    mainStatPercent: "Main Stat",
-    allStatPercent: "All Stats",
-    hpPercent: "Max HP",
-    critDamage: "Critical Damage",
-    mesoPercent: "Mesos Obtained",
-    dropPercent: "Item Drop",
-    critChance: "Critical Chance",
-  };
-  const noun = nouns[line.id];
+  const noun = NOUNS[line.id];
   if (noun) return `${line.value}% ${noun}`;
   return `${line.id} ${line.value}`;
 }
 
-function formatLineLabel(line: PotentialLine): string {
-  return formatPotentialLineLabel(line);
+/** Cube-rates / catalog table key for an equip type (accessories → ring). */
+export function cubeTableKeyForEquipType(equipType: string): string | null {
+  const key = equipTypeToCubeCategory(equipType);
+  if (!key || !CATALOG[key]) return null;
+  return key;
+}
+
+function optionLabel(id: string, value: number): string {
+  if (id === "skillCooldown") return `-${value}s Skill Cooldown`;
+  const noun = NOUNS[id] ?? id;
+  return `${value}% ${noun}`;
 }
 
 /**
- * Heroic-relevant main-potential options filtered by equip type/slot.
- * Line pools follow cubing `cubeRates.json` categories (weapon / emblem /
- * gloves / hat / ring-accessory / armor / heart).
+ * Main-potential options for this item's cube category + selected tier.
+ *
+ * Category: {@link equipTypeToCubeCategory} (ring table for accessories).
+ * Tier: Rare…Legendary — only lines that exist on that tier in cube tables.
+ * Level ≥ 160: +1 on ATT/MATT/stat/HP % (matches cubing level adjust).
+ * Saved lines not in the pool stay selectable as "(saved)".
  */
 export function potentialLineOptions(
   equip: Equip,
   selected: (PotentialLine | null | undefined)[] = [],
+  potentialTier: 0 | 1 | 2 | 3 = 3,
 ): PotentialLineOption[] {
-  const type = equip.equipType;
-  const isWeaponOrSecondary = type === "weapon" || type === "secondary";
-  const isEmblem = type === "emblem";
-  const isWse = isWeaponOrSecondary || isEmblem;
-  const isGlove = type === "gloves";
-  const isHat = type === "hat";
-  const isAccessory = ACCESSORY_TYPES.has(type);
+  const category = cubeTableKeyForEquipType(equip.equipType) ?? "top";
+  const tierKey = TIER_KEYS[potentialTier] ?? "legendary";
+  const raw = CATALOG[category]?.[tierKey] ?? [];
+
+  const levelBonus = (equip.level ?? 0) >= 160 ? 1 : 0;
+  const entries = raw
+    .map((entry) => {
+      if (!levelBonus || !LEVEL_PLUS_ONE.has(entry.id)) return entry;
+      return {
+        id: entry.id,
+        values: entry.values.map((v) => v + levelBonus),
+      };
+    })
+    .sort(
+      (a, b) =>
+        (LINE_ORDER.indexOf(a.id) < 0 ? 99 : LINE_ORDER.indexOf(a.id)) -
+        (LINE_ORDER.indexOf(b.id) < 0 ? 99 : LINE_ORDER.indexOf(b.id)),
+    );
 
   const opts: PotentialLineOption[] = [EMPTY];
-
-  if (isWse) {
-    // Weapon / secondary / emblem cube tables
-    opts.push(
-      ...pct("attPercent", [13, 12, 10, 9, 7, 6, 3], "ATT"),
-      ...pct("mattPercent", [13, 12, 10, 9, 7, 6, 3], "MATT"),
-      ...pct("damagePercent", [13, 12, 10, 9, 6, 3], "Damage"),
-      ...pct("iedPercent", [40, 35, 30, 15], "IED"),
-      ...pct("critChance", [12, 9, 8, 4], "Critical Chance"),
-    );
-    // Boss Damage is not obtainable on emblems
-    if (isWeaponOrSecondary) {
-      opts.push(...pct("bossPercent", [40, 35, 30], "Boss Damage"));
+  for (const entry of entries) {
+    for (const value of entry.values) {
+      opts.push({
+        id: entry.id,
+        value,
+        label: optionLabel(entry.id, value),
+      });
     }
-    opts.push(
-      ...pct("mainStatPercent", [13, 12, 10, 9, 7, 6, 3], "Main Stat"),
-      ...pct("allStatPercent", [10, 9, 7, 6, 3], "All Stats"),
-    );
-  } else {
-    // Armor, accessories, heart-like: stat % only (no ATT%/Boss%/IED%)
-    opts.push(
-      ...pct("mainStatPercent", [13, 12, 10, 9, 7, 6, 3], "Main Stat"),
-      ...pct("allStatPercent", [10, 9, 7, 6, 3], "All Stats"),
-      ...pct("hpPercent", [13, 12, 10, 9, 7, 6, 3], "Max HP"),
-    );
   }
 
-  if (isGlove) {
-    opts.push(...pct("critDamage", [8], "Critical Damage"));
-  }
-
-  if (isHat) {
-    opts.push(...cooldown([1, 2]));
-  }
-
-  if (isAccessory) {
-    opts.push(
-      ...pct("mesoPercent", [20], "Mesos Obtained"),
-      ...pct("dropPercent", [20], "Item Drop"),
-    );
-  }
-
-  // Deduplicate by id+value while preserving order
   const seen = new Set<string>();
   const filtered = opts.filter((o) => {
-    const key = `${o.id}:${o.value}`;
+    const key = o.id ? `${o.id}:${o.value}` : "";
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
   });
 
-  // Keep saved/selected lines visible even if no longer in the filtered pool
   for (const line of selected) {
     if (!line?.id) continue;
     const key = `${line.id}:${line.value}`;
@@ -143,14 +157,16 @@ export function potentialLineOptions(
     filtered.push({
       id: line.id,
       value: line.value,
-      label: `${formatLineLabel(line)} (saved)`,
+      label: `${formatPotentialLineLabel(line)} (saved)`,
     });
   }
 
   return filtered;
 }
 
-export function lineOptionKey(line: PotentialLine | PotentialLineOption): string {
+export function lineOptionKey(
+  line: PotentialLine | PotentialLineOption,
+): string {
   if (!line.id) return "";
   return `${line.id}:${line.value}`;
 }
