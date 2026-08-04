@@ -555,6 +555,8 @@ export default function ScouterPage() {
     name?: string;
     achievement?: string;
     identity?: "anonymous" | "ign";
+    boss300HexaStat?: number | null;
+    boss380HexaStat?: number | null;
   }) => {
     if (sharing) return;
     const identity = args.identity ?? "ign";
@@ -583,6 +585,14 @@ export default function ScouterPage() {
           identity: args.asPublic ? identity : undefined,
           public: args.asPublic,
           achievement: args.asPublic ? achievement : undefined,
+          boss300HexaStat:
+            args.asPublic && args.boss300HexaStat != null
+              ? args.boss300HexaStat
+              : undefined,
+          boss380HexaStat:
+            args.asPublic && args.boss380HexaStat != null
+              ? args.boss380HexaStat
+              : undefined,
           state: {
             input: structuredClone(input),
             buffs: structuredClone(buffs),
@@ -1588,12 +1598,20 @@ export default function ScouterPage() {
         onClose={() => {
           if (!sharing) setGalleryModalOpen(false);
         }}
-        onConfirm={({ identity, name, achievement }) => {
+        onConfirm={({
+          identity,
+          name,
+          achievement,
+          boss300HexaStat,
+          boss380HexaStat,
+        }) => {
           void shareLoadout({
             asPublic: true,
             identity,
             name,
             achievement,
+            boss300HexaStat,
+            boss380HexaStat,
           });
         }}
         submitting={sharing}
@@ -1607,7 +1625,6 @@ export default function ScouterPage() {
         jobType={input.jobType}
         charType={input.charType}
         hexa={hexa}
-        hexaSlots={hexaSlots}
         input={input}
         buffs={buffs}
         links={links}

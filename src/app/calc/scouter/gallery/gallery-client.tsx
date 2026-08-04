@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { getCharName } from "@/lib/jobs";
-import { SCOUTER_CDN, getHexaSlots } from "@/lib/scouter";
 import {
   GALLERY_LEADERBOARD_LIMIT,
   type ScouterGalleryItem,
@@ -23,43 +22,39 @@ function formatSharedAt(ts: number): string {
   return new Date(ts).toLocaleDateString();
 }
 
-function GalleryHexa({
-  charType,
-  hexa,
+function formatBcs(n: number | null | undefined): string {
+  if (n == null || !Number.isFinite(n)) return "—";
+  return Math.round(n).toLocaleString();
+}
+
+function GalleryBcsHexa({
+  boss300HexaStat,
+  boss380HexaStat,
 }: {
-  charType: string;
-  hexa: number[];
+  boss300HexaStat: number | null;
+  boss380HexaStat: number | null;
 }) {
-  const slots = useMemo(() => getHexaSlots(charType), [charType]);
   return (
-    <div className="flex flex-wrap gap-1">
-      {slots.map((slot, i) => {
-        if (slot.unavailableInGms) return null;
-        const lv = hexa[i] ?? 0;
-        return (
-          <div
-            key={slot.id}
-            className="flex flex-col items-center gap-0.5 rounded border border-border/40 bg-background/80 px-0.5 py-1"
-            title={`${slot.label}: ${lv}`}
-          >
-            {slot.iconSuffix ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={`${SCOUTER_CDN}${slot.iconSuffix}`}
-                alt=""
-                width={20}
-                height={20}
-                className="size-5 object-contain"
-              />
-            ) : (
-              <span className="size-5 text-[8px] opacity-50">H</span>
-            )}
-            <span className="text-[9px] font-semibold tabular-nums leading-none">
-              {lv}
-            </span>
-          </div>
-        );
-      })}
+    <div
+      className="grid min-w-[7.5rem] grid-cols-2 gap-1.5"
+      title="Boss Converted Stat HEXA · 20 min / KMS"
+    >
+      <div className="rounded border border-border/40 bg-background/80 px-1.5 py-1">
+        <p className="text-[9px] font-semibold uppercase tracking-wide opacity-55">
+          300
+        </p>
+        <p className="text-xs font-semibold tabular-nums text-accent">
+          {formatBcs(boss300HexaStat)}
+        </p>
+      </div>
+      <div className="rounded border border-border/40 bg-background/80 px-1.5 py-1">
+        <p className="text-[9px] font-semibold uppercase tracking-wide opacity-55">
+          380
+        </p>
+        <p className="text-xs font-semibold tabular-nums text-accent">
+          {formatBcs(boss380HexaStat)}
+        </p>
+      </div>
     </div>
   );
 }
@@ -179,7 +174,8 @@ export function GalleryClient({
           </h1>
           <p className="mt-1 max-w-2xl text-sm opacity-75">
             Shared loadouts (anonymous class-code or IGN). Open one to load it
-            into Scouter. Leaderboard ranks by share-page views.
+            into Scouter. Leaderboard ranks by share-page views. BCS HEXA is 20
+            min / KMS.
           </p>
         </div>
         <Link
@@ -270,7 +266,9 @@ export function GalleryClient({
                 <th className="px-3 py-2.5 font-semibold">Class</th>
                 <th className="px-3 py-2.5 font-semibold">Level</th>
                 <th className="px-3 py-2.5 font-semibold">Views</th>
-                <th className="px-3 py-2.5 font-semibold">HEXA</th>
+                <th className="px-3 py-2.5 font-semibold" title="Boss Converted Stat HEXA · 20 min / KMS">
+                  BCS HEXA
+                </th>
                 <th className="px-3 py-2.5 font-semibold">Achievement</th>
                 <th className="px-3 py-2.5 font-semibold">Shared</th>
                 <th className="px-3 py-2.5 font-semibold">
@@ -306,9 +304,9 @@ export function GalleryClient({
                       {(item.views ?? 0).toLocaleString()}
                     </td>
                     <td className="px-3 py-2.5">
-                      <GalleryHexa
-                        charType={item.charType}
-                        hexa={item.hexa ?? []}
+                      <GalleryBcsHexa
+                        boss300HexaStat={item.boss300HexaStat}
+                        boss380HexaStat={item.boss380HexaStat}
                       />
                     </td>
                     <td className="max-w-[14rem] px-3 py-2.5 text-xs leading-snug opacity-80">

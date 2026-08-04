@@ -1,9 +1,7 @@
 import { NextResponse } from "next/server";
-import { toMapleScouterUserStat } from "@/lib/scouter/to-user-stat";
+import { fetchMapleScouterCalcDmg } from "@/lib/scouter/maple-dmg";
 import type { BuffState, LinkState } from "@/lib/scouter/buffs";
 import type { ScouterInput } from "@/lib/scouter/types";
-
-const CALC_DMG_URL = "https://api.maplescouter.com/api/calc/dmg";
 
 export async function POST(req: Request) {
   try {
@@ -19,46 +17,22 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing input" }, { status: 400 });
     }
 
-    const userStat = toMapleScouterUserStat({
-      input: body.input,
-      buffs: body.buffs,
-      links: body.links,
-      hexa: body.hexa,
-      is30min: body.is30min,
-    });
-    const upstream = await fetch(CALC_DMG_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Origin: "https://maplescouter.com",
-        Referer: "https://maplescouter.com/",
-        "User-Agent": "Mozilla/5.0 MapleCompile",
-      },
-      body: JSON.stringify({ userStat }),
-    });
-
-    if (!upstream.ok) {
-      const text = await upstream.text().catch(() => "");
-      return NextResponse.json(
-        {
-          error: `MapleScouter CALC_DMG failed (${upstream.status})`,
-          detail: text.slice(0, 500),
-        },
-        { status: 502 },
-      );
-    }
-
-    const data = (await upstream.json()) as {
-      calculatedData?: Record<string, unknown>;
-      calculatedHuntData?: Record<string, unknown>;
-    };
+    const { calculatedData, calculatedHuntData } =
+      await fetchMapleScouterCalcDmg({
+        input: body.input,
+        buffs: body.buffs,
+        links: body.links,
+        hexa: body.hexa,
+        is30min: body.is30min,
+      });
 
     return NextResponse.json({
-      calculatedData: data.calculatedData ?? null,
-      calculatedHuntData: data.calculatedHuntData ?? null,
+      calculatedData,
+      calculatedHuntData,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
-    return NextResponse.json({ error: message }, { status: 500 });
+    const status = message.includes("CALC_DMG failed") ? 502 : 500;
+    return NextResponse.json({ error: message }, { status });
   }
 }

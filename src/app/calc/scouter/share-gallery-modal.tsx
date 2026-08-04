@@ -3,10 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { getCharName } from "@/lib/jobs";
 import {
-  SCOUTER_CDN,
   clampHexaForGms,
   type BuffState,
-  type HexaSlot,
   type LinkState,
   type ScouterInput,
 } from "@/lib/scouter";
@@ -41,6 +39,8 @@ type Props = {
     identity: ShareIdentity;
     name: string;
     achievement: string;
+    boss300HexaStat: number | null;
+    boss380HexaStat: number | null;
   }) => void;
   submitting: boolean;
   initialName: string;
@@ -49,7 +49,6 @@ type Props = {
   jobType: string;
   charType: string;
   hexa: number[];
-  hexaSlots: HexaSlot[];
   input: ScouterInput;
   buffs: BuffState;
   links: LinkState;
@@ -66,7 +65,6 @@ export function ShareGalleryModal({
   jobType,
   charType,
   hexa,
-  hexaSlots,
   input,
   buffs,
   links,
@@ -143,7 +141,6 @@ export function ShareGalleryModal({
 
   if (!open) return null;
 
-  const clamped = clampHexaForGms(hexa);
   const ignOk =
     name.trim().length > 0 && name.trim().toLowerCase() !== "untitled";
   const canSubmit =
@@ -257,43 +254,8 @@ export function ShareGalleryModal({
           </div>
 
           <div>
-            <p className="mb-1.5 text-xs font-semibold opacity-70">
-              HEXA Enhancements
-            </p>
-            <div className="grid grid-cols-4 gap-1.5 sm:grid-cols-7">
-              {hexaSlots.map((slot, i) => {
-                if (slot.unavailableInGms) return null;
-                const lv = clamped[i] ?? 0;
-                return (
-                  <div
-                    key={slot.id}
-                    className="flex flex-col items-center gap-0.5 rounded border border-border/40 bg-background/80 px-1 py-1.5"
-                    title={`${slot.label}: ${lv}`}
-                  >
-                    {slot.iconSuffix ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={`${SCOUTER_CDN}${slot.iconSuffix}`}
-                        alt=""
-                        width={28}
-                        height={28}
-                        className="size-7 object-contain"
-                      />
-                    ) : (
-                      <span className="size-7 text-[9px] opacity-50">HEXA</span>
-                    )}
-                    <span className="text-[10px] font-semibold tabular-nums">
-                      {lv}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          <div>
             <p className="mb-1 text-xs font-semibold opacity-70">
-              Boss Converted Stat (20 min / KMS)
+              Boss Converted Stat HEXA (20 min / KMS)
             </p>
             {bcsLoading ? (
               <p className="text-xs opacity-60">Calculating…</p>
@@ -356,6 +318,8 @@ export function ShareGalleryModal({
                 identity,
                 name: identity === "ign" ? name.trim() : anonPreview,
                 achievement: achievement.trim(),
+                boss300HexaStat: boss300,
+                boss380HexaStat: boss380,
               })
             }
             className="rounded bg-accent px-3 py-1.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
