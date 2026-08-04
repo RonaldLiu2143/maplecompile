@@ -1,12 +1,13 @@
 "use client";
 
 import { useMemo } from "react";
+import { equipCapabilities } from "@/lib/equip-capabilities";
 import {
   getSelectableStats,
   getWeaponAtt,
-  isFlammable,
 } from "@/lib/flames";
 import {
+  MAX_STAR_FORCE,
   defaultPotentialTier,
   defaultStarForce,
 } from "@/lib/planner";
@@ -19,7 +20,7 @@ import {
 } from "@/lib/potential-lines";
 import type { Equip, FlameLine, PotentialLine } from "@/lib/types";
 
-const SF_PRESETS = [10, 12, 15, 17, 18, 20, 21, 22] as const;
+const SF_PRESETS = [10, 12, 15, 17, 18, 20, 21, 22, 25, 30] as const;
 
 export type EquipItemPatch = {
   starForce?: number;
@@ -48,16 +49,16 @@ export function EquipItemEditor({
   onUnequip,
   onClose,
 }: Props) {
+  const caps = useMemo(() => equipCapabilities(equip), [equip]);
   const starForce = equip.starForce ?? defaultStarForce(equip.level);
   const potentialTier =
     equip.potentialTier ?? defaultPotentialTier(equip.level);
   const lines = flames;
   const potLines = normalizePotentialLines(equip.potentialLines);
-  const potOptions = useMemo(() => potentialLineOptions(equip), [equip]);
-  const flammable = isFlammable(equip);
+  const potOptions = potentialLineOptions(equip, potLines);
 
   const selectable = useMemo(() => {
-    if (!flammable) return [];
+    if (!caps.flames) return [];
     return getSelectableStats({
       ...equip,
       isNormalFlame: equip.isNormalFlame,
@@ -67,7 +68,7 @@ export function EquipItemEditor({
         matt: getWeaponAtt(equip),
       },
     });
-  }, [equip, flammable]);
+  }, [equip, caps.flames]);
 
   const toggleFlame = (
     statId: string,
@@ -75,6 +76,7 @@ export function EquipItemEditor({
     value: number,
     mixedStats?: string[],
   ) => {
+    if (!caps.flames) return;
     const current = [...lines];
     const existing = current.find((l) => l.id === statId);
     let next: FlameLine[];
@@ -93,6 +95,7 @@ export function EquipItemEditor({
   };
 
   const setPotLine = (index: number, key: string) => {
+    if (!caps.potential) return;
     const parsed = parseLineOptionKey(key);
     const next = [...potLines];
     next[index] = parsed;
@@ -100,6 +103,8 @@ export function EquipItemEditor({
       potentialLines: next.filter((l): l is PotentialLine => l != null),
     });
   };
+
+  const showAnyEditor = caps.starForce || caps.flames || caps.potential;
 
   return (
     <div
@@ -154,194 +159,191 @@ export function EquipItemEditor({
       </div>
 
       <div className="max-h-[28rem] space-y-4 overflow-y-auto p-3">
-        {/* Star Force */}
-        <section className="space-y-2">
-          <h3 className="text-xs font-bold uppercase tracking-wide text-zinc-400">
-            Star Force
-          </h3>
-          <div className="flex flex-wrap items-center gap-2">
-            <label className="flex items-center gap-1.5 text-sm text-zinc-200">
-              <span className="opacity-70">★</span>
-              <input
-                type="number"
-                min={0}
-                max={30}
-                value={starForce}
-                onChange={(e) =>
-                  onChange({
-                    starForce: Math.max(
-                      0,
-                      Math.min(30, Number(e.target.value) || 0),
-                    ),
-                  })
-                }
-                className="w-16 rounded border border-[#555] bg-[#1f1f1f] px-2 py-1 text-sm font-semibold tabular-nums text-zinc-100 outline-none focus:border-sky-500"
-              />
-            </label>
-            <div className="flex flex-wrap gap-1">
-              {SF_PRESETS.map((n) => (
-                <button
-                  key={n}
-                  type="button"
-                  onClick={() => onChange({ starForce: n })}
-                  className={`rounded border px-1.5 py-0.5 text-[11px] font-semibold tabular-nums transition ${
-                    starForce === n
-                      ? "border-sky-400 bg-sky-500/30 text-sky-100"
-                      : "border-[#555] text-zinc-300 hover:border-[#777] hover:bg-[#3a3a3a]"
-                  }`}
-                >
-                  {n}★
-                </button>
-              ))}
-            </div>
-          </div>
-        </section>
+        {!showAnyEditor && (
+          <p className="text-xs text-zinc-500">
+            This item cannot take Star Force, flames, or potential.
+          </p>
+        )}
 
-        {/* Flames */}
-        <section className="space-y-2">
-          <h3 className="text-xs font-bold uppercase tracking-wide text-zinc-400">
-            Flames{" "}
-            {flammable ? (
+        {caps.starForce && (
+          <section className="space-y-2">
+            <h3 className="text-xs font-bold uppercase tracking-wide text-zinc-400">
+              Star Force
+            </h3>
+            <div className="flex flex-wrap items-center gap-2">
+              <label className="flex items-center gap-1.5 text-sm text-zinc-200">
+                <span className="opacity-70">★</span>
+                <input
+                  type="number"
+                  min={0}
+                  max={MAX_STAR_FORCE}
+                  value={starForce}
+                  onChange={(e) =>
+                    onChange({
+                      starForce: Math.max(
+                        0,
+                        Math.min(MAX_STAR_FORCE, Number(e.target.value) || 0),
+                      ),
+                    })
+                  }
+                  className="w-16 rounded border border-[#555] bg-[#1f1f1f] px-2 py-1 text-sm font-semibold tabular-nums text-zinc-100 outline-none focus:border-sky-500"
+                />
+              </label>
+              <div className="flex flex-wrap gap-1">
+                {SF_PRESETS.map((n) => (
+                  <button
+                    key={n}
+                    type="button"
+                    onClick={() => onChange({ starForce: n })}
+                    className={`rounded border px-1.5 py-0.5 text-[11px] font-semibold tabular-nums transition ${
+                      starForce === n
+                        ? "border-sky-400 bg-sky-500/30 text-sky-100"
+                        : "border-[#555] text-zinc-300 hover:border-[#777] hover:bg-[#3a3a3a]"
+                    }`}
+                  >
+                    {n}★
+                  </button>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {caps.flames && (
+          <section className="space-y-2">
+            <h3 className="text-xs font-bold uppercase tracking-wide text-zinc-400">
+              Flames{" "}
               <span className="font-normal normal-case opacity-70">
                 ({lines.length}/4)
               </span>
-            ) : null}
-          </h3>
-          {!flammable ? (
-            <p className="text-xs text-zinc-500">
-              This slot does not take resurrection flames.
-            </p>
-          ) : (
-            <>
-              <div
-                className="grid gap-0.5"
-                style={{
-                  gridTemplateColumns: "5.5rem repeat(7, minmax(0, 1fr))",
-                }}
-              >
-                <div className="text-[9px] font-semibold text-zinc-500">
-                  Stat
+            </h3>
+            <div
+              className="grid gap-0.5"
+              style={{
+                gridTemplateColumns: "5.5rem repeat(7, minmax(0, 1fr))",
+              }}
+            >
+              <div className="text-[9px] font-semibold text-zinc-500">Stat</div>
+              {[1, 2, 3, 4, 5, 6, 7].map((t) => (
+                <div
+                  key={t}
+                  className="text-center text-[9px] font-semibold text-zinc-500"
+                >
+                  T{t}
                 </div>
-                {[1, 2, 3, 4, 5, 6, 7].map((t) => (
-                  <div
-                    key={t}
-                    className="text-center text-[9px] font-semibold text-zinc-500"
-                  >
-                    T{t}
+              ))}
+              {selectable.map((stat) => (
+                <div key={stat.id} className="contents">
+                  <div className="flex items-center text-[10px] font-medium leading-tight text-zinc-200">
+                    {stat.name}
                   </div>
-                ))}
-                {selectable.map((stat) => (
-                  <div key={stat.id} className="contents">
-                    <div className="flex items-center text-[10px] font-medium leading-tight text-zinc-200">
-                      {stat.name}
-                    </div>
-                    {stat.values.map((value, idx) => {
-                      const tierNum = idx + 1;
-                      const active = lines.some(
-                        (l) => l.id === stat.id && l.tierNum === tierNum,
-                      );
-                      return (
-                        <button
-                          key={tierNum}
-                          type="button"
-                          onClick={() =>
-                            toggleFlame(
-                              stat.id,
-                              tierNum,
-                              value,
-                              stat.mixedStats,
-                            )
-                          }
-                          className={`flex h-7 items-center justify-center rounded border text-[10px] font-semibold tabular-nums transition ${
-                            active
-                              ? "border-sky-400 bg-sky-500 text-zinc-900"
-                              : "border-[#444] bg-[#1f1f1f] text-zinc-200 hover:bg-[#353535]"
-                          }`}
-                        >
-                          {value}
-                        </button>
-                      );
-                    })}
-                  </div>
-                ))}
-              </div>
-              {lines.length > 0 && (
-                <div className="flex flex-wrap gap-1">
-                  {lines.map((line) => {
-                    const stat = selectable.find((s) => s.id === line.id);
+                  {stat.values.map((value, idx) => {
+                    const tierNum = idx + 1;
+                    const active = lines.some(
+                      (l) => l.id === stat.id && l.tierNum === tierNum,
+                    );
                     return (
-                      <span
-                        key={`${line.id}-${line.tierNum}`}
-                        className="inline-flex items-baseline gap-1 rounded border border-sky-500/30 bg-sky-950/40 px-1.5 py-0.5 text-[10px] text-zinc-100"
+                      <button
+                        key={tierNum}
+                        type="button"
+                        onClick={() =>
+                          toggleFlame(
+                            stat.id,
+                            tierNum,
+                            value,
+                            stat.mixedStats,
+                          )
+                        }
+                        className={`flex h-7 items-center justify-center rounded border text-[10px] font-semibold tabular-nums transition ${
+                          active
+                            ? "border-sky-400 bg-sky-500 text-zinc-900"
+                            : "border-[#444] bg-[#1f1f1f] text-zinc-200 hover:bg-[#353535]"
+                        }`}
                       >
-                        <span className="opacity-70">
-                          {stat?.name ?? line.id}
-                        </span>
-                        <span className="font-semibold tabular-nums text-sky-300">
-                          +{line.value}
-                        </span>
-                        <span className="opacity-40">T{line.tierNum}</span>
-                      </span>
+                        {value}
+                      </button>
                     );
                   })}
                 </div>
-              )}
-            </>
-          )}
-        </section>
-
-        {/* Potential */}
-        <section className="space-y-2">
-          <h3 className="text-xs font-bold uppercase tracking-wide text-zinc-400">
-            Potential
-          </h3>
-          <label className="flex flex-col gap-1 text-xs text-zinc-300">
-            Tier
-            <select
-              value={potentialTier}
-              onChange={(e) =>
-                onChange({
-                  potentialTier: Number(e.target.value) as 0 | 1 | 2 | 3,
-                })
-              }
-              className="rounded border border-[#555] bg-[#1f1f1f] px-2 py-1.5 text-sm font-semibold text-zinc-100 outline-none focus:border-sky-500"
-            >
-              {POTENTIAL_TIER_LABELS.map((label, i) => (
-                <option key={label} value={i}>
-                  {label}
-                </option>
               ))}
-            </select>
-          </label>
-          <div className="space-y-1.5">
-            {potLines.map((line, i) => (
-              <label
-                key={i}
-                className="flex flex-col gap-1 text-xs text-zinc-300"
-              >
-                Line {i + 1}
-                <select
-                  value={line ? lineOptionKey(line) : ""}
-                  onChange={(e) => setPotLine(i, e.target.value)}
-                  className="rounded border border-[#555] bg-[#1f1f1f] px-2 py-1.5 text-sm text-zinc-100 outline-none focus:border-sky-500"
-                >
-                  {potOptions.map((opt) => (
-                    <option
-                      key={lineOptionKey(opt) || "empty"}
-                      value={lineOptionKey(opt)}
+            </div>
+            {lines.length > 0 && (
+              <div className="flex flex-wrap gap-1">
+                {lines.map((line) => {
+                  const stat = selectable.find((s) => s.id === line.id);
+                  return (
+                    <span
+                      key={`${line.id}-${line.tierNum}`}
+                      className="inline-flex items-baseline gap-1 rounded border border-sky-500/30 bg-sky-950/40 px-1.5 py-0.5 text-[10px] text-zinc-100"
                     >
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            ))}
-          </div>
-          <p className="text-[10px] leading-snug text-zinc-500">
-            Common Heroic lines for this slot. Full cube rates stay on the Cube
-            Calculator.
-          </p>
-        </section>
+                      <span className="opacity-70">
+                        {stat?.name ?? line.id}
+                      </span>
+                      <span className="font-semibold tabular-nums text-sky-300">
+                        +{line.value}
+                      </span>
+                      <span className="opacity-40">T{line.tierNum}</span>
+                    </span>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+        )}
+
+        {caps.potential && (
+          <section className="space-y-2">
+            <h3 className="text-xs font-bold uppercase tracking-wide text-zinc-400">
+              Potential
+            </h3>
+            <label className="flex flex-col gap-1 text-xs text-zinc-300">
+              Tier
+              <select
+                value={potentialTier}
+                onChange={(e) =>
+                  onChange({
+                    potentialTier: Number(e.target.value) as 0 | 1 | 2 | 3,
+                  })
+                }
+                className="rounded border border-[#555] bg-[#1f1f1f] px-2 py-1.5 text-sm font-semibold text-zinc-100 outline-none focus:border-sky-500"
+              >
+                {POTENTIAL_TIER_LABELS.map((label, i) => (
+                  <option key={label} value={i}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <div className="space-y-1.5">
+              {potLines.map((line, i) => (
+                <label
+                  key={i}
+                  className="flex flex-col gap-1 text-xs text-zinc-300"
+                >
+                  Line {i + 1}
+                  <select
+                    value={line ? lineOptionKey(line) : ""}
+                    onChange={(e) => setPotLine(i, e.target.value)}
+                    className="rounded border border-[#555] bg-[#1f1f1f] px-2 py-1.5 text-sm text-zinc-100 outline-none focus:border-sky-500"
+                  >
+                    {potOptions.map((opt) => (
+                      <option
+                        key={lineOptionKey(opt) || "empty"}
+                        value={lineOptionKey(opt)}
+                      >
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ))}
+            </div>
+            <p className="text-[10px] leading-snug text-zinc-500">
+              Lines filtered by equip type (cube tables). Invalid saved lines
+              stay selectable. Full rates: Cube Calculator.
+            </p>
+          </section>
+        )}
       </div>
     </div>
   );

@@ -2,6 +2,7 @@
 
 import type { CSSProperties } from "react";
 import type { Equip, EquipSetup } from "@/lib/types";
+import { canStarForce } from "@/lib/equip-capabilities";
 import {
   APPEARANCE_CELL,
   EQUIP_WINDOW_SLOTS,
@@ -42,7 +43,8 @@ function EquipSlot({
 }) {
   const equip = slotEquip(setup, slotId);
   const filled = !!equip;
-  const stars = equip
+  const showStars = !!equip && canStarForce(equip);
+  const stars = showStars
     ? (equip.starForce ?? defaultStarForce(equip.level))
     : 0;
 
@@ -51,7 +53,9 @@ function EquipSlot({
       type="button"
       title={
         equip
-          ? `${equip.name} · ${stars}★`
+          ? showStars
+            ? `${equip.name} · ${stars}★`
+            : equip.name
           : (SLOT_LABELS[slotId] ?? slotId)
       }
       onClick={() => onSlotClick(slotId)}
@@ -64,7 +68,7 @@ function EquipSlot({
             : "border-[#999] bg-[#5c5c5c] hover:border-[#ccc] hover:bg-[#686868]"
       }`}
     >
-      {filled && (
+      {showStars && (
         <span className="absolute left-0 top-0 z-10 flex h-3.5 min-w-3.5 items-center justify-center bg-[#2ECC40] px-0.5 text-[8px] font-bold leading-none text-white">
           {stars}★
         </span>

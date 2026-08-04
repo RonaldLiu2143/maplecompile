@@ -15,6 +15,11 @@ import {
   getCharName,
   parseClassValue,
 } from "@/lib/jobs";
+import {
+  canFlame,
+  canPotential,
+  canStarForce,
+} from "@/lib/equip-capabilities";
 import { inferNormalFlame } from "@/lib/flames";
 import {
   defaultPotentialTier,
@@ -53,13 +58,27 @@ type PanelMode =
   | null;
 
 function withHeroicDefaults(equip: Equip): Equip {
-  return {
+  const next: Equip = {
     ...equip,
-    starForce: equip.starForce ?? defaultStarForce(equip.level),
-    potentialTier: equip.potentialTier ?? defaultPotentialTier(equip.level),
-    potentialLines: equip.potentialLines ?? [],
     isNormalFlame: inferNormalFlame(equip),
   };
+  if (canStarForce(equip)) {
+    next.starForce = equip.starForce ?? defaultStarForce(equip.level);
+  } else {
+    delete next.starForce;
+  }
+  if (canPotential(equip)) {
+    next.potentialTier =
+      equip.potentialTier ?? defaultPotentialTier(equip.level);
+    next.potentialLines = equip.potentialLines ?? [];
+  } else {
+    delete next.potentialTier;
+    delete next.potentialLines;
+  }
+  if (!canFlame(equip)) {
+    delete next.flames;
+  }
+  return next;
 }
 
 export default function SetupClient() {
@@ -158,9 +177,12 @@ export default function SetupClient() {
       const next: PlannerOverrides = {
         ...prev,
         [slotId]: {
-          starForce: equip.starForce ?? defaultStarForce(equip.level),
-          potentialTier:
-            equip.potentialTier ?? defaultPotentialTier(equip.level),
+          starForce: canStarForce(equip)
+            ? (equip.starForce ?? defaultStarForce(equip.level))
+            : 0,
+          potentialTier: canPotential(equip)
+            ? (equip.potentialTier ?? defaultPotentialTier(equip.level))
+            : 0,
         },
       };
       storage.setPlannerOverrides(next);
@@ -258,13 +280,28 @@ export default function SetupClient() {
       const list = [...(prev[type] ?? [])];
       const cur = list[idx];
       if (!cur) return prev;
-      const next: Equip = { ...cur, ...patch };
-      if (patch.flames) next.flames = patch.flames;
+      const safe: EquipItemPatch = { ...patch };
+      if (safe.starForce !== undefined && !canStarForce(cur)) {
+        delete safe.starForce;
+      }
+      if (
+        (safe.potentialTier !== undefined ||
+          safe.potentialLines !== undefined) &&
+        !canPotential(cur)
+      ) {
+        delete safe.potentialTier;
+        delete safe.potentialLines;
+      }
+      if (safe.flames !== undefined && !canFlame(cur)) {
+        delete safe.flames;
+      }
+      const next: Equip = { ...cur, ...safe };
+      if (safe.flames) next.flames = safe.flames;
       list[idx] = next;
       syncPlannerOverride(slotId, next);
-      if (patch.flames) {
+      if (safe.flames) {
         setFlameSetup((fp) => {
-          const nf = { ...fp, [cur.id]: patch.flames! };
+          const nf = { ...fp, [cur.id]: safe.flames! };
           storage.setFlameSetup(nf);
           return nf;
         });
