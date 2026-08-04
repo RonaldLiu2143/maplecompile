@@ -2,6 +2,7 @@ import type { EquipSetup, FlameSetup, JobType, StatEquiv } from "./types";
 import type { BuffState, LinkState } from "./scouter/buffs";
 import type { ScouterInput } from "./scouter/types";
 import type { PlannerOverrides } from "./planner/types";
+import { notifyMapleDataChanged } from "./maple-events";
 
 function readJson<T>(key: string, fallback: T): T {
   if (typeof window === "undefined") return fallback;
@@ -87,16 +88,28 @@ function readJsonMigrating<T>(key: string, legacyKey: string, fallback: T): T {
 
 export const storage = {
   getJobType: () => readJson<JobType | "">("jobType", ""),
-  setJobType: (v: JobType | "") => writeJson("jobType", v),
+  setJobType: (v: JobType | "") => {
+    writeJson("jobType", v);
+    notifyMapleDataChanged("jobClass");
+  },
 
   getCharType: () => readJson<string>("charType", ""),
-  setCharType: (v: string) => writeJson("charType", v),
+  setCharType: (v: string) => {
+    writeJson("charType", v);
+    notifyMapleDataChanged("jobClass");
+  },
 
   getEquipSetup: () => readJson<EquipSetup>("equipSetup", {}),
-  setEquipSetup: (v: EquipSetup) => writeJson("equipSetup", v),
+  setEquipSetup: (v: EquipSetup) => {
+    writeJson("equipSetup", v);
+    notifyMapleDataChanged("equipSetup");
+  },
 
   getFlameSetup: () => readJson<FlameSetup>("flameSetup", {}),
-  setFlameSetup: (v: FlameSetup) => writeJson("flameSetup", v),
+  setFlameSetup: (v: FlameSetup) => {
+    writeJson("flameSetup", v);
+    notifyMapleDataChanged("flameSetup");
+  },
 
   getStatEquiv: () => readJson<Partial<StatEquiv>>("statEquiv", {}),
   setStatEquiv: (v: StatEquiv) => writeJson("statEquiv", v),
@@ -114,12 +127,15 @@ export const storage = {
     writeJson("equipSetup", {});
     writeJson("flameSetup", {});
     writeJson("flameProbabilities", {});
+    notifyMapleDataChanged("equipSetup");
   },
 
   getPlannerOverrides: () =>
     readJson<PlannerOverrides>("maplecompile-planner-overrides", {}),
-  setPlannerOverrides: (v: PlannerOverrides) =>
-    writeJson("maplecompile-planner-overrides", v),
+  setPlannerOverrides: (v: PlannerOverrides) => {
+    writeJson("maplecompile-planner-overrides", v);
+    notifyMapleDataChanged("plannerOverrides");
+  },
 
   getScouterLast: () =>
     readJsonMigrating<ScouterLastState | null>(
@@ -127,7 +143,10 @@ export const storage = {
       SCOUTER_LAST_KEY_LEGACY,
       null,
     ),
-  setScouterLast: (v: ScouterLastState) => writeJson(SCOUTER_LAST_KEY, v),
+  setScouterLast: (v: ScouterLastState) => {
+    writeJson(SCOUTER_LAST_KEY, v);
+    notifyMapleDataChanged("scouterLast");
+  },
 
   listScouterPresets: (): ScouterPreset[] =>
     readPresets().sort((a, b) => b.updatedAt - a.updatedAt),
@@ -156,6 +175,7 @@ export const storage = {
       };
       list[idx] = updated;
       writePresets(list);
+      notifyMapleDataChanged("scouterPresets");
       return updated;
     }
     const created: ScouterPreset = {
@@ -166,11 +186,13 @@ export const storage = {
     };
     list.push(created);
     writePresets(list);
+    notifyMapleDataChanged("scouterPresets");
     return created;
   },
 
   deleteScouterPreset: (id: string): void => {
     writePresets(readPresets().filter((p) => p.id !== id));
+    notifyMapleDataChanged("scouterPresets");
   },
 
   /** Delete tokens for shares created in this browser (needed to remove from gallery). */

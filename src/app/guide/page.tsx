@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { PairingBar } from "@/components/PairingBar";
+import { useMapleDataReload } from "@/hooks/useMapleDataReload";
 import {
   formatPairingLabel,
   getPairing,
@@ -55,13 +56,15 @@ export default function GuidePage() {
   const [dismissed, setDismissed] = useState(false);
   const [hydrated, setHydrated] = useState(false);
 
-  useEffect(() => {
+  const refresh = useCallback(() => {
     setPairing(getPairing());
     setScouterReady(hasScouterStats());
     setEquipReady(hasEquipSetup());
     setDismissed(isGuideDismissed());
     setHydrated(true);
   }, []);
+
+  useMapleDataReload(refresh);
 
   const stepDone = (key: (typeof STEPS)[number]["doneKey"]) => {
     if (key === "scouter") return scouterReady;

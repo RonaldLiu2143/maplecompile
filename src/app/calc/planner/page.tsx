@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { PairingBar } from "@/components/PairingBar";
+import { useMapleDataReload } from "@/hooks/useMapleDataReload";
 import {
   DEFAULT_FLAME_PRICES,
   defaultPotentialTier,
@@ -59,6 +60,20 @@ function formatEff(n: number): string {
   return n.toFixed(3);
 }
 
+function formatUpdatedAt(ts: number | null | undefined): string {
+  if (!ts) return "";
+  try {
+    return new Date(ts).toLocaleString(undefined, {
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    });
+  } catch {
+    return "";
+  }
+}
+
 export default function PlannerPage() {
   const [hydrated, setHydrated] = useState(false);
   const [pairing, setPairing] = useState<ScouterEquipPairing | null>(null);
@@ -93,6 +108,7 @@ export default function PlannerPage() {
       setPairLabel(null);
       setScouter(null);
       setSetup(storage.getEquipSetup());
+      setHydrated(true);
       return;
     }
 
@@ -102,12 +118,10 @@ export default function PlannerPage() {
     setSetup(resolved.setup);
     setJobType(resolved.jobType);
     setCharType(resolved.charType);
+    setHydrated(true);
   }, []);
 
-  useEffect(() => {
-    loadPaired();
-    setHydrated(true);
-  }, [loadPaired]);
+  useMapleDataReload(loadPaired);
 
   const pieces = useMemo(
     () =>
@@ -217,6 +231,8 @@ export default function PlannerPage() {
     return keys;
   }, [pieces]);
 
+  const pairedUpdatedLabel = formatUpdatedAt(pairing?.updatedAt);
+
   if (!hydrated) {
     return (
       <div className="space-y-4">
@@ -287,8 +303,14 @@ export default function PlannerPage() {
                   {equipCount} equipped · job{" "}
                   <span className="font-semibold">{jobType}</span> /{" "}
                   <span className="font-semibold">{charType}</span>
-                  {" · scouter FD% via calculateScouter"}
+                  {" · live scouter + gear from localStorage"}
                 </p>
+                {pairedUpdatedLabel ? (
+                  <p className="mt-1 text-[11px] opacity-55">
+                    Paired {pairedUpdatedLabel} · rankings refresh when you
+                    edit Scouter or Equipment
+                  </p>
+                ) : null}
               </div>
               <div className="flex flex-wrap gap-2">
                 <Link
