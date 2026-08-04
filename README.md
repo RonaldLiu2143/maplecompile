@@ -38,22 +38,33 @@ Until these are set, the Share button returns a clear “sharing not configured�
 - `/calc/scouter` — character scouter: range, expected damage, converted main stat
 - `/calc/scouter/gallery` — public shared scouter loadouts
 - `/calc/scouter/s/[id]` — open a shared scouter loadout by id
-- `/calc/character` — GMS character lookup by name (Nexon public rankings)
+- `/calc/character` — GMS character search
+- `/calc/character/[name]?region=na|eu` — character profile
 
 Setup is stored in `localStorage` and shared with the flame page. Shared loadouts are stored in Upstash Redis.
 
 ### Character lookup (GMS)
 
-No Nexon Open API key is required. MapleCompile proxies Nexon’s **public rankings** API server-side:
+No Nexon Open API key is required. MapleCompile merges two public sources server-side:
+
+1. **Nexon rankings** (avatar, world, job, level, EXP, overall rank, fame):
 
 ```
 GET https://www.nexon.com/api/maplestory/no-auth/ranking/v2/{na|eu}
-  ?type=overall&id=legendary&reboot_index=0|1&page_index=1&character_name=…
+  ?type=overall|fame&id=legendary&reboot_index=0|1&page_index=1&character_name=…
+```
+
+2. **MapleHub public character JSON** (legion, class/world ranks, EXP averages / graphs), proxied with `X-MapleHub-Request: true`:
+
+```
+GET https://maplehub.app/api/character/?characterName=…&region=na|eu
 ```
 
 App route: `GET /api/character?name=IGN&region=na|eu`
 
-This returns ranked characters only (level / world / job / avatar / overall rank / fame). It is **not** live online status, and Nexon does not publish last-login on this endpoint.
+Profile UI: `/calc/character/[name]?region=na|eu`
+
+Ranked / tracked characters only. Not live online status. Gear, combat power, and fashion stay stubbed without Open API.
 
 ## Data
 
