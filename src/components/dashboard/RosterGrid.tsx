@@ -40,7 +40,7 @@ export function RosterGrid({
         </h3>
         <p className="mx-auto mt-2 max-w-md text-sm opacity-75">
           {emptyBody ??
-            "Search a GMS character above, then tap Add to roster. Data comes from the same Character Lookup API."}
+            "Search a GMS character above, then tap Add to roster."}
         </p>
       </div>
     );

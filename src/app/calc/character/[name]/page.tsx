@@ -70,10 +70,10 @@ function CharacterProfileLoader() {
           </p>
         </div>
         <Link
-          href="/calc/character"
+          href="/roster"
           className="rounded-lg border border-border px-3 py-1.5 text-sm font-semibold transition hover:bg-surface-muted"
         >
-          ← Search
+          ← Roster
         </Link>
       </header>
 
