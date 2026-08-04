@@ -127,7 +127,7 @@ export type ExpectedSfCostOpts = {
    * Default true.
    */
   safeguard?: boolean;
-  /** Cap star for EV solve (default 25). */
+  /** Cap star for EV solve (default 30). */
   maxStar?: number;
 };
 
@@ -231,7 +231,7 @@ export function expectedStarForceCost(
   opts: ExpectedSfCostOpts = {},
 ): number {
   const safeguard = opts.safeguard !== false;
-  const maxStar = opts.maxStar ?? 25;
+  const maxStar = opts.maxStar ?? 30;
   const from = Math.max(0, Math.min(fromStar, maxStar));
   const to = Math.max(from, Math.min(toStar, maxStar));
   if (from === to) return 0;
@@ -271,35 +271,35 @@ export function starForceStatGain(opts: {
   // ATT / MATT — weapons get more earlier; armor/acc ramp mid/late.
   let att = 0;
   const attByBand: Record<number, number[]> = {
-    // index = fromStar; value = ATT gained on success to next
+    // index = fromStar; value = ATT gained on success to next (0★…29★)
     140: [
       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 8, 9, 10, 11, 12, 13, 15,
-      16, 17,
+      16, 17, 18, 19, 20, 21, 22,
     ],
     150: [
       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 9, 10, 11, 12, 13, 14, 16,
-      17, 18,
+      17, 18, 19, 20, 21, 22, 23,
     ],
     160: [
       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 9, 10, 11, 12, 13, 14, 15, 17,
-      18, 20,
+      18, 20, 21, 22, 24, 26, 28,
     ],
     200: [
       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 11, 12, 13, 14, 15, 17, 18, 20,
-      22, 24,
+      22, 24, 26, 28, 30, 32, 34,
     ],
     250: [
       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 13, 14, 15, 16, 18, 20, 22, 24,
-      26, 28,
+      26, 28, 30, 32, 34, 36, 38,
     ],
   };
 
   if (opts.isWeapon) {
     // Weapons also pick up small ATT earlier (rough).
     if (star < 15) att = star < 5 ? 1 : 2;
-    else att = attByBand[band]![Math.min(star, 24)] ?? 10;
+    else att = attByBand[band]![Math.min(star, 29)] ?? 10;
   } else {
-    att = attByBand[band]![Math.min(star, 24)] ?? 0;
+    att = attByBand[band]![Math.min(star, 29)] ?? 0;
   }
 
   return { mainStat, att };
@@ -313,11 +313,14 @@ export function defaultStarForce(level: number): number {
   return 10;
 }
 
+/** GMS / Heroic Star Force cap for normal gear. */
+export const MAX_STAR_FORCE = 30;
+
 /** Common Heroic SF breakpoints to suggest as upgrade targets. */
 export function nextSfTargets(current: number): number[] {
-  const breakpoints = [10, 12, 15, 17, 18, 20, 21, 22];
+  const breakpoints = [10, 12, 15, 17, 18, 20, 21, 22, 25, 30];
   const out: number[] = [];
-  if (current < 25) out.push(current + 1);
+  if (current < MAX_STAR_FORCE) out.push(current + 1);
   for (const b of breakpoints) {
     if (b > current && !out.includes(b)) out.push(b);
   }

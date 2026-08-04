@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   DEFAULT_FLAME_PRICES,
+  MAX_STAR_FORCE,
   defaultPotentialTier,
   defaultStarForce,
   flattenEquips,
@@ -406,14 +407,17 @@ export default function PlannerPage() {
                         <input
                           type="number"
                           min={0}
-                          max={30}
+                          max={MAX_STAR_FORCE}
                           className="w-16 rounded border border-border bg-background px-1.5 py-0.5 tabular-nums outline-none focus:border-accent"
                           value={p.starForce}
                           onChange={(e) =>
                             persistOverride(p.slotKey, {
                               starForce: Math.max(
                                 0,
-                                Math.min(30, Number(e.target.value) || 0),
+                                Math.min(
+                                  MAX_STAR_FORCE,
+                                  Number(e.target.value) || 0,
+                                ),
                               ),
                             })
                           }

@@ -12,6 +12,7 @@ export type {
 export { DEFAULT_FLAME_PRICES } from "./types";
 
 export {
+  MAX_STAR_FORCE,
   defaultStarForce,
   expectedStarForceCost,
   nextSfTargets,

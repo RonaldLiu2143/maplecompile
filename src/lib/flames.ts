@@ -16,7 +16,6 @@ export const NON_FLAMMABLE_TYPES = [
   "heart",
   "emblem",
   "badge",
-  "pocket",
   "secondary",
 ];
 

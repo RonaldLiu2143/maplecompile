@@ -2,10 +2,10 @@ import type { ItemCategory, Tier } from "@/lib/cubing/types";
 import { runCubingCalc } from "@/lib/cubing/run";
 import { suggestCubeType } from "@/lib/cubing/cubes";
 import { isWseItem } from "@/lib/cubing/desiredStats";
+import { canFlame, canPotential, canStarForce } from "@/lib/equip-capabilities";
 import {
   calcFlameProbability,
   defaultStatEquiv,
-  isFlammable,
   scoreCurrentFlames,
 } from "@/lib/flames";
 import type { FlatEquip, UpgradeCandidate } from "./types";
@@ -45,6 +45,7 @@ function equipToCategory(equipType: string): ItemCategory | null {
 }
 
 export function buildStarForceCandidates(piece: FlatEquip): UpgradeCandidate[] {
+  if (!canStarForce(piece.equip)) return [];
   if (isSuperiorItem(piece.equip)) {
     // Superior items use a different cost curve — skip in MVP with a stub note path.
     return [];
@@ -101,7 +102,7 @@ export function buildFlameCandidates(
   charType: string,
   prices: { crf: number; rrf: number; arf: number } = DEFAULT_FLAME_PRICES,
 ): UpgradeCandidate[] {
-  if (!isFlammable(piece.equip)) return [];
+  if (!canFlame(piece.equip)) return [];
   const equiv = defaultStatEquiv(jobType, charType);
   const currentScore = scoreCurrentFlames(
     piece.flames,
@@ -160,14 +161,9 @@ export function buildFlameCandidates(
  * (WSE ATT% or accessory/armor main-stat lines).
  */
 export function buildCubeCandidates(piece: FlatEquip): UpgradeCandidate[] {
+  if (!canPotential(piece.equip)) return [];
   const category = equipToCategory(piece.equip.equipType);
   if (!category) return [];
-  if (
-    piece.equip.equipType === "android" ||
-    piece.equip.equipType === "medal"
-  ) {
-    return [];
-  }
 
   const out: UpgradeCandidate[] = [];
   const level = Math.max(71, piece.equip.level);
