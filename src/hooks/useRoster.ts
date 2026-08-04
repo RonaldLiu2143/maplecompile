@@ -108,6 +108,16 @@ export function useRoster() {
     applyRosterState(setPrimary(entry));
   }
 
+  function handleMoveUp(index: number) {
+    if (index <= 0) return;
+    applyRosterState(reorderRoster(index, index - 1));
+  }
+
+  function handleMoveDown(index: number) {
+    if (index < 0 || index >= roster.length - 1) return;
+    applyRosterState(reorderRoster(index, index + 1));
+  }
+
   function clearDrag() {
     setDragFrom(null);
     setDragOver(null);
@@ -187,6 +197,8 @@ export function useRoster() {
     slots,
     handleRemove,
     handleSetPrimary,
+    handleMoveUp,
+    handleMoveDown,
     handleRetry,
     handleRosterAdded,
     makeDragProps,
