@@ -367,35 +367,34 @@ function DashboardInner() {
     applyRosterState(next);
   }
 
+  const manageButton = hydrated ? (
+    <button
+      type="button"
+      onClick={() => setManageMode(!managing)}
+      className={[
+        "shrink-0 rounded-lg px-4 py-2 text-sm font-semibold transition",
+        managing
+          ? "border border-border hover:bg-surface-muted"
+          : "bg-accent text-white hover:opacity-90 dark:text-zinc-900",
+      ].join(" ")}
+    >
+      {managing ? "Done managing" : "Manage roster"}
+    </button>
+  ) : null;
+
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-8 py-4">
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div className="max-w-2xl">
-          <p className="text-sm font-semibold uppercase tracking-wider text-accent opacity-80">
-            MapleCompile
-          </p>
-          <h1 className="font-display mt-1 text-3xl font-bold tracking-tight sm:text-4xl">
-            Dashboard
-          </h1>
-          <p className="mt-2 text-sm opacity-80">
-            Your character roster — level, EXP pace, class rank in world, and
-            legion. Mark any character as primary in Manage roster.
-          </p>
-        </div>
-        {hydrated ? (
-          <button
-            type="button"
-            onClick={() => setManageMode(!managing)}
-            className={[
-              "rounded-lg px-4 py-2 text-sm font-semibold transition",
-              managing
-                ? "border border-border hover:bg-surface-muted"
-                : "bg-accent text-white hover:opacity-90 dark:text-zinc-900",
-            ].join(" ")}
-          >
-            {managing ? "Done managing" : "Manage roster"}
-          </button>
-        ) : null}
+      <header className="max-w-2xl">
+        <p className="text-sm font-semibold uppercase tracking-wider text-accent opacity-80">
+          MapleCompile
+        </p>
+        <h1 className="font-display mt-1 text-3xl font-bold tracking-tight sm:text-4xl">
+          Dashboard
+        </h1>
+        <p className="mt-2 text-sm opacity-80">
+          Your character roster — level, EXP pace, class rank in world, and
+          legion. Mark any character as primary in Manage roster.
+        </p>
       </header>
 
       {hydrated ? (
@@ -406,90 +405,81 @@ function DashboardInner() {
         </div>
       )}
 
-      {hydrated && managing ? (
-        <section className="space-y-1">
-          <h2 className="font-display text-lg font-bold tracking-tight">
-            Manage roster
-          </h2>
-          <p className="text-sm opacity-75">
-            Drag cards to reorder, set primary, or remove. Primary stays
-            independent of list order.
-          </p>
-        </section>
-      ) : null}
-
-      {hydrated && roster.length === 0 ? (
+      {hydrated ? (
         <section className="space-y-4">
-          <div className="rounded-2xl border border-dashed border-border/60 bg-surface/70 px-5 py-10 text-center">
-            <h2 className="font-display text-xl font-bold tracking-tight">
-              No characters yet
-            </h2>
-            <p className="mx-auto mt-2 max-w-md text-sm opacity-75">
-              Search a GMS character above, then tap Add to roster. Data comes
-              from the same Character Lookup API.
-            </p>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="min-w-0 space-y-1">
+              <h2 className="font-display text-lg font-bold tracking-tight">
+                Roster ({roster.length})
+              </h2>
+              {managing ? (
+                <p className="text-sm opacity-75">
+                  Drag cards to reorder, set primary, or remove. Primary stays
+                  independent of list order.
+                </p>
+              ) : roster.length > 0 ? (
+                <p className="text-xs opacity-55">
+                  Tip: open Manage roster to set primary, drag to reorder, or
+                  remove.
+                </p>
+              ) : null}
+            </div>
+            {manageButton}
           </div>
-        </section>
-      ) : null}
 
-      {hydrated && roster.length > 0 ? (
-        <section className="space-y-4">
-          <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <h2 className="font-display text-lg font-bold tracking-tight">
-              Roster ({roster.length})
-            </h2>
-            {!managing ? (
-              <p className="text-xs opacity-55">
-                Tip: open Manage roster to set primary, drag to reorder, or
-                remove.
+          {roster.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-border/60 bg-surface/70 px-5 py-10 text-center">
+              <h3 className="font-display text-xl font-bold tracking-tight">
+                No characters yet
+              </h3>
+              <p className="mx-auto mt-2 max-w-md text-sm opacity-75">
+                Search a GMS character above, then tap Add to roster. Data comes
+                from the same Character Lookup API.
               </p>
-            ) : (
-              <p className="text-xs opacity-55">
-                Drag a card to change order.
-              </p>
-            )}
-          </div>
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            {roster.map((entry, index) => {
-              const key = entryKey(entry);
-              const slot = slots[key];
-              const drag = makeDragProps(index);
-              if (!slot || slot.status === "loading") {
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+              {roster.map((entry, index) => {
+                const key = entryKey(entry);
+                const slot = slots[key];
+                const drag = makeDragProps(index);
+                if (!slot || slot.status === "loading") {
+                  return (
+                    <RosterCardSkeleton
+                      key={key}
+                      name={entry.name}
+                      drag={drag}
+                    />
+                  );
+                }
+                if (slot.status === "error") {
+                  return (
+                    <RosterCardError
+                      key={key}
+                      name={entry.name}
+                      region={entry.region}
+                      error={slot.error}
+                      managing={managing}
+                      onRemove={() => handleRemove(entry)}
+                      onRetry={() => handleRetry(entry)}
+                      drag={drag}
+                    />
+                  );
+                }
                 return (
-                  <RosterCardSkeleton
+                  <RosterCharacterCard
                     key={key}
-                    name={entry.name}
-                    drag={drag}
-                  />
-                );
-              }
-              if (slot.status === "error") {
-                return (
-                  <RosterCardError
-                    key={key}
-                    name={entry.name}
-                    region={entry.region}
-                    error={slot.error}
+                    character={slot.character}
+                    isPrimary={isPrimary(entry, primary)}
                     managing={managing}
                     onRemove={() => handleRemove(entry)}
-                    onRetry={() => handleRetry(entry)}
+                    onSetPrimary={() => handleSetPrimary(entry)}
                     drag={drag}
                   />
                 );
-              }
-              return (
-                <RosterCharacterCard
-                  key={key}
-                  character={slot.character}
-                  isPrimary={isPrimary(entry, primary)}
-                  managing={managing}
-                  onRemove={() => handleRemove(entry)}
-                  onSetPrimary={() => handleSetPrimary(entry)}
-                  drag={drag}
-                />
-              );
-            })}
-          </div>
+              })}
+            </div>
+          )}
         </section>
       ) : null}
     </div>
