@@ -5,6 +5,15 @@
  *
  * Catalog keeps only Heroic-relevant numeric lines used by Equip Setup
  * dropdowns (ATT%/Boss%/IED%/stat%/CD/meso/drop/crit dmg, etc.).
+ *
+ * Gaps vs live GMS:
+ * - Source rates only cover `lvl120to200` (no separate 200+ table).
+ * - Face / eye / earring / pendant are not separate keys; setup maps them
+ *   to `ring` (same accessory pool). Cubing UI "accessory" does the same.
+ * - Junk, flats, decent skills, auto-steal, invincibility, ignore-dmg are
+ *   present in cubeRates but omitted here (not tracked in Equip Setup).
+ * - Level >= 160 +1 for Damage% is applied at read time in potential-lines
+ *   (GMS parity); cubeRates' convertCubeDataForLevel omits Damage%.
  */
 import fs from "node:fs";
 import path from "node:path";
