@@ -39,6 +39,13 @@ export type EquipCapabilities = {
   potential: boolean;
 };
 
+/**
+ * Princess No (GMS) / Princess Nou (WhackyBeanz) class secondaries.
+ * Matches renamed GMS titles (e.g. Princess No's Immortal Bladebinder) and
+ * catalog ids (`pnou-*`, including Len's Immortal Dragon Crystal).
+ */
+const PRINCESS_NO_SECONDARY_NAME_RE = /\bprincess\s+no[u]?'?s\b/i;
+
 /** True for Oz / seed / special rings that block SF, flames, and potential. */
 export function isSpecialRing(equip: Equip): boolean {
   if (equip.equipType !== "ring") return false;
@@ -46,6 +53,22 @@ export function isSpecialRing(equip: Equip): boolean {
   const id = (equip.id ?? "").replace(/[-_]+/g, " ");
   return SPECIAL_RING_NAME_PATTERNS.some(
     (re) => re.test(name) || re.test(id),
+  );
+}
+
+/**
+ * Princess No secondaries cannot take Star Force (GMS Immortal / class
+ * secondaries; catalog often still spells the prefix "Princess Nou's").
+ */
+export function isPrincessNoSecondary(equip: Equip): boolean {
+  if (equip.equipType !== "secondary") return false;
+  const name = equip.name ?? "";
+  const id = equip.id ?? "";
+  const idNorm = id.replace(/[-_]+/g, " ");
+  return (
+    PRINCESS_NO_SECONDARY_NAME_RE.test(name) ||
+    PRINCESS_NO_SECONDARY_NAME_RE.test(idNorm) ||
+    /^pnou(?:[-_]|$)/i.test(id)
   );
 }
 
@@ -61,6 +84,7 @@ export function canStarForce(equip: Equip): boolean {
     return false;
   }
   if (isSpecialRing(equip)) return false;
+  if (isPrincessNoSecondary(equip)) return false;
   return true;
 }
 
