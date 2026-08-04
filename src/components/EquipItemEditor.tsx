@@ -6,11 +6,7 @@ import {
   getSelectableStats,
   getWeaponAtt,
 } from "@/lib/flames";
-import {
-  MAX_STAR_FORCE,
-  defaultPotentialTier,
-  defaultStarForce,
-} from "@/lib/planner";
+import { defaultPotentialTier, defaultStarForce } from "@/lib/planner";
 import {
   lineOptionKey,
   normalizePotentialLines,
@@ -19,8 +15,7 @@ import {
   POTENTIAL_TIER_LABELS,
 } from "@/lib/potential-lines";
 import type { Equip, FlameLine, PotentialLine } from "@/lib/types";
-
-const SF_PRESETS = [10, 12, 15, 17, 18, 20, 21, 22, 25, 30] as const;
+import { StarForcePicker } from "@/components/StarForcePicker";
 
 export type EquipItemPatch = {
   starForce?: number;
@@ -170,42 +165,10 @@ export function EquipItemEditor({
             <h3 className="text-xs font-bold uppercase tracking-wide text-zinc-400">
               Star Force
             </h3>
-            <div className="flex flex-wrap items-center gap-2">
-              <label className="flex items-center gap-1.5 text-sm text-zinc-200">
-                <span className="opacity-70">★</span>
-                <input
-                  type="number"
-                  min={0}
-                  max={MAX_STAR_FORCE}
-                  value={starForce}
-                  onChange={(e) =>
-                    onChange({
-                      starForce: Math.max(
-                        0,
-                        Math.min(MAX_STAR_FORCE, Number(e.target.value) || 0),
-                      ),
-                    })
-                  }
-                  className="w-16 rounded border border-[#555] bg-[#1f1f1f] px-2 py-1 text-sm font-semibold tabular-nums text-zinc-100 outline-none focus:border-sky-500"
-                />
-              </label>
-              <div className="flex flex-wrap gap-1">
-                {SF_PRESETS.map((n) => (
-                  <button
-                    key={n}
-                    type="button"
-                    onClick={() => onChange({ starForce: n })}
-                    className={`rounded border px-1.5 py-0.5 text-[11px] font-semibold tabular-nums transition ${
-                      starForce === n
-                        ? "border-sky-400 bg-sky-500/30 text-sky-100"
-                        : "border-[#555] text-zinc-300 hover:border-[#777] hover:bg-[#3a3a3a]"
-                    }`}
-                  >
-                    {n}★
-                  </button>
-                ))}
-              </div>
-            </div>
+            <StarForcePicker
+              value={starForce}
+              onChange={(n) => onChange({ starForce: n })}
+            />
           </section>
         )}
 
