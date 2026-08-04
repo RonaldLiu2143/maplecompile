@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CharacterSearchBar } from "@/components/dashboard/CharacterSearchBar";
@@ -17,16 +17,21 @@ function DashboardInner() {
     roster,
     primary,
     slots,
-    handleRosterAdded,
+    handleRemove,
+    handleSetPrimary,
     handleMoveUp,
     handleMoveDown,
     handleRetry,
+    handleRosterAdded,
   } = useRoster();
 
-  // Legacy /dashboard?manage=1 → dedicated roster page
+  const [managing, setManaging] = useState(false);
+
+  // Legacy /dashboard?manage=1 → stay on dashboard in manage mode
   useEffect(() => {
     if (manageFromUrl) {
-      router.replace("/roster");
+      setManaging(true);
+      router.replace("/dashboard", { scroll: false });
     }
   }, [manageFromUrl, router]);
 
@@ -40,8 +45,8 @@ function DashboardInner() {
           Dashboard
         </h1>
         <p className="mt-2 text-sm opacity-80">
-          Search characters and jump into your roster. Full manage (primary,
-          remove) lives on the Roster page.
+          Search characters and manage your roster here — reorder, set primary,
+          or remove. The Roster page has the full dedicated view.
         </p>
       </header>
 
@@ -65,18 +70,37 @@ function DashboardInner() {
                   </span>
                 ) : null}
               </h2>
-              {roster.length > 0 ? (
+              {managing ? (
+                <p className="text-sm opacity-60">
+                  Use the up/down buttons to change the order of characters. Tap
+                  the star to set primary.
+                </p>
+              ) : roster.length > 0 ? (
                 <p className="text-sm opacity-60">
                   Use the up/down buttons to change the order of characters.
                 </p>
               ) : null}
             </div>
-            <Link
-              href="/roster"
-              className="shrink-0 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90 dark:text-zinc-900"
-            >
-              Manage roster
-            </Link>
+            <div className="flex shrink-0 flex-wrap items-center gap-2">
+              <Link
+                href="/roster"
+                className="rounded-lg border border-border px-3 py-2 text-sm font-semibold transition hover:bg-surface-muted"
+              >
+                Open roster
+              </Link>
+              <button
+                type="button"
+                onClick={() => setManaging((v) => !v)}
+                className={[
+                  "rounded-lg px-4 py-2 text-sm font-semibold transition",
+                  managing
+                    ? "border border-border hover:bg-surface-muted"
+                    : "bg-accent text-white hover:opacity-90 dark:text-zinc-900",
+                ].join(" ")}
+              >
+                {managing ? "Done" : "Manage roster"}
+              </button>
+            </div>
           </div>
 
           <div className="mt-4">
@@ -90,7 +114,7 @@ function DashboardInner() {
                 >
                   open Roster
                 </Link>{" "}
-                to manage your list.
+                for the full page.
               </p>
             ) : (
               <RosterReorderList
@@ -98,8 +122,11 @@ function DashboardInner() {
                 primary={primary}
                 slots={slots}
                 reorderable
+                managing={managing}
                 onMoveUp={handleMoveUp}
                 onMoveDown={handleMoveDown}
+                onSetPrimary={managing ? handleSetPrimary : undefined}
+                onRemove={managing ? handleRemove : undefined}
                 onRetry={handleRetry}
               />
             )}
