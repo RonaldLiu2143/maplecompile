@@ -1,3 +1,4 @@
+import { getChaosVellumMedal } from "./chaos-vellum-medal";
 import { getPensalirEquips } from "./pensalir-equips";
 import type { Equip, EquipsResponse, JobType } from "./types";
 
@@ -62,9 +63,19 @@ function ensureBucket(
   return equipByType[type];
 }
 
+function injectEquip(
+  equipByType: EquipsResponse["equipByType"],
+  equip: Equip,
+) {
+  const bucket = ensureBucket(equipByType, equip.equipType, equip.equipType);
+  if (!bucket.equips.some((e) => e.id === equip.id || e.name === equip.name)) {
+    bucket.equips.push(equip);
+  }
+}
+
 /**
- * Normalize catalog names to GMS wording and inject Pensalir armor
- * (absent from the upstream WhackyBeanz seed).
+ * Normalize catalog names to GMS wording and inject missing GMS gear
+ * (Pensalir armor, Chaos Vellum Crusher medal — absent from WhackyBeanz seed).
  */
 export function enrichEquipsResponse(
   data: EquipsResponse,
@@ -83,13 +94,13 @@ export function enrichEquipsResponse(
     equipBySetName[key] = (list ?? []).map(applyGmsEquipName);
   }
 
+  // Common across all classes — inject even when jobType is unknown/common.
+  injectEquip(equipByType, getChaosVellumMedal());
+
   if (JOB_TYPES.has(jobType as JobType)) {
     const pensalir = getPensalirEquips(jobType as JobType);
     for (const equip of pensalir) {
-      const bucket = ensureBucket(equipByType, equip.equipType, equip.equipType);
-      if (!bucket.equips.some((e) => e.id === equip.id)) {
-        bucket.equips.push(equip);
-      }
+      injectEquip(equipByType, equip);
     }
     equipBySetName.pensalir = pensalir;
   }

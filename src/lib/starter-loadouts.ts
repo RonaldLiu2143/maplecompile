@@ -72,6 +72,9 @@ export const STARTER_LOADOUTS: StarterLoadout[] = [
       "meister",
       "sweetwater",
     ],
+    typeMatchers: {
+      medal: ["chaos vellum crusher", "chaos-vellum-crusher"],
+    },
   },
   {
     id: "heroic-cra",
@@ -86,6 +89,9 @@ export const STARTER_LOADOUTS: StarterLoadout[] = [
       "meister",
       "sweetwater",
     ],
+    typeMatchers: {
+      medal: ["chaos vellum crusher", "chaos-vellum-crusher"],
+    },
   },
   {
     id: "heroic-absolab",
