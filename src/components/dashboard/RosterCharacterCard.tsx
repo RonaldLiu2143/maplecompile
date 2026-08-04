@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { ExpRangeGraph } from "@/components/character/ExpRangeGraph";
 import type { CharacterLookupResult } from "@/lib/character/lookup";
 
 function formatRank(n: number | null | undefined): string {
@@ -125,12 +124,6 @@ export function RosterCharacterCard({
               }
             />
           </div>
-
-          <ExpRangeGraph
-            graph={character.graph}
-            averages={character.expAverages}
-            compact
-          />
 
           <div className="mt-3">
             <Link
