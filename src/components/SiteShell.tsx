@@ -18,6 +18,7 @@ const PRIMARY_LINKS: NavLink[] = [
   { href: "/guide", label: "Guide", match: "exact" },
   { href: "/calc/scouter", label: "Scouter", match: "exact" },
   { href: "/calc/scouter/gallery", label: "Gallery" },
+  { href: "/calc/character", label: "Character Lookup", match: "exact" },
 ];
 
 const CALCULATOR_LINKS: NavLink[] = [

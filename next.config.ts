@@ -15,6 +15,14 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "whacky-website.s3-ap-southeast-1.amazonaws.com",
       },
+      {
+        protocol: "https",
+        hostname: "msavatar1.nexon.net",
+      },
+      {
+        protocol: "https",
+        hostname: "msavatar2.nexon.net",
+      },
     ],
   },
 };
