@@ -4,18 +4,20 @@ import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { CharacterProfile } from "@/components/character/CharacterProfile";
-import type { CharacterLookupResult } from "@/lib/character/lookup";
-
-type ApiOk = { ok: true; character: CharacterLookupResult };
-type ApiErr = { ok: false; error: string; code?: string };
+import {
+  CHARACTER_LOOKUP_NETWORK_ERROR,
+  fetchCharacterLookup,
+} from "@/lib/character/client";
+import {
+  normalizeRegion,
+  type CharacterLookupResult,
+} from "@/lib/character/lookup";
 
 function CharacterProfileLoader() {
   const params = useParams<{ name: string }>();
   const searchParams = useSearchParams();
   const rawName = decodeURIComponent(params.name ?? "");
-  const region = (searchParams.get("region") ?? "na").toLowerCase() === "eu"
-    ? "eu"
-    : "na";
+  const region = normalizeRegion(searchParams.get("region")) ?? "na";
 
   const [pending, setPending] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -28,20 +30,16 @@ function CharacterProfileLoader() {
       setError(null);
       setResult(null);
       try {
-        const qs = new URLSearchParams({ name: rawName, region });
-        const res = await fetch(`/api/character?${qs.toString()}`, {
-          cache: "no-store",
-        });
-        const body = (await res.json()) as ApiOk | ApiErr;
+        const character = await fetchCharacterLookup(rawName, region);
         if (cancelled) return;
-        if (!res.ok || !body.ok) {
-          setError(!body.ok ? body.error : `Lookup failed (${res.status}).`);
-          return;
-        }
-        setResult(body.character);
-      } catch {
+        setResult(character);
+      } catch (err) {
         if (!cancelled) {
-          setError("Network error — check your connection and try again.");
+          setError(
+            err instanceof Error
+              ? err.message
+              : CHARACTER_LOOKUP_NETWORK_ERROR,
+          );
         }
       } finally {
         if (!cancelled) setPending(false);

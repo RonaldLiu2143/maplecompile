@@ -2,12 +2,9 @@
 
 import Link from "next/link";
 import { ExpRangeGraph } from "@/components/character/ExpRangeGraph";
+import { characterProfileHref } from "@/lib/character/client";
+import { formatOptionalInt, formatRank } from "@/lib/character/format";
 import type { CharacterLookupResult } from "@/lib/character/lookup";
-
-function formatRank(n: number | null | undefined): string {
-  if (n == null || !Number.isFinite(n) || n <= 0) return "—";
-  return `#${n.toLocaleString()}`;
-}
 
 function MiniStat({ label, value }: { label: string; value: string }) {
   return (
@@ -36,15 +33,12 @@ export function MiniRosterProfileCard({
   const region = character.region.toUpperCase();
   const ranking = character.ranking;
   const pct = character.expPercent;
-  const profileHref = `/calc/character/${encodeURIComponent(character.name)}?region=${character.region}`;
+  const profileHref = characterProfileHref(character);
 
   const classInWorld = formatRank(ranking?.jobRank);
   const worldRank = formatRank(ranking?.worldRank);
   const gmsOverall = formatRank(ranking?.globalRank ?? character.overallRank);
-  const legion =
-    character.legionLevel != null
-      ? character.legionLevel.toLocaleString()
-      : "—";
+  const legion = formatOptionalInt(character.legionLevel);
 
   return (
     <article className="overflow-hidden rounded-2xl border-2 border-border bg-surface">

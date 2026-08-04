@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { ExpRangeGraph } from "@/components/character/ExpRangeGraph";
 import { formatCompact } from "@/lib/character/exp";
+import { formatOptionalInt, formatRank } from "@/lib/character/format";
 import type { CharacterLookupResult } from "@/lib/character/lookup";
 
 function StatRow({
@@ -19,11 +20,6 @@ function StatRow({
       <dd className="font-mono text-sm font-semibold tabular-nums">{value}</dd>
     </div>
   );
-}
-
-function formatRank(n: number | null | undefined): string {
-  if (n == null || !Number.isFinite(n) || n <= 0) return "—";
-  return `#${n.toLocaleString()}`;
 }
 
 export function CharacterProfile({
@@ -136,9 +132,7 @@ export function CharacterProfile({
             />
             <StatRow
               label="Fame"
-              value={
-                character.fame != null ? character.fame.toLocaleString() : "—"
-              }
+              value={formatOptionalInt(character.fame)}
             />
           </dl>
         </section>
@@ -154,19 +148,11 @@ export function CharacterProfile({
             />
             <StatRow
               label="Legion level"
-              value={
-                character.legionLevel != null
-                  ? character.legionLevel.toLocaleString()
-                  : "—"
-              }
+              value={formatOptionalInt(character.legionLevel)}
             />
             <StatRow
               label="Raid power"
-              value={
-                character.raidPower != null
-                  ? character.raidPower.toLocaleString()
-                  : "—"
-              }
+              value={formatOptionalInt(character.raidPower)}
             />
           </dl>
           {!character.legionLevel ? (

@@ -1,13 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import type { DragEvent, ReactNode } from "react";
+import type { DragEvent } from "react";
+import { characterProfileHref } from "@/lib/character/client";
+import { formatOptionalInt, formatRank } from "@/lib/character/format";
 import type { CharacterLookupResult } from "@/lib/character/lookup";
-
-function formatRank(n: number | null | undefined): string {
-  if (n == null || !Number.isFinite(n) || n <= 0) return "—";
-  return `#${n.toLocaleString()}`;
-}
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
@@ -95,7 +92,7 @@ export function RosterCharacterCard({
   const world = character.worldName;
   const classRankInWorld = character.ranking?.jobRank;
   const title = `${character.name} · ${character.level} (${world})`;
-  const profileHref = `/calc/character/${encodeURIComponent(character.name)}?region=${character.region}`;
+  const profileHref = characterProfileHref(character);
 
   return (
     <article
@@ -182,11 +179,7 @@ export function RosterCharacterCard({
             />
             <Stat
               label="Legion level"
-              value={
-                character.legionLevel != null
-                  ? character.legionLevel.toLocaleString()
-                  : "—"
-              }
+              value={formatOptionalInt(character.legionLevel)}
             />
           </div>
 
@@ -211,11 +204,9 @@ export function RosterCharacterCard({
 export function RosterCardSkeleton({
   name,
   drag,
-  leading,
 }: {
   name: string;
   drag?: RosterDragProps;
-  leading?: ReactNode;
 }) {
   return (
     <div
@@ -225,7 +216,6 @@ export function RosterCardSkeleton({
         drag,
       )}
     >
-      {leading}
       Loading {name}…
     </div>
   );
