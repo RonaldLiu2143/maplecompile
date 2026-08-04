@@ -1,32 +1,41 @@
 /**
  * Heroic / GMS Star Force meso costs + expected EV (non-Superior).
  *
- * Attempt cost formulas: MapleStory Wiki “Star Force Enhancement” (GMS column).
- * Rounded to nearest 100 mesos. Success / fail / destroy rates: same page
- * (pre–Enhancement-Mode / Mode 1 rates). Destroy recovery stars follow GMS
- * Core Restoration table (15–19→12, 20→15, 21–22→17, …).
+ * Source of truth for attempt costs, Mode-1 rates, safeguard, and boom
+ * recovery: https://starforce.tadeucci.dev/ (`rates.js` / `simulator.js`,
+ * GMS v269 Enhancement Modes — Mode 1 = classic baseline).
  *
- * Assumptions for MVP:
- * - Non-Superior only (Superior Gollux etc. use a different fixed cost — stubbed).
- * - No MVP / Sunny Sunday / 5-10-15 / Shining discounts.
- * - Safeguard on by default for 15→16 and 16→17 (Heroic common practice).
- * - Boom spare / restoration meso = 0 (Heroic uses cores/points; not modeled).
- * - Stat gains are community approximations for relative FD ranking, not pixel-perfect.
+ * Post-v264 GMS: fail maintains the current star (no star drop). Outcomes are
+ * success / maintain / destroy. Destroy recovery follows Core Restoration
+ * (15–19→12, 20→15, 21–22→17, …).
+ *
+ * Planner defaults (Heroic-first):
+ * - Mode 1 only (Enhancement Modes 2–4 are not selected by the planner).
+ * - Safeguard on for 15★–17★ (safeguard to 18★; 3× meso, boom → maintain).
+ * - No MVP / event / star-catching discounts.
+ * - Boom spare / restoration meso = 0 (Heroic cores/points not modeled).
+ * - Stat gains are community approximations for relative FD ranking.
  */
 
 export type SfRates = {
   success: number;
-  /** Fail that keeps current star (0–10). */
+  /** Fail that keeps current star (post-v264: all non-destroy fails). */
   stay: number;
-  /** Fail that drops 1 star. */
+  /**
+   * Fail that drops 1 star. Always 0 for normal GMS gear after v264;
+   * kept for API compatibility / Superior stubs.
+   */
   drop: number;
   destroy: number;
 };
 
-/** GMS Mode-1 rates for enhancing FROM `star` → star+1. */
+/**
+ * GMS Mode-1 rates for enhancing FROM `star` → star+1.
+ * Triple is [success, maintain, boom] and sums to 1 (from starforce.tadeucci.dev).
+ */
 export function starForceRates(star: number): SfRates {
+  // success, maintain, boom
   const table: Array<[number, number, number]> = [
-    // success, failTotal, destroy  (failTotal includes destroy)
     [0.95, 0.05, 0],
     [0.9, 0.1, 0],
     [0.85, 0.15, 0],
@@ -52,82 +61,168 @@ export function starForceRates(star: number): SfRates {
     [0.15, 0.68, 0.17],
     [0.1, 0.72, 0.18],
     [0.1, 0.72, 0.18],
+    [0.1, 0.72, 0.18],
+    [0.07, 0.744, 0.186],
+    [0.05, 0.76, 0.19],
+    [0.03, 0.776, 0.194],
+    [0.01, 0.792, 0.198],
   ];
   const row = table[Math.max(0, Math.min(star, table.length - 1))]!;
-  const [success, failTotal, destroy] = row;
-  const failNoBoom = Math.max(0, failTotal - destroy);
-  // 0–10: stay on fail; 11+: drop on fail (wiki / modern SF).
-  if (star < 10) {
-    return { success, stay: failNoBoom, drop: 0, destroy };
-  }
-  return { success, stay: 0, drop: failNoBoom, destroy };
-}
-
-function round100(n: number): number {
-  return Math.round(n / 100) * 100;
+  const [success, stay, destroy] = row;
+  return { success, stay, drop: 0, destroy };
 }
 
 /**
- * Base meso cost for one attempt at `star` → star+1 on a level-`level` item.
- * GMS wiki formulas (non-Superior).
+ * Cost coefficients from starforce.tadeucci.dev `rates.js` COST_COEFS.
+ * Formula: 100 * round(mult * levelTier³ * (star+1)^expo / divisor + 10)
+ * where levelTier = floor(itemLevel / 10) * 10.
+ */
+const COST_COEFS: Record<number, { divisor: number; expo: number; mult: number }> =
+  (() => {
+    const c: Record<number, { divisor: number; expo: number; mult: number }> =
+      {};
+    for (let s = 0; s <= 9; s++) c[s] = { divisor: 2500, expo: 1, mult: 1 };
+    c[10] = { divisor: 40000, expo: 2.7, mult: 1 };
+    c[11] = { divisor: 22000, expo: 2.7, mult: 1 };
+    c[12] = { divisor: 15000, expo: 2.7, mult: 1 };
+    c[13] = { divisor: 11000, expo: 2.7, mult: 1 };
+    c[14] = { divisor: 7500, expo: 2.7, mult: 1 };
+    c[15] = { divisor: 20000, expo: 2.7, mult: 1 };
+    c[16] = { divisor: 20000, expo: 2.7, mult: 1 };
+    c[17] = { divisor: 20000, expo: 2.7, mult: 4 / 3 };
+    c[18] = { divisor: 20000, expo: 2.7, mult: 20 / 7 };
+    c[19] = { divisor: 20000, expo: 2.7, mult: 40 / 9 };
+    c[20] = { divisor: 20000, expo: 2.7, mult: 1 };
+    c[21] = { divisor: 20000, expo: 2.7, mult: 8 / 5 };
+    for (let s = 22; s <= 29; s++) c[s] = { divisor: 20000, expo: 2.7, mult: 1 };
+    return c;
+  })();
+
+/**
+ * Base meso cost for one Mode-1 attempt at `star` → star+1 on a level-`level` item.
+ * Matches starforce.tadeucci.dev `SF.baseCost`.
  */
 export function starForceAttemptCost(level: number, star: number): number {
-  const L = Math.max(0, Math.floor(level));
-  const S = Math.max(0, Math.floor(star));
-  const L3 = L * L * L;
-  let raw: number;
-  if (S < 10) {
-    raw = 1000 + Math.floor((L3 * (S + 1)) / 25);
-  } else if (S === 10) {
-    raw = 1000 + Math.floor((L3 * Math.pow(11, 2.7)) / 400);
-  } else if (S === 11) {
-    raw = 1000 + Math.floor((L3 * Math.pow(12, 2.7)) / 220);
-  } else if (S === 12) {
-    raw = 1000 + Math.floor((L3 * Math.pow(13, 2.7)) / 150);
-  } else if (S === 13) {
-    raw = 1000 + Math.floor((L3 * Math.pow(14, 2.7)) / 110);
-  } else if (S === 14) {
-    raw = 1000 + Math.floor((L3 * Math.pow(15, 2.7)) / 75);
-  } else if (S === 15) {
-    raw = 1000 + Math.floor((L3 * Math.pow(16, 2.7)) / 200);
-  } else if (S === 16) {
-    raw = 1000 + Math.floor((L3 * Math.pow(17, 2.7)) / 200);
-  } else if (S === 17) {
-    raw = 1000 + Math.floor((L3 * Math.pow(18, 2.7)) / 150);
-  } else if (S === 18) {
-    raw = 1000 + Math.floor((L3 * Math.pow(19, 2.7)) / 70);
-  } else if (S === 19) {
-    raw = 1000 + Math.floor((L3 * Math.pow(20, 2.7)) / 45);
-  } else if (S === 20) {
-    raw = 1000 + Math.floor((L3 * Math.pow(21, 2.7)) / 200);
-  } else if (S === 21) {
-    raw = 1000 + Math.floor((L3 * Math.pow(22, 2.7)) / 125);
-  } else {
-    // 22★ → 30★
-    raw = 1000 + Math.floor((L3 * Math.pow(S + 1, 2.7)) / 200);
-  }
-  return round100(raw);
+  const S = Math.max(0, Math.min(29, Math.floor(star)));
+  const c = COST_COEFS[S] ?? COST_COEFS[29]!;
+  const levelTier = Math.floor(Math.max(0, level) / 10) * 10;
+  const raw =
+    (c.mult * Math.pow(levelTier, 3) * Math.pow(S + 1, c.expo)) / c.divisor +
+    10;
+  return 100 * Math.round(raw);
 }
 
-/** GMS recover-after-destroy star (Core Restoration). */
+/** GMS recover-after-destroy star (Core Restoration / boomDropStar). */
 export function destroyRecoverStar(destroyedAt: number): number {
-  if (destroyedAt <= 19) return 12;
+  if (destroyedAt < 20) return 12;
   if (destroyedAt === 20) return 15;
-  if (destroyedAt <= 22) return 17;
-  if (destroyedAt <= 25) return 19;
+  if (destroyedAt < 23) return 17;
+  if (destroyedAt < 26) return 19;
   return 20;
 }
 
 export type ExpectedSfCostOpts = {
-  /** Safeguard 15–17 (triples attempt cost; destroy → drop). Default true. */
+  /**
+   * Safeguard to 18★ (stars 15–17): +2× cost multiplier (3× total), boom → maintain.
+   * Default true.
+   */
   safeguard?: boolean;
   /** Cap star for EV solve (default 25). */
   maxStar?: number;
 };
 
 /**
+ * Paid meso for one attempt after Mode-1 cost multipliers (safeguard only here).
+ * Mirrors starforce.tadeucci.dev `costMultiplier` for Mode 1 / no event / no MVP.
+ */
+function attemptCostPaid(
+  level: number,
+  star: number,
+  safeguard: boolean,
+): number {
+  let mult = 1;
+  if (safeguard && star >= 15 && star <= 17) mult += 2;
+  return Math.round(starForceAttemptCost(level, star) * mult);
+}
+
+function ratesForAttempt(star: number, safeguard: boolean): SfRates {
+  const rates = starForceRates(star);
+  if (safeguard && star >= 15 && star <= 17) {
+    return {
+      success: rates.success,
+      stay: rates.stay + rates.destroy,
+      drop: 0,
+      destroy: 0,
+    };
+  }
+  return rates;
+}
+
+/**
+ * Solve A E = b for expected remaining cost E[s] to reach `to` from each star s.
+ * For each s < to:
+ *   (1 - stay) E[s] - success E[s+1] - destroy E[recover] = cost
+ * with E[to] = 0. Boom cycles need a direct linear solve (Gauss–Seidel under-
+ * estimates badly within a few dozen iters at 22★+).
+ */
+function solveExpectedCosts(
+  level: number,
+  to: number,
+  safeguard: boolean,
+): Float64Array {
+  const n = to; // unknowns E[0] .. E[to-1]
+  const A: Float64Array[] = Array.from(
+    { length: n },
+    () => new Float64Array(n),
+  );
+  const b = new Float64Array(n);
+
+  for (let s = 0; s < to; s++) {
+    const { success, stay, destroy } = ratesForAttempt(s, safeguard);
+    const cost = attemptCostPaid(level, s, safeguard);
+    A[s]![s]! += 1 - stay;
+    b[s]! = cost;
+    if (s + 1 < to) A[s]![s + 1]! -= success;
+    if (destroy > 0) {
+      const recover = destroyRecoverStar(s);
+      if (recover < to) A[s]![recover]! -= destroy;
+    }
+  }
+
+  // Gaussian elimination with partial pivoting
+  for (let i = 0; i < n; i++) {
+    let piv = i;
+    for (let r = i + 1; r < n; r++) {
+      if (Math.abs(A[r]![i]!) > Math.abs(A[piv]![i]!)) piv = r;
+    }
+    if (piv !== i) {
+      const tmpRow = A[i]!;
+      A[i] = A[piv]!;
+      A[piv] = tmpRow;
+      const tmpB = b[i]!;
+      b[i] = b[piv]!;
+      b[piv] = tmpB;
+    }
+    const div = A[i]![i]!;
+    if (Math.abs(div) < 1e-18) continue;
+    for (let c = i; c < n; c++) A[i]![c]! /= div;
+    b[i]! /= div;
+    for (let r = 0; r < n; r++) {
+      if (r === i) continue;
+      const f = A[r]![i]!;
+      if (f === 0) continue;
+      for (let c = i; c < n; c++) A[r]![c]! -= f * A[i]![c]!;
+      b[r]! -= f * b[i]!;
+    }
+  }
+
+  return b;
+}
+
+/**
  * Expected meso to go from `fromStar` to `toStar` (inclusive target).
- * Solves a linear system over star states.
+ * Exact Markov expectation under Mode-1 rates (matches long-run Monte Carlo
+ * average on starforce.tadeucci.dev, not median).
  */
 export function expectedStarForceCost(
   level: number,
@@ -141,54 +236,7 @@ export function expectedStarForceCost(
   const to = Math.max(from, Math.min(toStar, maxStar));
   if (from === to) return 0;
 
-  // E[s] = expected remaining cost from star s to reach `to`
-  const n = to + 1;
-  const E = new Array<number>(n).fill(0);
-  // Gauss-Seidel iterations (acyclic-ish with boom cycles — iterate to convergence)
-  for (let iter = 0; iter < 80; iter++) {
-    let maxDiff = 0;
-    for (let s = to - 1; s >= 0; s--) {
-      if (s < from && s !== destroyRecoverStar(s + 1)) {
-        // Still needed as intermediate after drops / recovers
-      }
-      const rates = starForceRates(s);
-      let cost = starForceAttemptCost(level, s);
-      let { success, stay, drop, destroy } = rates;
-      const useSg = safeguard && s >= 15 && s <= 16;
-      if (useSg) {
-        cost *= 3;
-        drop += destroy;
-        destroy = 0;
-      }
-      // Normalize tiny float drift
-      const sum = success + stay + drop + destroy;
-      if (sum > 0) {
-        success /= sum;
-        stay /= sum;
-        drop /= sum;
-        destroy /= sum;
-      }
-
-      const nextSuccess = s + 1 >= to ? 0 : E[s + 1]!;
-      const nextDrop = s <= 0 ? E[0]! : E[Math.min(s - 1, to)]!;
-      const recover = destroyRecoverStar(s);
-      const nextBoom = recover >= to ? 0 : E[Math.min(recover, to)]!;
-
-      // E = cost + p_s*E_next + p_stay*E + p_drop*E_drop + p_boom*E_rec
-      // (1 - p_stay) E = cost + ...
-      const rhs =
-        cost +
-        success * nextSuccess +
-        drop * nextDrop +
-        destroy * nextBoom;
-      const denom = Math.max(1e-9, 1 - stay);
-      const nextE = rhs / denom;
-      maxDiff = Math.max(maxDiff, Math.abs(nextE - E[s]!));
-      E[s] = nextE;
-    }
-    if (maxDiff < 1) break;
-  }
-
+  const E = solveExpectedCosts(level, to, safeguard);
   return Math.max(0, E[from] ?? 0);
 }
 

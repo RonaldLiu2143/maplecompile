@@ -88,7 +88,8 @@ export function buildStarForceCandidates(piece: FlatEquip): UpgradeCandidate[] {
       equipImg: piece.equip.imgUrl,
       mesoCost,
       delta: { mainStat, att },
-      notes: "Heroic GMS EV w/ safeguard 15–17; no event discount / boom spare",
+      notes:
+        "Heroic Mode-1 EV (starforce.tadeucci.dev) w/ safeguard to 18★; no event/MVP/star-catch",
     });
   }
   return out;
