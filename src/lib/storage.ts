@@ -223,8 +223,103 @@ export const storage = {
     const map = readJson<
       Record<string, { deleteToken: string; name: string; public: boolean }>
     >("maplecompile-scouter-share-tokens", {});
-    if (!(id in map)) return;
-    delete map[id];
-    writeJson("maplecompile-scouter-share-tokens", map);
+    if (id in map) {
+      delete map[id];
+      writeJson("maplecompile-scouter-share-tokens", map);
+    }
+    clearGalleryLinkForShareId(id);
+  },
+
+  /**
+   * Resolve the public gallery share owned by this browser for a preset
+   * (or the last public share when no preset is loaded).
+   */
+  getScouterGalleryShareForPreset: (
+    presetId: string | null | undefined,
+  ): ScouterGalleryOwnedShare | null => {
+    const links = readGalleryLinks();
+    const tokens = storage.getScouterShareTokens();
+    // Prefer the share linked to this preset; only use lastPublic when no preset is loaded.
+    const shareId = presetId
+      ? links.byPresetId[presetId] ?? null
+      : links.lastPublicShareId;
+    if (!shareId) return null;
+    const token = tokens[shareId];
+    if (!token?.deleteToken || !token.public) return null;
+    return {
+      id: shareId,
+      deleteToken: token.deleteToken,
+      name: token.name,
+      public: true,
+    };
+  },
+
+  /** Remember which public gallery post belongs to a preset / this browser. */
+  linkScouterGalleryShare: (args: {
+    shareId: string;
+    presetId?: string | null;
+  }) => {
+    const links = readGalleryLinks();
+    links.lastPublicShareId = args.shareId;
+    if (args.presetId) {
+      links.byPresetId[args.presetId] = args.shareId;
+    }
+    writeGalleryLinks(links);
+  },
+
+  /** Drop gallery→preset mapping for a share (e.g. after remove / replace). */
+  unlinkScouterGalleryShare: (shareId: string) => {
+    clearGalleryLinkForShareId(shareId);
   },
 };
+
+type ScouterGalleryLinkMap = {
+  /** Most recent public gallery share from this browser. */
+  lastPublicShareId: string | null;
+  /** presetId → public share id */
+  byPresetId: Record<string, string>;
+};
+
+export type ScouterGalleryOwnedShare = {
+  id: string;
+  deleteToken: string;
+  name: string;
+  public: true;
+};
+
+const SCOUTER_GALLERY_LINKS_KEY = "maplecompile-scouter-gallery-links";
+
+function readGalleryLinks(): ScouterGalleryLinkMap {
+  const raw = readJson<Partial<ScouterGalleryLinkMap> | null>(
+    SCOUTER_GALLERY_LINKS_KEY,
+    null,
+  );
+  return {
+    lastPublicShareId:
+      typeof raw?.lastPublicShareId === "string" ? raw.lastPublicShareId : null,
+    byPresetId:
+      raw?.byPresetId && typeof raw.byPresetId === "object"
+        ? { ...raw.byPresetId }
+        : {},
+  };
+}
+
+function writeGalleryLinks(links: ScouterGalleryLinkMap) {
+  writeJson(SCOUTER_GALLERY_LINKS_KEY, links);
+}
+
+function clearGalleryLinkForShareId(shareId: string) {
+  const links = readGalleryLinks();
+  let changed = false;
+  if (links.lastPublicShareId === shareId) {
+    links.lastPublicShareId = null;
+    changed = true;
+  }
+  for (const [presetId, id] of Object.entries(links.byPresetId)) {
+    if (id === shareId) {
+      delete links.byPresetId[presetId];
+      changed = true;
+    }
+  }
+  if (changed) writeGalleryLinks(links);
+}

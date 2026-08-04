@@ -3,6 +3,7 @@ import {
   getShare,
   incrementShareViews,
   isRedisConfigured,
+  purgeShare,
   removeFromPublicGallery,
 } from "@/lib/scouter/share";
 
@@ -57,11 +58,20 @@ export async function DELETE(req: Request, { params }: Params) {
     const { id } = await params;
     const body = (await req.json().catch(() => ({}))) as {
       deleteToken?: string;
+      /** When true, permanently delete (404). Used for gallery replace. */
+      hard?: boolean;
     };
-    await removeFromPublicGallery({
-      id,
-      deleteToken: body.deleteToken ?? "",
-    });
+    if (body.hard === true) {
+      await purgeShare({
+        id,
+        deleteToken: body.deleteToken ?? "",
+      });
+    } else {
+      await removeFromPublicGallery({
+        id,
+        deleteToken: body.deleteToken ?? "",
+      });
+    }
     return NextResponse.json({ ok: true });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";

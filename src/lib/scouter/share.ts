@@ -576,6 +576,43 @@ export async function listPublicShares(): Promise<ScouterGalleryItem[]> {
   return items.slice(0, GALLERY_LIST_LIMIT);
 }
 
+async function assertDeleteToken(id: string, deleteToken: string): Promise<{
+  redis: Redis;
+  raw: ScouterShareRecord | null;
+}> {
+  if (!id || !/^[A-Za-z0-9_-]{4,32}$/.test(id) || !deleteToken) {
+    throw new Error("Invalid share id or delete token");
+  }
+  const redis = getRedis();
+  const storedToken = await redis.get<string>(deleteTokenKey(id));
+  if (!storedToken || storedToken !== deleteToken) {
+    throw new Error("Not allowed to remove this share");
+  }
+  const raw = await redis.get<ScouterShareRecord>(shareKey(id));
+  return {
+    redis,
+    raw: raw && typeof raw === "object" ? raw : null,
+  };
+}
+
+/** Release the public IGN name lock when this share owns it. */
+async function releasePublicNameLock(
+  redis: Redis,
+  id: string,
+  raw: ScouterShareRecord | null,
+): Promise<void> {
+  if (!raw) return;
+  const identity = resolveShareIdentity(raw);
+  // Only IGN (and legacy named) shares hold a unique-name lock.
+  if (identity !== "ign") return;
+  const name = normalizePublicShareName(raw.name || raw.ign || "");
+  if (!name) return;
+  const owned = await redis.get<string>(publicNameKey(name));
+  if (owned === id) {
+    await redis.del(publicNameKey(name));
+  }
+}
+
 /**
  * Remove a loadout from the public gallery (frees the IGN name lock when applicable).
  * Requires the delete token returned at create time.
@@ -587,33 +624,29 @@ export async function removeFromPublicGallery(args: {
 }): Promise<void> {
   const id = args.id?.trim();
   const deleteToken = args.deleteToken?.trim();
-  if (!id || !/^[A-Za-z0-9_-]{4,32}$/.test(id) || !deleteToken) {
-    throw new Error("Invalid share id or delete token");
-  }
+  const { redis, raw } = await assertDeleteToken(id, deleteToken ?? "");
 
-  const redis = getRedis();
-  const storedToken = await redis.get<string>(deleteTokenKey(id));
-  if (!storedToken || storedToken !== deleteToken) {
-    throw new Error("Not allowed to remove this share");
-  }
-
-  const raw = await redis.get<ScouterShareRecord>(shareKey(id));
-  if (raw && typeof raw === "object") {
-    const identity = resolveShareIdentity(raw);
-    // Only IGN (and legacy named) shares hold a unique-name lock.
-    if (identity === "ign") {
-      const name = normalizePublicShareName(raw.name || raw.ign || "");
-      if (name) {
-        const owned = await redis.get<string>(publicNameKey(name));
-        if (owned === id) {
-          await redis.del(publicNameKey(name));
-        }
-      }
-    }
-    if (raw.public) {
-      await redis.set(shareKey(id), { ...raw, public: false });
-    }
+  await releasePublicNameLock(redis, id, raw);
+  if (raw?.public) {
+    await redis.set(shareKey(id), { ...raw, public: false });
   }
 
   await redis.srem(SHARE_PUBLIC_SET, id);
+}
+
+/**
+ * Permanently delete a share (gallery + direct link 404).
+ * Used when replacing a gallery post with a fresh share id.
+ */
+export async function purgeShare(args: {
+  id: string;
+  deleteToken: string;
+}): Promise<void> {
+  const id = args.id?.trim();
+  const deleteToken = args.deleteToken?.trim();
+  const { redis, raw } = await assertDeleteToken(id, deleteToken ?? "");
+
+  await releasePublicNameLock(redis, id, raw);
+  await redis.srem(SHARE_PUBLIC_SET, id);
+  await redis.del(shareKey(id), deleteTokenKey(id), viewsKey(id));
 }
