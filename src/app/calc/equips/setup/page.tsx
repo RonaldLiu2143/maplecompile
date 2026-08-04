@@ -19,6 +19,7 @@ import {
   canFlame,
   canPotential,
   canStarForce,
+  clampStarForce,
 } from "@/lib/equip-capabilities";
 import { inferNormalFlame } from "@/lib/flames";
 import {
@@ -64,7 +65,10 @@ function withHeroicDefaults(equip: Equip): Equip {
     isNormalFlame: inferNormalFlame(equip),
   };
   if (canStarForce(equip)) {
-    next.starForce = equip.starForce ?? defaultStarForce(equip.level);
+    next.starForce = clampStarForce(
+      equip,
+      equip.starForce ?? defaultStarForce(equip.level),
+    );
   } else {
     delete next.starForce;
   }
@@ -80,6 +84,39 @@ function withHeroicDefaults(equip: Equip): Equip {
     delete next.flames;
   }
   return next;
+}
+
+/** Clamp SF on every equipped piece (e.g. after loading older saves). */
+function clampSetupStarForce(setup: EquipSetup): EquipSetup {
+  const next: EquipSetup = {};
+  let changed = false;
+  for (const [type, list] of Object.entries(setup)) {
+    if (!Array.isArray(list)) {
+      next[type] = list;
+      continue;
+    }
+    next[type] = list.map((equip) => {
+      if (!equip?.id) return equip;
+      if (!canStarForce(equip)) {
+        if (equip.starForce !== undefined) {
+          changed = true;
+          const { starForce: _drop, ...rest } = equip;
+          return rest;
+        }
+        return equip;
+      }
+      const capped = clampStarForce(
+        equip,
+        equip.starForce ?? defaultStarForce(equip.level),
+      );
+      if (equip.starForce !== capped) {
+        changed = true;
+        return { ...equip, starForce: capped };
+      }
+      return equip;
+    });
+  }
+  return changed ? next : setup;
 }
 
 export default function SetupClient() {
@@ -159,7 +196,7 @@ export default function SetupClient() {
     const char = savedChar || DEFAULT_CHAR;
     setJobType(job);
     setCharType(char);
-    if (Object.keys(savedSetup).length) setSetup(savedSetup);
+    if (Object.keys(savedSetup).length) setSetup(clampSetupStarForce(savedSetup));
     setFlameSetup(savedFlames);
     setHydrated(true);
     void loadCatalog(job, char);
@@ -179,7 +216,10 @@ export default function SetupClient() {
         ...prev,
         [slotId]: {
           starForce: canStarForce(equip)
-            ? (equip.starForce ?? defaultStarForce(equip.level))
+            ? clampStarForce(
+                equip,
+                equip.starForce ?? defaultStarForce(equip.level),
+              )
             : 0,
           potentialTier: canPotential(equip)
             ? (equip.potentialTier ?? defaultPotentialTier(equip.level))
@@ -282,8 +322,12 @@ export default function SetupClient() {
       const cur = list[idx];
       if (!cur) return prev;
       const safe: EquipItemPatch = { ...patch };
-      if (safe.starForce !== undefined && !canStarForce(cur)) {
-        delete safe.starForce;
+      if (safe.starForce !== undefined) {
+        if (!canStarForce(cur)) {
+          delete safe.starForce;
+        } else {
+          safe.starForce = clampStarForce(cur, safe.starForce);
+        }
       }
       if (
         (safe.potentialTier !== undefined ||

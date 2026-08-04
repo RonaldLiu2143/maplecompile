@@ -1,4 +1,5 @@
 import { isFlammable } from "./flames";
+import { MAX_STAR_FORCE } from "./planner/starforce";
 import type { Equip } from "./types";
 
 /**
@@ -61,6 +62,63 @@ export function canStarForce(equip: Equip): boolean {
   }
   if (isSpecialRing(equip)) return false;
   return true;
+}
+
+/**
+ * GMS max Star Force by equip level (MapleStory Wiki — Star Force Enhancement).
+ * Bands: 0–94 → 5, 95–107 → 8, 108–117 → 10, 118–127 → 15,
+ * 128–137 → 20, 138+ → 30.
+ */
+export function starForceCapByLevel(level: number): number {
+  const lv = Math.max(0, Math.floor(level));
+  if (lv <= 94) return 5;
+  if (lv <= 107) return 8;
+  if (lv <= 117) return 10;
+  if (lv <= 127) return 15;
+  if (lv <= 137) return 20;
+  return MAX_STAR_FORCE;
+}
+
+/**
+ * Named-item / Superior exceptions (wiki). Returns null to fall through to
+ * level bands. Superior Gollux accessories are NOT Superior SF gear — they
+ * use normal level caps.
+ */
+function specialStarForceCap(equip: Equip): number | null {
+  const name = equip.name ?? "";
+
+  // Superior equipment tables
+  if (/\btyrant\b/i.test(name)) return 15;
+  if (/\belite\s+heliseum\b/i.test(name)) return 3;
+  if (/^nova\s/i.test(name.trim())) return 8;
+
+  // Sweetwater shoes / gloves / cape only (other SW pieces use level caps)
+  if (/sweetwater\s+(shoes|boots|gloves|cape|cloak)\b/i.test(name)) return 15;
+
+  // Secondary / badge exceptions (badge slot is already non-SF here)
+  if (/ghost\s*ship\s*exorcist/i.test(name)) return 22;
+
+  return null;
+}
+
+/**
+ * Per-item Star Force cap. Returns 0 when the item cannot take Star Force.
+ * Source: MapleStory Wiki Star Force Enhancement (GMS-aligned level bands +
+ * Superior / Sweetwater / Ghost Ship exceptions).
+ */
+export function getStarForceCap(equip: Equip): number {
+  if (!canStarForce(equip)) return 0;
+  const special = specialStarForceCap(equip);
+  const cap = special ?? starForceCapByLevel(equip.level);
+  return Math.max(0, Math.min(MAX_STAR_FORCE, cap));
+}
+
+/** Clamp a star value to the item's SF cap (0 if non-SF). */
+export function clampStarForce(equip: Equip, stars: number): number {
+  const cap = getStarForceCap(equip);
+  if (cap <= 0) return 0;
+  const n = Number.isFinite(stars) ? Math.floor(stars) : 0;
+  return Math.max(0, Math.min(cap, n));
 }
 
 /**

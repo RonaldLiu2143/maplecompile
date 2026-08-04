@@ -317,12 +317,16 @@ export function defaultStarForce(level: number): number {
 export const MAX_STAR_FORCE = 30;
 
 /** Common Heroic SF breakpoints to suggest as upgrade targets. */
-export function nextSfTargets(current: number): number[] {
+export function nextSfTargets(
+  current: number,
+  maxStar: number = MAX_STAR_FORCE,
+): number[] {
+  const cap = Math.max(0, Math.min(MAX_STAR_FORCE, Math.floor(maxStar)));
   const breakpoints = [10, 12, 15, 17, 18, 20, 21, 22, 25, 30];
   const out: number[] = [];
-  if (current < MAX_STAR_FORCE) out.push(current + 1);
+  if (current < cap) out.push(current + 1);
   for (const b of breakpoints) {
-    if (b > current && !out.includes(b)) out.push(b);
+    if (b > current && b <= cap && !out.includes(b)) out.push(b);
   }
   return out.filter((t) => t - current <= 5).slice(0, 3);
 }

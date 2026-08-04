@@ -1,4 +1,5 @@
 import type { Equip, EquipSetup, FlameLine, FlameSetup } from "@/lib/types";
+import { clampStarForce } from "@/lib/equip-capabilities";
 import { equipTypeToSlotId } from "@/lib/slots";
 import type { FlatEquip, PlannerOverrides, PlannerPieceOverride } from "./types";
 import { defaultStarForce } from "./starforce";
@@ -18,11 +19,12 @@ export function resolvePieceState(
   equip: Equip,
   override: PlannerPieceOverride | undefined,
 ): PlannerPieceOverride {
+  const rawSf =
+    override?.starForce ??
+    equip.starForce ??
+    defaultStarForce(equip.level);
   return {
-    starForce:
-      override?.starForce ??
-      equip.starForce ??
-      defaultStarForce(equip.level),
+    starForce: clampStarForce(equip, rawSf),
     potentialTier:
       override?.potentialTier ??
       equip.potentialTier ??

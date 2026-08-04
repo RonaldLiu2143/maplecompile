@@ -2,7 +2,7 @@
 
 import type { CSSProperties } from "react";
 import type { Equip, EquipSetup, FlameSetup } from "@/lib/types";
-import { canStarForce } from "@/lib/equip-capabilities";
+import { canStarForce, clampStarForce } from "@/lib/equip-capabilities";
 import {
   APPEARANCE_CELL,
   EQUIP_WINDOW_SLOTS,
@@ -50,7 +50,10 @@ function EquipSlot({
   const filled = !!equip;
   const showStars = !!equip && canStarForce(equip);
   const stars = showStars
-    ? (equip.starForce ?? defaultStarForce(equip.level))
+    ? clampStarForce(
+        equip,
+        equip.starForce ?? defaultStarForce(equip.level),
+      )
     : 0;
   const flames = equip
     ? (flameSetup?.[equip.id] ?? equip.flames ?? [])

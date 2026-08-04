@@ -1,7 +1,11 @@
 "use client";
 
 import { useMemo } from "react";
-import { equipCapabilities } from "@/lib/equip-capabilities";
+import {
+  clampStarForce,
+  equipCapabilities,
+  getStarForceCap,
+} from "@/lib/equip-capabilities";
 import {
   getSelectableStats,
   getWeaponAtt,
@@ -45,7 +49,11 @@ export function EquipItemEditor({
   onClose,
 }: Props) {
   const caps = useMemo(() => equipCapabilities(equip), [equip]);
-  const starForce = equip.starForce ?? defaultStarForce(equip.level);
+  const sfCap = getStarForceCap(equip);
+  const starForce = clampStarForce(
+    equip,
+    equip.starForce ?? defaultStarForce(equip.level),
+  );
   const potentialTier =
     equip.potentialTier ?? defaultPotentialTier(equip.level);
   const lines = flames;
@@ -167,7 +175,8 @@ export function EquipItemEditor({
             </h3>
             <StarForcePicker
               value={starForce}
-              onChange={(n) => onChange({ starForce: n })}
+              max={sfCap}
+              onChange={(n) => onChange({ starForce: clampStarForce(equip, n) })}
             />
           </section>
         )}

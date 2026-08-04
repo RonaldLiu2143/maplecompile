@@ -5,7 +5,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { PairingBar } from "@/components/PairingBar";
 import {
   DEFAULT_FLAME_PRICES,
-  MAX_STAR_FORCE,
   defaultPotentialTier,
   defaultStarForce,
   flattenEquips,
@@ -13,6 +12,7 @@ import {
   type RankedUpgrade,
   type UpgradeKind,
 } from "@/lib/planner";
+import { clampStarForce, getStarForceCap } from "@/lib/equip-capabilities";
 import {
   formatPairingLabel,
   resolvePairing,
@@ -191,8 +191,12 @@ export default function PlannerPage() {
       setOverrides((prev) => {
         const piece = pieces.find((p) => p.slotKey === slotKey);
         const cur = prev[slotKey] ?? {
-          starForce:
-            piece?.starForce ?? defaultStarForce(piece?.equip.level ?? 140),
+          starForce: piece
+            ? clampStarForce(
+                piece.equip,
+                piece.starForce ?? defaultStarForce(piece.equip.level),
+              )
+            : 0,
           potentialTier:
             piece?.potentialTier ??
             defaultPotentialTier(piece?.equip.level ?? 140),
@@ -454,17 +458,14 @@ export default function PlannerPage() {
                             <input
                               type="number"
                               min={0}
-                              max={MAX_STAR_FORCE}
+                              max={getStarForceCap(p.equip)}
                               className="w-16 rounded border border-border bg-background px-1.5 py-0.5 tabular-nums outline-none focus:border-accent"
                               value={p.starForce}
                               onChange={(e) =>
                                 persistOverride(p.slotKey, {
-                                  starForce: Math.max(
-                                    0,
-                                    Math.min(
-                                      MAX_STAR_FORCE,
-                                      Number(e.target.value) || 0,
-                                    ),
+                                  starForce: clampStarForce(
+                                    p.equip,
+                                    Number(e.target.value) || 0,
                                   ),
                                 })
                               }

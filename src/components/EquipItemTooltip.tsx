@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { canStarForce } from "@/lib/equip-capabilities";
+import { canStarForce, clampStarForce } from "@/lib/equip-capabilities";
 import {
   buildEquipTooltipModel,
   type TooltipStatLine,
@@ -94,7 +94,10 @@ export function EquipItemTooltip({
   className = "",
 }: Props) {
   const stars = canStarForce(equip)
-    ? (starForce ?? equip.starForce ?? defaultStarForce(equip.level))
+    ? clampStarForce(
+        equip,
+        starForce ?? equip.starForce ?? defaultStarForce(equip.level),
+      )
     : 0;
 
   const model = useMemo(

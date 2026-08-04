@@ -2,7 +2,12 @@ import type { ItemCategory, Tier } from "@/lib/cubing/types";
 import { runCubingCalc } from "@/lib/cubing/run";
 import { suggestCubeType } from "@/lib/cubing/cubes";
 import { isWseItem } from "@/lib/cubing/desiredStats";
-import { canFlame, canPotential, canStarForce } from "@/lib/equip-capabilities";
+import {
+  canFlame,
+  canPotential,
+  canStarForce,
+  getStarForceCap,
+} from "@/lib/equip-capabilities";
 import {
   calcFlameProbability,
   defaultStatEquiv,
@@ -50,7 +55,9 @@ export function buildStarForceCandidates(piece: FlatEquip): UpgradeCandidate[] {
     // Superior items use a different cost curve — skip in MVP with a stub note path.
     return [];
   }
-  const targets = nextSfTargets(piece.starForce);
+  const cap = getStarForceCap(piece.equip);
+  if (cap <= 0 || piece.starForce >= cap) return [];
+  const targets = nextSfTargets(piece.starForce, cap);
   const isWeapon = piece.equip.equipType === "weapon";
   const out: UpgradeCandidate[] = [];
 
@@ -70,7 +77,7 @@ export function buildStarForceCandidates(piece: FlatEquip): UpgradeCandidate[] {
       piece.equip.level,
       piece.starForce,
       target,
-      { safeguard: true },
+      { safeguard: true, maxStar: cap },
     );
     if (mesoCost <= 0 || (!mainStat && !att)) continue;
 
