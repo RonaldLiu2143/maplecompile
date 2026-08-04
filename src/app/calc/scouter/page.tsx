@@ -553,15 +553,17 @@ export default function ScouterPage() {
     asPublic: boolean;
     name?: string;
     achievement?: string;
+    identity?: "anonymous" | "ign";
   }) => {
     if (sharing) return;
+    const identity = args.identity ?? "ign";
     const name =
       (args.name ?? presetName).trim() ||
       presets.find((p) => p.id === selectedPresetId)?.name ||
       "";
-    if (args.asPublic) {
+    if (args.asPublic && identity === "ign") {
       if (!name.trim() || name.trim().toLowerCase() === "untitled") {
-        flashPresetMsg("Enter a unique name before sharing to the gallery");
+        flashPresetMsg("Enter your IGN before sharing to the gallery");
         return;
       }
     }
@@ -576,6 +578,8 @@ export default function ScouterPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: shareName,
+          ign: identity === "ign" ? shareName : undefined,
+          identity: args.asPublic ? identity : undefined,
           public: args.asPublic,
           achievement: args.asPublic ? achievement : undefined,
           state: {
@@ -590,23 +594,27 @@ export default function ScouterPage() {
         id?: string;
         url?: string;
         public?: boolean;
+        name?: string;
         deleteToken?: string;
         error?: string;
       };
       if (!res.ok || !data.url || !data.id) {
         throw new Error(data.error || `Share failed (${res.status})`);
       }
+      const savedName = (data.name ?? shareName).trim() || shareName;
       if (data.deleteToken) {
         storage.saveScouterShareToken({
           id: data.id,
           deleteToken: data.deleteToken,
-          name: shareName,
+          name: savedName,
           public: !!data.public,
         });
       }
       setShareUrl(data.url);
       if (args.asPublic) {
-        setPresetName(shareName);
+        if (identity === "ign") {
+          setPresetName(savedName);
+        }
         setShareAchievement(achievement.trim());
         setGalleryModalOpen(false);
       }
@@ -615,7 +623,7 @@ export default function ScouterPage() {
         await navigator.clipboard.writeText(data.url);
         flashPresetMsg(
           data.public
-            ? `${visibility} link copied — remove it anytime from the gallery`
+            ? `${visibility} as ${savedName} — link copied`
             : `${visibility} link copied`,
         );
       } catch {
@@ -631,14 +639,6 @@ export default function ScouterPage() {
   };
 
   const openGalleryShareModal = () => {
-    const name =
-      presetName.trim() ||
-      presets.find((p) => p.id === selectedPresetId)?.name ||
-      "";
-    if (!name.trim() || name.trim().toLowerCase() === "untitled") {
-      flashPresetMsg("Enter a unique preset name before sharing to the gallery");
-      return;
-    }
     setGalleryModalOpen(true);
   };
 
@@ -1564,9 +1564,10 @@ export default function ScouterPage() {
         onClose={() => {
           if (!sharing) setGalleryModalOpen(false);
         }}
-        onConfirm={({ name, achievement }) => {
+        onConfirm={({ identity, name, achievement }) => {
           void shareLoadout({
             asPublic: true,
+            identity,
             name,
             achievement,
           });

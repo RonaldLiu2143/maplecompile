@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server";
 import {
   getShare,
+  incrementShareViews,
   isRedisConfigured,
   removeFromPublicGallery,
 } from "@/lib/scouter/share";
 
 type Params = { params: Promise<{ id: string }> };
 
-export async function GET(_req: Request, { params }: Params) {
+export async function GET(req: Request, { params }: Params) {
   try {
     if (!isRedisConfigured()) {
       return NextResponse.json(
@@ -25,7 +26,16 @@ export async function GET(_req: Request, { params }: Params) {
       return NextResponse.json({ error: "Share not found" }, { status: 404 });
     }
 
-    return NextResponse.json(record);
+    // Count a view when the public share page loads (?view=1).
+    const url = new URL(req.url);
+    const countView = url.searchParams.get("view") === "1";
+    let views = record.views ?? 0;
+    if (countView) {
+      const next = await incrementShareViews(id);
+      if (next != null) views = next;
+    }
+
+    return NextResponse.json({ ...record, views });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
     return NextResponse.json({ error: message }, { status: 500 });

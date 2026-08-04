@@ -5,6 +5,7 @@ import {
   listPublicShares,
   SHARE_MAX_BYTES,
   type ScouterShareState,
+  type ShareIdentity,
 } from "@/lib/scouter/share";
 
 export async function GET() {
@@ -53,6 +54,8 @@ export async function POST(req: Request) {
       state?: ScouterShareState;
       public?: boolean;
       achievement?: string;
+      identity?: ShareIdentity;
+      ign?: string;
     };
 
     if (!body?.state?.input) {
@@ -67,11 +70,16 @@ export async function POST(req: Request) {
       );
     }
 
+    const identity: ShareIdentity =
+      body.identity === "anonymous" ? "anonymous" : "ign";
+
     const created = await createShare({
-      name: body.name ?? "Untitled",
+      name: body.name ?? body.ign ?? "Untitled",
       state: body.state,
       public: body.public === true,
       achievement: body.achievement,
+      identity,
+      ign: body.ign ?? body.name,
     });
 
     const origin = new URL(req.url).origin;
@@ -81,6 +89,9 @@ export async function POST(req: Request) {
       id: created.record.id,
       url,
       public: created.record.public,
+      name: created.record.name,
+      identity: created.record.identity ?? identity,
+      views: created.record.views ?? 0,
       deleteToken: created.deleteToken,
     });
   } catch (err) {
@@ -89,7 +100,7 @@ export async function POST(req: Request) {
       ? 413
       : message.includes("already exists")
         ? 409
-        : message.includes("unique name")
+        : message.includes("Enter your IGN") || message.includes("unique name")
           ? 400
           : 500;
     return NextResponse.json({ error: message }, { status });

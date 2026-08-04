@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { getCharName } from "@/lib/jobs";
 import {
   SCOUTER_CDN,
@@ -10,6 +10,11 @@ import {
   type LinkState,
   type ScouterInput,
 } from "@/lib/scouter";
+import {
+  ANON_ID_SUFFIX_LEN,
+  previewAnonymousDisplayName,
+  type ShareIdentity,
+} from "@/lib/scouter/share";
 import type { MapleScouterCalculatedData } from "@/lib/scouter/to-user-stat";
 
 function formatStat(n: number): string {
@@ -17,10 +22,26 @@ function formatStat(n: number): string {
   return Math.round(n).toLocaleString();
 }
 
+function randomAnonSuffix(len = ANON_ID_SUFFIX_LEN): string {
+  const alphabet =
+    "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+  const bytes = new Uint8Array(len);
+  crypto.getRandomValues(bytes);
+  let out = "";
+  for (let i = 0; i < len; i++) {
+    out += alphabet[bytes[i]! % alphabet.length]!;
+  }
+  return out;
+}
+
 type Props = {
   open: boolean;
   onClose: () => void;
-  onConfirm: (args: { name: string; achievement: string }) => void;
+  onConfirm: (args: {
+    identity: ShareIdentity;
+    name: string;
+    achievement: string;
+  }) => void;
   submitting: boolean;
   initialName: string;
   initialAchievement: string;
@@ -50,8 +71,10 @@ export function ShareGalleryModal({
   buffs,
   links,
 }: Props) {
+  const [identity, setIdentity] = useState<ShareIdentity>("anonymous");
   const [name, setName] = useState(initialName);
   const [achievement, setAchievement] = useState(initialAchievement);
+  const [anonSample, setAnonSample] = useState("a7K2x");
   const [bcsLoading, setBcsLoading] = useState(false);
   const [bcsError, setBcsError] = useState<string | null>(null);
   const [boss300, setBoss300] = useState<number | null>(null);
@@ -59,8 +82,10 @@ export function ShareGalleryModal({
 
   useEffect(() => {
     if (!open) return;
+    setIdentity("anonymous");
     setName(initialName);
     setAchievement(initialAchievement);
+    setAnonSample(randomAnonSuffix());
   }, [open, initialName, initialAchievement]);
 
   useEffect(() => {
@@ -110,14 +135,19 @@ export function ShareGalleryModal({
     };
   }, [open, input, buffs, links, hexa]);
 
+  const classLabel = getCharName(jobType, charType);
+  const anonPreview = useMemo(
+    () => previewAnonymousDisplayName(jobType, charType, anonSample),
+    [jobType, charType, anonSample],
+  );
+
   if (!open) return null;
 
-  const classLabel = getCharName(jobType, charType);
   const clamped = clampHexaForGms(hexa);
+  const ignOk =
+    name.trim().length > 0 && name.trim().toLowerCase() !== "untitled";
   const canSubmit =
-    name.trim().length > 0 &&
-    name.trim().toLowerCase() !== "untitled" &&
-    !submitting;
+    !submitting && (identity === "anonymous" || ignOk);
 
   return (
     <div
@@ -137,23 +167,83 @@ export function ShareGalleryModal({
           Share to gallery
         </h2>
         <p className="mt-1 text-xs opacity-65">
-          Review this loadout, add a note, then post it publicly. Names must be
-          unique.
+          Post this loadout publicly. Choose anonymous (class + code) or your
+          IGN.
         </p>
 
         <div className="mt-4 space-y-3 text-sm">
-          <label className="block">
-            <span className="mb-1 block text-xs font-semibold opacity-70">
-              Preset name
-            </span>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="w-full rounded border border-border/50 bg-background px-3 py-2 text-sm outline-none focus:border-accent"
-              autoFocus
-            />
-          </label>
+          <fieldset>
+            <legend className="mb-1.5 text-xs font-semibold opacity-70">
+              Identity
+            </legend>
+            <div className="flex flex-wrap gap-2">
+              <label
+                className={`flex cursor-pointer items-center gap-2 rounded border px-3 py-2 text-sm transition ${
+                  identity === "anonymous"
+                    ? "border-accent bg-accent/10 font-semibold"
+                    : "border-border/50 bg-background hover:bg-surface-muted"
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="gallery-identity"
+                  value="anonymous"
+                  checked={identity === "anonymous"}
+                  onChange={() => setIdentity("anonymous")}
+                  className="accent-[var(--accent)]"
+                />
+                Anonymous
+              </label>
+              <label
+                className={`flex cursor-pointer items-center gap-2 rounded border px-3 py-2 text-sm transition ${
+                  identity === "ign"
+                    ? "border-accent bg-accent/10 font-semibold"
+                    : "border-border/50 bg-background hover:bg-surface-muted"
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="gallery-identity"
+                  value="ign"
+                  checked={identity === "ign"}
+                  onChange={() => setIdentity("ign")}
+                  className="accent-[var(--accent)]"
+                />
+                IGN
+              </label>
+            </div>
+          </fieldset>
+
+          {identity === "anonymous" ? (
+            <div className="rounded border border-border/40 bg-background/80 px-3 py-2">
+              <p className="text-xs font-semibold opacity-70">
+                Anonymous display name
+              </p>
+              <p className="mt-0.5 font-medium tabular-nums">{anonPreview}</p>
+              <p className="mt-1 text-[10px] opacity-55">
+                Example format — your unique code is assigned when you post (
+                {classLabel}· + share id).
+              </p>
+            </div>
+          ) : (
+            <label className="block">
+              <span className="mb-1 block text-xs font-semibold opacity-70">
+                IGN
+              </span>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                maxLength={20}
+                placeholder="Character name"
+                className="w-full rounded border border-border/50 bg-background px-3 py-2 text-sm outline-none focus:border-accent"
+                autoFocus
+              />
+              <span className="mt-0.5 block text-[10px] opacity-50">
+                Must be unique in the public gallery.
+              </span>
+            </label>
+          )}
 
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -263,7 +353,8 @@ export function ShareGalleryModal({
             disabled={!canSubmit}
             onClick={() =>
               onConfirm({
-                name: name.trim(),
+                identity,
+                name: identity === "ign" ? name.trim() : anonPreview,
                 achievement: achievement.trim(),
               })
             }

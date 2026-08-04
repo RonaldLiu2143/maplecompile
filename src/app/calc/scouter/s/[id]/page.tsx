@@ -22,7 +22,10 @@ export default function ScouterShareLoadPage() {
 
     (async () => {
       try {
-        const res = await fetch(`/api/scouter/share/${encodeURIComponent(id)}`);
+        // ?view=1 increments the public view counter (gallery leaderboard).
+        const res = await fetch(
+          `/api/scouter/share/${encodeURIComponent(id)}?view=1`,
+        );
         const data = (await res.json()) as ScouterShareRecord & {
           error?: string;
         };

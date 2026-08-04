@@ -4,7 +4,10 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { getCharName } from "@/lib/jobs";
 import { SCOUTER_CDN, getHexaSlots } from "@/lib/scouter";
-import type { ScouterGalleryItem } from "@/lib/scouter/share";
+import {
+  GALLERY_LEADERBOARD_LIMIT,
+  type ScouterGalleryItem,
+} from "@/lib/scouter/share";
 import { storage } from "@/lib/storage";
 
 function formatSharedAt(ts: number): string {
@@ -61,6 +64,33 @@ function GalleryHexa({
   );
 }
 
+function IdentityBadge({
+  identity,
+}: {
+  identity: ScouterGalleryItem["identity"];
+}) {
+  if (identity === "anonymous") {
+    return (
+      <span
+        className="ml-1.5 inline-block rounded border border-border/50 px-1 py-0.5 text-[9px] font-semibold uppercase tracking-wide opacity-60"
+        title="Anonymous class + share code"
+      >
+        Anon
+      </span>
+    );
+  }
+  return (
+    <span
+      className="ml-1.5 inline-block rounded border border-accent/40 bg-accent/10 px-1 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-accent"
+      title="In-game name"
+    >
+      IGN
+    </span>
+  );
+}
+
+type GalleryMode = "recent" | "leaderboard";
+
 export function GalleryClient({
   items: initialItems,
   error,
@@ -69,6 +99,7 @@ export function GalleryClient({
   error?: string | null;
 }) {
   const [query, setQuery] = useState("");
+  const [mode, setMode] = useState<GalleryMode>("recent");
   const [items, setItems] = useState(initialItems);
   const [owned, setOwned] = useState(() => storage.getScouterShareTokens());
   const [removingId, setRemovingId] = useState<string | null>(null);
@@ -76,24 +107,39 @@ export function GalleryClient({
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return items;
-    return items.filter((item) => {
-      const className = getCharName(item.jobType, item.charType).toLowerCase();
-      return (
-        item.name.toLowerCase().includes(q) ||
-        className.includes(q) ||
-        item.id.toLowerCase().includes(q) ||
-        String(item.level).includes(q) ||
-        item.achievement.toLowerCase().includes(q)
-      );
-    });
-  }, [items, query]);
+    const base = !q
+      ? items
+      : items.filter((item) => {
+          const className = getCharName(item.jobType, item.charType).toLowerCase();
+          return (
+            item.name.toLowerCase().includes(q) ||
+            className.includes(q) ||
+            item.id.toLowerCase().includes(q) ||
+            String(item.level).includes(q) ||
+            item.achievement.toLowerCase().includes(q) ||
+            item.identity.includes(q)
+          );
+        });
+
+    if (mode === "leaderboard") {
+      return [...base]
+        .sort((a, b) => {
+          const dv = (b.views ?? 0) - (a.views ?? 0);
+          if (dv !== 0) return dv;
+          return b.createdAt - a.createdAt;
+        })
+        .slice(0, GALLERY_LEADERBOARD_LIMIT);
+    }
+    return base;
+  }, [items, query, mode]);
 
   const removeFromGallery = async (item: ScouterGalleryItem) => {
     const token = owned[item.id];
     if (!token?.deleteToken) return;
     const ok = window.confirm(
-      `Remove “${item.name}” from the public gallery?\n\nThe direct link will still work as private. This name can be reused.`,
+      `Remove “${item.name}” from the public gallery?\n\nThe direct link will still work as private.${
+        item.identity === "ign" ? " This IGN can be reused." : ""
+      }`,
     );
     if (!ok) return;
 
@@ -132,8 +178,8 @@ export function GalleryClient({
             Public Scouter Gallery
           </h1>
           <p className="mt-1 max-w-2xl text-sm opacity-75">
-            Shared loadouts. Open one to load it into Scouter. You can remove
-            entries you shared from this browser.
+            Shared loadouts (anonymous class-code or IGN). Open one to load it
+            into Scouter. Leaderboard ranks by share-page views.
           </p>
         </div>
         <Link
@@ -145,6 +191,38 @@ export function GalleryClient({
       </header>
 
       <div className="flex flex-wrap items-center gap-2">
+        <div
+          className="inline-flex rounded border border-border/50 bg-background p-0.5"
+          role="tablist"
+          aria-label="Gallery view"
+        >
+          <button
+            type="button"
+            role="tab"
+            aria-selected={mode === "recent"}
+            onClick={() => setMode("recent")}
+            className={`rounded px-3 py-1.5 text-sm font-semibold transition ${
+              mode === "recent"
+                ? "bg-accent text-white"
+                : "opacity-70 hover:bg-surface-muted hover:opacity-100"
+            }`}
+          >
+            Recent
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={mode === "leaderboard"}
+            onClick={() => setMode("leaderboard")}
+            className={`rounded px-3 py-1.5 text-sm font-semibold transition ${
+              mode === "leaderboard"
+                ? "bg-accent text-white"
+                : "opacity-70 hover:bg-surface-muted hover:opacity-100"
+            }`}
+          >
+            Leaderboard
+          </button>
+        </div>
         <input
           type="search"
           value={query}
@@ -154,7 +232,9 @@ export function GalleryClient({
           aria-label="Search gallery"
         />
         <span className="text-xs opacity-60">
-          {`${filtered.length} loadout${filtered.length === 1 ? "" : "s"}`}
+          {mode === "leaderboard"
+            ? `Top ${filtered.length} by views`
+            : `${filtered.length} loadout${filtered.length === 1 ? "" : "s"}`}
         </span>
       </div>
 
@@ -180,12 +260,16 @@ export function GalleryClient({
 
       {filtered.length > 0 ? (
         <div className="overflow-x-auto rounded-lg border border-border/50 bg-surface/90">
-          <table className="w-full min-w-[42rem] text-left text-sm">
+          <table className="w-full min-w-[48rem] text-left text-sm">
             <thead className="border-b border-border/40 bg-surface-muted/50 text-xs uppercase tracking-wide opacity-70">
               <tr>
+                {mode === "leaderboard" ? (
+                  <th className="px-3 py-2.5 font-semibold">#</th>
+                ) : null}
                 <th className="px-3 py-2.5 font-semibold">Name</th>
                 <th className="px-3 py-2.5 font-semibold">Class</th>
                 <th className="px-3 py-2.5 font-semibold">Level</th>
+                <th className="px-3 py-2.5 font-semibold">Views</th>
                 <th className="px-3 py-2.5 font-semibold">HEXA</th>
                 <th className="px-3 py-2.5 font-semibold">Achievement</th>
                 <th className="px-3 py-2.5 font-semibold">Shared</th>
@@ -195,7 +279,7 @@ export function GalleryClient({
               </tr>
             </thead>
             <tbody>
-              {filtered.map((item) => {
+              {filtered.map((item, index) => {
                 const className = getCharName(item.jobType, item.charType);
                 const canRemove = Boolean(owned[item.id]?.deleteToken);
                 return (
@@ -203,10 +287,23 @@ export function GalleryClient({
                     key={item.id}
                     className="border-b border-border/30 last:border-0 hover:bg-surface-muted/40"
                   >
-                    <td className="px-3 py-2.5 font-medium">{item.name}</td>
+                    {mode === "leaderboard" ? (
+                      <td className="px-3 py-2.5 tabular-nums font-semibold opacity-70">
+                        {index + 1}
+                      </td>
+                    ) : null}
+                    <td className="px-3 py-2.5 font-medium">
+                      <span className="inline-flex flex-wrap items-center">
+                        {item.name}
+                        <IdentityBadge identity={item.identity} />
+                      </span>
+                    </td>
                     <td className="px-3 py-2.5">{className}</td>
                     <td className="px-3 py-2.5 tabular-nums">
                       {item.level || "—"}
+                    </td>
+                    <td className="px-3 py-2.5 tabular-nums">
+                      {(item.views ?? 0).toLocaleString()}
                     </td>
                     <td className="px-3 py-2.5">
                       <GalleryHexa
