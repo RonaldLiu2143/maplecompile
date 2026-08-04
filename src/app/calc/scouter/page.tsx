@@ -499,22 +499,10 @@ export default function ScouterPage() {
       setLoadedPresetId(saved.id);
       setPresetName(saved.name);
       flashPresetMsg(
-        asNew || !overwriteId ? "Preset created" : "Preset updated",
+        asNew || !overwriteId ? "Preset saved" : "Preset updated",
       );
     } catch {
       flashPresetMsg("Could not save");
-    }
-  };
-
-  const recallPreset = () => {
-    try {
-      if (!selectedPresetId) {
-        flashPresetMsg("Select a preset");
-        return;
-      }
-      loadPresetById(selectedPresetId);
-    } catch {
-      flashPresetMsg("Could not load");
     }
   };
 
@@ -650,15 +638,33 @@ export default function ScouterPage() {
       <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.95fr)]">
         {/* —— Left: Enter Directly —— */}
         <section className="overflow-hidden rounded-lg border border-border/60 bg-surface/90">
-          <div className="flex flex-col gap-2 border-b border-border/40 px-3 py-2">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <h2 className="text-sm font-semibold">
-                Enter Directly (Character Stats Changes)
-              </h2>
+          <div className="flex flex-col gap-2.5 border-b border-border/40 px-3 py-2.5">
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <div>
+                <h2 className="text-sm font-semibold">Character Stats</h2>
+                <p className="mt-0.5 text-xs opacity-60">
+                  Enter values from your character window. Save presets locally,
+                  or share a link.
+                </p>
+              </div>
+              {loadedPresetId ? (
+                <span className="rounded-full bg-accent-soft/40 px-2 py-0.5 text-[11px] font-semibold text-accent">
+                  Editing “
+                  {presetName.trim() ||
+                    presets.find((p) => p.id === loadedPresetId)?.name ||
+                    "preset"}
+                  ”
+                </span>
+              ) : (
+                <span className="text-[11px] font-medium opacity-50">
+                  Unsaved draft
+                </span>
+              )}
             </div>
-            <div className="flex flex-wrap items-center gap-1.5">
+
+            <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center">
               <select
-                className="min-w-[9rem] flex-1 rounded border border-border/50 bg-background px-2 py-1 text-xs outline-none focus:border-accent"
+                className="min-w-0 flex-1 rounded border border-border/50 bg-background px-2.5 py-1.5 text-xs outline-none focus:border-accent"
                 value={selectedPresetId}
                 onChange={(e) => {
                   const id = e.target.value;
@@ -674,7 +680,11 @@ export default function ScouterPage() {
                 }}
                 aria-label="Saved presets"
               >
-                <option value="">Select preset…</option>
+                <option value="">
+                  {presets.length
+                    ? `Choose a preset (${presets.length})…`
+                    : "No saved presets yet"}
+                </option>
                 {presets.map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.name}
@@ -686,33 +696,31 @@ export default function ScouterPage() {
                 placeholder="Preset name"
                 value={presetName}
                 onChange={(e) => setPresetName(e.target.value)}
-                className="min-w-[7rem] flex-1 rounded border border-border/50 bg-background px-2 py-1 text-xs outline-none focus:border-accent"
+                className="min-w-0 flex-1 rounded border border-border/50 bg-background px-2.5 py-1.5 text-xs outline-none focus:border-accent"
                 aria-label="Preset name"
               />
-              <button
-                type="button"
-                onClick={recallPreset}
-                className="rounded border border-border/50 bg-background px-2.5 py-1 text-xs font-semibold transition hover:bg-surface-muted"
-              >
-                Load
-              </button>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-1.5">
               <button
                 type="button"
                 onClick={() => savePreset(false)}
-                disabled={
+                disabled={loadedPresetId ? false : !presetName.trim()}
+                className="rounded bg-accent px-2.5 py-1.5 text-xs font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+                title={
                   loadedPresetId
-                    ? false
-                    : !presetName.trim()
+                    ? "Update the loaded preset with current stats"
+                    : "Save current stats as a new preset"
                 }
-                className="rounded border border-border/50 bg-background px-2.5 py-1 text-xs font-semibold transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
               >
-                {loadedPresetId ? "Overwrite" : "Save"}
+                {loadedPresetId ? "Update" : "Save"}
               </button>
               <button
                 type="button"
                 onClick={() => savePreset(true)}
                 disabled={!presetName.trim()}
-                className="rounded border border-border/50 bg-background px-2.5 py-1 text-xs font-semibold transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
+                className="rounded border border-border/50 bg-background px-2.5 py-1.5 text-xs font-semibold transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
+                title="Keep the current preset and save a copy under this name"
               >
                 Save as new
               </button>
@@ -720,13 +728,19 @@ export default function ScouterPage() {
                 type="button"
                 onClick={deletePreset}
                 disabled={!selectedPresetId}
-                className="rounded border border-border/50 bg-background px-2.5 py-1 text-xs font-semibold text-red-700 transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40 dark:text-red-400"
+                className="rounded border border-border/50 bg-background px-2.5 py-1.5 text-xs font-semibold text-red-700 transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40 dark:text-red-400"
               >
                 Delete
               </button>
+
+              <div
+                className="mx-0.5 hidden h-5 w-px bg-border/60 sm:block"
+                aria-hidden
+              />
+
               <label
-                className="inline-flex cursor-pointer items-center gap-1 rounded border border-border/50 bg-background px-2 py-1 text-xs font-semibold"
-                title="List this share in the public gallery (anyone with the link can still open private shares)"
+                className="inline-flex cursor-pointer items-center gap-1.5 rounded border border-border/50 bg-background px-2 py-1.5 text-xs font-semibold"
+                title="List this share in the public gallery. Anyone with the link can open private shares."
               >
                 <input
                   type="checkbox"
@@ -740,25 +754,26 @@ export default function ScouterPage() {
                 type="button"
                 onClick={() => void shareLoadout()}
                 disabled={sharing}
-                className="rounded border border-border/50 bg-background px-2.5 py-1 text-xs font-semibold transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
+                className="rounded border border-border/50 bg-background px-2.5 py-1.5 text-xs font-semibold transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
               >
-                {sharing ? "Sharing…" : "Share"}
+                {sharing ? "Sharing…" : "Share link"}
               </button>
             </div>
+
             {shareUrl ? (
               <div className="flex flex-wrap items-center gap-1.5">
                 <input
                   type="text"
                   readOnly
                   value={shareUrl}
-                  className="min-w-0 flex-1 rounded border border-border/50 bg-background px-2 py-1 text-xs outline-none focus:border-accent"
+                  className="min-w-0 flex-1 rounded border border-border/50 bg-background px-2.5 py-1.5 text-xs outline-none focus:border-accent"
                   aria-label="Share link"
                   onFocus={(e) => e.currentTarget.select()}
                 />
                 <button
                   type="button"
                   onClick={() => void copyShareUrl()}
-                  className="rounded border border-border/50 bg-background px-2.5 py-1 text-xs font-semibold transition hover:bg-surface-muted"
+                  className="rounded border border-border/50 bg-background px-2.5 py-1.5 text-xs font-semibold transition hover:bg-surface-muted"
                 >
                   Copy link
                 </button>
