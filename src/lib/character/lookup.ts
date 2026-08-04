@@ -1,29 +1,64 @@
 /**
- * GMS character lookup via Nexon's public rankings API (no API key).
+ * GMS character lookup via Nexon's public rankings API (no API key),
+ * optionally enriched with MapleHub's public character JSON.
  *
- * Same upstream used by community tools such as the GMS Upgrade Tracker:
+ * Nexon:
  *   GET https://www.nexon.com/api/maplestory/no-auth/ranking/v2/{region}
- *     ?type=overall&id=legendary&reboot_index={0|1}&page_index=1&character_name=…
+ *     ?type=overall|fame&id=legendary&reboot_index={0|1}&page_index=1&character_name=…
  *
- * Rankings do not expose live online status or last-login dates.
+ * MapleHub (server-side proxy, header X-MapleHub-Request):
+ *   GET https://maplehub.app/api/character/?characterName=…&region=na|eu
  */
 
+import { expPercent, expToNext } from "./exp";
+import {
+  fetchMapleHubCharacter,
+  sanitizeAvatarUrl,
+  type MapleHubCharacter,
+  type MapleHubExpAverages,
+  type MapleHubGraphData,
+  type MapleHubRankingDetail,
+} from "./maplehub";
+
 export type NexonRegion = "na" | "eu";
+
+export type CharacterRankingDetail = MapleHubRankingDetail;
 
 export type CharacterLookupResult = {
   name: string;
   region: NexonRegion;
   level: number;
   exp: number;
+  expToNext: number | null;
+  expPercent: number | null;
   jobName: string;
   worldId: number;
   worldName: string;
   characterImgURL: string | null;
   overallRank: number | null;
   fame: number | null;
+  /** Rank gap vs previous entry on the Nexon board (informational). */
+  gap: number | null;
+  isHeroic: boolean;
+  legionLevel: number | null;
+  raidPower: number | null;
+  /** Achievement tier/score from Nexon overall row when present (often 0). */
+  achievementTiercore: number | null;
+  achievementTierId: number | null;
+  isMain: boolean | null;
+  classRank: number | null;
+  ranking: CharacterRankingDetail | null;
+  expAverages: MapleHubExpAverages | null;
+  graph: MapleHubGraphData | null;
   fetchedAt: string;
-  source: "nexon-ranking";
+  sources: Array<"nexon-ranking" | "maplehub">;
   note: string;
+  stubs: {
+    gear: string;
+    fashion: string;
+    achievementHistory: string;
+    combatPower: string;
+  };
 };
 
 export type CharacterLookupErrorCode =
@@ -39,10 +74,15 @@ type NexonRankRow = {
   exp?: number;
   level?: number;
   rank?: number;
+  gap?: number;
   worldID?: number;
   characterImgURL?: string;
   jobName?: string;
   isSearchTarget?: boolean;
+  legionLevel?: number;
+  raidPower?: number;
+  tierID?: number;
+  score?: number;
 };
 
 type NexonRankingResponse = {
@@ -63,6 +103,8 @@ export const GMS_WORLD_NAMES: Record<number, string> = {
   70: "Hyperion",
 };
 
+const HEROIC_WORLD_IDS = new Set([45, 46, 70]);
+
 const NEXON_RANKING_BASE =
   "https://www.nexon.com/api/maplestory/no-auth/ranking/v2";
 
@@ -81,6 +123,10 @@ export function worldNameForId(worldId: number): string {
   return GMS_WORLD_NAMES[worldId] ?? `World ${worldId}`;
 }
 
+export function isHeroicWorld(worldId: number): boolean {
+  return HEROIC_WORLD_IDS.has(worldId);
+}
+
 function rankingUrl(
   region: NexonRegion,
   type: "overall" | "fame",
@@ -97,9 +143,7 @@ function rankingUrl(
   return `${NEXON_RANKING_BASE}/${region}?${params.toString()}`;
 }
 
-async function fetchRanking(
-  url: string,
-): Promise<NexonRankingResponse> {
+async function fetchRanking(url: string): Promise<NexonRankingResponse> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), UPSTREAM_TIMEOUT_MS);
   try {
@@ -135,31 +179,47 @@ function pickExactRow(
   const ranks = data.ranks ?? [];
   if (!ranks.length) return null;
   const lower = characterName.toLowerCase();
-  const exact =
+  return (
     ranks.find(
       (r) =>
         r.isSearchTarget === true &&
         (r.characterName ?? "").toLowerCase() === lower,
     ) ??
     ranks.find((r) => (r.characterName ?? "").toLowerCase() === lower) ??
-    null;
-  return exact;
+    null
+  );
 }
 
 async function fetchOverallRow(
   region: NexonRegion,
   characterName: string,
-): Promise<NexonRankRow | null> {
-  // reboot_index 0 = Interactive, 1 = Heroic; name search usually works on either,
-  // but try both if the first miss.
-  for (const reboot of [0, 1] as const) {
-    const data = await fetchRanking(
-      rankingUrl(region, "overall", characterName, reboot),
-    );
-    const row = pickExactRow(data, characterName);
-    if (row) return row;
+): Promise<{ row: NexonRankRow; rebootIndex: 0 | 1 } | null> {
+  // Fetch both pools when needed so Heroic worlds get the Heroic overall rank.
+  const tries: Array<0 | 1> = [1, 0];
+  const found: Array<{ row: NexonRankRow; rebootIndex: 0 | 1 }> = [];
+
+  for (const reboot of tries) {
+    try {
+      const data = await fetchRanking(
+        rankingUrl(region, "overall", characterName, reboot),
+      );
+      const row = pickExactRow(data, characterName);
+      if (row) found.push({ row, rebootIndex: reboot });
+    } catch (err) {
+      if (found.length === 0 && reboot === tries[tries.length - 1]) throw err;
+    }
   }
-  return null;
+
+  if (!found.length) return null;
+
+  const heroicHit = found.find((f) =>
+    isHeroicWorld(typeof f.row.worldID === "number" ? f.row.worldID : -1),
+  );
+  if (heroicHit) {
+    // Prefer reboot_index=1 rank for Heroic worlds.
+    return found.find((f) => f.rebootIndex === 1) ?? heroicHit;
+  }
+  return found.find((f) => f.rebootIndex === 0) ?? found[0];
 }
 
 async function fetchFame(
@@ -182,32 +242,144 @@ async function fetchFame(
   return null;
 }
 
+function mergeWithMapleHub(
+  base: CharacterLookupResult,
+  hub: MapleHubCharacter | null,
+): CharacterLookupResult {
+  if (!hub) return base;
+
+  const sources = Array.from(
+    new Set([...base.sources, "maplehub" as const]),
+  ) as CharacterLookupResult["sources"];
+
+  return {
+    ...base,
+    // Keep Nexon avatar when present — MapleHub CDN URLs are often broken.
+    characterImgURL:
+      base.characterImgURL ?? sanitizeAvatarUrl(hub.characterImgURL),
+    legionLevel:
+      hub.legionLevel != null && hub.legionLevel > 0
+        ? hub.legionLevel
+        : base.legionLevel,
+    raidPower:
+      hub.raidPower != null && hub.raidPower > 0
+        ? hub.raidPower
+        : base.raidPower,
+    isMain: hub.isMain ?? base.isMain,
+    classRank: hub.classRank ?? base.classRank,
+    ranking: hub.ranking ?? base.ranking,
+    // Prefer MapleHub world/job ranks' overall when present (their tracked board).
+    overallRank: hub.ranking?.globalRank ?? base.overallRank,
+    expAverages: hub.expAverages,
+    graph: hub.graph,
+    sources,
+    note:
+      "Live snapshot from Nexon public rankings, enriched with MapleHub’s public character API (legion / ranks / EXP history). Not live online status.",
+  };
+}
+
+const STUBS = {
+  gear: "Equipment / set details need Nexon Open API (API key) — not available on public rankings.",
+  fashion:
+    "Fashion history is tracked by MapleHub for roster characters; not exposed as a stable public feed.",
+  achievementHistory:
+    "Achievement tier/score history is MapleRanks-only historical data; Nexon overall rows rarely include live tier.",
+  combatPower:
+    "Combat power / range are Open API fields — stubbed without a Nexon API key.",
+} as const;
+
 export async function lookupGmsCharacter(
   characterName: string,
   region: NexonRegion,
 ): Promise<CharacterLookupResult | null> {
-  const row = await fetchOverallRow(region, characterName);
-  if (!row || typeof row.level !== "number") return null;
+  const overall = await fetchOverallRow(region, characterName);
+  if (!overall || typeof overall.row.level !== "number") {
+    // Nexon miss — still try MapleHub alone (covers some edge cases).
+    const hubOnly = await fetchMapleHubCharacter(characterName, region);
+    if (!hubOnly) return null;
+    const level = hubOnly.level;
+    const exp = hubOnly.exp;
+    return {
+      name: hubOnly.name,
+      region,
+      level,
+      exp,
+      expToNext: expToNext(level),
+      expPercent: expPercent(level, exp),
+      jobName: hubOnly.jobName,
+      worldId: hubOnly.worldId ?? -1,
+      worldName: hubOnly.worldName ?? "Unknown",
+      characterImgURL: sanitizeAvatarUrl(hubOnly.characterImgURL),
+      overallRank: hubOnly.ranking?.globalRank ?? hubOnly.rank,
+      fame: null,
+      gap: null,
+      isHeroic: isHeroicWorld(hubOnly.worldId ?? -1),
+      legionLevel: hubOnly.legionLevel,
+      raidPower: hubOnly.raidPower,
+      achievementTiercore: null,
+      achievementTierId: null,
+      isMain: hubOnly.isMain,
+      classRank: hubOnly.classRank,
+      ranking: hubOnly.ranking,
+      expAverages: hubOnly.expAverages,
+      graph: hubOnly.graph,
+      fetchedAt: new Date().toISOString(),
+      sources: ["maplehub"],
+      note: "Character found via MapleHub public API (Nexon rankings miss). Not live online status.",
+      stubs: { ...STUBS },
+    };
+  }
 
+  const row = overall.row;
   const worldId = typeof row.worldID === "number" ? row.worldID : -1;
-  // Heroic worlds: Kronos 45, Solis 46, Hyperion 70
-  const heroic = worldId === 45 || worldId === 46 || worldId === 70;
-  const fame = await fetchFame(region, row.characterName ?? characterName, heroic ? 1 : 0);
+  const heroic = isHeroicWorld(worldId);
+  const fame = await fetchFame(
+    region,
+    row.characterName ?? characterName,
+    overall.rebootIndex,
+  );
 
-  return {
+  const level = row.level as number;
+  const exp = typeof row.exp === "number" ? row.exp : 0;
+
+  const base: CharacterLookupResult = {
     name: row.characterName ?? characterName,
     region,
-    level: row.level,
-    exp: typeof row.exp === "number" ? row.exp : 0,
+    level,
+    exp,
+    expToNext: expToNext(level),
+    expPercent: expPercent(level, exp),
     jobName: row.jobName ?? "Unknown",
     worldId,
     worldName: worldNameForId(worldId),
     characterImgURL: row.characterImgURL || null,
     overallRank: typeof row.rank === "number" ? row.rank : null,
     fame,
+    gap: typeof row.gap === "number" ? row.gap : null,
+    isHeroic: heroic,
+    legionLevel:
+      typeof row.legionLevel === "number" && row.legionLevel > 0
+        ? row.legionLevel
+        : null,
+    raidPower:
+      typeof row.raidPower === "number" && row.raidPower > 0
+        ? row.raidPower
+        : null,
+    achievementTiercore:
+      typeof row.score === "number" && row.score > 0 ? row.score : null,
+    achievementTierId:
+      typeof row.tierID === "number" && row.tierID > 0 ? row.tierID : null,
+    isMain: null,
+    classRank: null,
+    ranking: null,
+    expAverages: null,
+    graph: null,
     fetchedAt: new Date().toISOString(),
-    source: "nexon-ranking",
-    note:
-      "Data from Nexon’s public GMS rankings. Not live online status — no last-login field is published.",
+    sources: ["nexon-ranking"],
+    note: "Data from Nexon’s public GMS rankings. Not live online status — no last-login field is published.",
+    stubs: { ...STUBS },
   };
+
+  const hub = await fetchMapleHubCharacter(base.name, region);
+  return mergeWithMapleHub(base, hub);
 }

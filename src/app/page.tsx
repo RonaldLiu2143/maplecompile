@@ -111,8 +111,8 @@ export default function Home() {
         <div className="rounded-xl border border-border/50 bg-surface/80 p-5">
           <h2 className="font-display text-lg font-semibold">Character Lookup</h2>
           <p className="mt-2 text-sm opacity-80">
-            Look up a GMS character by name via Nexon’s public rankings — world,
-            job, level, and avatar.
+            Look up a GMS character by name — rankings, legion, and EXP history
+            from public sources (no API key).
           </p>
         </div>
         <div className="rounded-xl border border-border/50 bg-surface/80 p-5">
