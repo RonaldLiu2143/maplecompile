@@ -16,6 +16,7 @@ export function RosterReorderList({
   slots,
   reorderable = true,
   managing = false,
+  compact = false,
   emptyTitle,
   emptyBody,
   makeDragProps,
@@ -30,6 +31,8 @@ export function RosterReorderList({
   slots: Record<string, RosterSlotState>;
   reorderable?: boolean;
   managing?: boolean;
+  /** Denser rows for dashboard embed; full /roster stays default */
+  compact?: boolean;
   emptyTitle?: string;
   emptyBody?: string;
   makeDragProps?: (index: number) => RosterDragProps | undefined;
@@ -41,11 +44,26 @@ export function RosterReorderList({
 }) {
   if (roster.length === 0) {
     return (
-      <div className="rounded-xl border border-dashed border-border/60 bg-surface/70 px-5 py-8 text-center">
-        <h3 className="font-display text-lg font-bold tracking-tight">
+      <div
+        className={[
+          "rounded-xl border border-dashed border-border/60 bg-surface/70 text-center",
+          compact ? "px-4 py-5" : "px-5 py-8",
+        ].join(" ")}
+      >
+        <h3
+          className={[
+            "font-display font-bold tracking-tight",
+            compact ? "text-base" : "text-lg",
+          ].join(" ")}
+        >
           {emptyTitle ?? "No characters yet"}
         </h3>
-        <p className="mx-auto mt-2 max-w-md text-sm opacity-70">
+        <p
+          className={[
+            "mx-auto max-w-md opacity-70",
+            compact ? "mt-1.5 text-xs" : "mt-2 text-sm",
+          ].join(" ")}
+        >
           {emptyBody ??
             "Search a GMS character above, then tap Add to roster."}
         </p>
@@ -54,7 +72,7 @@ export function RosterReorderList({
   }
 
   return (
-    <ul className="flex flex-col gap-2">
+    <ul className={compact ? "flex flex-col gap-1" : "flex flex-col gap-2"}>
       {roster.map((entry, index) => {
         const key = entryKey(entry);
         const slot = slots[key];
@@ -74,6 +92,7 @@ export function RosterReorderList({
             isPrimary={isPrimary(entry, primary)}
             reorderable={reorderable}
             managing={managing}
+            compact={compact}
             drag={makeDragProps?.(index)}
             onMoveUp={() => onMoveUp(index)}
             onMoveDown={() => onMoveDown(index)}

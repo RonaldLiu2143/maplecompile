@@ -6,13 +6,13 @@ import { characterProfileHref } from "@/lib/character/client";
 import type { CharacterLookupResult } from "@/lib/character/lookup";
 import type { RosterEntry } from "@/lib/dashboard/roster";
 
-function StarIcon({ className }: { className?: string }) {
+function StarIcon({ className, size = 14 }: { className?: string; size?: number }) {
   return (
     <svg
       viewBox="0 0 24 24"
       className={className}
-      width={14}
-      height={14}
+      width={size}
+      height={size}
       aria-hidden
     >
       <path
@@ -23,32 +23,50 @@ function StarIcon({ className }: { className?: string }) {
   );
 }
 
-function ChevronUpIcon() {
+function ChevronUpIcon({ size = 14 }: { size?: number }) {
   return (
-    <svg viewBox="0 0 20 20" width={14} height={14} aria-hidden fill="currentColor">
+    <svg viewBox="0 0 20 20" width={size} height={size} aria-hidden fill="currentColor">
       <path d="M10 6.5l5 5.5H5l5-5.5z" />
     </svg>
   );
 }
 
-function ChevronDownIcon() {
+function ChevronDownIcon({ size = 14 }: { size?: number }) {
   return (
-    <svg viewBox="0 0 20 20" width={14} height={14} aria-hidden fill="currentColor">
+    <svg viewBox="0 0 20 20" width={size} height={size} aria-hidden fill="currentColor">
       <path d="M10 13.5L5 8h10l-5 5.5z" />
     </svg>
   );
 }
 
-function DragHandle() {
+function DragHandle({ compact }: { compact?: boolean }) {
   return (
     <span
-      className="inline-flex cursor-grab touch-none select-none flex-col justify-center gap-0.5 px-0.5 py-2 text-xs opacity-40 active:cursor-grabbing"
+      className={[
+        "inline-flex cursor-grab touch-none select-none flex-col justify-center gap-0.5 text-xs opacity-40 active:cursor-grabbing",
+        compact ? "px-0.5 py-1" : "px-0.5 py-2",
+      ].join(" ")}
       aria-hidden
       title="Drag to reorder"
     >
-      <span className="block h-0.5 w-3 rounded-full bg-current" />
-      <span className="block h-0.5 w-3 rounded-full bg-current" />
-      <span className="block h-0.5 w-3 rounded-full bg-current" />
+      <span
+        className={[
+          "block rounded-full bg-current",
+          compact ? "h-0.5 w-2.5" : "h-0.5 w-3",
+        ].join(" ")}
+      />
+      <span
+        className={[
+          "block rounded-full bg-current",
+          compact ? "h-0.5 w-2.5" : "h-0.5 w-3",
+        ].join(" ")}
+      />
+      <span
+        className={[
+          "block rounded-full bg-current",
+          compact ? "h-0.5 w-2.5" : "h-0.5 w-3",
+        ].join(" ")}
+      />
     </span>
   );
 }
@@ -56,9 +74,11 @@ function DragHandle() {
 function AvatarThumb({
   src,
   name,
+  compact,
 }: {
   src: string | null | undefined;
   name: string;
+  compact?: boolean;
 }) {
   if (src) {
     return (
@@ -66,16 +86,24 @@ function AvatarThumb({
       <img
         src={src}
         alt=""
-        width={48}
-        height={48}
-        className="pointer-events-none h-12 w-12 shrink-0 object-contain"
+        width={compact ? 32 : 48}
+        height={compact ? 32 : 48}
+        className={[
+          "pointer-events-none shrink-0 object-contain",
+          compact ? "h-8 w-8" : "h-12 w-12",
+        ].join(" ")}
         draggable={false}
       />
     );
   }
   return (
     <div
-      className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-surface-muted text-[0.6rem] font-semibold uppercase tracking-wide opacity-50"
+      className={[
+        "flex shrink-0 items-center justify-center rounded-md bg-surface-muted font-semibold uppercase tracking-wide opacity-50",
+        compact
+          ? "h-8 w-8 text-[0.5rem]"
+          : "h-12 w-12 text-[0.6rem]",
+      ].join(" ")}
       aria-hidden
     >
       {name.slice(0, 2)}
@@ -93,6 +121,7 @@ export function RosterListRow({
   isPrimary,
   reorderable,
   managing,
+  compact = false,
   drag,
   onMoveUp,
   onMoveDown,
@@ -111,6 +140,8 @@ export function RosterListRow({
   reorderable?: boolean;
   /** Show remove + allow star click to set primary */
   managing?: boolean;
+  /** Denser layout for dashboard embed */
+  compact?: boolean;
   drag?: RosterDragProps;
   onMoveUp?: () => void;
   onMoveDown?: () => void;
@@ -126,6 +157,7 @@ export function RosterListRow({
   const canMoveUp = reorderable && index > 0;
   const canMoveDown = reorderable && index < total - 1;
   const canDrag = Boolean(drag?.draggable);
+  const iconSize = compact ? 12 : 14;
 
   const secondary =
     error != null
@@ -147,7 +179,10 @@ export function RosterListRow({
       onDrop={drag?.onDrop}
       onDragEnd={drag?.onDragEnd}
       className={[
-        "flex items-center gap-3 rounded-xl border border-border/50 bg-surface px-3 py-2.5 transition sm:gap-4 sm:px-4",
+        "flex items-center rounded-xl border border-border/50 bg-surface transition",
+        compact
+          ? "gap-2 rounded-lg px-2 py-1.5 sm:gap-2.5 sm:px-2.5"
+          : "gap-3 px-3 py-2.5 sm:gap-4 sm:px-4",
         canDrag ? "cursor-grab active:cursor-grabbing" : "",
         drag?.isDragging ? "opacity-40 scale-[0.98]" : "",
         drag?.isDropTarget && !drag?.isDragging
@@ -158,15 +193,18 @@ export function RosterListRow({
         .filter(Boolean)
         .join(" ")}
     >
-      {canDrag ? <DragHandle /> : null}
+      {canDrag ? <DragHandle compact={compact} /> : null}
 
-      <AvatarThumb src={avatar} name={name} />
+      <AvatarThumb src={avatar} name={name} compact={compact} />
 
       <div className="min-w-0 flex-1">
         <div className="flex min-w-0 items-center gap-1.5">
           <Link
             href={profileHref}
-            className="truncate font-semibold tracking-tight text-foreground hover:text-accent"
+            className={[
+              "truncate font-semibold tracking-tight text-foreground hover:text-accent",
+              compact ? "text-sm" : "",
+            ].join(" ")}
             title={`${name} (${entry.region.toUpperCase()})`}
             draggable={false}
           >
@@ -177,7 +215,7 @@ export function RosterListRow({
               className="inline-flex shrink-0 text-amber-400"
               title="Primary character"
             >
-              <StarIcon />
+              <StarIcon size={iconSize} />
               <span className="sr-only">Primary</span>
             </span>
           ) : managing && onSetPrimary ? (
@@ -188,13 +226,14 @@ export function RosterListRow({
               title="Set as primary"
               aria-label={`Set ${name} as primary`}
             >
-              <StarIcon />
+              <StarIcon size={iconSize} />
             </button>
           ) : null}
         </div>
         <p
           className={[
-            "truncate text-sm",
+            "truncate",
+            compact ? "text-xs" : "text-sm",
             error ? "text-danger" : "opacity-55",
           ].join(" ")}
         >
@@ -204,7 +243,10 @@ export function RosterListRow({
           <button
             type="button"
             onClick={onRetry}
-            className="mt-1 text-xs font-semibold text-accent underline-offset-2 hover:underline"
+            className={[
+              "font-semibold text-accent underline-offset-2 hover:underline",
+              compact ? "mt-0.5 text-[11px]" : "mt-1 text-xs",
+            ].join(" ")}
           >
             Retry
           </button>
@@ -215,7 +257,10 @@ export function RosterListRow({
         <button
           type="button"
           onClick={onRemove}
-          className="shrink-0 rounded-lg border border-danger/35 px-2 py-1 text-xs font-semibold text-danger transition hover:bg-danger/10"
+          className={[
+            "shrink-0 rounded-lg border border-danger/35 font-semibold text-danger transition hover:bg-danger/10",
+            compact ? "px-1.5 py-0.5 text-[11px]" : "px-2 py-1 text-xs",
+          ].join(" ")}
           aria-label={`Remove ${name}`}
         >
           Remove
@@ -224,10 +269,18 @@ export function RosterListRow({
 
       {reorderable ? (
         <div
-          className="flex shrink-0 items-center gap-2"
+          className={[
+            "flex shrink-0 items-center",
+            compact ? "gap-1" : "gap-2",
+          ].join(" ")}
           onPointerDown={(e) => e.stopPropagation()}
         >
-          <span className="font-mono text-sm tabular-nums opacity-45">
+          <span
+            className={[
+              "font-mono tabular-nums opacity-45",
+              compact ? "text-xs" : "text-sm",
+            ].join(" ")}
+          >
             #{index + 1}
           </span>
           <div className="flex flex-col">
@@ -239,7 +292,7 @@ export function RosterListRow({
               aria-label={`Move ${name} up`}
               title="Move up"
             >
-              <ChevronUpIcon />
+              <ChevronUpIcon size={iconSize} />
             </button>
             <button
               type="button"
@@ -249,7 +302,7 @@ export function RosterListRow({
               aria-label={`Move ${name} down`}
               title="Move down"
             >
-              <ChevronDownIcon />
+              <ChevronDownIcon size={iconSize} />
             </button>
           </div>
         </div>

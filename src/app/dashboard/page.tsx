@@ -66,32 +66,32 @@ function DashboardInner() {
       )}
 
       {hydrated ? (
-        <section className="rounded-2xl border border-border/50 bg-surface/80 p-4 sm:p-5">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="min-w-0 space-y-1">
-              <h2 className="font-display text-lg font-bold tracking-tight">
+        <section className="rounded-xl border border-border/50 bg-surface/80 p-3 sm:p-3.5">
+          <div className="flex flex-wrap items-start justify-between gap-2">
+            <div className="min-w-0 space-y-0.5">
+              <h2 className="font-display text-base font-bold tracking-tight">
                 Roster
                 {roster.length > 0 ? (
-                  <span className="ml-2 text-sm font-semibold opacity-55">
+                  <span className="ml-1.5 text-xs font-semibold opacity-55">
                     ({roster.length})
                   </span>
                 ) : null}
               </h2>
               {managing ? (
-                <p className="text-sm opacity-60">
+                <p className="text-xs opacity-60">
                   Drag rows or use ↑↓ to reorder. Tap the star to set primary.
                 </p>
               ) : roster.length > 0 ? (
-                <p className="text-sm opacity-60">
+                <p className="text-xs opacity-60">
                   Drag rows or use ↑↓ to change order. Open Manage to set
                   primary or remove.
                 </p>
               ) : null}
             </div>
-            <div className="flex shrink-0 flex-wrap items-center gap-2">
+            <div className="flex shrink-0 flex-wrap items-center gap-1.5">
               <Link
                 href="/roster"
-                className="rounded-lg border border-border px-3 py-2 text-sm font-semibold transition hover:bg-surface-muted"
+                className="rounded-md border border-border px-2.5 py-1.5 text-xs font-semibold transition hover:bg-surface-muted"
               >
                 Open roster
               </Link>
@@ -99,7 +99,7 @@ function DashboardInner() {
                 type="button"
                 onClick={() => setManageMode(!managing)}
                 className={[
-                  "rounded-lg px-4 py-2 text-sm font-semibold transition",
+                  "rounded-md px-3 py-1.5 text-xs font-semibold transition",
                   managing
                     ? "border border-border hover:bg-surface-muted"
                     : "bg-accent text-white hover:opacity-90 dark:text-zinc-900",
@@ -110,9 +110,9 @@ function DashboardInner() {
             </div>
           </div>
 
-          <div className="mt-4">
+          <div className="mt-2.5">
             {roster.length === 0 ? (
-              <p className="text-sm opacity-70">
+              <p className="text-xs opacity-70">
                 No characters yet. Search a GMS character above, then tap Add to
                 roster — or{" "}
                 <Link
@@ -130,6 +130,7 @@ function DashboardInner() {
                 slots={slots}
                 reorderable
                 managing={managing}
+                compact
                 makeDragProps={(index) => makeDragProps(index, true)}
                 onMoveUp={handleMoveUp}
                 onMoveDown={handleMoveDown}
