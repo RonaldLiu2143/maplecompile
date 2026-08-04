@@ -1,5 +1,6 @@
 "use client";
 
+import type { RosterDragProps } from "@/components/dashboard/RosterCharacterCard";
 import { RosterListRow } from "@/components/dashboard/RosterListRow";
 import {
   entryKey,
@@ -17,6 +18,7 @@ export function RosterReorderList({
   managing = false,
   emptyTitle,
   emptyBody,
+  makeDragProps,
   onMoveUp,
   onMoveDown,
   onSetPrimary,
@@ -30,6 +32,7 @@ export function RosterReorderList({
   managing?: boolean;
   emptyTitle?: string;
   emptyBody?: string;
+  makeDragProps?: (index: number) => RosterDragProps | undefined;
   onMoveUp: (index: number) => void;
   onMoveDown: (index: number) => void;
   onSetPrimary?: (entry: RosterEntry) => void;
@@ -71,6 +74,7 @@ export function RosterReorderList({
             isPrimary={isPrimary(entry, primary)}
             reorderable={reorderable}
             managing={managing}
+            drag={makeDragProps?.(index)}
             onMoveUp={() => onMoveUp(index)}
             onMoveDown={() => onMoveDown(index)}
             onSetPrimary={

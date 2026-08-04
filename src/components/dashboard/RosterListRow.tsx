@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import type { RosterDragProps } from "@/components/dashboard/RosterCharacterCard";
 import { characterProfileHref } from "@/lib/character/client";
 import type { CharacterLookupResult } from "@/lib/character/lookup";
 import type { RosterEntry } from "@/lib/dashboard/roster";
@@ -35,6 +36,20 @@ function ChevronDownIcon() {
     <svg viewBox="0 0 20 20" width={14} height={14} aria-hidden fill="currentColor">
       <path d="M10 13.5L5 8h10l-5 5.5z" />
     </svg>
+  );
+}
+
+function DragHandle() {
+  return (
+    <span
+      className="inline-flex cursor-grab touch-none select-none flex-col justify-center gap-0.5 px-0.5 py-2 text-xs opacity-40 active:cursor-grabbing"
+      aria-hidden
+      title="Drag to reorder"
+    >
+      <span className="block h-0.5 w-3 rounded-full bg-current" />
+      <span className="block h-0.5 w-3 rounded-full bg-current" />
+      <span className="block h-0.5 w-3 rounded-full bg-current" />
+    </span>
   );
 }
 
@@ -78,6 +93,7 @@ export function RosterListRow({
   isPrimary,
   reorderable,
   managing,
+  drag,
   onMoveUp,
   onMoveDown,
   onSetPrimary,
@@ -95,6 +111,7 @@ export function RosterListRow({
   reorderable?: boolean;
   /** Show remove + allow star click to set primary */
   managing?: boolean;
+  drag?: RosterDragProps;
   onMoveUp?: () => void;
   onMoveDown?: () => void;
   onSetPrimary?: () => void;
@@ -108,6 +125,7 @@ export function RosterListRow({
   const profileHref = characterProfileHref(entry);
   const canMoveUp = reorderable && index > 0;
   const canMoveDown = reorderable && index < total - 1;
+  const canDrag = Boolean(drag?.draggable);
 
   const secondary =
     error != null
@@ -122,13 +140,26 @@ export function RosterListRow({
 
   return (
     <li
+      draggable={canDrag}
+      onDragStart={drag?.onDragStart}
+      onDragOver={drag?.onDragOver}
+      onDragLeave={drag?.onDragLeave}
+      onDrop={drag?.onDrop}
+      onDragEnd={drag?.onDragEnd}
       className={[
-        "flex items-center gap-3 rounded-xl border border-border/50 bg-surface px-3 py-2.5 sm:gap-4 sm:px-4",
+        "flex items-center gap-3 rounded-xl border border-border/50 bg-surface px-3 py-2.5 transition sm:gap-4 sm:px-4",
+        canDrag ? "cursor-grab active:cursor-grabbing" : "",
+        drag?.isDragging ? "opacity-40 scale-[0.98]" : "",
+        drag?.isDropTarget && !drag?.isDragging
+          ? "border-accent/60 ring-2 ring-accent ring-offset-2 ring-offset-background"
+          : "",
         error ? "border-danger/40 bg-danger/5" : "",
       ]
         .filter(Boolean)
         .join(" ")}
     >
+      {canDrag ? <DragHandle /> : null}
+
       <AvatarThumb src={avatar} name={name} />
 
       <div className="min-w-0 flex-1">
@@ -137,6 +168,7 @@ export function RosterListRow({
             href={profileHref}
             className="truncate font-semibold tracking-tight text-foreground hover:text-accent"
             title={`${name} (${entry.region.toUpperCase()})`}
+            draggable={false}
           >
             {name}
           </Link>
@@ -191,7 +223,10 @@ export function RosterListRow({
       ) : null}
 
       {reorderable ? (
-        <div className="flex shrink-0 items-center gap-2">
+        <div
+          className="flex shrink-0 items-center gap-2"
+          onPointerDown={(e) => e.stopPropagation()}
+        >
           <span className="font-mono text-sm tabular-nums opacity-45">
             #{index + 1}
           </span>
