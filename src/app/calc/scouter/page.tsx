@@ -39,6 +39,7 @@ import {
   parseClassValue,
 } from "@/lib/jobs";
 import { storage, type ScouterPreset } from "@/lib/storage";
+import { PairingBar } from "@/components/PairingBar";
 import { HexaEfficiencyPanel } from "./hexa-efficiency";
 import { ShareGalleryModal } from "./share-gallery-modal";
 
@@ -703,6 +704,23 @@ export default function ScouterPage() {
         ) : null}
       </header>
 
+      <PairingBar
+        compact
+        pairArgs={{
+          scouterPresetId: loadedPresetId || null,
+          scouterName:
+            presetName.trim() ||
+            presets.find((p) => p.id === loadedPresetId)?.name ||
+            undefined,
+          scouterState: {
+            input,
+            buffs,
+            links,
+            hexa: clampHexaForGms(hexa),
+          },
+        }}
+      />
+
       <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.95fr)]">
         {/* —— Left: Enter Directly —— */}
         <section className="overflow-hidden rounded-lg border border-border/60 bg-surface/90">
@@ -1209,6 +1227,12 @@ export default function ScouterPage() {
             >
               Detailed Information
             </button>
+            <Link
+              href="/calc/equips/setup"
+              className="block w-full rounded-md border border-border/60 bg-background px-4 py-2 text-center text-sm font-semibold transition hover:bg-surface-muted"
+            >
+              Next: Equipment Setup → Pair
+            </Link>
           </div>
         </section>
 

@@ -34,6 +34,7 @@ import {
   slotToEquipType,
 } from "@/lib/slots";
 import { storage } from "@/lib/storage";
+import { PairingBar } from "@/components/PairingBar";
 import {
   STARTER_LOADOUTS,
   buildStarterSetup,
@@ -374,10 +375,12 @@ export default function SetupClient() {
         </h1>
         <p className="mt-2 max-w-2xl text-sm opacity-75">
           Build your loadout, then click an equipped piece to set Star Force,
-          flames, and potential lines in one place. Flame Calculator and Upgrade
-          Planner read the same saved setup.
+          flames, and potential lines in one place. Pair with Scouter so Planner
+          ranks upgrades by your character&apos;s FD%.
         </p>
       </header>
+
+      <PairingBar compact />
 
       <section className="space-y-2">
         <h2 className="text-sm font-bold uppercase tracking-wide opacity-70">
