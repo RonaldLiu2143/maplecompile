@@ -29,6 +29,14 @@ const EQUIPMENT_LINKS: NavLink[] = [
   { href: "/calc/equips/setup", label: "Equipment Setup" },
 ];
 
+const PROGRESSION_LINKS: NavLink[] = [
+  {
+    href: "/calc/boss-income",
+    label: "Boss Income & Liberation",
+    match: "exact",
+  },
+];
+
 function linkActive(pathname: string, link: NavLink): boolean {
   if (link.match === "exact") {
     return (
@@ -240,6 +248,11 @@ export function SiteShell({ children }: { children: ReactNode }) {
             <NavSection
               title="Equipment"
               links={EQUIPMENT_LINKS}
+              pathname={pathname}
+            />
+            <NavSection
+              title="Progression"
+              links={PROGRESSION_LINKS}
               pathname={pathname}
             />
           </nav>
