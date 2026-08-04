@@ -274,6 +274,7 @@ export default function ScouterPage() {
         reboot: merged.reboot,
         liberation: merged.liberation,
       });
+      if (!supportsOneHandSword(merged.charType)) merged.oneHandSword = false;
       setInput(merged);
     }
     if (last?.buffs) setBuffs(last.buffs);
@@ -415,7 +416,9 @@ export default function ScouterPage() {
       if (data.input) {
         const job = data.input.jobType || DEFAULT_JOB;
         const char = data.input.charType || DEFAULT_CHAR;
-        setInput({ ...defaultScouterInput(job, char), ...data.input });
+        const merged = { ...defaultScouterInput(job, char), ...data.input };
+        if (!supportsOneHandSword(merged.charType)) merged.oneHandSword = false;
+        setInput(merged);
       }
       if (data.buffs) setBuffs(data.buffs);
       if (data.links) setLinks(data.links);

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   SCOUTER_CDN,
   defaultHexaLevels,
@@ -147,6 +147,7 @@ const MAX_PIECE =
   COST.commonPiece[30] +
   COST.hecatePiece[30];
 
+/** Spec-affecting cores only (Sol Janus excluded); no extra +30 padding. */
 const MAX_ERDA =
   4 * COST.masteryErda[30] +
   4 * COST.reinErda[30] +
@@ -154,8 +155,16 @@ const MAX_ERDA =
   COST.skill12Erda[30] +
   COST.skill3Erda[30] +
   COST.commonErda[30] +
-  COST.hecateErda[30] +
-  30;
+  COST.hecateErda[30];
+
+function slotGroupFilter(
+  group: "mastery" | "reinforcement" | "skill" | "common",
+): CoreFilter {
+  if (group === "mastery") return "M";
+  if (group === "skill") return "S";
+  if (group === "reinforcement") return "R";
+  return "G";
+}
 
 function ProgressBar({
   label,
@@ -226,13 +235,19 @@ export function HexaEfficiencyPanel({
     return 6;
   }, [isMercedes, surge, chain]);
 
-  const run = async () => {
+  const hexaKey = hexa.join(",");
+  const oneHandSword = !!input.oneHandSword;
+  const fetchGen = useRef(0);
+
+  const run = async (signal?: AbortSignal) => {
+    const gen = ++fetchGen.current;
     setLoading(true);
     setError(null);
     try {
       const res = await fetch("/api/scouter/hexa-order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        signal,
         body: JSON.stringify({
           input,
           buffs,
@@ -252,23 +267,36 @@ export function HexaEfficiencyPanel({
         className?: string;
         error?: string;
       };
+      if (signal?.aborted || gen !== fetchGen.current) return;
       if (!res.ok) throw new Error(json.error || `Request failed (${res.status})`);
       setOrder((json.class_hexa ?? []) as HexaOrderStep[]);
       setPatch(json.patch ?? null);
       setClassName(json.className ?? "");
     } catch (err) {
+      if (signal?.aborted || gen !== fetchGen.current) return;
+      if (err instanceof DOMException && err.name === "AbortError") return;
       setOrder([]);
       setError(err instanceof Error ? err.message : "Hexa order failed");
     } finally {
-      setLoading(false);
+      if (gen === fetchGen.current) setLoading(false);
     }
   };
 
   useEffect(() => {
-    void run();
-    // Recalc when ranking options change; hexa/input captured via closure on button too.
+    const ac = new AbortController();
+    void run(ac.signal);
+    return () => ac.abort();
+    // Ranking options + HEXA levels / handedness / class. Full form edits use Refresh.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [solePiece, fromCurrent, kaling, merType, input.charType]);
+  }, [
+    solePiece,
+    fromCurrent,
+    kaling,
+    merType,
+    input.charType,
+    hexaKey,
+    oneHandSword,
+  ]);
 
   const visible = useMemo(() => {
     return order.filter((step) => {
@@ -424,8 +452,9 @@ export function HexaEfficiencyPanel({
         <ProgressBar label="Sol Erda" current={spent.erda} max={MAX_ERDA} />
       </div>
       <p className="mt-1 text-[10px] opacity-50">
-        Progress excludes Sol Janus (no combat-spec effect). Current HEXA levels
-        from the form above.
+        Progress excludes Sol Janus (no combat-spec effect). Ranking auto-updates
+        for HEXA levels / weapon / options; use Refresh after editing stats or
+        buffs.
       </p>
 
       {error ? (
@@ -476,57 +505,48 @@ export function HexaEfficiencyPanel({
       ) : null}
 
       <div className="mt-5 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-        {slots
-          .filter((s) => s.id !== "solJanus")
-          .map((slot) => {
-            const idx = slots.findIndex((s) => s.id === slot.id);
-            const lv = hexa[idx] ?? 0;
-            const group =
-              slot.group === "mastery"
-                ? "M"
-                : slot.group === "skill"
-                  ? "S"
-                  : slot.group === "reinforcement"
-                    ? "R"
-                    : "G";
-            const pct = (lv / 30) * 100;
-            return (
-              <div
-                key={slot.id}
-                className="flex items-center gap-2 rounded-md border border-border/40 px-2 py-1.5"
+        {slots.map((slot, idx) => {
+          if (slot.id === "solJanus") return null;
+          const lv = hexa[idx] ?? 0;
+          const group = slotGroupFilter(slot.group);
+          const pct = (lv / 30) * 100;
+          return (
+            <div
+              key={slot.id}
+              className="flex items-center gap-2 rounded-md border border-border/40 px-2 py-1.5"
+            >
+              <span
+                className={`inline-flex size-5 shrink-0 items-center justify-center rounded text-[10px] font-bold text-white ${CORE_META[group].badge}`}
               >
-                <span
-                  className={`inline-flex size-5 shrink-0 items-center justify-center rounded text-[10px] font-bold text-white ${CORE_META[group as CoreFilter].badge}`}
-                >
-                  {group}
-                </span>
-                {slot.iconSuffix ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={`${SCOUTER_CDN}${slot.iconSuffix}`}
-                    alt={slot.label}
-                    className="size-7 object-contain"
-                    loading="lazy"
-                    referrerPolicy="no-referrer"
+                {group}
+              </span>
+              {slot.iconSuffix ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={`${SCOUTER_CDN}${slot.iconSuffix}`}
+                  alt={slot.label}
+                  className="size-7 object-contain"
+                  loading="lazy"
+                  referrerPolicy="no-referrer"
+                />
+              ) : null}
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="truncate font-medium">{slot.label}</span>
+                  <span className="tabular-nums font-semibold">
+                    Lv.{lv} · {pct.toFixed(0)}%
+                  </span>
+                </div>
+                <div className="mt-0.5 h-1.5 overflow-hidden rounded-full bg-surface-muted">
+                  <div
+                    className="h-full rounded-full bg-accent"
+                    style={{ width: `${pct}%` }}
                   />
-                ) : null}
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between text-[11px]">
-                    <span className="truncate font-medium">{slot.label}</span>
-                    <span className="tabular-nums font-semibold">
-                      Lv.{lv} · {pct.toFixed(0)}%
-                    </span>
-                  </div>
-                  <div className="mt-0.5 h-1.5 overflow-hidden rounded-full bg-surface-muted">
-                    <div
-                      className="h-full rounded-full bg-accent"
-                      style={{ width: `${pct}%` }}
-                    />
-                  </div>
                 </div>
               </div>
-            );
-          })}
+            </div>
+          );
+        })}
       </div>
     </section>
   );

@@ -26,30 +26,34 @@ export type HexaOrderOptions = {
 };
 
 export async function POST(req: Request) {
+  let body: {
+    input: ScouterInput;
+    buffs: BuffState;
+    links: LinkState;
+    hexa: number[];
+    options?: Partial<HexaOrderOptions>;
+  };
   try {
-    const body = (await req.json()) as {
-      input: ScouterInput;
-      buffs: BuffState;
-      links: LinkState;
-      hexa: number[];
-      options?: Partial<HexaOrderOptions>;
-    };
-    if (!body?.input) {
-      return NextResponse.json({ error: "Missing input" }, { status: 400 });
-    }
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
 
-    const options: HexaOrderOptions = {
-      sole: body.options?.sole ?? true,
-      start: body.options?.start ?? true,
-      cycle: body.options?.cycle ?? "3",
-      merType: body.options?.merType ?? 1,
-    };
+  if (!body?.input) {
+    return NextResponse.json({ error: "Missing input" }, { status: 400 });
+  }
 
+  const options: HexaOrderOptions = {
+    sole: body.options?.sole ?? true,
+    start: body.options?.start ?? true,
+    cycle: body.options?.cycle ?? "3",
+    merType: body.options?.merType ?? 1,
+  };
+
+  try {
     const userStat = toMapleScouterUserStat(body);
-    const myClass =
-      CHAR_TO_KMS_CLASS[body.input.charType] ??
-      (userStat as { stat?: { myClass?: string } }).stat?.myClass ??
-      "영웅";
+    const myClass = CHAR_TO_KMS_CLASS[body.input.charType] ?? "영웅";
+    const myHexa = (userStat as { hexa?: Record<string, unknown> }).hexa ?? {};
 
     const dmgRes = await fetch(CALC_DMG_URL, {
       method: "POST",
@@ -72,17 +76,13 @@ export async function POST(req: Request) {
         specEfficiency?: Record<string, number>;
       };
     };
-    const calculatedData = dmgJson.calculatedData;
-    if (!calculatedData?.specEfficiency) {
+    const specEff = dmgJson.calculatedData?.specEfficiency;
+    if (!specEff) {
       return NextResponse.json(
         { error: "MapleScouter returned no specEfficiency" },
         { status: 502 },
       );
     }
-
-    const myHexa = {
-      ...((userStat as { hexa?: Record<string, unknown> }).hexa ?? {}),
-    };
 
     const orderUrl = `${HEXA_ORDER_URL}?class=${encodeURIComponent(myClass)}`;
     const orderRes = await fetch(orderUrl, {
@@ -90,7 +90,7 @@ export async function POST(req: Request) {
       headers: MS_HEADERS,
       body: JSON.stringify({
         myHexa,
-        specEff: calculatedData.specEfficiency,
+        specEff,
         sole: options.sole,
         merType: options.merType,
         start: options.start,
@@ -113,27 +113,16 @@ export async function POST(req: Request) {
 
     const orderJson = (await orderRes.json()) as {
       class_hexa?: unknown[];
-      myPosition?: unknown;
-      hexa_updated?: unknown;
-      now_hexa?: unknown;
-      standard?: unknown;
       patch?: string;
-      battleInfo?: unknown;
     };
 
     return NextResponse.json({
       className: myClass,
       class_hexa: orderJson.class_hexa ?? [],
-      myPosition: orderJson.myPosition ?? null,
-      hexa_updated: orderJson.hexa_updated ?? null,
-      now_hexa: orderJson.now_hexa ?? null,
-      standard: orderJson.standard ?? null,
       patch: orderJson.patch ?? null,
-      battleInfo: orderJson.battleInfo ?? null,
-      options,
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    return NextResponse.json({ error: message }, { status: 500 });
+    const message = err instanceof Error ? err.message : "Upstream request failed";
+    return NextResponse.json({ error: message }, { status: 502 });
   }
 }
