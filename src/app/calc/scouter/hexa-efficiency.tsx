@@ -113,7 +113,7 @@ function at(arr: readonly number[], lv: number): number {
 
 function spentForHexa(hexa: number[]) {
   const h = hexa.length ? hexa : defaultHexaLevels();
-  // mastery 0-3, rein 4-7, skill 8-10, commonClass 11, solJanus 12 (excluded), hecate 13
+  // mastery 0-3, rein 4-7, skill 8-9 (skill3 + class common excluded — not in GMS), hecate 13
   let piece = 0;
   let erda = 0;
   for (let i = 0; i < 4; i++) {
@@ -129,10 +129,6 @@ function spentForHexa(hexa: number[]) {
   erda += at(COST.skill12Erda, h[8] ?? 0) - at(COST.skill12Erda, 1);
   piece += at(COST.skill12Piece, h[9] ?? 0);
   erda += at(COST.skill12Erda, h[9] ?? 0);
-  piece += at(COST.skill3Piece, h[10] ?? 0);
-  erda += at(COST.skill3Erda, h[10] ?? 0);
-  piece += at(COST.commonPiece, h[11] ?? 0);
-  erda += at(COST.commonErda, h[11] ?? 0);
   piece += at(COST.hecatePiece, h[13] ?? 0);
   erda += at(COST.hecateErda, h[13] ?? 0);
   return { piece, erda };
@@ -143,18 +139,14 @@ const MAX_PIECE =
   4 * COST.reinPiece[30] +
   (COST.skill12Piece[30] - COST.skill12Piece[1]) +
   COST.skill12Piece[30] +
-  COST.skill3Piece[30] +
-  COST.commonPiece[30] +
   COST.hecatePiece[30];
 
-/** Spec-affecting cores only (Sol Janus excluded); no extra +30 padding. */
+/** Spec-affecting cores only (Sol Janus + GMS-unavailable cores excluded). */
 const MAX_ERDA =
   4 * COST.masteryErda[30] +
   4 * COST.reinErda[30] +
   (COST.skill12Erda[30] - COST.skill12Erda[1]) +
   COST.skill12Erda[30] +
-  COST.skill3Erda[30] +
-  COST.commonErda[30] +
   COST.hecateErda[30];
 
 function slotGroupFilter(
@@ -507,6 +499,7 @@ export function HexaEfficiencyPanel({
       <div className="mt-5 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
         {slots.map((slot, idx) => {
           if (slot.id === "solJanus") return null;
+          if (slot.unavailableInGms) return null;
           const lv = hexa[idx] ?? 0;
           const group = slotGroupFilter(slot.group);
           const pct = (lv / 30) * 100;

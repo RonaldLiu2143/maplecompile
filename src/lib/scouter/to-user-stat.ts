@@ -76,13 +76,14 @@ export function toMapleScouterUserStat(args: {
     reinCore4: String(h[7] ?? 0),
     skillCore1: String(h[8] ?? 0),
     skillCore2: String(h[9] ?? 0),
-    skillCore3: String(h[10] ?? 0),
+    // Skill Core 3 + class common not released in GMS
+    skillCore3: "0",
     skillCore4: "0",
     skillCore5: "0",
     skillCore6: "0",
     // MapleScouter: Sol Hecate → generalCore2, class common (_11) → generalCore3
     generalCore2: String(h[13] ?? 0),
-    generalCore3: String(h[11] ?? 0),
+    generalCore3: "0",
     generalCore4: "0",
     hexaStat: 0,
   };

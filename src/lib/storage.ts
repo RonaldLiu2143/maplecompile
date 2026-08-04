@@ -25,8 +25,53 @@ export type ScouterLastState = {
   hexa: number[];
 };
 
+export type ScouterPreset = ScouterLastState & {
+  id: string;
+  name: string;
+  updatedAt: number;
+};
+
 const SCOUTER_LAST_KEY = "maplecompile-scouter-last";
 const SCOUTER_LAST_KEY_LEGACY = "maplehub-scouter-last";
+const SCOUTER_PRESETS_KEY = "maplecompile-scouter-presets";
+const SCOUTER_PRESET_KEY_LEGACY_SINGLE = "maplecompile-scouter-preset";
+const SCOUTER_PRESET_KEY_LEGACY_HUB = "maplehub-scouter-preset";
+
+function newPresetId(): string {
+  return `p_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function migrateLegacySinglePreset(): ScouterPreset[] {
+  for (const key of [
+    SCOUTER_PRESET_KEY_LEGACY_SINGLE,
+    SCOUTER_PRESET_KEY_LEGACY_HUB,
+  ]) {
+    const legacy = readJson<ScouterLastState | null>(key, null);
+    if (!legacy?.input) continue;
+    const preset: ScouterPreset = {
+      id: newPresetId(),
+      name: "Saved preset",
+      updatedAt: Date.now(),
+      input: legacy.input,
+      buffs: legacy.buffs,
+      links: legacy.links,
+      hexa: legacy.hexa,
+    };
+    writeJson(SCOUTER_PRESETS_KEY, [preset]);
+    return [preset];
+  }
+  return [];
+}
+
+function readPresets(): ScouterPreset[] {
+  const list = readJson<ScouterPreset[] | null>(SCOUTER_PRESETS_KEY, null);
+  if (list != null) return Array.isArray(list) ? list : [];
+  return migrateLegacySinglePreset();
+}
+
+function writePresets(list: ScouterPreset[]) {
+  writeJson(SCOUTER_PRESETS_KEY, list);
+}
 
 function readJsonMigrating<T>(key: string, legacyKey: string, fallback: T): T {
   const next = readJson<T | null>(key, null);
@@ -77,4 +122,47 @@ export const storage = {
       null,
     ),
   setScouterLast: (v: ScouterLastState) => writeJson(SCOUTER_LAST_KEY, v),
+
+  listScouterPresets: (): ScouterPreset[] =>
+    readPresets().sort((a, b) => b.updatedAt - a.updatedAt),
+
+  getScouterPreset: (id: string): ScouterPreset | null =>
+    readPresets().find((p) => p.id === id) ?? null,
+
+  saveScouterPreset: (args: {
+    id?: string;
+    name: string;
+    state: ScouterLastState;
+  }): ScouterPreset => {
+    const list = readPresets();
+    const name = args.name.trim() || "Untitled";
+    const now = Date.now();
+    if (args.id) {
+      const idx = list.findIndex((p) => p.id === args.id);
+      if (idx >= 0) {
+        const updated: ScouterPreset = {
+          ...list[idx]!,
+          name,
+          updatedAt: now,
+          ...args.state,
+        };
+        list[idx] = updated;
+        writePresets(list);
+        return updated;
+      }
+    }
+    const created: ScouterPreset = {
+      id: newPresetId(),
+      name,
+      updatedAt: now,
+      ...args.state,
+    };
+    list.push(created);
+    writePresets(list);
+    return created;
+  },
+
+  deleteScouterPreset: (id: string): void => {
+    writePresets(readPresets().filter((p) => p.id !== id));
+  },
 };

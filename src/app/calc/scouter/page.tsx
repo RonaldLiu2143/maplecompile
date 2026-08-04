@@ -22,6 +22,7 @@ import {
   resolveOzRingStats,
   SCOUTER_CDN,
   supportsOneHandSword,
+  clampHexaForGms,
   type BuffState,
   type LinkState,
   type ScouterInput,
@@ -34,11 +35,8 @@ import {
   DEFAULT_JOB,
   parseClassValue,
 } from "@/lib/jobs";
-import { storage } from "@/lib/storage";
+import { storage, type ScouterPreset } from "@/lib/storage";
 import { HexaEfficiencyPanel } from "./hexa-efficiency";
-
-const PRESET_KEY = "maplecompile-scouter-preset";
-const PRESET_KEY_LEGACY = "maplehub-scouter-preset";
 
 const cell =
   "border border-border/50 bg-background px-2 py-1.5 text-sm outline-none focus:relative focus:z-10 focus:border-accent";
@@ -183,6 +181,9 @@ export default function ScouterPage() {
   const [links, setLinks] = useState<LinkState>(() => defaultLinkState());
   const [hexa, setHexa] = useState<number[]>(() => defaultHexaLevels());
   const [presetMsg, setPresetMsg] = useState<string | null>(null);
+  const [presets, setPresets] = useState<ScouterPreset[]>([]);
+  const [selectedPresetId, setSelectedPresetId] = useState("");
+  const [presetName, setPresetName] = useState("");
   const [draftReady, setDraftReady] = useState(false);
   const [showHexaEff, setShowHexaEff] = useState(false);
   const hexaEffRef = useRef<HTMLDivElement | null>(null);
@@ -279,7 +280,7 @@ export default function ScouterPage() {
     }
     if (last?.buffs) setBuffs(last.buffs);
     if (last?.links) setLinks(last.links);
-    if (last?.hexa) setHexa(last.hexa);
+    if (last?.hexa) setHexa(clampHexaForGms(last.hexa));
     setDraftReady(true);
   }, []);
 
@@ -310,7 +311,7 @@ export default function ScouterPage() {
 
   useEffect(() => {
     if (!draftReady) return;
-    storage.setScouterLast({ input, buffs, links, hexa });
+    storage.setScouterLast({ input, buffs, links, hexa: clampHexaForGms(hexa) });
   }, [input, buffs, links, hexa, draftReady]);
 
   const patch = (partial: Partial<ScouterInput>) =>
@@ -382,51 +383,97 @@ export default function ScouterPage() {
     });
   };
 
-  const savePreset = () => {
+  const flashPresetMsg = (msg: string) => {
+    setPresetMsg(msg);
+    setTimeout(() => setPresetMsg(null), 2000);
+  };
+
+  const refreshPresets = () => {
+    const list = storage.listScouterPresets();
+    setPresets(list);
+    return list;
+  };
+
+  useEffect(() => {
+    refreshPresets();
+  }, []);
+
+  const applyPresetState = (data: {
+    input?: ScouterInput;
+    buffs?: BuffState;
+    links?: LinkState;
+    hexa?: number[];
+  }) => {
+    if (data.input) {
+      const job = data.input.jobType || DEFAULT_JOB;
+      const char = data.input.charType || DEFAULT_CHAR;
+      const merged = { ...defaultScouterInput(job, char), ...data.input };
+      if (!supportsOneHandSword(merged.charType)) merged.oneHandSword = false;
+      setInput(merged);
+    }
+    if (data.buffs) setBuffs(data.buffs);
+    if (data.links) setLinks(data.links);
+    if (data.hexa) setHexa(clampHexaForGms(data.hexa));
+  };
+
+  const savePreset = (asNew: boolean) => {
     try {
-      localStorage.setItem(
-        PRESET_KEY,
-        JSON.stringify({ input, buffs, links, hexa }),
+      const name =
+        presetName.trim() ||
+        presets.find((p) => p.id === selectedPresetId)?.name ||
+        "Untitled";
+      const saved = storage.saveScouterPreset({
+        id: asNew ? undefined : selectedPresetId || undefined,
+        name,
+        state: { input, buffs, links, hexa: clampHexaForGms(hexa) },
+      });
+      const list = refreshPresets();
+      setSelectedPresetId(saved.id);
+      setPresetName(saved.name);
+      flashPresetMsg(
+        asNew || !selectedPresetId ? "Preset created" : "Preset updated",
       );
-      setPresetMsg("Preset saved");
-      setTimeout(() => setPresetMsg(null), 2000);
+      void list;
     } catch {
-      setPresetMsg("Could not save");
+      flashPresetMsg("Could not save");
     }
   };
 
   const recallPreset = () => {
     try {
-      let raw = localStorage.getItem(PRESET_KEY);
-      if (!raw) {
-        raw = localStorage.getItem(PRESET_KEY_LEGACY);
-        if (raw) localStorage.setItem(PRESET_KEY, raw);
-      }
-      if (!raw) {
-        setPresetMsg("No saved preset");
-        setTimeout(() => setPresetMsg(null), 2000);
+      if (!selectedPresetId) {
+        flashPresetMsg("Select a preset");
         return;
       }
-      const data = JSON.parse(raw) as {
-        input: ScouterInput;
-        buffs: BuffState;
-        links: LinkState;
-        hexa: number[];
-      };
-      if (data.input) {
-        const job = data.input.jobType || DEFAULT_JOB;
-        const char = data.input.charType || DEFAULT_CHAR;
-        const merged = { ...defaultScouterInput(job, char), ...data.input };
-        if (!supportsOneHandSword(merged.charType)) merged.oneHandSword = false;
-        setInput(merged);
+      const data = storage.getScouterPreset(selectedPresetId);
+      if (!data) {
+        flashPresetMsg("Preset not found");
+        refreshPresets();
+        return;
       }
-      if (data.buffs) setBuffs(data.buffs);
-      if (data.links) setLinks(data.links);
-      if (data.hexa) setHexa(data.hexa);
-      setPresetMsg("Preset loaded");
-      setTimeout(() => setPresetMsg(null), 2000);
+      applyPresetState(data);
+      setPresetName(data.name);
+      flashPresetMsg(`Loaded “${data.name}”`);
     } catch {
-      setPresetMsg("Could not load");
+      flashPresetMsg("Could not load");
+    }
+  };
+
+  const deletePreset = () => {
+    try {
+      if (!selectedPresetId) {
+        flashPresetMsg("Select a preset");
+        return;
+      }
+      const name =
+        presets.find((p) => p.id === selectedPresetId)?.name ?? "preset";
+      storage.deleteScouterPreset(selectedPresetId);
+      refreshPresets();
+      setSelectedPresetId("");
+      setPresetName("");
+      flashPresetMsg(`Deleted “${name}”`);
+    } catch {
+      flashPresetMsg("Could not delete");
     }
   };
 
@@ -482,24 +529,69 @@ export default function ScouterPage() {
       <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.95fr)]">
         {/* —— Left: Enter Directly —— */}
         <section className="overflow-hidden rounded-lg border border-border/60 bg-surface/90">
-          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/40 px-3 py-2">
-            <h2 className="text-sm font-semibold">
-              Enter Directly (Character Stats Changes)
-            </h2>
-            <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-col gap-2 border-b border-border/40 px-3 py-2">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h2 className="text-sm font-semibold">
+                Enter Directly (Character Stats Changes)
+              </h2>
+            </div>
+            <div className="flex flex-wrap items-center gap-1.5">
+              <select
+                className="min-w-[9rem] flex-1 rounded border border-border/50 bg-background px-2 py-1 text-xs outline-none focus:border-accent"
+                value={selectedPresetId}
+                onChange={(e) => {
+                  const id = e.target.value;
+                  setSelectedPresetId(id);
+                  const p = presets.find((x) => x.id === id);
+                  setPresetName(p?.name ?? "");
+                }}
+                aria-label="Saved presets"
+              >
+                <option value="">Select preset…</option>
+                {presets.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+              <input
+                type="text"
+                placeholder="Preset name"
+                value={presetName}
+                onChange={(e) => setPresetName(e.target.value)}
+                className="min-w-[7rem] flex-1 rounded border border-border/50 bg-background px-2 py-1 text-xs outline-none focus:border-accent"
+                aria-label="Preset name"
+              />
               <button
                 type="button"
                 onClick={recallPreset}
                 className="rounded border border-border/50 bg-background px-2.5 py-1 text-xs font-semibold transition hover:bg-surface-muted"
               >
-                Recall Saved Preset
+                Load
               </button>
               <button
                 type="button"
-                onClick={savePreset}
-                className="rounded border border-border/50 bg-background px-2.5 py-1 text-xs font-semibold transition hover:bg-surface-muted"
+                onClick={() => savePreset(false)}
+                disabled={!selectedPresetId && !presetName.trim()}
+                className="rounded border border-border/50 bg-background px-2.5 py-1 text-xs font-semibold transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
               >
-                Save Preset
+                {selectedPresetId ? "Overwrite" : "Save"}
+              </button>
+              <button
+                type="button"
+                onClick={() => savePreset(true)}
+                disabled={!presetName.trim()}
+                className="rounded border border-border/50 bg-background px-2.5 py-1 text-xs font-semibold transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Save as new
+              </button>
+              <button
+                type="button"
+                onClick={deletePreset}
+                disabled={!selectedPresetId}
+                className="rounded border border-border/50 bg-background px-2.5 py-1 text-xs font-semibold text-red-700 transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40 dark:text-red-400"
+              >
+                Delete
               </button>
             </div>
           </div>
@@ -774,7 +866,12 @@ export default function ScouterPage() {
               type="button"
               className="w-full rounded-md bg-accent px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90"
               onClick={() => {
-                storage.setScouterLast({ input, buffs, links, hexa });
+                storage.setScouterLast({
+                  input,
+                  buffs,
+                  links,
+                  hexa: clampHexaForGms(hexa),
+                });
                 setShowHexaEff(true);
               }}
             >
@@ -784,7 +881,12 @@ export default function ScouterPage() {
               type="button"
               className="w-full rounded-md border-2 border-border bg-surface px-4 py-2.5 text-sm font-semibold transition hover:bg-surface-muted"
               onClick={() => {
-                storage.setScouterLast({ input, buffs, links, hexa });
+                storage.setScouterLast({
+                  input,
+                  buffs,
+                  links,
+                  hexa: clampHexaForGms(hexa),
+                });
                 router.push("/calc/scouter/result");
               }}
             >
@@ -919,39 +1021,53 @@ export default function ScouterPage() {
               <h2 className="text-xs font-semibold">HEXA Enhancement</h2>
             </div>
             <div className="grid grid-cols-6 gap-1 p-1.5 sm:grid-cols-7">
-              {hexaSlots.map((slot, i) => (
-                <div
-                  key={slot.id}
-                  title={slot.label}
-                  className="flex flex-col items-center gap-0.5 rounded border border-border/40 bg-background p-1"
-                >
-                  <CdnIcon
-                    src={slot.iconSuffix}
-                    alt={slot.label}
-                    fallback={slot.label.slice(0, 3)}
-                    size={24}
-                  />
-                  <input
-                    type="number"
-                    min={0}
-                    max={HEXA_MAX_LEVEL}
-                    className="w-full rounded border border-border/40 bg-background px-0 py-0 text-center text-[10px] tabular-nums outline-none focus:border-accent"
-                    value={hexa[i] ?? 0}
-                    onChange={(e) => {
-                      const raw = Number(e.target.value) || 0;
-                      const capped = Math.min(
-                        Math.max(0, raw),
-                        HEXA_MAX_LEVEL,
-                      );
-                      setHexa((prev) => {
-                        const next = [...prev];
-                        next[i] = capped;
-                        return next;
-                      });
-                    }}
-                  />
-                </div>
-              ))}
+              {hexaSlots.map((slot, i) => {
+                const locked = !!slot.unavailableInGms;
+                return (
+                  <div
+                    key={slot.id}
+                    title={
+                      locked
+                        ? `${slot.label} (not available in GMS)`
+                        : slot.label
+                    }
+                    className={`flex flex-col items-center gap-0.5 rounded border border-border/40 p-1 ${
+                      locked
+                        ? "bg-surface-muted/40 opacity-40 grayscale"
+                        : "bg-background"
+                    }`}
+                  >
+                    <CdnIcon
+                      src={slot.iconSuffix}
+                      alt={slot.label}
+                      fallback={slot.label.slice(0, 3)}
+                      size={24}
+                    />
+                    <input
+                      type="number"
+                      min={0}
+                      max={HEXA_MAX_LEVEL}
+                      disabled={locked}
+                      readOnly={locked}
+                      className="w-full rounded border border-border/40 bg-background px-0 py-0 text-center text-[10px] tabular-nums outline-none focus:border-accent disabled:cursor-not-allowed disabled:opacity-70"
+                      value={locked ? 0 : (hexa[i] ?? 0)}
+                      onChange={(e) => {
+                        if (locked) return;
+                        const raw = Number(e.target.value) || 0;
+                        const capped = Math.min(
+                          Math.max(0, raw),
+                          HEXA_MAX_LEVEL,
+                        );
+                        setHexa((prev) => {
+                          const next = [...prev];
+                          next[i] = capped;
+                          return clampHexaForGms(next);
+                        });
+                      }}
+                    />
+                  </div>
+                );
+              })}
             </div>
           </section>
 

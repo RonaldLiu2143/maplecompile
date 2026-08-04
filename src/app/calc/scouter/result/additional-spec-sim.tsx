@@ -14,6 +14,7 @@ import {
   OZ_CONTINUOUS_STATUS,
   OZ_RING_MAX,
   SCOUTER_CDN,
+  clampHexaForGms,
   type BuffState,
   type OzContinuousStatus,
   type OzRingField,
@@ -95,7 +96,7 @@ function loadDraftMeta() {
     input,
     buffs: structuredClone(last?.buffs ?? defaultBuffState()),
     links: last?.links ?? defaultLinkState(),
-    hexa: [...(last?.hexa ?? defaultHexaLevels())],
+    hexa: clampHexaForGms([...(last?.hexa ?? defaultHexaLevels())]),
     mainLabel: STAT_LABEL[mainKeys[0] ?? "str"],
     subLabel: STAT_LABEL[secondaryKeys[0] ?? "dex"],
     atkLabel: input.useMagicAttack ? "MATT" : "ATT",
@@ -731,39 +732,53 @@ export function AdditionalSpecSimulation({ baseline }: Props) {
                 HEXA Enhancement
               </p>
               <div className="grid grid-cols-6 gap-1 sm:grid-cols-7 lg:grid-cols-8">
-                {hexaSlots.map((slot, i) => (
-                  <div
-                    key={slot.id}
-                    title={slot.label}
-                    className="flex flex-col items-center gap-0.5 rounded border border-border/40 bg-background p-1"
-                  >
-                    <CdnIcon
-                      src={slot.iconSuffix}
-                      alt={slot.label}
-                      fallback={slot.label.slice(0, 3)}
-                      size={24}
-                    />
-                    <input
-                      type="number"
-                      min={0}
-                      max={HEXA_MAX_LEVEL}
-                      className="w-full rounded border border-border/40 bg-background px-0 py-0 text-center text-[10px] tabular-nums outline-none focus:border-accent"
-                      value={simHexa[i] ?? 0}
-                      onChange={(e) => {
-                        const raw = Number(e.target.value) || 0;
-                        const capped = Math.min(
-                          Math.max(0, raw),
-                          HEXA_MAX_LEVEL,
-                        );
-                        setSimHexa((prev) => {
-                          const next = [...prev];
-                          next[i] = capped;
-                          return next;
-                        });
-                      }}
-                    />
-                  </div>
-                ))}
+                {hexaSlots.map((slot, i) => {
+                  const locked = !!slot.unavailableInGms;
+                  return (
+                    <div
+                      key={slot.id}
+                      title={
+                        locked
+                          ? `${slot.label} (not available in GMS)`
+                          : slot.label
+                      }
+                      className={`flex flex-col items-center gap-0.5 rounded border border-border/40 p-1 ${
+                        locked
+                          ? "bg-surface-muted/40 opacity-40 grayscale"
+                          : "bg-background"
+                      }`}
+                    >
+                      <CdnIcon
+                        src={slot.iconSuffix}
+                        alt={slot.label}
+                        fallback={slot.label.slice(0, 3)}
+                        size={24}
+                      />
+                      <input
+                        type="number"
+                        min={0}
+                        max={HEXA_MAX_LEVEL}
+                        disabled={locked}
+                        readOnly={locked}
+                        className="w-full rounded border border-border/40 bg-background px-0 py-0 text-center text-[10px] tabular-nums outline-none focus:border-accent disabled:cursor-not-allowed disabled:opacity-70"
+                        value={locked ? 0 : (simHexa[i] ?? 0)}
+                        onChange={(e) => {
+                          if (locked) return;
+                          const raw = Number(e.target.value) || 0;
+                          const capped = Math.min(
+                            Math.max(0, raw),
+                            HEXA_MAX_LEVEL,
+                          );
+                          setSimHexa((prev) => {
+                            const next = [...prev];
+                            next[i] = capped;
+                            return clampHexaForGms(next);
+                          });
+                        }}
+                      />
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>

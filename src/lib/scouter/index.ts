@@ -19,6 +19,8 @@ export {
   defaultBuffState,
   defaultLinkState,
   defaultHexaLevels,
+  clampHexaForGms,
+  GMS_UNAVAILABLE_HEXA_INDICES,
   type BuffDef,
   type BuffState,
   type LinkState,

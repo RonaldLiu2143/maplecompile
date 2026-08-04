@@ -500,6 +500,8 @@ export type HexaSlot = {
   label: string;
   /** Relative icon path under CDN, or null */
   iconSuffix: string | null;
+  /** Not released in GMS — UI greys out; API always sends 0 */
+  unavailableInGms?: boolean;
 };
 
 /**
@@ -520,12 +522,19 @@ export function getHexaSlots(charType: string): HexaSlot[] {
     { id: "rein4", group: "reinforcement", label: "Reinforcement 4", iconSuffix: cls(6) },
     { id: "skill1", group: "skill", label: "Skill Core 1", iconSuffix: cls(1) },
     { id: "skill2", group: "skill", label: "Skill Core 2", iconSuffix: cls(10) },
-    { id: "skill3", group: "skill", label: "Skill Core 3", iconSuffix: cls(12) },
+    {
+      id: "skill3",
+      group: "skill",
+      label: "Skill Core 3",
+      iconSuffix: cls(12),
+      unavailableInGms: true,
+    },
     {
       id: "commonClass",
       group: "common",
       label: "Class Common",
       iconSuffix: cls(11),
+      unavailableInGms: true,
     },
     {
       id: "solJanus",
@@ -544,6 +553,15 @@ export function getHexaSlots(charType: string): HexaSlot[] {
 
 export const HEXA_SLOT_COUNT = 14;
 export const HEXA_MAX_LEVEL = 30;
+
+/** Indices in hexa[] for cores not available in GMS (skill3, class common). */
+export const GMS_UNAVAILABLE_HEXA_INDICES = [10, 11] as const;
+
+export function clampHexaForGms(hexa: number[]): number[] {
+  const next = [...hexa];
+  for (const i of GMS_UNAVAILABLE_HEXA_INDICES) next[i] = 0;
+  return next;
+}
 
 export type BuffState = Record<string, { on: boolean; level: number }>;
 export type LinkState = Record<string, number>;
@@ -569,7 +587,8 @@ export function defaultHexaLevels(): number[] {
   return Array.from({ length: HEXA_SLOT_COUNT }, (_, i) => {
     if (i < 4) return 30; // mastery
     if (i < 8) return 30; // reinforcement
-    if (i < 11) return 30; // skill
-    return 1; // common
+    if (i < 10) return 30; // skill 1–2
+    if (i === 10 || i === 11) return 0; // skill3 + class common (not in GMS)
+    return 1; // sol Janus / Hecate
   });
 }
