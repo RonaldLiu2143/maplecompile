@@ -40,8 +40,8 @@ function cooldown(values: number[]): PotentialLineOption[] {
   }));
 }
 
-function formatLineLabel(line: PotentialLine): string {
-  if (line.id === "skillCooldown") return `-${line.value}s Skill Cooldown`;
+export function formatPotentialLineLabel(line: PotentialLine): string {
+  if (line.id === "skillCooldown") return `Skill Cooldowns -${line.value} sec`;
   const nouns: Record<string, string> = {
     attPercent: "ATT",
     mattPercent: "MATT",
@@ -59,6 +59,10 @@ function formatLineLabel(line: PotentialLine): string {
   const noun = nouns[line.id];
   if (noun) return `${line.value}% ${noun}`;
   return `${line.id} ${line.value}`;
+}
+
+function formatLineLabel(line: PotentialLine): string {
+  return formatPotentialLineLabel(line);
 }
 
 /**

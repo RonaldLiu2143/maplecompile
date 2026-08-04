@@ -1,7 +1,7 @@
 "use client";
 
 import type { CSSProperties } from "react";
-import type { Equip, EquipSetup } from "@/lib/types";
+import type { Equip, EquipSetup, FlameSetup } from "@/lib/types";
 import { canStarForce } from "@/lib/equip-capabilities";
 import {
   APPEARANCE_CELL,
@@ -11,6 +11,7 @@ import {
   slotToEquipType,
 } from "@/lib/slots";
 import { defaultStarForce } from "@/lib/planner";
+import { EquipItemTooltip } from "@/components/EquipItemTooltip";
 
 type Props = {
   setup: EquipSetup;
@@ -18,6 +19,8 @@ type Props = {
   charLabel?: string;
   /** Highlight the slot currently being edited / picked. */
   activeSlot?: string | null;
+  /** Flame lines by equip id — used for hover tooltips. */
+  flameSetup?: FlameSetup;
 };
 
 const SLOT = "3rem";
@@ -31,12 +34,14 @@ export function slotEquip(setup: EquipSetup, slotId: string): Equip | undefined 
 function EquipSlot({
   slotId,
   setup,
+  flameSetup,
   onSlotClick,
   style,
   active,
 }: {
   slotId: string;
   setup: EquipSetup;
+  flameSetup?: FlameSetup;
   onSlotClick: (slotId: string) => void;
   style: CSSProperties;
   active: boolean;
@@ -47,43 +52,67 @@ function EquipSlot({
   const stars = showStars
     ? (equip.starForce ?? defaultStarForce(equip.level))
     : 0;
+  const flames = equip
+    ? (flameSetup?.[equip.id] ?? equip.flames ?? [])
+    : [];
+
+  // Prefer tooltip on the right for left-column slots, left for right-column.
+  const col = typeof style.gridColumn === "number" ? style.gridColumn : 1;
+  const tipSide = Number(col) <= 3 ? "right" : "left";
 
   return (
-    <button
-      type="button"
-      title={
-        equip
-          ? showStars
-            ? `${equip.name} · ${stars}★`
-            : equip.name
-          : (SLOT_LABELS[slotId] ?? slotId)
-      }
-      onClick={() => onSlotClick(slotId)}
-      style={style}
-      className={`relative flex items-center justify-center rounded-[2px] border transition ${
-        active
-          ? "border-sky-400 bg-[#3a4a5c] ring-1 ring-sky-400/60"
-          : filled
-            ? "border-[#6CFF6C] bg-[#454545]"
-            : "border-[#999] bg-[#5c5c5c] hover:border-[#ccc] hover:bg-[#686868]"
-      }`}
-    >
-      {showStars && (
-        <span className="absolute left-0 top-0 z-10 flex h-3.5 min-w-3.5 items-center justify-center bg-[#2ECC40] px-0.5 text-[8px] font-bold leading-none text-white">
-          {stars}★
-        </span>
+    <div className="group relative" style={style}>
+      <button
+        type="button"
+        title={
+          equip
+            ? showStars
+              ? `${equip.name} · ${stars}★`
+              : equip.name
+            : (SLOT_LABELS[slotId] ?? slotId)
+        }
+        onClick={() => onSlotClick(slotId)}
+        className={`relative flex h-full w-full items-center justify-center rounded-[2px] border transition ${
+          active
+            ? "border-sky-400 bg-[#3a4a5c] ring-1 ring-sky-400/60"
+            : filled
+              ? "border-[#6CFF6C] bg-[#454545]"
+              : "border-[#999] bg-[#5c5c5c] hover:border-[#ccc] hover:bg-[#686868]"
+        }`}
+      >
+        {showStars && (
+          <span className="absolute left-0 top-0 z-10 flex h-3.5 min-w-3.5 items-center justify-center bg-[#2ECC40] px-0.5 text-[8px] font-bold leading-none text-white">
+            {stars}★
+          </span>
+        )}
+        {equip ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={equip.imgUrl}
+            alt={equip.name}
+            width={36}
+            height={36}
+            className="h-[80%] w-[80%] object-contain"
+          />
+        ) : null}
+      </button>
+      {equip && (
+        <div
+          className={`pointer-events-none absolute top-0 z-40 hidden opacity-0 transition group-hover:block group-hover:opacity-100 group-focus-within:block group-focus-within:opacity-100 ${
+            tipSide === "right"
+              ? "left-full ml-2"
+              : "right-full mr-2"
+          }`}
+        >
+          <EquipItemTooltip
+            equip={equip}
+            flames={flames}
+            starForce={stars}
+            compact
+          />
+        </div>
       )}
-      {equip ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={equip.imgUrl}
-          alt={equip.name}
-          width={36}
-          height={36}
-          className="h-[80%] w-[80%] object-contain"
-        />
-      ) : null}
-    </button>
+    </div>
   );
 }
 
@@ -92,6 +121,7 @@ export function EquipGrid({
   onSlotClick,
   charLabel,
   activeSlot,
+  flameSetup,
 }: Props) {
   return (
     <div
@@ -158,6 +188,7 @@ export function EquipGrid({
           key={slot.id}
           slotId={slot.id}
           setup={setup}
+          flameSetup={flameSetup}
           onSlotClick={onSlotClick}
           active={activeSlot === slot.id}
           style={{ gridColumn: slot.col, gridRow: slot.row }}
