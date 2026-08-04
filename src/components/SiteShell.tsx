@@ -16,10 +16,17 @@ type NavLink = { href: string; label: string; match?: "exact" | "prefix" };
 
 const PRIMARY_LINKS: NavLink[] = [
   { href: "/dashboard", label: "Dashboard", match: "exact" },
-  { href: "/roster", label: "Roster", match: "exact" },
   { href: "/guide", label: "Guide", match: "exact" },
   { href: "/calc/scouter", label: "Scouter", match: "exact" },
   { href: "/calc/scouter/gallery", label: "Gallery" },
+];
+
+const ROSTER_LINKS: NavLink[] = [
+  { href: "/roster", label: "Characters", match: "exact" },
+  { href: "/calc/bosses", label: "Boss Income", match: "exact" },
+  { href: "/calc/liberation", label: "Liberation", match: "exact" },
+  { href: "/calc/diary", label: "Diary", match: "exact" },
+  { href: "/calc/hexa-tracker", label: "HEXA Tracker", match: "exact" },
 ];
 
 const CALCULATOR_LINKS: NavLink[] = [
@@ -31,11 +38,6 @@ const EQUIPMENT_LINKS: NavLink[] = [
   { href: "/calc/equips/setup", label: "Equipment Setup" },
 ];
 
-const PROGRESSION_LINKS: NavLink[] = [
-  { href: "/calc/bosses", label: "Boss Income", match: "exact" },
-  { href: "/calc/liberation", label: "Liberation", match: "exact" },
-];
-
 function linkActive(pathname: string, link: NavLink): boolean {
   if (link.match === "exact") {
     return (
@@ -45,6 +47,10 @@ function linkActive(pathname: string, link: NavLink): boolean {
     );
   }
   return pathname === link.href || pathname.startsWith(`${link.href}/`);
+}
+
+function anyLinkActive(pathname: string, links: NavLink[]): boolean {
+  return links.some((link) => linkActive(pathname, link));
 }
 
 function NavSection({
@@ -80,6 +86,81 @@ function NavSection({
           </Link>
         );
       })}
+    </div>
+  );
+}
+
+function NavGroup({
+  title,
+  links,
+  pathname,
+}: {
+  title: string;
+  links: NavLink[];
+  pathname: string;
+}) {
+  const childActive = anyLinkActive(pathname, links);
+  const [expanded, setExpanded] = useState(childActive);
+
+  useEffect(() => {
+    if (childActive) setExpanded(true);
+  }, [childActive, pathname]);
+
+  return (
+    <div className="flex flex-col gap-0.5">
+      <button
+        type="button"
+        aria-expanded={expanded}
+        onClick={() => setExpanded((v) => !v)}
+        className={[
+          "flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm font-semibold transition-colors",
+          childActive
+            ? "text-accent"
+            : "hover:bg-accent-soft hover:text-accent",
+        ].join(" ")}
+      >
+        <span>{title}</span>
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 14 14"
+          fill="none"
+          aria-hidden
+          className={[
+            "shrink-0 opacity-70 transition-transform duration-150",
+            expanded ? "rotate-90" : "",
+          ].join(" ")}
+        >
+          <path
+            d="M5 3.5L9 7l-4 3.5"
+            stroke="currentColor"
+            strokeWidth="1.75"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </button>
+      {expanded ? (
+        <div className="ml-2 flex flex-col gap-0.5 border-l border-border/50 pl-2">
+          {links.map((link) => {
+            const active = linkActive(pathname, link);
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={[
+                  "rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors",
+                  active
+                    ? "bg-accent text-white dark:text-zinc-900"
+                    : "hover:bg-accent-soft hover:text-accent",
+                ].join(" ")}
+              >
+                {link.label}
+              </Link>
+            );
+          })}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -238,7 +319,9 @@ export function SiteShell({ children }: { children: ReactNode }) {
             id="site-sidebar-nav"
             className="flex flex-1 flex-col gap-2 overflow-y-auto px-1 py-2"
           >
-            <NavSection links={PRIMARY_LINKS} pathname={pathname} />
+            <NavSection links={PRIMARY_LINKS.slice(0, 1)} pathname={pathname} />
+            <NavGroup title="Roster" links={ROSTER_LINKS} pathname={pathname} />
+            <NavSection links={PRIMARY_LINKS.slice(1)} pathname={pathname} />
             <NavSection
               title="Calculators"
               links={CALCULATOR_LINKS}
@@ -247,11 +330,6 @@ export function SiteShell({ children }: { children: ReactNode }) {
             <NavSection
               title="Equipment"
               links={EQUIPMENT_LINKS}
-              pathname={pathname}
-            />
-            <NavSection
-              title="Progression"
-              links={PROGRESSION_LINKS}
               pathname={pathname}
             />
           </nav>
