@@ -4,7 +4,8 @@ import { Suspense, useEffect } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CharacterSearchBar } from "@/components/dashboard/CharacterSearchBar";
-import { RosterGrid } from "@/components/dashboard/RosterGrid";
+import { characterProfileHref } from "@/lib/character/client";
+import { entryKey } from "@/lib/dashboard/roster";
 import { useRoster } from "@/hooks/useRoster";
 
 function DashboardInner() {
@@ -12,17 +13,7 @@ function DashboardInner() {
   const searchParams = useSearchParams();
   const manageFromUrl = searchParams.get("manage") === "1";
 
-  const {
-    hydrated,
-    roster,
-    primary,
-    slots,
-    handleRemove,
-    handleSetPrimary,
-    handleRetry,
-    handleRosterAdded,
-    makeDragProps,
-  } = useRoster();
+  const { hydrated, roster, handleRosterAdded } = useRoster();
 
   // Legacy /dashboard?manage=1 → dedicated roster page
   useEffect(() => {
@@ -30,10 +21,6 @@ function DashboardInner() {
       router.replace("/roster");
     }
   }, [manageFromUrl, router]);
-
-  const overviewLimit = 4;
-  const overviewRoster = roster.slice(0, overviewLimit);
-  const hasMore = roster.length > overviewLimit;
 
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-8 py-4">
@@ -45,7 +32,7 @@ function DashboardInner() {
           Dashboard
         </h1>
         <p className="mt-2 text-sm opacity-80">
-          Search characters and preview your roster. Full manage (reorder,
+          Search characters and jump into your roster. Full manage (reorder,
           primary, remove) lives on the Roster page.
         </p>
       </header>
@@ -59,51 +46,51 @@ function DashboardInner() {
       )}
 
       {hydrated ? (
-        <section className="space-y-4">
+        <section className="rounded-2xl border border-border/50 bg-surface/80 p-4 sm:p-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="min-w-0 space-y-1">
-              <h2 className="font-display text-lg font-bold tracking-tight">
-                Roster overview ({roster.length})
-              </h2>
+            <h2 className="font-display text-lg font-bold tracking-tight">
+              Roster
               {roster.length > 0 ? (
-                <p className="text-xs opacity-55">
-                  Showing {overviewRoster.length}
-                  {hasMore ? ` of ${roster.length}` : ""} — open Roster to
-                  manage.
-                </p>
+                <span className="ml-2 text-sm font-semibold opacity-55">
+                  ({roster.length})
+                </span>
               ) : null}
-            </div>
+            </h2>
             <Link
               href="/roster"
               className="shrink-0 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90 dark:text-zinc-900"
             >
-              Open roster
+              Manage roster
             </Link>
           </div>
 
-          <RosterGrid
-            roster={overviewRoster}
-            primary={primary}
-            slots={slots}
-            managing={false}
-            emptyTitle="No characters yet"
-            emptyBody="Search a GMS character above, then tap Add to roster — or open Roster to manage your list."
-            makeDragProps={(index) => makeDragProps(index, false)}
-            onRemove={handleRemove}
-            onSetPrimary={handleSetPrimary}
-            onRetry={handleRetry}
-          />
-
-          {hasMore ? (
-            <p className="text-center text-sm opacity-70">
+          {roster.length === 0 ? (
+            <p className="mt-4 text-sm opacity-70">
+              No characters yet. Search a GMS character above, then tap Add to
+              roster — or{" "}
               <Link
                 href="/roster"
                 className="font-semibold text-accent underline-offset-2 hover:underline"
               >
-                View all {roster.length} on Roster →
-              </Link>
+                open Roster
+              </Link>{" "}
+              to manage your list.
             </p>
-          ) : null}
+          ) : (
+            <ul className="mt-4 flex flex-wrap gap-2">
+              {roster.map((entry) => (
+                <li key={entryKey(entry)}>
+                  <Link
+                    href={characterProfileHref(entry)}
+                    className="inline-flex items-center rounded-lg border border-border/60 bg-surface px-3 py-1.5 text-sm font-medium transition hover:border-accent/50 hover:bg-surface-muted"
+                    title={`${entry.name} (${entry.region.toUpperCase()})`}
+                  >
+                    {entry.name}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
       ) : null}
     </div>
