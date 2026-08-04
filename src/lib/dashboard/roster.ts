@@ -13,6 +13,17 @@ export type RosterEntry = {
   addedAt: number;
 };
 
+/** Explicit primary — independent of list order. */
+export type RosterPrimary = {
+  name: string;
+  region: NexonRegion;
+};
+
+export type RosterState = {
+  entries: RosterEntry[];
+  primary: RosterPrimary | null;
+};
+
 function normalizeEntry(
   raw: Partial<RosterEntry> | Partial<PinnedCharacter> | null | undefined,
 ): RosterEntry | null {
@@ -34,31 +45,63 @@ function normalizeEntry(
   };
 }
 
-function entryKey(entry: Pick<RosterEntry, "name" | "region">): string {
+function normalizePrimary(
+  raw: Partial<RosterPrimary> | null | undefined,
+): RosterPrimary | null {
+  if (!raw || typeof raw !== "object") return null;
+  const name = typeof raw.name === "string" ? raw.name.trim() : "";
+  const region =
+    raw.region === "eu" || raw.region === "na" ? raw.region : null;
+  if (!name || !CHARACTER_NAME_REGEX.test(name) || !region) return null;
+  return { name, region };
+}
+
+export function entryKey(entry: Pick<RosterEntry, "name" | "region">): string {
   return `${entry.region}:${entry.name.toLowerCase()}`;
 }
 
-function writeRoster(entries: RosterEntry[]): RosterEntry[] {
-  localStorage.setItem(ROSTER_KEY, JSON.stringify(entries));
-  // Keep legacy single-pin key in sync (first entry = primary).
+function resolvePrimary(
+  entries: RosterEntry[],
+  preferred: RosterPrimary | null,
+): RosterPrimary | null {
+  if (entries.length === 0) return null;
+  if (preferred) {
+    const key = entryKey(preferred);
+    const match = entries.find((e) => entryKey(e) === key);
+    if (match) return { name: match.name, region: match.region };
+  }
+  // Fallback: first entry (legacy behavior / after primary removed).
+  return { name: entries[0].name, region: entries[0].region };
+}
+
+function syncLegacyPin(primary: RosterPrimary | null, addedAt: number): void {
   try {
-    if (entries.length === 0) {
+    if (!primary) {
       localStorage.removeItem(PINNED_CHARACTER_KEY);
-    } else {
-      const primary = entries[0];
-      localStorage.setItem(
-        PINNED_CHARACTER_KEY,
-        JSON.stringify({
-          name: primary.name,
-          region: primary.region,
-          pinnedAt: primary.addedAt,
-        } satisfies PinnedCharacter),
-      );
+      return;
     }
+    localStorage.setItem(
+      PINNED_CHARACTER_KEY,
+      JSON.stringify({
+        name: primary.name,
+        region: primary.region,
+        pinnedAt: addedAt,
+      } satisfies PinnedCharacter),
+    );
   } catch {
     /* ignore legacy sync failures */
   }
-  return entries;
+}
+
+function writeRosterState(state: RosterState): RosterState {
+  const primary = resolvePrimary(state.entries, state.primary);
+  const next: RosterState = { entries: state.entries, primary };
+  localStorage.setItem(ROSTER_KEY, JSON.stringify(next));
+  const primaryEntry = primary
+    ? next.entries.find((e) => entryKey(e) === entryKey(primary))
+    : null;
+  syncLegacyPin(primary, primaryEntry?.addedAt ?? Date.now());
+  return next;
 }
 
 function readLegacyPin(): RosterEntry | null {
@@ -71,75 +114,159 @@ function readLegacyPin(): RosterEntry | null {
   }
 }
 
-/** Read roster from localStorage, migrating the legacy single pin if needed. */
-export function readRoster(): RosterEntry[] {
-  if (typeof window === "undefined") return [];
+function parseEntries(parsed: unknown): RosterEntry[] {
+  if (!Array.isArray(parsed)) return [];
+  const seen = new Set<string>();
+  const entries: RosterEntry[] = [];
+  for (const item of parsed) {
+    const entry = normalizeEntry(item as Partial<RosterEntry>);
+    if (!entry) continue;
+    const key = entryKey(entry);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    entries.push(entry);
+  }
+  return entries;
+}
+
+/** Full roster state (entries + explicit primary). */
+export function readRosterState(): RosterState {
+  if (typeof window === "undefined") {
+    return { entries: [], primary: null };
+  }
   try {
     const raw = localStorage.getItem(ROSTER_KEY);
     // One-shot migrate: only when roster key has never been written.
     if (raw === null) {
       const pin = readLegacyPin();
-      return pin ? writeRoster([pin]) : [];
+      if (!pin) return { entries: [], primary: null };
+      return writeRosterState({
+        entries: [pin],
+        primary: { name: pin.name, region: pin.region },
+      });
     }
 
     const parsed = JSON.parse(raw) as unknown;
-    if (!Array.isArray(parsed)) return [];
-    const seen = new Set<string>();
-    const entries: RosterEntry[] = [];
-    for (const item of parsed) {
-      const entry = normalizeEntry(item as Partial<RosterEntry>);
-      if (!entry) continue;
-      const key = entryKey(entry);
-      if (seen.has(key)) continue;
-      seen.add(key);
-      entries.push(entry);
+
+    // Legacy shape: bare array → first entry is primary.
+    if (Array.isArray(parsed)) {
+      const entries = parseEntries(parsed);
+      return writeRosterState({
+        entries,
+        primary: entries[0]
+          ? { name: entries[0].name, region: entries[0].region }
+          : null,
+      });
     }
-    return entries;
+
+    if (!parsed || typeof parsed !== "object") {
+      return { entries: [], primary: null };
+    }
+
+    const obj = parsed as { entries?: unknown; primary?: unknown };
+    const entries = parseEntries(obj.entries);
+    const preferred = normalizePrimary(
+      obj.primary as Partial<RosterPrimary> | null | undefined,
+    );
+    const primary = resolvePrimary(entries, preferred);
+    // Persist if primary was missing / invalid so storage stays consistent.
+    if (
+      (preferred == null && primary != null) ||
+      (preferred != null &&
+        primary != null &&
+        entryKey(preferred) !== entryKey(primary)) ||
+      (preferred != null && primary == null)
+    ) {
+      return writeRosterState({ entries, primary });
+    }
+    return { entries, primary };
   } catch {
-    return [];
+    return { entries: [], primary: null };
   }
+}
+
+/** Read roster entries from localStorage. */
+export function readRoster(): RosterEntry[] {
+  return readRosterState().entries;
+}
+
+export function getPrimary(): RosterPrimary | null {
+  return readRosterState().primary;
+}
+
+export function isPrimary(
+  target: Pick<RosterEntry, "name" | "region">,
+  primary: RosterPrimary | null = getPrimary(),
+): boolean {
+  if (!primary) return false;
+  return entryKey(target) === entryKey(primary);
+}
+
+export function setPrimary(
+  target: Pick<RosterEntry, "name" | "region">,
+): RosterState {
+  const { entries } = readRosterState();
+  const key = entryKey(target);
+  const match = entries.find((e) => entryKey(e) === key);
+  if (!match) return { entries, primary: resolvePrimary(entries, null) };
+  return writeRosterState({
+    entries,
+    primary: { name: match.name, region: match.region },
+  });
 }
 
 export function addToRoster(
   entry: Omit<RosterEntry, "addedAt"> & { addedAt?: number },
-): { roster: RosterEntry[]; added: boolean; entry: RosterEntry } {
+): { state: RosterState; added: boolean; entry: RosterEntry } {
   const nextEntry: RosterEntry = {
     name: entry.name.trim(),
     region: entry.region,
     addedAt: entry.addedAt ?? Date.now(),
   };
-  const current = readRoster();
-  if (current.some((e) => entryKey(e) === entryKey(nextEntry))) {
-    return { roster: current, added: false, entry: nextEntry };
+  const current = readRosterState();
+  if (current.entries.some((e) => entryKey(e) === entryKey(nextEntry))) {
+    return { state: current, added: false, entry: nextEntry };
   }
-  const roster = writeRoster([...current, nextEntry]);
-  return { roster, added: true, entry: nextEntry };
+  const entries = [...current.entries, nextEntry];
+  // First character becomes primary automatically.
+  const primary =
+    current.primary ??
+    ({ name: nextEntry.name, region: nextEntry.region } satisfies RosterPrimary);
+  const state = writeRosterState({ entries, primary });
+  return { state, added: true, entry: nextEntry };
 }
 
 export function removeFromRoster(
   target: Pick<RosterEntry, "name" | "region">,
-): RosterEntry[] {
+): RosterState {
+  const current = readRosterState();
   const key = entryKey(target);
-  return writeRoster(readRoster().filter((e) => entryKey(e) !== key));
+  const entries = current.entries.filter((e) => entryKey(e) !== key);
+  const primaryStill =
+    current.primary && entryKey(current.primary) === key
+      ? null
+      : current.primary;
+  return writeRosterState({ entries, primary: primaryStill });
 }
 
 export function moveRosterEntry(
   target: Pick<RosterEntry, "name" | "region">,
   direction: "up" | "down",
-): RosterEntry[] {
-  const current = readRoster();
+): RosterState {
+  const current = readRosterState();
   const key = entryKey(target);
-  const index = current.findIndex((e) => entryKey(e) === key);
+  const index = current.entries.findIndex((e) => entryKey(e) === key);
   if (index < 0) return current;
   const swapWith = direction === "up" ? index - 1 : index + 1;
-  if (swapWith < 0 || swapWith >= current.length) return current;
-  const next = [...current];
-  const tmp = next[index];
-  next[index] = next[swapWith];
-  next[swapWith] = tmp;
-  return writeRoster(next);
+  if (swapWith < 0 || swapWith >= current.entries.length) return current;
+  const entries = [...current.entries];
+  const tmp = entries[index];
+  entries[index] = entries[swapWith];
+  entries[swapWith] = tmp;
+  // Reorder does not change primary.
+  return writeRosterState({ entries, primary: current.primary });
 }
 
 export function clearRoster(): void {
-  writeRoster([]);
+  writeRosterState({ entries: [], primary: null });
 }
