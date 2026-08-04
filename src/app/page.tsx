@@ -18,8 +18,8 @@ export default function Home() {
           Plan your gear, flames, cubes, and scouter stats in one place.
         </h1>
         <p className="mt-3 max-w-lg text-base opacity-80">
-          Enter scouter stats, build equipment, pair them, then let Planner rank
-          upgrades by FD% for your character.
+          Enter scouter stats, build equipment, and pair them so calculators
+          share the same character and loadout.
         </p>
         <div className="mt-8 flex flex-wrap gap-3">
           <Link
@@ -39,12 +39,6 @@ export default function Home() {
             className="rounded-lg border-2 border-border bg-surface px-5 py-2.5 font-semibold transition hover:bg-surface-muted"
           >
             Equipment Setup
-          </Link>
-          <Link
-            href="/calc/planner"
-            className="rounded-lg border-2 border-border bg-surface px-5 py-2.5 font-semibold transition hover:bg-surface-muted"
-          >
-            Upgrade Planner
           </Link>
           <Link
             href="/calc/equips/flames"
@@ -79,21 +73,21 @@ export default function Home() {
           <h2 className="font-display text-lg font-semibold">Equipment Setup</h2>
           <p className="mt-2 text-sm opacity-80">
             Pick your job, fill the equip window with SF / flames / potential,
-            and save the grid Planner uses for upgrade candidates.
-          </p>
-        </div>
-        <div className="rounded-xl border border-border/50 bg-surface/80 p-5">
-          <h2 className="font-display text-lg font-semibold">Upgrade Planner</h2>
-          <p className="mt-2 text-sm opacity-80">
-            After pairing, ranks Star Force, flame, and cube upgrades by scouter
-            FD% per meso for your linked character.
+            and save the grid for pairing and calculators.
           </p>
         </div>
         <div className="rounded-xl border border-border/50 bg-surface/80 p-5">
           <h2 className="font-display text-lg font-semibold">Flame &amp; Cubing</h2>
           <p className="mt-2 text-sm opacity-80">
             Score flame odds and estimate cube / meso costs for desired
-            potential lines — same saved setup as Planner.
+            potential lines — using the same saved equipment setup.
+          </p>
+        </div>
+        <div className="rounded-xl border border-border/50 bg-surface/80 p-5">
+          <h2 className="font-display text-lg font-semibold">Public Gallery</h2>
+          <p className="mt-2 text-sm opacity-80">
+            Browse shared scouter loadouts and open a character snapshot by
+            link.
           </p>
         </div>
       </section>

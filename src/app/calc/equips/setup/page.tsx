@@ -419,8 +419,8 @@ export default function SetupClient() {
         </h1>
         <p className="mt-2 max-w-2xl text-sm opacity-75">
           Build your loadout, then click an equipped piece to set Star Force,
-          flames, and potential lines in one place. Pair with Scouter so Planner
-          ranks upgrades by your character&apos;s FD%.
+          flames, and potential lines in one place. Pair with Scouter so tools
+          share the same character and gear grid.
         </p>
       </header>
 
