@@ -320,48 +320,75 @@ const STUBS = {
     "Combat power / range are Open API fields — stubbed without a Nexon API key.",
 } as const;
 
+function resultFromMapleHub(
+  hub: MapleHubCharacter,
+  region: NexonRegion,
+  note: string,
+): CharacterLookupResult {
+  const level = hub.level;
+  const exp = hub.exp;
+  return {
+    name: hub.name,
+    region,
+    level,
+    exp,
+    expToNext: expToNext(level),
+    expPercent: expPercent(level, exp),
+    jobName: hub.jobName,
+    worldId: hub.worldId ?? -1,
+    worldName: hub.worldName ?? "Unknown",
+    characterImgURL: sanitizeAvatarUrl(hub.characterImgURL),
+    overallRank: hub.ranking?.globalRank ?? hub.rank,
+    fame: null,
+    gap: null,
+    isHeroic: isHeroicWorld(hub.worldId ?? -1),
+    legionLevel: hub.legionLevel,
+    raidPower: hub.raidPower,
+    achievementTiercore: null,
+    achievementTierId: null,
+    isMain: hub.isMain,
+    classRank: hub.classRank,
+    ranking: hub.ranking,
+    expAverages: hub.expAverages,
+    graph: hub.graph,
+    fetchedAt: new Date().toISOString(),
+    sources: ["maplehub"],
+    note,
+    stubs: { ...STUBS },
+  };
+}
+
 export async function lookupGmsCharacter(
   characterName: string,
   region: NexonRegion,
 ): Promise<CharacterLookupResult | null> {
   // MapleHub is independent of Nexon — overlap the round trips.
+  // Nexon rankings are often Cloudflare-blocked from servers (403); MapleHub
+  // must still be able to satisfy roster/avatar lookups alone.
   const hubPromise = fetchMapleHubCharacter(characterName, region);
-  const overall = await fetchOverallRow(region, characterName);
+
+  let overall: { row: NexonRankRow; rebootIndex: 0 | 1 } | null = null;
+  let nexonError: Error | null = null;
+  try {
+    overall = await fetchOverallRow(region, characterName);
+  } catch (err) {
+    nexonError = err instanceof Error ? err : new Error(String(err));
+  }
+
   if (!overall || typeof overall.row.level !== "number") {
-    // Nexon miss — still try MapleHub alone (covers some edge cases).
     const hubOnly = await hubPromise;
-    if (!hubOnly) return null;
-    const level = hubOnly.level;
-    const exp = hubOnly.exp;
-    return {
-      name: hubOnly.name,
-      region,
-      level,
-      exp,
-      expToNext: expToNext(level),
-      expPercent: expPercent(level, exp),
-      jobName: hubOnly.jobName,
-      worldId: hubOnly.worldId ?? -1,
-      worldName: hubOnly.worldName ?? "Unknown",
-      characterImgURL: sanitizeAvatarUrl(hubOnly.characterImgURL),
-      overallRank: hubOnly.ranking?.globalRank ?? hubOnly.rank,
-      fame: null,
-      gap: null,
-      isHeroic: isHeroicWorld(hubOnly.worldId ?? -1),
-      legionLevel: hubOnly.legionLevel,
-      raidPower: hubOnly.raidPower,
-      achievementTiercore: null,
-      achievementTierId: null,
-      isMain: hubOnly.isMain,
-      classRank: hubOnly.classRank,
-      ranking: hubOnly.ranking,
-      expAverages: hubOnly.expAverages,
-      graph: hubOnly.graph,
-      fetchedAt: new Date().toISOString(),
-      sources: ["maplehub"],
-      note: "Character found via MapleHub public API (Nexon rankings miss). Not live online status.",
-      stubs: { ...STUBS },
-    };
+    if (hubOnly) {
+      return resultFromMapleHub(
+        hubOnly,
+        region,
+        nexonError
+          ? "Character found via MapleHub public API (Nexon rankings unavailable). Not live online status."
+          : "Character found via MapleHub public API (Nexon rankings miss). Not live online status.",
+      );
+    }
+    // Hard fail only when Nexon errored and MapleHub also had nothing.
+    if (nexonError) throw nexonError;
+    return null;
   }
 
   const row = overall.row;
