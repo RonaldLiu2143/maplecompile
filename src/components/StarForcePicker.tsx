@@ -3,7 +3,6 @@
 import { useCallback, useRef, useState } from "react";
 import { MAX_STAR_FORCE } from "@/lib/planner";
 
-const SF_PRESETS = [10, 12, 15, 17, 18, 20, 21, 22, 25, 30] as const;
 const STARS_PER_ROW = 15;
 const GROUP_SIZE = 5;
 
@@ -49,8 +48,8 @@ function starFromPoint(clientX: number, clientY: number): number | null {
 }
 
 /**
- * Interactive Star Force control: number input, click/drag star grid
- * (2×15, groups of 5), and preset chips — MapleStory-style.
+ * Interactive Star Force control: number input and click/drag star grid
+ * (2×15, groups of 5) — MapleStory-style.
  */
 export function StarForcePicker({
   value,
@@ -129,7 +128,7 @@ export function StarForcePicker({
 
       <div
         ref={gridRef}
-        className={`inline-flex flex-col gap-0.5 rounded border border-[#3a3d48] bg-[#2d323e] px-2 py-1.5 select-none ${
+        className={`inline-flex flex-col gap-0.5 select-none ${
           dragging ? "cursor-grabbing" : "cursor-pointer"
         }`}
         style={{ touchAction: "none", WebkitUserSelect: "none", userSelect: "none" }}
@@ -176,24 +175,6 @@ export function StarForcePicker({
               </div>
             ))}
           </div>
-        ))}
-      </div>
-
-      <div className="flex flex-wrap gap-1">
-        {SF_PRESETS.filter((n) => n <= max).map((n) => (
-          <button
-            key={n}
-            type="button"
-            onClick={() => commit(n)}
-            aria-pressed={stars === n}
-            className={`rounded border px-1.5 py-0.5 text-[11px] font-semibold tabular-nums transition ${
-              stars === n
-                ? "border-amber-400/80 bg-amber-500/20 text-amber-100"
-                : "border-[#666] bg-[#2a2a2a] text-zinc-100 hover:border-[#888] hover:bg-[#3a3a3a]"
-            }`}
-          >
-            {n}★
-          </button>
         ))}
       </div>
     </div>
