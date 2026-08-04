@@ -30,11 +30,8 @@ const EQUIPMENT_LINKS: NavLink[] = [
 ];
 
 const PROGRESSION_LINKS: NavLink[] = [
-  {
-    href: "/calc/boss-income",
-    label: "Boss Income & Liberation",
-    match: "exact",
-  },
+  { href: "/calc/bosses", label: "Boss Income", match: "exact" },
+  { href: "/calc/liberation", label: "Liberation", match: "exact" },
 ];
 
 function linkActive(pathname: string, link: NavLink): boolean {
