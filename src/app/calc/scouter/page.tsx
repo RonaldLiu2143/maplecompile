@@ -210,12 +210,18 @@ export default function ScouterPage() {
     [input.charType],
   );
   const attackPowerTotal = useMemo(
-    () => Math.floor(Number(applyTriple(input.attack).toFixed(10))),
-    [input.attack],
+    () =>
+      input.useMagicAttack
+        ? 0
+        : Math.floor(Number(applyTriple(input.attack).toFixed(10))),
+    [input.attack, input.useMagicAttack],
   );
   const magicAttackTotal = useMemo(
-    () => Math.floor(Number(applyTriple(input.magicAttack).toFixed(10))),
-    [input.magicAttack],
+    () =>
+      input.useMagicAttack
+        ? Math.floor(Number(applyTriple(input.magicAttack).toFixed(10)))
+        : 0,
+    [input.magicAttack, input.useMagicAttack],
   );
 
   /** Skill-excluded FD (Reboot / Liberation). Class skill FD is only for General Range. */
