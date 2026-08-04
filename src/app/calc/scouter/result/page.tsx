@@ -352,6 +352,12 @@ export default function ScouterDetailedResultPage() {
   const [fightMinutes, setFightMinutes] = useState<BossClearFightMinutes>(
     BOSS_CLEAR_FIGHT_MINUTES_DEFAULT,
   );
+  /**
+   * MapleScouter input `special.is30min` — changes Boss Converted Stat.
+   * Independent of the 20/30 clear-timer toggle (MS keeps them separate).
+   * Default true = GMS with the 30-min box checked ("30분 체크바람").
+   */
+  const [is30min, setIs30min] = useState(true);
   const hpRegion: BossHpRegion = fightMinutes === 30 ? "gms" : "kms";
 
   useEffect(() => {
@@ -386,8 +392,7 @@ export default function ScouterDetailedResultPage() {
             buffs,
             links,
             hexa,
-            // MapleScouter's 30-min checkbox — required for GMS Boss Converted Stat parity
-            is30min: fightMinutes === 30,
+            is30min,
           }),
         });
         const json = (await res.json()) as {
@@ -410,7 +415,7 @@ export default function ScouterDetailedResultPage() {
     return () => {
       cancelled = true;
     };
-  }, [fightMinutes]);
+  }, [is30min]);
 
   const clearInput = useMemo(() => {
     if (!data) return null;
@@ -512,33 +517,47 @@ export default function ScouterDetailedResultPage() {
           <aside className="w-full shrink-0 lg:w-64 xl:w-72">
             <StatBlock
               title="Boss Converted Stat"
-              hint="30 min matches MapleScouter GMS with the 30-min box checked. 20 min matches unchecked (KMS-style)."
+              hint="Match MapleScouter’s 30-min box for converted stats. 20/30 only changes clear % / HP region."
               action={
-                <div className="inline-flex overflow-hidden rounded-full border border-border/50 text-xs">
-                  <button
-                    type="button"
-                    className={`px-3 py-1.5 font-semibold transition ${
-                      fightMinutes === 20
-                        ? "bg-accent text-white"
-                        : "bg-surface hover:bg-surface-muted"
-                    }`}
-                    onClick={() => setFightMinutes(20)}
-                    title="MapleScouter without 30-min · KMS HP clears"
+                <div className="flex flex-wrap items-center gap-2">
+                  <label
+                    className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-border/50 bg-surface px-2.5 py-1 text-xs font-semibold"
+                    title="MapleScouter special.is30min — changes Boss Converted Stat"
                   >
-                    20 min
-                  </button>
-                  <button
-                    type="button"
-                    className={`px-3 py-1.5 font-semibold transition ${
-                      fightMinutes === 30
-                        ? "bg-accent text-white"
-                        : "bg-surface hover:bg-surface-muted"
-                    }`}
-                    onClick={() => setFightMinutes(30)}
-                    title="MapleScouter GMS 30-min · GMS HP clears"
-                  >
-                    30 min
-                  </button>
+                    <input
+                      type="checkbox"
+                      className="accent-[var(--accent)]"
+                      checked={is30min}
+                      onChange={(e) => setIs30min(e.target.checked)}
+                    />
+                    30-min box
+                  </label>
+                  <div className="inline-flex overflow-hidden rounded-full border border-border/50 text-xs">
+                    <button
+                      type="button"
+                      className={`px-3 py-1.5 font-semibold transition ${
+                        fightMinutes === 20
+                          ? "bg-accent text-white"
+                          : "bg-surface hover:bg-surface-muted"
+                      }`}
+                      onClick={() => setFightMinutes(20)}
+                      title="Clear % with KMS boss HP · 20 min window"
+                    >
+                      20 min
+                    </button>
+                    <button
+                      type="button"
+                      className={`px-3 py-1.5 font-semibold transition ${
+                        fightMinutes === 30
+                          ? "bg-accent text-white"
+                          : "bg-surface hover:bg-surface-muted"
+                      }`}
+                      onClick={() => setFightMinutes(30)}
+                      title="Clear % with GMS boss HP · 30 min window"
+                    >
+                      30 min
+                    </button>
+                  </div>
                 </div>
               }
             >
@@ -690,10 +709,7 @@ export default function ScouterDetailedResultPage() {
               </p>
             </StatBlock>
 
-            <AdditionalSpecSimulation
-              baseline={data}
-              is30min={fightMinutes === 30}
-            />
+            <AdditionalSpecSimulation baseline={data} is30min={is30min} />
           </div>
         </div>
       ) : null}

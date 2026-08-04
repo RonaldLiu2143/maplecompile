@@ -12,7 +12,7 @@ export async function POST(req: Request) {
       buffs: BuffState;
       links: LinkState;
       hexa: number[];
-      /** When set, overrides GMS default (true). Ties to Result 20/30 min toggle. */
+      /** MapleScouter special.is30min — changes Boss Converted Stat. Default true (GMS). */
       is30min?: boolean;
     };
     if (!body?.input) {

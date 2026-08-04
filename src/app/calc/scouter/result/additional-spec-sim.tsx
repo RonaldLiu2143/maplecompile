@@ -325,7 +325,7 @@ function Accordion({
 
 type Props = {
   baseline: MapleScouterCalculatedData;
-  /** Match Result page 20/30 min toggle (MapleScouter special.is30min). */
+  /** MapleScouter special.is30min from Result page (independent of clear timer). */
   is30min?: boolean;
 };
 
