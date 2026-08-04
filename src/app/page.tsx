@@ -59,10 +59,10 @@ export default function Home() {
             Public Gallery
           </Link>
           <Link
-            href="/calc/character"
+            href="/roster"
             className="rounded-lg border-2 border-border bg-surface px-5 py-2.5 font-semibold transition hover:bg-surface-muted"
           >
-            Character Lookup
+            Roster
           </Link>
           <Link
             href="/calc/bosses"
@@ -109,10 +109,10 @@ export default function Home() {
           </p>
         </div>
         <div className="rounded-xl border border-border/50 bg-surface/80 p-5">
-          <h2 className="font-display text-lg font-semibold">Character Lookup</h2>
+          <h2 className="font-display text-lg font-semibold">Roster</h2>
           <p className="mt-2 text-sm opacity-80">
-            Look up a GMS character by name — rankings, legion, and EXP history
-            from public sources (no API key).
+            Search GMS characters, add them to your roster, and open profiles
+            with rankings, legion, and EXP history.
           </p>
         </div>
         <div className="rounded-xl border border-border/50 bg-surface/80 p-5">
