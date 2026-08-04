@@ -648,27 +648,19 @@ export default function ScouterPage() {
                   or share a link.
                 </p>
               </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <Link
-                  href="/calc/scouter/gallery"
-                  className="text-[11px] font-semibold text-accent underline-offset-2 hover:underline"
-                >
-                  Public gallery
-                </Link>
-                {loadedPresetId ? (
-                  <span className="rounded-full bg-accent-soft/40 px-2 py-0.5 text-[11px] font-semibold text-accent">
-                    Editing “
-                    {presetName.trim() ||
-                      presets.find((p) => p.id === loadedPresetId)?.name ||
-                      "preset"}
-                    ”
-                  </span>
-                ) : (
-                  <span className="text-[11px] font-medium opacity-50">
-                    Unsaved draft
-                  </span>
-                )}
-              </div>
+              {loadedPresetId ? (
+                <span className="rounded-full bg-accent-soft/40 px-2 py-0.5 text-[11px] font-semibold text-accent">
+                  Editing “
+                  {presetName.trim() ||
+                    presets.find((p) => p.id === loadedPresetId)?.name ||
+                    "preset"}
+                  ”
+                </span>
+              ) : (
+                <span className="text-[11px] font-medium opacity-50">
+                  Unsaved draft
+                </span>
+              )}
             </div>
 
             <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center">
@@ -767,6 +759,12 @@ export default function ScouterPage() {
               >
                 {sharing ? "Sharing…" : "Share link"}
               </button>
+              <Link
+                href="/calc/scouter/gallery"
+                className="rounded border border-border/50 bg-background px-2.5 py-1.5 text-xs font-semibold transition hover:bg-surface-muted"
+              >
+                Browse gallery
+              </Link>
             </div>
 
             {shareUrl ? (
