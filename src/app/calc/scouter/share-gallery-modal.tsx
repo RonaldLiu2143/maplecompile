@@ -41,8 +41,11 @@ type Props = {
     achievement: string;
     boss300HexaStat: number | null;
     boss380HexaStat: number | null;
+    replaceExisting: boolean;
   }) => void;
   submitting: boolean;
+  /** Existing public gallery post owned by this browser for the current preset. */
+  existingPost: { id: string; name: string } | null;
   initialName: string;
   initialAchievement: string;
   level: number;
@@ -59,6 +62,7 @@ export function ShareGalleryModal({
   onClose,
   onConfirm,
   submitting,
+  existingPost,
   initialName,
   initialAchievement,
   level,
@@ -77,6 +81,8 @@ export function ShareGalleryModal({
   const [bcsError, setBcsError] = useState<string | null>(null);
   const [boss300, setBoss300] = useState<number | null>(null);
   const [boss380, setBoss380] = useState<number | null>(null);
+
+  const isReplace = Boolean(existingPost);
 
   useEffect(() => {
     if (!open) return;
@@ -146,6 +152,23 @@ export function ShareGalleryModal({
   const canSubmit =
     !submitting && (identity === "anonymous" || ignOk);
 
+  const submit = () => {
+    if (isReplace && existingPost) {
+      const ok = window.confirm(
+        `Replace your previous gallery post “${existingPost.name}”?\n\nThe old post will be deleted permanently (new link, views reset to 0).`,
+      );
+      if (!ok) return;
+    }
+    onConfirm({
+      identity,
+      name: identity === "ign" ? name.trim() : anonPreview,
+      achievement: achievement.trim(),
+      boss300HexaStat: boss300,
+      boss380HexaStat: boss380,
+      replaceExisting: isReplace,
+    });
+  };
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
@@ -161,11 +184,12 @@ export function ShareGalleryModal({
           id="share-gallery-title"
           className="font-display text-xl font-bold tracking-tight"
         >
-          Share to gallery
+          {isReplace ? "Update gallery post" : "Share to gallery"}
         </h2>
         <p className="mt-1 text-xs opacity-65">
-          Post this loadout publicly. Choose anonymous (class + code) or your
-          IGN.
+          {isReplace
+            ? `Replace “${existingPost?.name ?? "your previous post"}” with this loadout. The old gallery link will be removed.`
+            : "Post this loadout publicly. Choose anonymous (class + code) or your IGN."}
         </p>
 
         <div className="mt-4 space-y-3 text-sm">
@@ -313,18 +337,16 @@ export function ShareGalleryModal({
           <button
             type="button"
             disabled={!canSubmit}
-            onClick={() =>
-              onConfirm({
-                identity,
-                name: identity === "ign" ? name.trim() : anonPreview,
-                achievement: achievement.trim(),
-                boss300HexaStat: boss300,
-                boss380HexaStat: boss380,
-              })
-            }
+            onClick={submit}
             className="rounded bg-accent px-3 py-1.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
           >
-            {submitting ? "Sharing…" : "Post to gallery"}
+            {submitting
+              ? isReplace
+                ? "Updating…"
+                : "Sharing…"
+              : isReplace
+                ? "Update gallery post"
+                : "Post to gallery"}
           </button>
         </div>
       </div>

@@ -194,6 +194,10 @@ export default function ScouterPage() {
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [shareAchievement, setShareAchievement] = useState("");
   const [galleryModalOpen, setGalleryModalOpen] = useState(false);
+  const [existingGalleryPost, setExistingGalleryPost] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
   const [sharing, setSharing] = useState(false);
   const [presetMenuOpen, setPresetMenuOpen] = useState(false);
   const presetMenuRef = useRef<HTMLDivElement | null>(null);
@@ -205,6 +209,15 @@ export default function ScouterPage() {
     if (!showHexaEff) return;
     hexaEffRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, [showHexaEff]);
+
+  useEffect(() => {
+    const existing = storage.getScouterGalleryShareForPreset(
+      loadedPresetId || null,
+    );
+    setExistingGalleryPost(
+      existing ? { id: existing.id, name: existing.name } : null,
+    );
+  }, [loadedPresetId]);
 
   useEffect(() => {
     if (!presetMenuOpen) return;
@@ -557,6 +570,7 @@ export default function ScouterPage() {
     identity?: "anonymous" | "ign";
     boss300HexaStat?: number | null;
     boss380HexaStat?: number | null;
+    replaceExisting?: boolean;
   }) => {
     if (sharing) return;
     const identity = args.identity ?? "ign";
@@ -572,7 +586,42 @@ export default function ScouterPage() {
     }
     setSharing(true);
     setShareUrl(null);
+    const presetKey = loadedPresetId || null;
     try {
+      // Replace: hard-delete the previous public post so the IGN lock frees
+      // and the old share id 404s before creating a fresh gallery entry.
+      if (args.asPublic && args.replaceExisting) {
+        const previous =
+          storage.getScouterGalleryShareForPreset(presetKey);
+        if (previous) {
+          const delRes = await fetch(
+            `/api/scouter/share/${encodeURIComponent(previous.id)}`,
+            {
+              method: "DELETE",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                deleteToken: previous.deleteToken,
+                hard: true,
+              }),
+            },
+          );
+          const delData = (await delRes.json()) as { error?: string };
+          if (!delRes.ok) {
+            // Stale local ownership: drop it and still try to create the new post.
+            if (delRes.status === 403 || delRes.status === 400) {
+              storage.clearScouterShareToken(previous.id);
+            } else {
+              throw new Error(
+                delData.error ||
+                  `Could not remove previous gallery post (${delRes.status})`,
+              );
+            }
+          } else {
+            storage.clearScouterShareToken(previous.id);
+          }
+        }
+      }
+
       const shareName = name.trim() || "Untitled";
       const achievement =
         args.achievement ?? shareAchievement;
@@ -621,15 +670,27 @@ export default function ScouterPage() {
           public: !!data.public,
         });
       }
+      if (args.asPublic && data.public) {
+        storage.linkScouterGalleryShare({
+          shareId: data.id,
+          presetId: presetKey,
+        });
+      }
       setShareUrl(data.url);
       if (args.asPublic) {
         if (identity === "ign") {
           setPresetName(savedName);
         }
         setShareAchievement(achievement.trim());
+        setExistingGalleryPost({ id: data.id, name: savedName });
         setGalleryModalOpen(false);
       }
-      const visibility = data.public ? "Public" : "Link-only";
+      const replaced = Boolean(args.replaceExisting);
+      const visibility = data.public
+        ? replaced
+          ? "Updated gallery"
+          : "Public"
+        : "Link-only";
       try {
         await navigator.clipboard.writeText(data.url);
         flashPresetMsg(
@@ -650,6 +711,12 @@ export default function ScouterPage() {
   };
 
   const openGalleryShareModal = () => {
+    const existing = storage.getScouterGalleryShareForPreset(
+      loadedPresetId || null,
+    );
+    setExistingGalleryPost(
+      existing ? { id: existing.id, name: existing.name } : null,
+    );
     setGalleryModalOpen(true);
   };
 
@@ -906,9 +973,13 @@ export default function ScouterPage() {
                 onClick={openGalleryShareModal}
                 disabled={sharing}
                 className="rounded border border-border/50 bg-background px-2.5 py-1.5 text-xs font-semibold transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
-                title="Review and post to the public gallery"
+                title={
+                  existingGalleryPost
+                    ? "Replace your previous public gallery post with this loadout"
+                    : "Review and post to the public gallery"
+                }
               >
-                Share to gallery
+                {existingGalleryPost ? "Update gallery" : "Share to gallery"}
               </button>
               <Link
                 href="/calc/scouter/gallery"
@@ -1604,6 +1675,7 @@ export default function ScouterPage() {
           achievement,
           boss300HexaStat,
           boss380HexaStat,
+          replaceExisting,
         }) => {
           void shareLoadout({
             asPublic: true,
@@ -1612,9 +1684,11 @@ export default function ScouterPage() {
             achievement,
             boss300HexaStat,
             boss380HexaStat,
+            replaceExisting,
           });
         }}
         submitting={sharing}
+        existingPost={existingGalleryPost}
         initialName={
           presetName.trim() ||
           presets.find((p) => p.id === selectedPresetId)?.name ||
