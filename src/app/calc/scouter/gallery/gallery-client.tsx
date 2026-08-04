@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { getCharName } from "@/lib/jobs";
 import type { ScouterGalleryItem } from "@/lib/scouter/share";
+import { storage } from "@/lib/storage";
 
 function formatSharedAt(ts: number): string {
   if (!ts) return "—";
@@ -19,13 +20,17 @@ function formatSharedAt(ts: number): string {
 }
 
 export function GalleryClient({
-  items,
+  items: initialItems,
   error,
 }: {
   items: ScouterGalleryItem[];
   error?: string | null;
 }) {
   const [query, setQuery] = useState("");
+  const [items, setItems] = useState(initialItems);
+  const [owned, setOwned] = useState(() => storage.getScouterShareTokens());
+  const [removingId, setRemovingId] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -41,6 +46,41 @@ export function GalleryClient({
     });
   }, [items, query]);
 
+  const removeFromGallery = async (item: ScouterGalleryItem) => {
+    const token = owned[item.id];
+    if (!token?.deleteToken) return;
+    const ok = window.confirm(
+      `Remove “${item.name}” from the public gallery?\n\nThe direct link will still work as private. This name can be reused.`,
+    );
+    if (!ok) return;
+
+    setRemovingId(item.id);
+    setActionError(null);
+    try {
+      const res = await fetch(
+        `/api/scouter/share/${encodeURIComponent(item.id)}`,
+        {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ deleteToken: token.deleteToken }),
+        },
+      );
+      const data = (await res.json()) as { error?: string };
+      if (!res.ok) {
+        throw new Error(data.error || `Remove failed (${res.status})`);
+      }
+      storage.clearScouterShareToken(item.id);
+      setOwned(storage.getScouterShareTokens());
+      setItems((prev) => prev.filter((row) => row.id !== item.id));
+    } catch (err) {
+      setActionError(
+        err instanceof Error ? err.message : "Could not remove from gallery",
+      );
+    } finally {
+      setRemovingId(null);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <header className="flex flex-wrap items-end justify-between gap-3">
@@ -49,8 +89,8 @@ export function GalleryClient({
             Public Scouter Gallery
           </h1>
           <p className="mt-1 max-w-2xl text-sm opacity-75">
-            Loadouts shared with Public checked. Open one to load it into
-            Scouter.
+            Shared loadouts. Open one to load it into Scouter. You can remove
+            entries you shared from this browser.
           </p>
         </div>
         <Link
@@ -81,10 +121,16 @@ export function GalleryClient({
         </p>
       ) : null}
 
+      {actionError ? (
+        <p className="rounded-lg border border-danger/40 bg-surface/80 px-4 py-3 text-sm text-red-600">
+          {actionError}
+        </p>
+      ) : null}
+
       {!error && filtered.length === 0 ? (
         <p className="rounded-lg border border-border/50 bg-surface/80 px-4 py-10 text-center text-sm opacity-70">
           {items.length === 0
-            ? "No public loadouts yet. Share from Scouter with Public checked."
+            ? "No public loadouts yet. Use Share to gallery from Scouter."
             : "No loadouts match your search."}
         </p>
       ) : null}
@@ -100,7 +146,7 @@ export function GalleryClient({
                 <th className="px-3 py-2.5 font-semibold">Flags</th>
                 <th className="px-3 py-2.5 font-semibold">Shared</th>
                 <th className="px-3 py-2.5 font-semibold">
-                  <span className="sr-only">Open</span>
+                  <span className="sr-only">Actions</span>
                 </th>
               </tr>
             </thead>
@@ -113,6 +159,7 @@ export function GalleryClient({
                 ]
                   .filter(Boolean)
                   .join(" · ");
+                const canRemove = Boolean(owned[item.id]?.deleteToken);
                 return (
                   <tr
                     key={item.id}
@@ -130,12 +177,24 @@ export function GalleryClient({
                       {formatSharedAt(item.createdAt)}
                     </td>
                     <td className="px-3 py-2.5 text-right">
-                      <Link
-                        href={`/calc/scouter/s/${item.id}`}
-                        className="inline-block rounded bg-accent px-2.5 py-1 text-xs font-semibold text-white transition hover:opacity-90"
-                      >
-                        Open
-                      </Link>
+                      <div className="inline-flex flex-wrap items-center justify-end gap-1.5">
+                        <Link
+                          href={`/calc/scouter/s/${item.id}`}
+                          className="inline-block rounded bg-accent px-2.5 py-1 text-xs font-semibold text-white transition hover:opacity-90"
+                        >
+                          Open
+                        </Link>
+                        {canRemove ? (
+                          <button
+                            type="button"
+                            disabled={removingId === item.id}
+                            onClick={() => void removeFromGallery(item)}
+                            className="rounded border border-border/50 bg-background px-2.5 py-1 text-xs font-semibold text-red-700 transition hover:bg-surface-muted disabled:opacity-40 dark:text-red-400"
+                          >
+                            {removingId === item.id ? "Removing…" : "Remove"}
+                          </button>
+                        ) : null}
+                      </div>
                     </td>
                   </tr>
                 );

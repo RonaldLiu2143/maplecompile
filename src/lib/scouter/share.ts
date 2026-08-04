@@ -10,6 +10,8 @@ const SHARE_KEY_PREFIX = "scouter:share:";
 export const SHARE_PUBLIC_SET = "scouter:share:public";
 /** NX keys: scouter:share:public:name:{normalized} → id (unique public names). */
 const SHARE_PUBLIC_NAME_PREFIX = "scouter:share:public:name:";
+/** Delete tokens kept separate from the share payload so GET can't leak them. */
+const SHARE_DELETE_PREFIX = "scouter:share:delete:";
 
 const ID_ALPHABET =
   "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
@@ -81,11 +83,20 @@ function publicNameKey(normalizedName: string): string {
   return `${SHARE_PUBLIC_NAME_PREFIX}${normalizedName}`;
 }
 
+function deleteTokenKey(id: string): string {
+  return `${SHARE_DELETE_PREFIX}${id}`;
+}
+
+export type CreateShareResult = {
+  record: ScouterShareRecord;
+  deleteToken: string;
+};
+
 export async function createShare(args: {
   name: string;
   state: ScouterShareState;
   public?: boolean;
-}): Promise<ScouterShareRecord> {
+}): Promise<CreateShareResult> {
   if (!args?.state?.input) {
     throw new Error("Missing state.input");
   }
@@ -134,13 +145,16 @@ export async function createShare(args: {
     public: isPublic,
     state,
   };
+  const deleteToken = newShareId(24);
 
   try {
     await redis.set(shareKey(id), record);
+    await redis.set(deleteTokenKey(id), deleteToken);
   } catch (err) {
     if (isPublic) {
       await redis.del(publicNameKey(normalizedName)).catch(() => undefined);
     }
+    await redis.del(shareKey(id), deleteTokenKey(id)).catch(() => undefined);
     throw err;
   }
 
@@ -152,7 +166,7 @@ export async function createShare(args: {
       // ignore
     }
   }
-  return record;
+  return { record, deleteToken };
 }
 
 export async function getShare(
@@ -227,4 +241,42 @@ export async function listPublicShares(): Promise<ScouterGalleryItem[]> {
 
   items.sort((a, b) => b.createdAt - a.createdAt);
   return items.slice(0, GALLERY_LIST_LIMIT);
+}
+
+/**
+ * Remove a loadout from the public gallery (frees the name).
+ * Requires the delete token returned at create time.
+ * The share remains openable by direct link as private.
+ */
+export async function removeFromPublicGallery(args: {
+  id: string;
+  deleteToken: string;
+}): Promise<void> {
+  const id = args.id?.trim();
+  const deleteToken = args.deleteToken?.trim();
+  if (!id || !/^[A-Za-z0-9_-]{4,32}$/.test(id) || !deleteToken) {
+    throw new Error("Invalid share id or delete token");
+  }
+
+  const redis = getRedis();
+  const storedToken = await redis.get<string>(deleteTokenKey(id));
+  if (!storedToken || storedToken !== deleteToken) {
+    throw new Error("Not allowed to remove this share");
+  }
+
+  const raw = await redis.get<ScouterShareRecord>(shareKey(id));
+  if (raw && typeof raw === "object") {
+    const name = normalizePublicShareName(raw.name || "");
+    if (name) {
+      const owned = await redis.get<string>(publicNameKey(name));
+      if (owned === id) {
+        await redis.del(publicNameKey(name));
+      }
+    }
+    if (raw.public) {
+      await redis.set(shareKey(id), { ...raw, public: false });
+    }
+  }
+
+  await redis.srem(SHARE_PUBLIC_SET, id);
 }

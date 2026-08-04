@@ -66,19 +66,20 @@ export async function POST(req: Request) {
       );
     }
 
-    const record = await createShare({
+    const created = await createShare({
       name: body.name ?? "Untitled",
       state: body.state,
       public: body.public === true,
     });
 
     const origin = new URL(req.url).origin;
-    const url = `${origin}/calc/scouter/s/${record.id}`;
+    const url = `${origin}/calc/scouter/s/${created.record.id}`;
 
     return NextResponse.json({
-      id: record.id,
+      id: created.record.id,
       url,
-      public: record.public,
+      public: created.record.public,
+      deleteToken: created.deleteToken,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";

@@ -166,4 +166,37 @@ export const storage = {
   deleteScouterPreset: (id: string): void => {
     writePresets(readPresets().filter((p) => p.id !== id));
   },
+
+  /** Delete tokens for shares created in this browser (needed to remove from gallery). */
+  getScouterShareTokens: (): Record<
+    string,
+    { deleteToken: string; name: string; public: boolean }
+  > =>
+    readJson("maplecompile-scouter-share-tokens", {}),
+
+  saveScouterShareToken: (args: {
+    id: string;
+    deleteToken: string;
+    name: string;
+    public: boolean;
+  }) => {
+    const map = readJson<
+      Record<string, { deleteToken: string; name: string; public: boolean }>
+    >("maplecompile-scouter-share-tokens", {});
+    map[args.id] = {
+      deleteToken: args.deleteToken,
+      name: args.name,
+      public: args.public,
+    };
+    writeJson("maplecompile-scouter-share-tokens", map);
+  },
+
+  clearScouterShareToken: (id: string) => {
+    const map = readJson<
+      Record<string, { deleteToken: string; name: string; public: boolean }>
+    >("maplecompile-scouter-share-tokens", {});
+    if (!(id in map)) return;
+    delete map[id];
+    writeJson("maplecompile-scouter-share-tokens", map);
+  },
 };

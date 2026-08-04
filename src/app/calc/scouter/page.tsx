@@ -563,16 +563,29 @@ export default function ScouterPage() {
         id?: string;
         url?: string;
         public?: boolean;
+        deleteToken?: string;
         error?: string;
       };
-      if (!res.ok || !data.url) {
+      if (!res.ok || !data.url || !data.id) {
         throw new Error(data.error || `Share failed (${res.status})`);
+      }
+      if (data.deleteToken) {
+        storage.saveScouterShareToken({
+          id: data.id,
+          deleteToken: data.deleteToken,
+          name: shareName,
+          public: !!data.public,
+        });
       }
       setShareUrl(data.url);
       const visibility = data.public ? "Public" : "Link-only";
       try {
         await navigator.clipboard.writeText(data.url);
-        flashPresetMsg(`${visibility} link copied`);
+        flashPresetMsg(
+          data.public
+            ? `${visibility} link copied — remove it anytime from the gallery`
+            : `${visibility} link copied`,
+        );
       } catch {
         flashPresetMsg(`${visibility} link ready`);
       }

@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
-import { getShare, isRedisConfigured } from "@/lib/scouter/share";
+import {
+  getShare,
+  isRedisConfigured,
+  removeFromPublicGallery,
+} from "@/lib/scouter/share";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -25,5 +29,37 @@ export async function GET(_req: Request, { params }: Params) {
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
     return NextResponse.json({ error: message }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: Request, { params }: Params) {
+  try {
+    if (!isRedisConfigured()) {
+      return NextResponse.json(
+        {
+          error:
+            "Sharing is not configured. Set UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN.",
+        },
+        { status: 503 },
+      );
+    }
+
+    const { id } = await params;
+    const body = (await req.json().catch(() => ({}))) as {
+      deleteToken?: string;
+    };
+    await removeFromPublicGallery({
+      id,
+      deleteToken: body.deleteToken ?? "",
+    });
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    const status = message.includes("Not allowed")
+      ? 403
+      : message.includes("Invalid")
+        ? 400
+        : 500;
+    return NextResponse.json({ error: message }, { status });
   }
 }
