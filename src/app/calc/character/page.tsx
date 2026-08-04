@@ -2,8 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
-
-const NAME_RE = /^[A-Za-z0-9]{2,13}$/;
+import { CHARACTER_NAME_REGEX } from "@/lib/character/lookup";
 
 const inputClass =
   "rounded border border-border bg-background px-3 py-2 text-sm outline-none focus:border-accent";
@@ -21,7 +20,7 @@ export default function CharacterLookupPage() {
       setError("Enter a character name.");
       return;
     }
-    if (!NAME_RE.test(trimmed)) {
+    if (!CHARACTER_NAME_REGEX.test(trimmed)) {
       setError("Invalid name. Use 2–13 letters or numbers (GMS IGN).");
       return;
     }

@@ -194,23 +194,43 @@ async function fetchOverallRow(
   region: NexonRegion,
   characterName: string,
 ): Promise<{ row: NexonRankRow; rebootIndex: 0 | 1 } | null> {
-  // Fetch both pools when needed so Heroic worlds get the Heroic overall rank.
+  // Both reboot pools in parallel so Heroic worlds get the Heroic overall rank.
   const tries: Array<0 | 1> = [1, 0];
-  const found: Array<{ row: NexonRankRow; rebootIndex: 0 | 1 }> = [];
+  const settled = await Promise.all(
+    tries.map(async (reboot) => {
+      try {
+        const data = await fetchRanking(
+          rankingUrl(region, "overall", characterName, reboot),
+        );
+        const row = pickExactRow(data, characterName);
+        return {
+          reboot,
+          row,
+          error: null as Error | null,
+        };
+      } catch (err) {
+        return {
+          reboot,
+          row: null as NexonRankRow | null,
+          error: err instanceof Error ? err : new Error(String(err)),
+        };
+      }
+    }),
+  );
 
-  for (const reboot of tries) {
-    try {
-      const data = await fetchRanking(
-        rankingUrl(region, "overall", characterName, reboot),
-      );
-      const row = pickExactRow(data, characterName);
-      if (row) found.push({ row, rebootIndex: reboot });
-    } catch (err) {
-      if (found.length === 0 && reboot === tries[tries.length - 1]) throw err;
-    }
+  const found = settled
+    .filter(
+      (s): s is { reboot: 0 | 1; row: NexonRankRow; error: null } =>
+        s.row != null,
+    )
+    .map((s) => ({ row: s.row, rebootIndex: s.reboot }));
+
+  if (!found.length) {
+    // Match prior sequential semantics: only throw if the last reboot attempt failed.
+    const last = settled[settled.length - 1];
+    if (last?.error) throw last.error;
+    return null;
   }
-
-  if (!found.length) return null;
 
   const heroicHit = found.find((f) =>
     isHeroicWorld(typeof f.row.worldID === "number" ? f.row.worldID : -1),
@@ -228,14 +248,26 @@ async function fetchFame(
   preferredReboot: 0 | 1,
 ): Promise<number | null> {
   try {
-    for (const reboot of [preferredReboot, preferredReboot === 0 ? 1 : 0] as const) {
-      const data = await fetchRanking(
-        rankingUrl(region, "fame", characterName, reboot),
-      );
-      const row = pickExactRow(data, characterName);
-      // Fame ranking stores fame in the `exp` field.
-      if (row && typeof row.exp === "number") return row.exp;
-    }
+    const reboots = [
+      preferredReboot,
+      preferredReboot === 0 ? 1 : 0,
+    ] as const;
+    const results = await Promise.all(
+      reboots.map(async (reboot) => {
+        try {
+          const data = await fetchRanking(
+            rankingUrl(region, "fame", characterName, reboot),
+          );
+          const row = pickExactRow(data, characterName);
+          // Fame ranking stores fame in the `exp` field.
+          if (row && typeof row.exp === "number") return row.exp;
+        } catch {
+          /* optional enrichment — ignore */
+        }
+        return null;
+      }),
+    );
+    return results.find((v) => v != null) ?? null;
   } catch {
     /* optional enrichment — ignore */
   }
@@ -292,10 +324,12 @@ export async function lookupGmsCharacter(
   characterName: string,
   region: NexonRegion,
 ): Promise<CharacterLookupResult | null> {
+  // MapleHub is independent of Nexon — overlap the round trips.
+  const hubPromise = fetchMapleHubCharacter(characterName, region);
   const overall = await fetchOverallRow(region, characterName);
   if (!overall || typeof overall.row.level !== "number") {
     // Nexon miss — still try MapleHub alone (covers some edge cases).
-    const hubOnly = await fetchMapleHubCharacter(characterName, region);
+    const hubOnly = await hubPromise;
     if (!hubOnly) return null;
     const level = hubOnly.level;
     const exp = hubOnly.exp;
@@ -333,17 +367,18 @@ export async function lookupGmsCharacter(
   const row = overall.row;
   const worldId = typeof row.worldID === "number" ? row.worldID : -1;
   const heroic = isHeroicWorld(worldId);
-  const fame = await fetchFame(
-    region,
-    row.characterName ?? characterName,
-    overall.rebootIndex,
-  );
+  const resolvedName = row.characterName ?? characterName;
+
+  const [fame, hub] = await Promise.all([
+    fetchFame(region, resolvedName, overall.rebootIndex),
+    hubPromise,
+  ]);
 
   const level = row.level as number;
   const exp = typeof row.exp === "number" ? row.exp : 0;
 
   const base: CharacterLookupResult = {
-    name: row.characterName ?? characterName,
+    name: resolvedName,
     region,
     level,
     exp,
@@ -380,6 +415,5 @@ export async function lookupGmsCharacter(
     stubs: { ...STUBS },
   };
 
-  const hub = await fetchMapleHubCharacter(base.name, region);
   return mergeWithMapleHub(base, hub);
 }

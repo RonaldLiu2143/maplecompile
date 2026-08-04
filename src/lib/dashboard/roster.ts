@@ -60,6 +60,14 @@ export function entryKey(entry: Pick<RosterEntry, "name" | "region">): string {
   return `${entry.region}:${entry.name.toLowerCase()}`;
 }
 
+export function rosterContains(
+  entries: ReadonlyArray<Pick<RosterEntry, "name" | "region">>,
+  target: Pick<RosterEntry, "name" | "region">,
+): boolean {
+  const key = entryKey(target);
+  return entries.some((e) => entryKey(e) === key);
+}
+
 function resolvePrimary(
   entries: RosterEntry[],
   preferred: RosterPrimary | null,
@@ -185,11 +193,6 @@ export function readRosterState(): RosterState {
   }
 }
 
-/** Read roster entries from localStorage. */
-export function readRoster(): RosterEntry[] {
-  return readRosterState().entries;
-}
-
 export function getPrimary(): RosterPrimary | null {
   return readRosterState().primary;
 }
@@ -249,19 +252,6 @@ export function removeFromRoster(
   return writeRosterState({ entries, primary: primaryStill });
 }
 
-export function moveRosterEntry(
-  target: Pick<RosterEntry, "name" | "region">,
-  direction: "up" | "down",
-): RosterState {
-  const current = readRosterState();
-  const key = entryKey(target);
-  const index = current.entries.findIndex((e) => entryKey(e) === key);
-  if (index < 0) return current;
-  const swapWith = direction === "up" ? index - 1 : index + 1;
-  if (swapWith < 0 || swapWith >= current.entries.length) return current;
-  return reorderRoster(index, swapWith);
-}
-
 /** Move an entry from one index to another. Primary is unchanged. */
 export function reorderRoster(
   fromIndex: number,
@@ -282,8 +272,4 @@ export function reorderRoster(
   const [item] = entries.splice(fromIndex, 1);
   entries.splice(toIndex, 0, item);
   return writeRosterState({ entries, primary: current.primary });
-}
-
-export function clearRoster(): void {
-  writeRosterState({ entries: [], primary: null });
 }

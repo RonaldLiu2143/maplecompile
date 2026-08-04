@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
 import {
   Suspense,
   useEffect,
@@ -9,6 +8,7 @@ import {
   type DragEvent,
   type FormEvent,
 } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { MiniRosterProfileCard } from "@/components/dashboard/MiniRosterProfileCard";
 import {
   RosterCardError,
@@ -17,24 +17,27 @@ import {
   type RosterDragProps,
 } from "@/components/dashboard/RosterCharacterCard";
 import {
+  CHARACTER_LOOKUP_NETWORK_ERROR,
+  fetchCharacterLookup,
+} from "@/lib/character/client";
+import {
   CHARACTER_NAME_REGEX,
   type CharacterLookupResult,
   type NexonRegion,
 } from "@/lib/character/lookup";
 import {
   addToRoster,
+  entryKey,
   isPrimary,
   readRosterState,
   removeFromRoster,
   reorderRoster,
+  rosterContains,
   setPrimary,
   type RosterEntry,
   type RosterPrimary,
   type RosterState,
 } from "@/lib/dashboard/roster";
-
-type ApiOk = { ok: true; character: CharacterLookupResult };
-type ApiErr = { ok: false; error: string; code?: string };
 
 type SlotState =
   | { status: "loading" }
@@ -43,35 +46,6 @@ type SlotState =
 
 const inputClass =
   "rounded border border-border bg-background px-3 py-2 text-sm outline-none focus:border-accent";
-
-function slotKey(entry: Pick<RosterEntry, "name" | "region">): string {
-  return `${entry.region}:${entry.name.toLowerCase()}`;
-}
-
-async function fetchCharacter(
-  name: string,
-  region: NexonRegion,
-): Promise<CharacterLookupResult> {
-  const qs = new URLSearchParams({ name, region });
-  const res = await fetch(`/api/character?${qs.toString()}`, {
-    cache: "no-store",
-  });
-  const body = (await res.json()) as ApiOk | ApiErr;
-  if (!res.ok || !body.ok) {
-    throw new Error(
-      !body.ok ? body.error : `Lookup failed (${res.status}).`,
-    );
-  }
-  return body.character;
-}
-
-function isOnRoster(
-  roster: RosterEntry[],
-  character: Pick<CharacterLookupResult, "name" | "region">,
-): boolean {
-  const key = slotKey(character);
-  return roster.some((e) => slotKey(e) === key);
-}
 
 function CharacterSearchBar({
   roster,
@@ -116,14 +90,12 @@ function CharacterSearchBar({
     setFeedback(null);
     setResult(null);
     try {
-      const character = await fetchCharacter(trimmed, region);
+      const character = await fetchCharacterLookup(trimmed, region);
       setResult(character);
       setName(character.name);
     } catch (err) {
       setError(
-        err instanceof Error
-          ? err.message
-          : "Network error — check your connection and try again.",
+        err instanceof Error ? err.message : CHARACTER_LOOKUP_NETWORK_ERROR,
       );
     } finally {
       setPending(false);
@@ -149,7 +121,7 @@ function CharacterSearchBar({
     }
   }
 
-  const alreadyOnRoster = result ? isOnRoster(roster, result) : false;
+  const alreadyOnRoster = result ? rosterContains(roster, result) : false;
 
   return (
     <section className="space-y-3">
@@ -269,10 +241,9 @@ function DashboardInner() {
     if (!hydrated) return;
 
     let cancelled = false;
-    const wanted = roster.map((e) => ({ entry: e, key: slotKey(e) }));
+    const wanted = roster.map((e) => ({ entry: e, key: entryKey(e) }));
     const wantedKeys = new Set(wanted.map((w) => w.key));
 
-    // Drop slots for removed entries
     setSlots((prev) => {
       const next: Record<string, SlotState> = {};
       for (const { key } of wanted) {
@@ -287,7 +258,7 @@ function DashboardInner() {
     async function loadOne(entry: RosterEntry, key: string) {
       setSlots((prev) => ({ ...prev, [key]: { status: "loading" } }));
       try {
-        const character = await fetchCharacter(entry.name, entry.region);
+        const character = await fetchCharacterLookup(entry.name, entry.region);
         if (cancelled) return;
         loadedKeys.current.add(key);
         setSlots((prev) => ({
@@ -304,7 +275,7 @@ function DashboardInner() {
             error:
               err instanceof Error
                 ? err.message
-                : "Network error — check your connection and try again.",
+                : CHARACTER_LOOKUP_NETWORK_ERROR,
           },
         }));
       }
@@ -322,7 +293,7 @@ function DashboardInner() {
   }, [hydrated, roster, reloadToken]);
 
   function handleRemove(entry: RosterEntry) {
-    const key = slotKey(entry);
+    const key = entryKey(entry);
     loadedKeys.current.delete(key);
     applyRosterState(removeFromRoster(entry));
   }
@@ -352,10 +323,6 @@ function DashboardInner() {
         setDragOver(index);
         e.dataTransfer.effectAllowed = "move";
         e.dataTransfer.setData("text/plain", String(index));
-        // Ghost feedback: slightly transparent drag image via opacity on source.
-        if (e.currentTarget instanceof HTMLElement) {
-          e.currentTarget.style.opacity = "0.4";
-        }
       },
       onDragOver: (e: DragEvent) => {
         e.preventDefault();
@@ -376,17 +343,14 @@ function DashboardInner() {
         }
         clearDrag();
       },
-      onDragEnd: (e: DragEvent) => {
-        if (e.currentTarget instanceof HTMLElement) {
-          e.currentTarget.style.opacity = "";
-        }
+      onDragEnd: () => {
         clearDrag();
       },
     };
   }
 
   function handleRetry(entry: RosterEntry) {
-    loadedKeys.current.delete(slotKey(entry));
+    loadedKeys.current.delete(entryKey(entry));
     setReloadToken((n) => n + 1);
   }
 
@@ -394,7 +358,7 @@ function DashboardInner() {
     next: RosterState,
     character: CharacterLookupResult,
   ) {
-    const key = slotKey(character);
+    const key = entryKey(character);
     loadedKeys.current.add(key);
     setSlots((prev) => ({
       ...prev,
@@ -487,7 +451,7 @@ function DashboardInner() {
           </div>
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             {roster.map((entry, index) => {
-              const key = slotKey(entry);
+              const key = entryKey(entry);
               const slot = slots[key];
               const drag = makeDragProps(index);
               if (!slot || slot.status === "loading") {
