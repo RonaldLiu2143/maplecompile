@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   Suspense,
@@ -9,6 +8,7 @@ import {
   useState,
   type FormEvent,
 } from "react";
+import { MiniRosterProfileCard } from "@/components/dashboard/MiniRosterProfileCard";
 import {
   RosterCardError,
   RosterCardSkeleton,
@@ -144,9 +144,6 @@ function CharacterSearchBar({
   }
 
   const alreadyOnRoster = result ? isOnRoster(roster, result) : false;
-  const profileHref = result
-    ? `/calc/character/${encodeURIComponent(result.name)}?region=${result.region}`
-    : null;
 
   return (
     <section className="space-y-3">
@@ -207,57 +204,12 @@ function CharacterSearchBar({
       ) : null}
 
       {result ? (
-        <div className="flex flex-wrap items-center gap-4 rounded-xl border border-border bg-surface/80 px-4 py-3">
-          {result.characterImgURL ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={result.characterImgURL}
-              alt=""
-              width={56}
-              height={56}
-              className="h-14 w-14 shrink-0 object-contain"
-            />
-          ) : (
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-surface-muted text-[0.65rem] opacity-60">
-              No img
-            </div>
-          )}
-          <div className="min-w-0 flex-1">
-            <p className="font-display text-base font-bold tracking-tight">
-              {result.name}
-            </p>
-            <p className="text-sm opacity-75">
-              Lv. {result.level}
-              {result.worldName ? ` · ${result.worldName}` : ""}
-              {result.jobName ? ` · ${result.jobName}` : ""}
-              {` · ${result.region.toUpperCase()}`}
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            {profileHref ? (
-              <Link
-                href={profileHref}
-                className="rounded-lg border border-border px-3 py-1.5 text-sm font-semibold transition hover:bg-surface-muted"
-              >
-                View
-              </Link>
-            ) : null}
-            {alreadyOnRoster ? (
-              <span className="rounded-lg border border-border/60 bg-surface-muted px-3 py-1.5 text-sm font-semibold opacity-70">
-                On roster
-              </span>
-            ) : (
-              <button
-                type="button"
-                onClick={handleAdd}
-                disabled={adding}
-                className="rounded-lg bg-accent px-3 py-1.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50 dark:text-zinc-900"
-              >
-                {adding ? "Adding…" : "Add to roster"}
-              </button>
-            )}
-          </div>
-        </div>
+        <MiniRosterProfileCard
+          character={result}
+          alreadyOnRoster={alreadyOnRoster}
+          adding={adding}
+          onAdd={handleAdd}
+        />
       ) : null}
     </section>
   );
