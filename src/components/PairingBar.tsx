@@ -80,13 +80,13 @@ export function PairingBar({ pairArgs, onChange, compact }: Props) {
             </p>
           ) : (
             <p className="text-sm font-semibold opacity-80">
-              Not paired — link Scouter + Equipment for Planner FD%
+              Not paired — link Scouter + Equipment
             </p>
           )}
           {!compact ? (
             <p className="mt-0.5 text-xs opacity-60">
-              Pairing tells Planner which character stats and gear grid to use
-              for upgrade rankings.
+              Pairing links character stats with your gear grid so tools share
+              the same setup.
             </p>
           ) : null}
           {msg ? (

@@ -21,11 +21,11 @@ export function HomeGuideBanner() {
             New here?
           </p>
           <p className="mt-1 font-display text-lg font-semibold">
-            Start with Scouter → Equipment → Pair → Planner
+            Start with Scouter → Equipment → Pair
           </p>
           <p className="mt-1 text-sm opacity-75">
-            A four-step guide walks you through stats, gear, pairing, and FD%
-            upgrade rankings.
+            A short guide walks you through stats, gear, and linking them
+            together.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">

@@ -27,7 +27,6 @@ const CALCULATOR_LINKS: NavLink[] = [
 
 const EQUIPMENT_LINKS: NavLink[] = [
   { href: "/calc/equips/setup", label: "Equipment Setup" },
-  { href: "/calc/planner", label: "Planner" },
 ];
 
 function linkActive(pathname: string, link: NavLink): boolean {

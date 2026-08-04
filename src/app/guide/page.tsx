@@ -34,18 +34,10 @@ const STEPS = [
   {
     n: 3,
     title: "Pair Scouter ↔ Equipment",
-    body: "Use Pair on Scouter, Equipment Setup, or below. Planner only ranks upgrades once these two are linked.",
+    body: "Use Pair on Scouter, Equipment Setup, or below to link character stats with your gear grid for shared tools and future upgrade rankings.",
     href: "#pair",
     cta: "Jump to Pair",
     doneKey: "pair" as const,
-  },
-  {
-    n: 4,
-    title: "Open Planner for FD% / meso rankings",
-    body: "With a pairing active, Upgrade Planner ranks Star Force, flame, and cube upgrades by scouter FD% per meso for your character.",
-    href: "/calc/planner",
-    cta: "Open Planner",
-    doneKey: "planner" as const,
   },
 ];
 
@@ -70,7 +62,7 @@ export default function GuidePage() {
     if (key === "scouter") return scouterReady;
     if (key === "equip") return equipReady;
     if (key === "pair") return pairing != null;
-    return pairing != null;
+    return false;
   };
 
   return (
@@ -84,8 +76,8 @@ export default function GuidePage() {
         </h1>
         <p className="max-w-2xl text-base opacity-80">
           MapleCompile works best as a short loop: enter scouter stats, build
-          your equipment grid, pair them, then let Planner rank upgrades by
-          FD% for that character.
+          your equipment grid, then pair them so tools share the same character
+          and loadout.
         </p>
         {hydrated ? (
           <div className="flex flex-wrap gap-2">
