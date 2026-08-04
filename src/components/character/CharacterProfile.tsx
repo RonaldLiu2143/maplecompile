@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import type { ReactNode } from "react";
-import type { CharacterLookupResult } from "@/lib/character/lookup";
+import { ExpRangeGraph } from "@/components/character/ExpRangeGraph";
 import { formatCompact } from "@/lib/character/exp";
+import type { CharacterLookupResult } from "@/lib/character/lookup";
 
 function StatRow({
   label,
@@ -23,31 +24,6 @@ function StatRow({
 function formatRank(n: number | null | undefined): string {
   if (n == null || !Number.isFinite(n) || n <= 0) return "—";
   return `#${n.toLocaleString()}`;
-}
-
-function ExpSparkline({ values }: { values: number[] }) {
-  const slice = values.slice(-30);
-  if (!slice.length) return null;
-  const max = Math.max(...slice, 1);
-  return (
-    <div
-      className="flex h-16 items-end gap-px"
-      role="img"
-      aria-label="Daily EXP last 30 days"
-    >
-      {slice.map((v, i) => {
-        const h = Math.max(2, Math.round((v / max) * 100));
-        return (
-          <div
-            key={i}
-            className="min-w-0 flex-1 rounded-sm bg-accent/70"
-            style={{ height: `${h}%` }}
-            title={formatCompact(v)}
-          />
-        );
-      })}
-    </div>
-  );
 }
 
 export function CharacterProfile({
@@ -202,41 +178,40 @@ export function CharacterProfile({
         </section>
       </div>
 
-      {character.expAverages ? (
+      {character.expAverages || character.graph?.dailyExp?.length ? (
         <section className="rounded-2xl border border-border/60 bg-surface/90 p-4">
           <h3 className="font-display text-sm font-bold uppercase tracking-wider text-accent">
             Daily EXP (tracked)
           </h3>
-          <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
-            {(
-              [
-                ["7d avg", character.expAverages.avg7d],
-                ["14d avg", character.expAverages.avg14d],
-                ["30d avg", character.expAverages.avg30d],
-                ["90d avg", character.expAverages.avg90d],
-              ] as const
-            ).map(([label, value]) => (
-              <div
-                key={label}
-                className="rounded-xl bg-surface-muted/60 px-3 py-2"
-              >
-                <p className="text-[0.7rem] font-semibold uppercase tracking-wider opacity-55">
-                  {label}
-                </p>
-                <p className="mt-0.5 font-mono text-lg font-bold tabular-nums">
-                  {value ?? "—"}
-                </p>
-              </div>
-            ))}
-          </div>
-          {character.graph?.dailyExp?.length ? (
-            <div className="mt-4">
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wider opacity-55">
-                Last 30 days
-              </p>
-              <ExpSparkline values={character.graph.dailyExp} />
+          {character.expAverages ? (
+            <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+              {(
+                [
+                  ["7d avg", character.expAverages.avg7d],
+                  ["14d avg", character.expAverages.avg14d],
+                  ["30d avg", character.expAverages.avg30d],
+                  ["90d avg", character.expAverages.avg90d],
+                ] as const
+              ).map(([label, value]) => (
+                <div
+                  key={label}
+                  className="rounded-xl bg-surface-muted/60 px-3 py-2"
+                >
+                  <p className="text-[0.7rem] font-semibold uppercase tracking-wider opacity-55">
+                    {label}
+                  </p>
+                  <p className="mt-0.5 font-mono text-lg font-bold tabular-nums">
+                    {value ?? "—"}
+                  </p>
+                </div>
+              ))}
             </div>
           ) : null}
+          <ExpRangeGraph
+            graph={character.graph}
+            averages={character.expAverages}
+            showAvg={false}
+          />
         </section>
       ) : null}
 

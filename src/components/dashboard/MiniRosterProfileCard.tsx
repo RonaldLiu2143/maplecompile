@@ -1,17 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { ExpRangeGraph } from "@/components/character/ExpRangeGraph";
 import type { CharacterLookupResult } from "@/lib/character/lookup";
 
 function formatRank(n: number | null | undefined): string {
   if (n == null || !Number.isFinite(n) || n <= 0) return "—";
   return `#${n.toLocaleString()}`;
-}
-
-function formatExpPerDay(raw: string | null | undefined): string {
-  if (!raw || !raw.trim()) return "—";
-  const v = raw.trim();
-  return v.endsWith("/day") ? v : `${v}/day`;
 }
 
 function MiniStat({ label, value }: { label: string; value: string }) {
@@ -50,10 +45,6 @@ export function MiniRosterProfileCard({
     character.legionLevel != null
       ? character.legionLevel.toLocaleString()
       : "—";
-
-  const avg7 = character.expAverages?.avg7d;
-  const avg14 = character.expAverages?.avg14d;
-  const showExpAvgs = Boolean(avg7 || avg14);
 
   return (
     <article className="overflow-hidden rounded-2xl border-2 border-border bg-surface">
@@ -145,18 +136,11 @@ export function MiniRosterProfileCard({
             <MiniStat label="Legion" value={legion} />
           </div>
 
-          {showExpAvgs ? (
-            <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 border-t border-border/40 pt-3 sm:max-w-md">
-              <MiniStat
-                label="7d avg EXP"
-                value={formatExpPerDay(avg7)}
-              />
-              <MiniStat
-                label="14d avg EXP"
-                value={formatExpPerDay(avg14)}
-              />
-            </div>
-          ) : null}
+          <ExpRangeGraph
+            graph={character.graph}
+            averages={character.expAverages}
+            compact
+          />
         </div>
       </div>
     </article>
