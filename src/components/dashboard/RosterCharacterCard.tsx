@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import type { DragEvent, ReactNode } from "react";
 import type { CharacterLookupResult } from "@/lib/character/lookup";
 
 function formatRank(n: number | null | undefined): string {
@@ -21,26 +22,75 @@ function Stat({ label, value }: { label: string; value: string }) {
   );
 }
 
+function DragHandle() {
+  return (
+    <span
+      className="inline-flex cursor-grab touch-none select-none flex-col justify-center gap-0.5 px-1 py-2 text-xs opacity-45 active:cursor-grabbing"
+      aria-hidden
+      title="Drag to reorder"
+    >
+      <span className="block h-0.5 w-3.5 rounded-full bg-current" />
+      <span className="block h-0.5 w-3.5 rounded-full bg-current" />
+      <span className="block h-0.5 w-3.5 rounded-full bg-current" />
+    </span>
+  );
+}
+
+export type RosterDragProps = {
+  draggable?: boolean;
+  isDragging?: boolean;
+  isDropTarget?: boolean;
+  onDragStart?: (e: DragEvent) => void;
+  onDragOver?: (e: DragEvent) => void;
+  onDragLeave?: (e: DragEvent) => void;
+  onDrop?: (e: DragEvent) => void;
+  onDragEnd?: (e: DragEvent) => void;
+};
+
+function dragShellClass(
+  base: string,
+  drag?: Pick<RosterDragProps, "isDragging" | "isDropTarget" | "draggable">,
+): string {
+  return [
+    base,
+    drag?.draggable ? "cursor-grab active:cursor-grabbing" : "",
+    drag?.isDragging ? "opacity-40 scale-[0.98]" : "",
+    drag?.isDropTarget && !drag?.isDragging
+      ? "ring-2 ring-accent ring-offset-2 ring-offset-background"
+      : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+}
+
+function withDragAttrs(
+  drag: RosterDragProps | undefined,
+): RosterDragProps | Record<string, never> {
+  if (!drag?.draggable) return {};
+  return {
+    draggable: true,
+    onDragStart: drag.onDragStart,
+    onDragOver: drag.onDragOver,
+    onDragLeave: drag.onDragLeave,
+    onDrop: drag.onDrop,
+    onDragEnd: drag.onDragEnd,
+  };
+}
+
 export function RosterCharacterCard({
   character,
-  index,
-  total,
   isPrimary,
   managing,
   onRemove,
-  onMoveUp,
-  onMoveDown,
   onSetPrimary,
+  drag,
 }: {
   character: CharacterLookupResult;
-  index: number;
-  total: number;
   isPrimary?: boolean;
   managing?: boolean;
   onRemove?: () => void;
-  onMoveUp?: () => void;
-  onMoveDown?: () => void;
   onSetPrimary?: () => void;
+  drag?: RosterDragProps;
 }) {
   const world = character.worldName;
   const classRankInWorld = character.ranking?.jobRank;
@@ -49,12 +99,22 @@ export function RosterCharacterCard({
 
   return (
     <article
-      className={[
-        "flex flex-col overflow-hidden rounded-2xl border-2 bg-surface",
-        isPrimary ? "border-accent/70" : "border-border",
-      ].join(" ")}
+      {...withDragAttrs(drag)}
+      className={dragShellClass(
+        [
+          "flex flex-col overflow-hidden rounded-2xl border-2 bg-surface transition",
+          isPrimary ? "border-accent/70" : "border-border",
+        ].join(" "),
+        drag,
+      )}
     >
       <div className="flex flex-1 flex-col gap-4 p-4 sm:flex-row sm:items-start">
+        {managing ? (
+          <div className="flex shrink-0 items-start pt-1">
+            <DragHandle />
+          </div>
+        ) : null}
+
         <div className="flex shrink-0 justify-center sm:justify-start">
           {character.characterImgURL ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -63,7 +123,8 @@ export function RosterCharacterCard({
               alt={`${character.name} avatar`}
               width={96}
               height={96}
-              className="h-24 w-24 object-contain"
+              className="pointer-events-none h-24 w-24 object-contain"
+              draggable={false}
             />
           ) : (
             <div className="flex h-24 w-24 items-center justify-center rounded-lg bg-surface-muted text-xs opacity-60">
@@ -89,7 +150,10 @@ export function RosterCharacterCard({
               </p>
             </div>
             {managing ? (
-              <div className="flex flex-wrap gap-1.5">
+              <div
+                className="flex flex-wrap gap-1.5"
+                onPointerDown={(e) => e.stopPropagation()}
+              >
                 {!isPrimary && onSetPrimary ? (
                   <button
                     type="button"
@@ -100,24 +164,6 @@ export function RosterCharacterCard({
                     Set primary
                   </button>
                 ) : null}
-                <button
-                  type="button"
-                  onClick={onMoveUp}
-                  disabled={index === 0}
-                  className="rounded-lg border border-border px-2 py-1 text-xs font-semibold transition hover:bg-surface-muted disabled:opacity-40"
-                  title="Move up"
-                >
-                  ↑
-                </button>
-                <button
-                  type="button"
-                  onClick={onMoveDown}
-                  disabled={index >= total - 1}
-                  className="rounded-lg border border-border px-2 py-1 text-xs font-semibold transition hover:bg-surface-muted disabled:opacity-40"
-                  title="Move down"
-                >
-                  ↓
-                </button>
                 <button
                   type="button"
                   onClick={onRemove}
@@ -148,6 +194,10 @@ export function RosterCharacterCard({
             <Link
               href={profileHref}
               className="text-sm font-semibold text-accent underline-offset-2 hover:underline"
+              draggable={false}
+              onClick={(e) => {
+                if (managing) e.stopPropagation();
+              }}
             >
               Full profile →
             </Link>
@@ -158,9 +208,24 @@ export function RosterCharacterCard({
   );
 }
 
-export function RosterCardSkeleton({ name }: { name: string }) {
+export function RosterCardSkeleton({
+  name,
+  drag,
+  leading,
+}: {
+  name: string;
+  drag?: RosterDragProps;
+  leading?: ReactNode;
+}) {
   return (
-    <div className="rounded-2xl border border-border/50 bg-surface/80 px-4 py-10 text-center text-sm opacity-70">
+    <div
+      {...withDragAttrs(drag)}
+      className={dragShellClass(
+        "rounded-2xl border border-border/50 bg-surface/80 px-4 py-10 text-center text-sm opacity-70 transition",
+        drag,
+      )}
+    >
+      {leading}
       Loading {name}…
     </div>
   );
@@ -173,6 +238,7 @@ export function RosterCardError({
   managing,
   onRemove,
   onRetry,
+  drag,
 }: {
   name: string;
   region: string;
@@ -180,17 +246,25 @@ export function RosterCardError({
   managing?: boolean;
   onRemove?: () => void;
   onRetry?: () => void;
+  drag?: RosterDragProps;
 }) {
   return (
     <div
       role="alert"
-      className="rounded-2xl border border-danger/40 bg-danger/10 px-4 py-4 text-sm"
+      {...withDragAttrs(drag)}
+      className={dragShellClass(
+        "rounded-2xl border border-danger/40 bg-danger/10 px-4 py-4 text-sm transition",
+        drag,
+      )}
     >
       <p className="font-semibold">
         {name} ({region.toUpperCase()})
       </p>
       <p className="mt-1 opacity-90">{error}</p>
-      <div className="mt-3 flex flex-wrap gap-2">
+      <div
+        className="mt-3 flex flex-wrap gap-2"
+        onPointerDown={(e) => e.stopPropagation()}
+      >
         {onRetry ? (
           <button
             type="button"
