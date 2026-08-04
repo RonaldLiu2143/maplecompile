@@ -27,7 +27,7 @@ function GalleryHexa({
   charType: string;
   hexa: number[];
 }) {
-  const slots = getHexaSlots(charType);
+  const slots = useMemo(() => getHexaSlots(charType), [charType]);
   return (
     <div className="flex flex-wrap gap-1">
       {slots.map((slot, i) => {
@@ -36,7 +36,7 @@ function GalleryHexa({
         return (
           <div
             key={slot.id}
-            className="flex flex-col items-center gap-0.5 rounded border border-border/40 bg-background/70 px-0.5 py-1"
+            className="flex flex-col items-center gap-0.5 rounded border border-border/40 bg-background/80 px-0.5 py-1"
             title={`${slot.label}: ${lv}`}
           >
             {slot.iconSuffix ? (
@@ -44,11 +44,13 @@ function GalleryHexa({
               <img
                 src={`${SCOUTER_CDN}${slot.iconSuffix}`}
                 alt=""
-                width={22}
-                height={22}
-                className="size-[22px] object-contain"
+                width={20}
+                height={20}
+                className="size-5 object-contain"
               />
-            ) : null}
+            ) : (
+              <span className="size-5 text-[8px] opacity-50">H</span>
+            )}
             <span className="text-[9px] font-semibold tabular-nums leading-none">
               {lv}
             </span>
@@ -178,7 +180,7 @@ export function GalleryClient({
 
       {filtered.length > 0 ? (
         <div className="overflow-x-auto rounded-lg border border-border/50 bg-surface/90">
-          <table className="w-full min-w-[36rem] text-left text-sm">
+          <table className="w-full min-w-[42rem] text-left text-sm">
             <thead className="border-b border-border/40 bg-surface-muted/50 text-xs uppercase tracking-wide opacity-70">
               <tr>
                 <th className="px-3 py-2.5 font-semibold">Name</th>
