@@ -15,6 +15,7 @@ import {
   POTENTIAL_TIER_LABELS,
 } from "@/lib/potential-lines";
 import type { Equip, FlameLine, PotentialLine } from "@/lib/types";
+import { EquipItemTooltip } from "@/components/EquipItemTooltip";
 import { StarForcePicker } from "@/components/StarForcePicker";
 
 export type EquipItemPatch = {
@@ -153,7 +154,15 @@ export function EquipItemEditor({
         </button>
       </div>
 
-      <div className="max-h-[28rem] space-y-4 overflow-y-auto p-3">
+      <div className="max-h-[36rem] space-y-4 overflow-y-auto p-3">
+        <section aria-label="Item stat summary">
+          <EquipItemTooltip
+            equip={equip}
+            flames={lines}
+            starForce={starForce}
+          />
+        </section>
+
         {!showAnyEditor && (
           <p className="text-xs text-zinc-500">
             This item cannot take Star Force, flames, or potential.

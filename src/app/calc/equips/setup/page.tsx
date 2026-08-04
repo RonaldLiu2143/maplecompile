@@ -468,6 +468,7 @@ export default function SetupClient() {
           <div className="flex flex-col items-start gap-4 lg:flex-row">
             <EquipGrid
               setup={setup}
+              flameSetup={flameSetup}
               onSlotClick={onSlotClick}
               charLabel={getCharName(jobType, charType)}
               activeSlot={activeSlot}
