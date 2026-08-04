@@ -168,7 +168,7 @@ export function toMapleScouterUserStat(args: {
       epiSoul: "0",
       mugongSoul: input.mugongSoul ? "1" : "0",
       genesis: input.liberation,
-      oneHandSword: false,
+      oneHandSword: !!input.oneHandSword,
       useRuinForceShild: false,
       useContinuousRingAsMainRing: continuousUse,
       restraintRing: String(continuousUse ? 0 : input.ozRestraintLevel),

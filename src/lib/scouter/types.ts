@@ -49,6 +49,11 @@ export type ScouterInput = {
   reboot: boolean;
   liberation: boolean;
   mugongSoul: boolean;
+  /**
+   * Hero / Paladin / Soul Master: one-handed sword (true) vs two-handed (false).
+   * Maps to MapleScouter `special.oneHandSword`.
+   */
+  oneHandSword: boolean;
   /** Legion Artifact / Inner Ability / Oz Ring (MapleScouter) */
   legionArtifactAdditionalExp: boolean;
   legionArtifactFinalAttack: number;
@@ -155,6 +160,7 @@ export function defaultScouterInput(
     reboot: false,
     liberation: false,
     mugongSoul: false,
+    oneHandSword: false,
     legionArtifactAdditionalExp: true,
     legionArtifactFinalAttack: 0,
     specialInnerAbility: "none",

@@ -21,6 +21,7 @@ import {
   resolveMainSecondary,
   resolveOzRingStats,
   SCOUTER_CDN,
+  supportsOneHandSword,
   type BuffState,
   type LinkState,
   type ScouterInput,
@@ -328,6 +329,9 @@ export default function ScouterPage() {
       jobType: parsed.jobType,
       charType: parsed.charType,
       useMagicAttack: parsed.jobType === "magician",
+      oneHandSword: supportsOneHandSword(parsed.charType)
+        ? prev.oneHandSword
+        : false,
     }));
     setHexa(defaultHexaLevels());
   };
@@ -408,7 +412,11 @@ export default function ScouterPage() {
         links: LinkState;
         hexa: number[];
       };
-      if (data.input) setInput(data.input);
+      if (data.input) {
+        const job = data.input.jobType || DEFAULT_JOB;
+        const char = data.input.charType || DEFAULT_CHAR;
+        setInput({ ...defaultScouterInput(job, char), ...data.input });
+      }
       if (data.buffs) setBuffs(data.buffs);
       if (data.links) setLinks(data.links);
       if (data.hexa) setHexa(data.hexa);
@@ -538,6 +546,34 @@ export default function ScouterPage() {
                 {label}
               </label>
             ))}
+            {supportsOneHandSword(input.charType) ? (
+              <div
+                className="flex items-center gap-3"
+                role="radiogroup"
+                aria-label="Weapon type"
+              >
+                <label className="flex items-center gap-1.5">
+                  <input
+                    type="radio"
+                    name="weaponHandedness"
+                    className="size-3.5 accent-[var(--accent)]"
+                    checked={input.oneHandSword}
+                    onChange={() => patch({ oneHandSword: true })}
+                  />
+                  One-handed
+                </label>
+                <label className="flex items-center gap-1.5">
+                  <input
+                    type="radio"
+                    name="weaponHandedness"
+                    className="size-3.5 accent-[var(--accent)]"
+                    checked={!input.oneHandSword}
+                    onChange={() => patch({ oneHandSword: false })}
+                  />
+                  Two-handed
+                </label>
+              </div>
+            ) : null}
           </div>
 
           {/* Top: main / sub / attack (character window style) */}

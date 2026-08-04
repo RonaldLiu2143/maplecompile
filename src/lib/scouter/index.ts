@@ -40,7 +40,10 @@ export {
 } from "./bow-att";
 export {
   CLASS_WEAPON_CONSTANT,
+  ONE_HAND_SWORD_CLASSES,
+  ONE_HAND_SWORD_CONSTANT,
   getWeaponConstant,
+  supportsOneHandSword,
 } from "./weapon-constant";
 export {
   OZ_RINGS,

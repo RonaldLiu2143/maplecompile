@@ -107,7 +107,10 @@ export function resolveOzRingStats(input: ScouterInput): {
  */
 export function calculateScouter(input: ScouterInput): ScouterResult {
   const { mainKeys, secondaryKeys, isXenon, isDa } = resolveMainSecondary(input);
-  const weaponConstant = getWeaponConstant(input.charType);
+  const weaponConstant = getWeaponConstant(
+    input.charType,
+    input.oneHandSword,
+  );
 
   let totalMain = 0;
   if (isDa) {
