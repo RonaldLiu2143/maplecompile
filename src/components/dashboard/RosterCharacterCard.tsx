@@ -6,6 +6,12 @@ import { characterProfileHref } from "@/lib/character/client";
 import { formatOptionalInt, formatRank } from "@/lib/character/format";
 import type { CharacterLookupResult } from "@/lib/character/lookup";
 
+function formatDailyExp(raw: string | null | undefined): string {
+  if (!raw || !raw.trim()) return "—";
+  const v = raw.trim();
+  return v.endsWith("/day") ? v : `${v}/day`;
+}
+
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="min-w-0">
@@ -172,13 +178,18 @@ export function RosterCharacterCard({
             ) : null}
           </div>
 
-          <div className="mt-3 grid grid-cols-2 gap-3">
+          <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <Stat label="7d EXP" value={formatDailyExp(character.expAverages?.avg7d)} />
+            <Stat
+              label="14d EXP"
+              value={formatDailyExp(character.expAverages?.avg14d)}
+            />
             <Stat
               label={`Class rank (${world})`}
               value={formatRank(classRankInWorld)}
             />
             <Stat
-              label="Legion level"
+              label="Legion"
               value={formatOptionalInt(character.legionLevel)}
             />
           </div>
