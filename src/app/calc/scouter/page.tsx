@@ -23,6 +23,7 @@ import {
   SCOUTER_CDN,
   supportsOneHandSword,
   clampHexaForGms,
+  getClassSpecificRequirements,
   type BuffState,
   type LinkState,
   type ScouterInput,
@@ -684,8 +685,10 @@ export default function ScouterPage() {
           <p className="border-b border-border/40 bg-accent-soft/25 px-3 py-2 text-xs leading-relaxed text-accent">
             General Requirements: No Buffs, Link Equipped (No Stacks), Oz Ring
             Equipped / Summons On / (Decent) Combat Orders, Sharp Eyes On /
-            Soul Gauge 0/1000 / Familiars On. Class Specific: Maple Warrior,
-            Ancient Warding, Elvish Blessing, 0 Stacks.
+            Soul Gauge 0/1000 / Familiars On.
+            {getClassSpecificRequirements(input.charType)
+              ? ` Class Specific: ${getClassSpecificRequirements(input.charType)}.`
+              : " Class Specific: Maple Warrior / job buffs as listed on MapleScouter."}
           </p>
 
           <div className="flex flex-wrap gap-x-4 gap-y-2 border-b border-border/40 px-3 py-2 text-sm">

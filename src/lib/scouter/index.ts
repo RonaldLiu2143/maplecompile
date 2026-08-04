@@ -44,9 +44,14 @@ export {
   CLASS_WEAPON_CONSTANT,
   ONE_HAND_SWORD_CLASSES,
   ONE_HAND_SWORD_CONSTANT,
+  ONE_HAND_WEAPON_CONSTANT,
   getWeaponConstant,
   supportsOneHandSword,
 } from "./weapon-constant";
+export {
+  CLASS_SPECIFIC_REQUIREMENTS,
+  getClassSpecificRequirements,
+} from "./class-requirements";
 export {
   OZ_RINGS,
   OZ_CONTINUOUS_STATUS,

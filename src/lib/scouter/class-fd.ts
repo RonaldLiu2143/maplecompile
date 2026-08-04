@@ -4,6 +4,9 @@
  * reboot: 1.35 if level ≤ 250, else 1.45
  * liberation (genesis): 1.1
  * base variant: fd / fd2 / fd3 / fd4 from Passive Skills +1 / fam passive
+ *
+ * Class skill FD buffs required by MapleScouter are baked into `fd`
+ * (e.g. Paladin includes Divine Blessing + High Paladin).
  */
 
 export type ClassFdRow = {

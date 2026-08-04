@@ -58,7 +58,18 @@ export const CLASS_WEAPON_CONSTANT: Record<string, number> = {
 /** Classes that can choose one-handed vs two-handed (MapleScouter). */
 export const ONE_HAND_SWORD_CLASSES = new Set(["hero", "paladin", "sm"]);
 
-/** One-handed sword weapon constant (MapleStory / MapleScouter). */
+/**
+ * MapleScouter one-hand weapon constants (`k.y`):
+ * Hero → 1.34 · Paladin / Soul Master → 1.24
+ * (Not the generic 1.2 sword constant.)
+ */
+export const ONE_HAND_WEAPON_CONSTANT: Record<string, number> = {
+  hero: 1.34,
+  paladin: 1.24,
+  sm: 1.24,
+};
+
+/** @deprecated use ONE_HAND_WEAPON_CONSTANT / getWeaponConstant */
 export const ONE_HAND_SWORD_CONSTANT = 1.2;
 
 export function supportsOneHandSword(charType: string): boolean {
@@ -70,7 +81,7 @@ export function getWeaponConstant(
   oneHandSword = false,
 ): number {
   if (oneHandSword && supportsOneHandSword(charType)) {
-    return ONE_HAND_SWORD_CONSTANT;
+    return ONE_HAND_WEAPON_CONSTANT[charType] ?? 1.24;
   }
   return CLASS_WEAPON_CONSTANT[charType] ?? 1.3;
 }
