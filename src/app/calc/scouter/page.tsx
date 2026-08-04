@@ -183,6 +183,8 @@ export default function ScouterPage() {
   const [presetMsg, setPresetMsg] = useState<string | null>(null);
   const [presets, setPresets] = useState<ScouterPreset[]>([]);
   const [selectedPresetId, setSelectedPresetId] = useState("");
+  /** Preset id currently reflected in the form — Overwrite only writes here. */
+  const [loadedPresetId, setLoadedPresetId] = useState("");
   const [presetName, setPresetName] = useState("");
   const [draftReady, setDraftReady] = useState(false);
   const [showHexaEff, setShowHexaEff] = useState(false);
@@ -407,13 +409,58 @@ export default function ScouterPage() {
     if (data.input) {
       const job = data.input.jobType || DEFAULT_JOB;
       const char = data.input.charType || DEFAULT_CHAR;
-      const merged = { ...defaultScouterInput(job, char), ...data.input };
+      const defaults = defaultScouterInput(job, char);
+      // Deep-merge nested triples so a partial/old preset can't leave
+      // leftover Attack / Magic Att from the previously loaded character.
+      const merged: ScouterInput = {
+        ...defaults,
+        ...structuredClone(data.input),
+        stats: {
+          ...defaults.stats,
+          ...structuredClone(data.input.stats ?? {}),
+        },
+        attack: {
+          ...defaults.attack,
+          ...structuredClone(data.input.attack ?? {}),
+        },
+        magicAttack: {
+          ...defaults.magicAttack,
+          ...structuredClone(data.input.magicAttack ?? {}),
+        },
+      };
       if (!supportsOneHandSword(merged.charType)) merged.oneHandSword = false;
+      prevExceptionFd.current = combatExceptionFinalDamagePercent({
+        level: merged.level,
+        reboot: merged.reboot,
+        liberation: merged.liberation,
+      });
       setInput(merged);
     }
-    if (data.buffs) setBuffs(data.buffs);
-    if (data.links) setLinks(data.links);
-    if (data.hexa) setHexa(clampHexaForGms(data.hexa));
+    if (data.buffs) setBuffs(structuredClone(data.buffs));
+    if (data.links) setLinks(structuredClone(data.links));
+    if (data.hexa) setHexa(clampHexaForGms(structuredClone(data.hexa)));
+  };
+
+  const loadPresetById = (id: string, announce = true) => {
+    if (!id) {
+      setSelectedPresetId("");
+      setLoadedPresetId("");
+      setPresetName("");
+      return;
+    }
+    const data = storage.getScouterPreset(id);
+    if (!data) {
+      flashPresetMsg("Preset not found");
+      refreshPresets();
+      setSelectedPresetId("");
+      setLoadedPresetId("");
+      return;
+    }
+    applyPresetState(data);
+    setSelectedPresetId(data.id);
+    setLoadedPresetId(data.id);
+    setPresetName(data.name);
+    if (announce) flashPresetMsg(`Loaded “${data.name}”`);
   };
 
   const savePreset = (asNew: boolean) => {
@@ -422,18 +469,28 @@ export default function ScouterPage() {
         presetName.trim() ||
         presets.find((p) => p.id === selectedPresetId)?.name ||
         "Untitled";
+      // Never overwrite a preset that isn't what's on screen (e.g. dropdown
+      // changed but Load wasn't used) — that was leaking Attack/Magic Att.
+      const overwriteId = asNew
+        ? undefined
+        : loadedPresetId || undefined;
       const saved = storage.saveScouterPreset({
-        id: asNew ? undefined : selectedPresetId || undefined,
+        id: overwriteId,
         name,
-        state: { input, buffs, links, hexa: clampHexaForGms(hexa) },
+        state: {
+          input: structuredClone(input),
+          buffs: structuredClone(buffs),
+          links: structuredClone(links),
+          hexa: clampHexaForGms(hexa),
+        },
       });
-      const list = refreshPresets();
+      refreshPresets();
       setSelectedPresetId(saved.id);
+      setLoadedPresetId(saved.id);
       setPresetName(saved.name);
       flashPresetMsg(
-        asNew || !selectedPresetId ? "Preset created" : "Preset updated",
+        asNew || !overwriteId ? "Preset created" : "Preset updated",
       );
-      void list;
     } catch {
       flashPresetMsg("Could not save");
     }
@@ -445,15 +502,7 @@ export default function ScouterPage() {
         flashPresetMsg("Select a preset");
         return;
       }
-      const data = storage.getScouterPreset(selectedPresetId);
-      if (!data) {
-        flashPresetMsg("Preset not found");
-        refreshPresets();
-        return;
-      }
-      applyPresetState(data);
-      setPresetName(data.name);
-      flashPresetMsg(`Loaded “${data.name}”`);
+      loadPresetById(selectedPresetId);
     } catch {
       flashPresetMsg("Could not load");
     }
@@ -470,6 +519,7 @@ export default function ScouterPage() {
       storage.deleteScouterPreset(selectedPresetId);
       refreshPresets();
       setSelectedPresetId("");
+      setLoadedPresetId("");
       setPresetName("");
       flashPresetMsg(`Deleted “${name}”`);
     } catch {
@@ -541,9 +591,14 @@ export default function ScouterPage() {
                 value={selectedPresetId}
                 onChange={(e) => {
                   const id = e.target.value;
-                  setSelectedPresetId(id);
-                  const p = presets.find((x) => x.id === id);
-                  setPresetName(p?.name ?? "");
+                  if (!id) {
+                    setSelectedPresetId("");
+                    setPresetName("");
+                    return;
+                  }
+                  // Load immediately so Overwrite can't write the previous
+                  // character's Attack / Magic Att into another preset.
+                  loadPresetById(id);
                 }}
                 aria-label="Saved presets"
               >
@@ -572,10 +627,14 @@ export default function ScouterPage() {
               <button
                 type="button"
                 onClick={() => savePreset(false)}
-                disabled={!selectedPresetId && !presetName.trim()}
+                disabled={
+                  loadedPresetId
+                    ? false
+                    : !presetName.trim()
+                }
                 className="rounded border border-border/50 bg-background px-2.5 py-1 text-xs font-semibold transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
               >
-                {selectedPresetId ? "Overwrite" : "Save"}
+                {loadedPresetId ? "Overwrite" : "Save"}
               </button>
               <button
                 type="button"
