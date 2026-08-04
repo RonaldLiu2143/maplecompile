@@ -259,11 +259,28 @@ export function moveRosterEntry(
   if (index < 0) return current;
   const swapWith = direction === "up" ? index - 1 : index + 1;
   if (swapWith < 0 || swapWith >= current.entries.length) return current;
+  return reorderRoster(index, swapWith);
+}
+
+/** Move an entry from one index to another. Primary is unchanged. */
+export function reorderRoster(
+  fromIndex: number,
+  toIndex: number,
+): RosterState {
+  const current = readRosterState();
+  const len = current.entries.length;
+  if (
+    fromIndex === toIndex ||
+    fromIndex < 0 ||
+    toIndex < 0 ||
+    fromIndex >= len ||
+    toIndex >= len
+  ) {
+    return current;
+  }
   const entries = [...current.entries];
-  const tmp = entries[index];
-  entries[index] = entries[swapWith];
-  entries[swapWith] = tmp;
-  // Reorder does not change primary.
+  const [item] = entries.splice(fromIndex, 1);
+  entries.splice(toIndex, 0, item);
   return writeRosterState({ entries, primary: current.primary });
 }
 

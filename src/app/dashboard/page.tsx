@@ -6,6 +6,7 @@ import {
   useEffect,
   useRef,
   useState,
+  type DragEvent,
   type FormEvent,
 } from "react";
 import { MiniRosterProfileCard } from "@/components/dashboard/MiniRosterProfileCard";
@@ -13,6 +14,7 @@ import {
   RosterCardError,
   RosterCardSkeleton,
   RosterCharacterCard,
+  type RosterDragProps,
 } from "@/components/dashboard/RosterCharacterCard";
 import {
   CHARACTER_NAME_REGEX,
@@ -22,9 +24,9 @@ import {
 import {
   addToRoster,
   isPrimary,
-  moveRosterEntry,
   readRosterState,
   removeFromRoster,
+  reorderRoster,
   setPrimary,
   type RosterEntry,
   type RosterPrimary,
@@ -230,6 +232,8 @@ function DashboardInner() {
   const [managing, setManaging] = useState(manageFromUrl);
   const [slots, setSlots] = useState<Record<string, SlotState>>({});
   const [reloadToken, setReloadToken] = useState(0);
+  const [dragFrom, setDragFrom] = useState<number | null>(null);
+  const [dragOver, setDragOver] = useState<number | null>(null);
   const loadedKeys = useRef<Set<string>>(new Set());
 
   function applyRosterState(state: RosterState) {
@@ -248,6 +252,10 @@ function DashboardInner() {
 
   function setManageMode(next: boolean) {
     setManaging(next);
+    if (!next) {
+      setDragFrom(null);
+      setDragOver(null);
+    }
     const qs = new URLSearchParams(searchParams.toString());
     if (next) qs.set("manage", "1");
     else qs.delete("manage");
@@ -319,12 +327,62 @@ function DashboardInner() {
     applyRosterState(removeFromRoster(entry));
   }
 
-  function handleMove(entry: RosterEntry, direction: "up" | "down") {
-    applyRosterState(moveRosterEntry(entry, direction));
-  }
-
   function handleSetPrimary(entry: RosterEntry) {
     applyRosterState(setPrimary(entry));
+  }
+
+  function clearDrag() {
+    setDragFrom(null);
+    setDragOver(null);
+  }
+
+  function makeDragProps(index: number): RosterDragProps | undefined {
+    if (!managing) return undefined;
+    return {
+      draggable: true,
+      isDragging: dragFrom === index,
+      isDropTarget: dragOver === index && dragFrom !== index,
+      onDragStart: (e: DragEvent) => {
+        const target = e.target as HTMLElement;
+        if (target.closest("button, a")) {
+          e.preventDefault();
+          return;
+        }
+        setDragFrom(index);
+        setDragOver(index);
+        e.dataTransfer.effectAllowed = "move";
+        e.dataTransfer.setData("text/plain", String(index));
+        // Ghost feedback: slightly transparent drag image via opacity on source.
+        if (e.currentTarget instanceof HTMLElement) {
+          e.currentTarget.style.opacity = "0.4";
+        }
+      },
+      onDragOver: (e: DragEvent) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "move";
+        if (dragOver !== index) setDragOver(index);
+      },
+      onDragLeave: () => {
+        if (dragOver === index) setDragOver(null);
+      },
+      onDrop: (e: DragEvent) => {
+        e.preventDefault();
+        const raw = e.dataTransfer.getData("text/plain");
+        const from =
+          dragFrom ??
+          (raw !== "" && Number.isFinite(Number(raw)) ? Number(raw) : null);
+        if (from != null && from !== index) {
+          applyRosterState(reorderRoster(from, index));
+        }
+        clearDrag();
+      },
+      onDragEnd: (e: DragEvent) => {
+        if (e.currentTarget instanceof HTMLElement) {
+          e.currentTarget.style.opacity = "";
+        }
+        clearDrag();
+      },
+    };
   }
 
   function handleRetry(entry: RosterEntry) {
@@ -390,8 +448,8 @@ function DashboardInner() {
             Manage roster
           </h2>
           <p className="text-sm opacity-75">
-            Set primary, reorder with ↑↓, or remove. Search above to add
-            characters. Primary is independent of list order.
+            Drag cards to reorder, set primary, or remove. Primary stays
+            independent of list order.
           </p>
         </section>
       ) : null}
@@ -418,16 +476,28 @@ function DashboardInner() {
             </h2>
             {!managing ? (
               <p className="text-xs opacity-55">
-                Tip: open Manage roster to set primary, remove, or reorder.
+                Tip: open Manage roster to set primary, drag to reorder, or
+                remove.
               </p>
-            ) : null}
+            ) : (
+              <p className="text-xs opacity-55">
+                Drag a card to change order.
+              </p>
+            )}
           </div>
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             {roster.map((entry, index) => {
               const key = slotKey(entry);
               const slot = slots[key];
+              const drag = makeDragProps(index);
               if (!slot || slot.status === "loading") {
-                return <RosterCardSkeleton key={key} name={entry.name} />;
+                return (
+                  <RosterCardSkeleton
+                    key={key}
+                    name={entry.name}
+                    drag={drag}
+                  />
+                );
               }
               if (slot.status === "error") {
                 return (
@@ -439,6 +509,7 @@ function DashboardInner() {
                     managing={managing}
                     onRemove={() => handleRemove(entry)}
                     onRetry={() => handleRetry(entry)}
+                    drag={drag}
                   />
                 );
               }
@@ -446,14 +517,11 @@ function DashboardInner() {
                 <RosterCharacterCard
                   key={key}
                   character={slot.character}
-                  index={index}
-                  total={roster.length}
                   isPrimary={isPrimary(entry, primary)}
                   managing={managing}
                   onRemove={() => handleRemove(entry)}
-                  onMoveUp={() => handleMove(entry, "up")}
-                  onMoveDown={() => handleMove(entry, "down")}
                   onSetPrimary={() => handleSetPrimary(entry)}
+                  drag={drag}
                 />
               );
             })}
