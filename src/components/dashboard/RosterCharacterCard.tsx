@@ -1,17 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { ExpRangeGraph } from "@/components/character/ExpRangeGraph";
 import type { CharacterLookupResult } from "@/lib/character/lookup";
 
 function formatRank(n: number | null | undefined): string {
   if (n == null || !Number.isFinite(n) || n <= 0) return "—";
   return `#${n.toLocaleString()}`;
-}
-
-function formatExpPerDay(raw: string | null | undefined): string {
-  if (!raw || !raw.trim()) return "—";
-  const v = raw.trim();
-  return v.endsWith("/day") ? v : `${v}/day`;
 }
 
 function Stat({ label, value }: { label: string; value: string }) {
@@ -118,14 +113,6 @@ export function RosterCharacterCard({
 
           <div className="mt-3 grid grid-cols-2 gap-3">
             <Stat
-              label="7d avg EXP/day"
-              value={formatExpPerDay(character.expAverages?.avg7d)}
-            />
-            <Stat
-              label="14d avg EXP/day"
-              value={formatExpPerDay(character.expAverages?.avg14d)}
-            />
-            <Stat
               label={`Class rank (${world})`}
               value={formatRank(classRankInWorld)}
             />
@@ -138,6 +125,12 @@ export function RosterCharacterCard({
               }
             />
           </div>
+
+          <ExpRangeGraph
+            graph={character.graph}
+            averages={character.expAverages}
+            compact
+          />
 
           <div className="mt-3">
             <Link
