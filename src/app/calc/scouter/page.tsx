@@ -35,6 +35,7 @@ import {
   CLASS_OPTIONS,
   DEFAULT_CHAR,
   DEFAULT_JOB,
+  getCharName,
   parseClassValue,
 } from "@/lib/jobs";
 import { storage, type ScouterPreset } from "@/lib/storage";
@@ -193,6 +194,8 @@ export default function ScouterPage() {
   const [shareAchievement, setShareAchievement] = useState("");
   const [galleryModalOpen, setGalleryModalOpen] = useState(false);
   const [sharing, setSharing] = useState(false);
+  const [presetMenuOpen, setPresetMenuOpen] = useState(false);
+  const presetMenuRef = useRef<HTMLDivElement | null>(null);
   const [draftReady, setDraftReady] = useState(false);
   const [showHexaEff, setShowHexaEff] = useState(false);
   const hexaEffRef = useRef<HTMLDivElement | null>(null);
@@ -201,6 +204,24 @@ export default function ScouterPage() {
     if (!showHexaEff) return;
     hexaEffRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, [showHexaEff]);
+
+  useEffect(() => {
+    if (!presetMenuOpen) return;
+    const onPointerDown = (e: MouseEvent) => {
+      if (!presetMenuRef.current?.contains(e.target as Node)) {
+        setPresetMenuOpen(false);
+      }
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setPresetMenuOpen(false);
+    };
+    document.addEventListener("mousedown", onPointerDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onPointerDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [presetMenuOpen]);
 
   const classValue = `${input.jobType}:${input.charType}`;
   const { mainKeys, secondaryKeys, isXenon, isDa } = useMemo(
@@ -710,34 +731,82 @@ export default function ScouterPage() {
             </div>
 
             <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center">
-              <select
-                className="min-w-0 flex-1 rounded border border-border/50 bg-background px-2.5 py-1.5 text-xs outline-none focus:border-accent"
-                value={selectedPresetId}
-                onChange={(e) => {
-                  const id = e.target.value;
-                  if (!id) {
-                    setSelectedPresetId("");
-                    setLoadedPresetId("");
-                    setPresetName("");
-                    return;
-                  }
-                  // Load immediately so Overwrite can't write the previous
-                  // character's Attack / Magic Att into another preset.
-                  loadPresetById(id);
-                }}
-                aria-label="Saved presets"
-              >
-                <option value="">
-                  {presets.length
-                    ? `Choose a preset (${presets.length})…`
-                    : "No saved presets yet"}
-                </option>
-                {presets.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
-              </select>
+              <div ref={presetMenuRef} className="relative min-w-0 flex-1">
+                <button
+                  type="button"
+                  className="flex w-full min-w-0 items-center justify-between gap-2 rounded border border-border/50 bg-background px-2.5 py-1.5 text-left text-xs outline-none focus:border-accent"
+                  aria-label="Saved presets"
+                  aria-haspopup="listbox"
+                  aria-expanded={presetMenuOpen}
+                  onClick={() => setPresetMenuOpen((o) => !o)}
+                >
+                  <span className="min-w-0 truncate">
+                    {selectedPresetId
+                      ? presets.find((p) => p.id === selectedPresetId)?.name ||
+                        presetName ||
+                        "Preset"
+                      : presets.length
+                        ? `Choose a preset (${presets.length})…`
+                        : "No saved presets yet"}
+                  </span>
+                  <span className="shrink-0 opacity-50" aria-hidden>
+                    ▾
+                  </span>
+                </button>
+                {presetMenuOpen ? (
+                  <ul
+                    role="listbox"
+                    className="absolute z-30 mt-1 max-h-56 w-full overflow-auto rounded border border-border/50 bg-background py-1 shadow-lg"
+                  >
+                    <li>
+                      <button
+                        type="button"
+                        role="option"
+                        aria-selected={!selectedPresetId}
+                        className="w-full px-2.5 py-1.5 text-left text-xs opacity-70 hover:bg-surface-muted"
+                        onClick={() => {
+                          setSelectedPresetId("");
+                          setLoadedPresetId("");
+                          setPresetName("");
+                          setPresetMenuOpen(false);
+                        }}
+                      >
+                        {presets.length
+                          ? `Choose a preset (${presets.length})…`
+                          : "No saved presets yet"}
+                      </button>
+                    </li>
+                    {presets.map((p) => {
+                      const classLabel = getCharName(
+                        p.input?.jobType || "",
+                        p.input?.charType || "",
+                      );
+                      return (
+                        <li key={p.id}>
+                          <button
+                            type="button"
+                            role="option"
+                            aria-selected={selectedPresetId === p.id}
+                            className={`w-full px-2.5 py-1.5 text-left text-xs hover:bg-surface-muted ${
+                              selectedPresetId === p.id
+                                ? "bg-accent-soft/40 font-semibold text-accent"
+                                : ""
+                            }`}
+                            onClick={() => {
+                              // Load immediately so Overwrite can't write the previous
+                              // character's Attack / Magic Att into another preset.
+                              loadPresetById(p.id);
+                              setPresetMenuOpen(false);
+                            }}
+                          >
+                            {p.name}({classLabel})
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                ) : null}
+              </div>
               <input
                 type="text"
                 placeholder="Preset name"
