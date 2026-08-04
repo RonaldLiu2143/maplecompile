@@ -76,8 +76,7 @@ export default function RosterPage() {
               </h2>
               {managing ? (
                 <p className="text-sm opacity-60">
-                  Use the up/down buttons to change the order of characters. Tap
-                  the star to set primary.
+                  Drag rows or use ↑↓ to reorder. Tap the star to set primary.
                 </p>
               ) : roster.length > 0 ? (
                 <p className="text-xs opacity-55">
@@ -106,6 +105,7 @@ export default function RosterPage() {
               slots={slots}
               reorderable
               managing
+              makeDragProps={(index) => makeDragProps(index, true)}
               onMoveUp={handleMoveUp}
               onMoveDown={handleMoveDown}
               onSetPrimary={handleSetPrimary}

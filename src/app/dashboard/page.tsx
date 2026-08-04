@@ -23,9 +23,16 @@ function DashboardInner() {
     handleMoveDown,
     handleRetry,
     handleRosterAdded,
+    makeDragProps,
+    resetDrag,
   } = useRoster();
 
   const [managing, setManaging] = useState(false);
+
+  function setManageMode(next: boolean) {
+    setManaging(next);
+    if (!next) resetDrag();
+  }
 
   // Legacy /dashboard?manage=1 → stay on dashboard in manage mode
   useEffect(() => {
@@ -72,12 +79,12 @@ function DashboardInner() {
               </h2>
               {managing ? (
                 <p className="text-sm opacity-60">
-                  Use the up/down buttons to change the order of characters. Tap
-                  the star to set primary.
+                  Drag rows or use ↑↓ to reorder. Tap the star to set primary.
                 </p>
               ) : roster.length > 0 ? (
                 <p className="text-sm opacity-60">
-                  Use the up/down buttons to change the order of characters.
+                  Drag rows or use ↑↓ to change order. Open Manage to set
+                  primary or remove.
                 </p>
               ) : null}
             </div>
@@ -90,7 +97,7 @@ function DashboardInner() {
               </Link>
               <button
                 type="button"
-                onClick={() => setManaging((v) => !v)}
+                onClick={() => setManageMode(!managing)}
                 className={[
                   "rounded-lg px-4 py-2 text-sm font-semibold transition",
                   managing
@@ -123,6 +130,7 @@ function DashboardInner() {
                 slots={slots}
                 reorderable
                 managing={managing}
+                makeDragProps={(index) => makeDragProps(index, true)}
                 onMoveUp={handleMoveUp}
                 onMoveDown={handleMoveDown}
                 onSetPrimary={managing ? handleSetPrimary : undefined}
