@@ -81,7 +81,7 @@ export function ShareGalleryModal({
             buffs,
             links,
             hexa: clampHexaForGms(hexa),
-            is30min: true,
+            is30min: false,
           }),
         });
         const json = (await res.json()) as {
@@ -203,7 +203,7 @@ export function ShareGalleryModal({
 
           <div>
             <p className="mb-1 text-xs font-semibold opacity-70">
-              Boss Converted Stat
+              Boss Converted Stat (20 min / KMS)
             </p>
             {bcsLoading ? (
               <p className="text-xs opacity-60">Calculating…</p>

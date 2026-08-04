@@ -325,13 +325,13 @@ function Accordion({
 
 type Props = {
   baseline: MapleScouterCalculatedData;
-  /** MapleScouter special.is30min from Result page (independent of clear timer). */
+  /** Match Result page 20/30 toggle (MapleScouter special.is30min). Default 20/KMS. */
   is30min?: boolean;
 };
 
 export function AdditionalSpecSimulation({
   baseline,
-  is30min = true,
+  is30min = false,
 }: Props) {
   const draftMeta = useMemo(() => loadDraftMeta(), []);
   const hexaSlots = useMemo(

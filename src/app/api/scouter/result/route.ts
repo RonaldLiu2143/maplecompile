@@ -12,7 +12,7 @@ export async function POST(req: Request) {
       buffs: BuffState;
       links: LinkState;
       hexa: number[];
-      /** MapleScouter special.is30min — changes Boss Converted Stat. Default true (GMS). */
+      /** MapleScouter special.is30min — tied to Result 20/30 min toggle. Default false (20/KMS). */
       is30min?: boolean;
     };
     if (!body?.input) {

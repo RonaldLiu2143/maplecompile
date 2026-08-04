@@ -203,6 +203,7 @@ export type ScouterGalleryItem = {
   jobType: string;
   charType: string;
   achievement: string;
+  hexa: number[];
 };
 
 /** Cap gallery responses so unbounded public sets stay usable. */
@@ -233,6 +234,11 @@ export async function listPublicShares(): Promise<ScouterGalleryItem[]> {
       continue;
     }
     const input = raw.state.input;
+    const hexa = clampHexaForGms(
+      Array.isArray(raw.state.hexa)
+        ? raw.state.hexa.map((n) => Number(n) || 0)
+        : [],
+    );
     items.push({
       id: raw.id || id,
       name: (raw.name || "Untitled").trim() || "Untitled",
@@ -241,6 +247,7 @@ export async function listPublicShares(): Promise<ScouterGalleryItem[]> {
       jobType: String(input.jobType || ""),
       charType: String(input.charType || ""),
       achievement: normalizeAchievement(raw.achievement),
+      hexa,
     });
   }
 

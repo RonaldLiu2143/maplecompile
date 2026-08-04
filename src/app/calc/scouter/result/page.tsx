@@ -352,12 +352,8 @@ export default function ScouterDetailedResultPage() {
   const [fightMinutes, setFightMinutes] = useState<BossClearFightMinutes>(
     BOSS_CLEAR_FIGHT_MINUTES_DEFAULT,
   );
-  /**
-   * MapleScouter input `special.is30min` — changes Boss Converted Stat.
-   * Independent of the 20/30 clear-timer toggle (MS keeps them separate).
-   * Default true = GMS with the 30-min box checked ("30분 체크바람").
-   */
-  const [is30min, setIs30min] = useState(true);
+  /** 20 min → KMS / MapleScouter default; 30 min → GMS is30min + GMS HP clears. */
+  const is30min = fightMinutes === 30;
   const hpRegion: BossHpRegion = fightMinutes === 30 ? "gms" : "kms";
 
   useEffect(() => {
@@ -517,47 +513,33 @@ export default function ScouterDetailedResultPage() {
           <aside className="w-full shrink-0 lg:w-64 xl:w-72">
             <StatBlock
               title="Boss Converted Stat"
-              hint="Match MapleScouter’s 30-min box for converted stats. 20/30 only changes clear % / HP region."
+              hint="20 min = MapleScouter / KMS default. 30 min = GMS (is30min + GMS HP clears)."
               action={
-                <div className="flex flex-wrap items-center gap-2">
-                  <label
-                    className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-border/50 bg-surface px-2.5 py-1 text-xs font-semibold"
-                    title="MapleScouter special.is30min — changes Boss Converted Stat"
+                <div className="inline-flex overflow-hidden rounded-full border border-border/50 text-xs">
+                  <button
+                    type="button"
+                    className={`px-3 py-1.5 font-semibold transition ${
+                      fightMinutes === 20
+                        ? "bg-accent text-white"
+                        : "bg-surface hover:bg-surface-muted"
+                    }`}
+                    onClick={() => setFightMinutes(20)}
+                    title="20 min · KMS HP · MapleScouter default BCS"
                   >
-                    <input
-                      type="checkbox"
-                      className="accent-[var(--accent)]"
-                      checked={is30min}
-                      onChange={(e) => setIs30min(e.target.checked)}
-                    />
-                    30-min box
-                  </label>
-                  <div className="inline-flex overflow-hidden rounded-full border border-border/50 text-xs">
-                    <button
-                      type="button"
-                      className={`px-3 py-1.5 font-semibold transition ${
-                        fightMinutes === 20
-                          ? "bg-accent text-white"
-                          : "bg-surface hover:bg-surface-muted"
-                      }`}
-                      onClick={() => setFightMinutes(20)}
-                      title="Clear % with KMS boss HP · 20 min window"
-                    >
-                      20 min
-                    </button>
-                    <button
-                      type="button"
-                      className={`px-3 py-1.5 font-semibold transition ${
-                        fightMinutes === 30
-                          ? "bg-accent text-white"
-                          : "bg-surface hover:bg-surface-muted"
-                      }`}
-                      onClick={() => setFightMinutes(30)}
-                      title="Clear % with GMS boss HP · 30 min window"
-                    >
-                      30 min
-                    </button>
-                  </div>
+                    20 min
+                  </button>
+                  <button
+                    type="button"
+                    className={`px-3 py-1.5 font-semibold transition ${
+                      fightMinutes === 30
+                        ? "bg-accent text-white"
+                        : "bg-surface hover:bg-surface-muted"
+                    }`}
+                    onClick={() => setFightMinutes(30)}
+                    title="30 min · GMS HP · GMS BCS (is30min)"
+                  >
+                    30 min
+                  </button>
                 </div>
               }
             >

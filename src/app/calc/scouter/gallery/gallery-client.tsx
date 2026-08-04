@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { getCharName } from "@/lib/jobs";
+import { SCOUTER_CDN, getHexaSlots } from "@/lib/scouter";
 import type { ScouterGalleryItem } from "@/lib/scouter/share";
 import { storage } from "@/lib/storage";
 
@@ -17,6 +18,45 @@ function formatSharedAt(ts: number): string {
   const days = Math.floor(hours / 24);
   if (days < 14) return `${days}d ago`;
   return new Date(ts).toLocaleDateString();
+}
+
+function GalleryHexa({
+  charType,
+  hexa,
+}: {
+  charType: string;
+  hexa: number[];
+}) {
+  const slots = getHexaSlots(charType);
+  return (
+    <div className="flex flex-wrap gap-1">
+      {slots.map((slot, i) => {
+        if (slot.unavailableInGms) return null;
+        const lv = hexa[i] ?? 0;
+        return (
+          <div
+            key={slot.id}
+            className="flex flex-col items-center gap-0.5 rounded border border-border/40 bg-background/70 px-0.5 py-1"
+            title={`${slot.label}: ${lv}`}
+          >
+            {slot.iconSuffix ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={`${SCOUTER_CDN}${slot.iconSuffix}`}
+                alt=""
+                width={22}
+                height={22}
+                className="size-[22px] object-contain"
+              />
+            ) : null}
+            <span className="text-[9px] font-semibold tabular-nums leading-none">
+              {lv}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 
 export function GalleryClient({
@@ -144,6 +184,7 @@ export function GalleryClient({
                 <th className="px-3 py-2.5 font-semibold">Name</th>
                 <th className="px-3 py-2.5 font-semibold">Class</th>
                 <th className="px-3 py-2.5 font-semibold">Level</th>
+                <th className="px-3 py-2.5 font-semibold">HEXA</th>
                 <th className="px-3 py-2.5 font-semibold">Achievement</th>
                 <th className="px-3 py-2.5 font-semibold">Shared</th>
                 <th className="px-3 py-2.5 font-semibold">
@@ -165,7 +206,13 @@ export function GalleryClient({
                     <td className="px-3 py-2.5 tabular-nums">
                       {item.level || "—"}
                     </td>
-                    <td className="max-w-[18rem] px-3 py-2.5 text-xs leading-snug opacity-80">
+                    <td className="px-3 py-2.5">
+                      <GalleryHexa
+                        charType={item.charType}
+                        hexa={item.hexa ?? []}
+                      />
+                    </td>
+                    <td className="max-w-[14rem] px-3 py-2.5 text-xs leading-snug opacity-80">
                       {item.achievement || (
                         <span className="opacity-50">—</span>
                       )}
