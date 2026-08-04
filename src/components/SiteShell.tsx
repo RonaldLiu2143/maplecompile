@@ -15,6 +15,7 @@ const STORAGE_KEY = "maplecompile-sidebar-open";
 type NavLink = { href: string; label: string; match?: "exact" | "prefix" };
 
 const PRIMARY_LINKS: NavLink[] = [
+  { href: "/dashboard", label: "Dashboard", match: "exact" },
   { href: "/guide", label: "Guide", match: "exact" },
   { href: "/calc/scouter", label: "Scouter", match: "exact" },
   { href: "/calc/scouter/gallery", label: "Gallery" },
