@@ -212,10 +212,10 @@ export async function createShare(args: {
         ...state,
         is30min: false,
       });
-      boss300HexaStat ??= bcs.boss300HexaStat;
-      boss380HexaStat ??= bcs.boss380HexaStat;
+      boss300HexaStat ??= normalizeBossConvertedHexaStat(bcs.boss300HexaStat);
+      boss380HexaStat ??= normalizeBossConvertedHexaStat(bcs.boss380HexaStat);
     } catch {
-      // Gallery can still list the share; BCS column shows — until re-shared.
+      // Gallery can still list the share; listPublicShares backfills when possible.
     }
   }
 
@@ -390,6 +390,86 @@ const GALLERY_LIST_LIMIT = 500;
 /** Top-N for the views leaderboard. */
 export const GALLERY_LEADERBOARD_LIMIT = 50;
 
+/**
+ * Max legacy shares to recompute BCS for in a single gallery list.
+ * Results are persisted so subsequent loads skip MapleScouter.
+ */
+const GALLERY_BCS_BACKFILL_LIMIT = 12;
+
+/** Concurrent MapleScouter BCS lookups while backfilling the gallery. */
+const GALLERY_BCS_BACKFILL_CONCURRENCY = 3;
+
+/**
+ * Resolve BCS HEXA (20 min / KMS) for a share: prefer stored fields, else
+ * derive from the saved loadout via MapleScouter and optionally persist.
+ */
+export async function resolveBossConvertedHexaStats(
+  record: ScouterShareRecord,
+  opts?: { backfill?: boolean; redis?: Redis },
+): Promise<{
+  boss300HexaStat: number | null;
+  boss380HexaStat: number | null;
+}> {
+  let boss300HexaStat = normalizeBossConvertedHexaStat(record.boss300HexaStat);
+  let boss380HexaStat = normalizeBossConvertedHexaStat(record.boss380HexaStat);
+  if (boss300HexaStat != null && boss380HexaStat != null) {
+    return { boss300HexaStat, boss380HexaStat };
+  }
+  if (!record.state?.input) {
+    return { boss300HexaStat, boss380HexaStat };
+  }
+
+  try {
+    const state = normalizeShareState(record.state);
+    const bcs = await fetchBossConvertedHexaStats({
+      ...state,
+      is30min: false,
+    });
+    boss300HexaStat ??= normalizeBossConvertedHexaStat(bcs.boss300HexaStat);
+    boss380HexaStat ??= normalizeBossConvertedHexaStat(bcs.boss380HexaStat);
+  } catch {
+    return { boss300HexaStat, boss380HexaStat };
+  }
+
+  if (
+    opts?.backfill &&
+    opts.redis &&
+    record.id &&
+    (boss300HexaStat != null || boss380HexaStat != null)
+  ) {
+    const updated: ScouterShareRecord = {
+      ...record,
+      ...(boss300HexaStat != null ? { boss300HexaStat } : {}),
+      ...(boss380HexaStat != null ? { boss380HexaStat } : {}),
+    };
+    void opts.redis
+      .set(shareKey(record.id), updated)
+      .catch(() => undefined);
+  }
+
+  return { boss300HexaStat, boss380HexaStat };
+}
+
+async function mapPool<T, R>(
+  items: T[],
+  concurrency: number,
+  fn: (item: T) => Promise<R>,
+): Promise<R[]> {
+  const results = new Array<R>(items.length);
+  let next = 0;
+  const workers = Array.from(
+    { length: Math.min(concurrency, items.length) || 0 },
+    async () => {
+      while (next < items.length) {
+        const i = next++;
+        results[i] = await fn(items[i]!);
+      }
+    },
+  );
+  await Promise.all(workers);
+  return results;
+}
+
 export async function listPublicShares(): Promise<ScouterGalleryItem[]> {
   const redis = getRedis();
   const ids = await redis.smembers(SHARE_PUBLIC_SET);
@@ -404,7 +484,15 @@ export async function listPublicShares(): Promise<ScouterGalleryItem[]> {
   )) as (number | string | null)[];
 
   const stale: string[] = [];
-  const items: ScouterGalleryItem[] = [];
+  type PendingRow = {
+    id: string;
+    raw: ScouterShareRecord;
+    views: number;
+    boss300HexaStat: number | null;
+    boss380HexaStat: number | null;
+    needsBackfill: boolean;
+  };
+  const pending: PendingRow[] = [];
 
   for (let i = 0; i < ids.length; i++) {
     const id = ids[i]!;
@@ -418,23 +506,19 @@ export async function listPublicShares(): Promise<ScouterGalleryItem[]> {
       stale.push(id);
       continue;
     }
-    const input = raw.state.input;
     const viewsFromKey = Number(viewsList[i] ?? NaN);
     const views = Number.isFinite(viewsFromKey)
       ? Math.max(0, viewsFromKey)
       : Math.max(0, Number(raw.views) || 0);
-    items.push({
+    const boss300HexaStat = normalizeBossConvertedHexaStat(raw.boss300HexaStat);
+    const boss380HexaStat = normalizeBossConvertedHexaStat(raw.boss380HexaStat);
+    pending.push({
       id: raw.id || id,
-      name: (raw.name || "Untitled").trim() || "Untitled",
-      identity: resolveShareIdentity(raw),
-      createdAt: Number(raw.createdAt) || 0,
-      level: Number(input.level) || 0,
-      jobType: String(input.jobType || ""),
-      charType: String(input.charType || ""),
-      achievement: normalizeAchievement(raw.achievement),
-      boss300HexaStat: normalizeBossConvertedHexaStat(raw.boss300HexaStat),
-      boss380HexaStat: normalizeBossConvertedHexaStat(raw.boss380HexaStat),
+      raw: { ...raw, id: raw.id || id },
       views,
+      boss300HexaStat,
+      boss380HexaStat,
+      needsBackfill: boss300HexaStat == null || boss380HexaStat == null,
     });
   }
 
@@ -442,6 +526,51 @@ export async function listPublicShares(): Promise<ScouterGalleryItem[]> {
     // Don't block the gallery response on index cleanup.
     void redis.srem(SHARE_PUBLIC_SET, ...stale).catch(() => undefined);
   }
+
+  // Prefer newest missing rows so the default "Recent" view fills first.
+  pending.sort((a, b) => (Number(b.raw.createdAt) || 0) - (Number(a.raw.createdAt) || 0));
+
+  const toBackfill = pending
+    .filter((row) => row.needsBackfill)
+    .slice(0, GALLERY_BCS_BACKFILL_LIMIT);
+
+  if (toBackfill.length) {
+    const resolved = await mapPool(
+      toBackfill,
+      GALLERY_BCS_BACKFILL_CONCURRENCY,
+      async (row) => {
+        const bcs = await resolveBossConvertedHexaStats(row.raw, {
+          backfill: true,
+          redis,
+        });
+        return { id: row.id, ...bcs };
+      },
+    );
+    const byId = new Map(resolved.map((r) => [r.id, r]));
+    for (const row of pending) {
+      const hit = byId.get(row.id);
+      if (!hit) continue;
+      row.boss300HexaStat = hit.boss300HexaStat;
+      row.boss380HexaStat = hit.boss380HexaStat;
+    }
+  }
+
+  const items: ScouterGalleryItem[] = pending.map((row) => {
+    const input = row.raw.state.input;
+    return {
+      id: row.id,
+      name: (row.raw.name || "Untitled").trim() || "Untitled",
+      identity: resolveShareIdentity(row.raw),
+      createdAt: Number(row.raw.createdAt) || 0,
+      level: Number(input.level) || 0,
+      jobType: String(input.jobType || ""),
+      charType: String(input.charType || ""),
+      achievement: normalizeAchievement(row.raw.achievement),
+      boss300HexaStat: row.boss300HexaStat,
+      boss380HexaStat: row.boss380HexaStat,
+      views: row.views,
+    };
+  });
 
   items.sort((a, b) => b.createdAt - a.createdAt);
   return items.slice(0, GALLERY_LIST_LIMIT);
