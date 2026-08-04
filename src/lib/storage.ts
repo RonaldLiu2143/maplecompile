@@ -1,6 +1,7 @@
 import type { EquipSetup, FlameSetup, JobType, StatEquiv } from "./types";
 import type { BuffState, LinkState } from "./scouter/buffs";
 import type { ScouterInput } from "./scouter/types";
+import type { PlannerOverrides } from "./planner/types";
 
 function readJson<T>(key: string, fallback: T): T {
   if (typeof window === "undefined") return fallback;
@@ -114,6 +115,11 @@ export const storage = {
     writeJson("flameSetup", {});
     writeJson("flameProbabilities", {});
   },
+
+  getPlannerOverrides: () =>
+    readJson<PlannerOverrides>("maplecompile-planner-overrides", {}),
+  setPlannerOverrides: (v: PlannerOverrides) =>
+    writeJson("maplecompile-planner-overrides", v),
 
   getScouterLast: () =>
     readJsonMigrating<ScouterLastState | null>(

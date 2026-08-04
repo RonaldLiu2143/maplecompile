@@ -665,7 +665,7 @@ export function calcFlameProbability(
 }
 
 /** Score saved flame lines the same way WhackyBeanz does (value × equivalences). */
-function scoreCurrentFlames(
+export function scoreCurrentFlames(
   flames: FlameLine[],
   jobType: string,
   charType: string,

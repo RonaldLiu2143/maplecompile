@@ -33,6 +33,10 @@ export type Equip = {
   tags?: string[];
   isNormalFlame?: boolean;
   flames?: FlameLine[];
+  /** Current Star Force (planner / progression). Optional — defaults applied in planner. */
+  starForce?: number;
+  /** Potential tier: 0 Rare … 3 Legendary (planner). */
+  potentialTier?: 0 | 1 | 2 | 3;
 };
 
 export type EquipTypeBucket = {
