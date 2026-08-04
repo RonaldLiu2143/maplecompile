@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   Suspense,
@@ -58,119 +59,207 @@ async function fetchCharacter(
   return body.character;
 }
 
-function AddToRosterForm({
+function isOnRoster(
+  roster: RosterEntry[],
+  character: Pick<CharacterLookupResult, "name" | "region">,
+): boolean {
+  const key = slotKey(character);
+  return roster.some((e) => slotKey(e) === key);
+}
+
+function CharacterSearchBar({
+  roster,
   onAdded,
 }: {
-  onAdded: (roster: RosterEntry[]) => void;
+  roster: RosterEntry[];
+  onAdded: (
+    next: RosterEntry[],
+    character: CharacterLookupResult,
+  ) => void;
 }) {
   const [name, setName] = useState("");
   const [region, setRegion] = useState<NexonRegion>("na");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [result, setResult] = useState<CharacterLookupResult | null>(null);
+  const [feedback, setFeedback] = useState<string | null>(null);
+  const [adding, setAdding] = useState(false);
+
+  useEffect(() => {
+    if (!feedback) return;
+    const t = window.setTimeout(() => setFeedback(null), 2500);
+    return () => window.clearTimeout(t);
+  }, [feedback]);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
-    const parts = name
-      .split(/[,\s]+/)
-      .map((p) => p.trim())
-      .filter(Boolean);
-    if (parts.length === 0) {
+    const trimmed = name.trim();
+    if (!trimmed) {
       setError("Enter a character name.");
+      setResult(null);
       return;
     }
-    for (const part of parts) {
-      if (!CHARACTER_NAME_REGEX.test(part)) {
-        setError(`Invalid name “${part}”. Use 2–13 letters or numbers.`);
-        return;
-      }
+    if (!CHARACTER_NAME_REGEX.test(trimmed)) {
+      setError("Invalid name. Use 2–13 letters or numbers.");
+      setResult(null);
+      return;
     }
 
     setPending(true);
     setError(null);
+    setFeedback(null);
+    setResult(null);
     try {
-      let roster = readRoster();
-      let addedCount = 0;
-      const failures: string[] = [];
-
-      for (const part of parts) {
-        try {
-          const character = await fetchCharacter(part, region);
-          const result = addToRoster({
-            name: character.name,
-            region: character.region,
-          });
-          roster = result.roster;
-          if (result.added) addedCount += 1;
-          else {
-            failures.push(`${character.name} is already on your roster.`);
-          }
-        } catch (err) {
-          failures.push(
-            `${part}: ${err instanceof Error ? err.message : "lookup failed"}`,
-          );
-        }
-      }
-
-      onAdded(roster);
-      setName("");
-      if (addedCount === 0 && failures.length > 0) {
-        setError(failures.join(" "));
-      } else if (failures.length > 0) {
-        setError(`Added ${addedCount}. Some skipped: ${failures.join(" ")}`);
-      }
-    } catch {
-      setError("Network error — check your connection and try again.");
+      const character = await fetchCharacter(trimmed, region);
+      setResult(character);
+      setName(character.name);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Network error — check your connection and try again.",
+      );
     } finally {
       setPending(false);
     }
   }
 
+  function handleAdd() {
+    if (!result) return;
+    setAdding(true);
+    try {
+      const { roster: next, added } = addToRoster({
+        name: result.name,
+        region: result.region,
+      });
+      if (added) {
+        onAdded(next, result);
+        setFeedback(`Added ${result.name} to your roster.`);
+      } else {
+        setFeedback(`${result.name} is already on your roster.`);
+      }
+    } finally {
+      setAdding(false);
+    }
+  }
+
+  const alreadyOnRoster = result ? isOnRoster(roster, result) : false;
+  const profileHref = result
+    ? `/calc/character/${encodeURIComponent(result.name)}?region=${result.region}`
+    : null;
+
   return (
-    <form
-      onSubmit={onSubmit}
-      className="flex flex-wrap items-end gap-3 rounded-xl border-2 border-border bg-surface p-4"
-    >
-      <label className="flex min-w-[12rem] flex-1 flex-col gap-1 text-sm font-semibold">
-        Character name
-        <input
-          className={inputClass}
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="e.g. wokeChifuyu (comma-separated OK)"
-          maxLength={200}
-          autoComplete="off"
-          spellCheck={false}
-          disabled={pending}
-        />
-      </label>
-      <label className="flex flex-col gap-1 text-sm font-semibold">
-        Region
-        <select
-          className={inputClass}
-          value={region}
-          onChange={(e) => setRegion(e.target.value as NexonRegion)}
-          disabled={pending}
-        >
-          <option value="na">NA</option>
-          <option value="eu">EU</option>
-        </select>
-      </label>
-      <button
-        type="submit"
-        disabled={pending || name.trim().length < 2}
-        className="rounded-lg bg-accent px-5 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50 dark:text-zinc-900"
+    <section className="space-y-3">
+      <form
+        onSubmit={onSubmit}
+        className="flex flex-wrap items-end gap-3 rounded-xl border-2 border-border bg-surface p-4"
       >
-        {pending ? "Adding…" : "Add to roster"}
-      </button>
+        <label className="flex min-w-[12rem] flex-1 flex-col gap-1 text-sm font-semibold">
+          Search character
+          <input
+            className={inputClass}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="e.g. wokeChifuyu"
+            maxLength={13}
+            autoComplete="off"
+            spellCheck={false}
+            disabled={pending}
+          />
+        </label>
+        <label className="flex flex-col gap-1 text-sm font-semibold">
+          Region
+          <select
+            className={inputClass}
+            value={region}
+            onChange={(e) => setRegion(e.target.value as NexonRegion)}
+            disabled={pending}
+          >
+            <option value="na">NA</option>
+            <option value="eu">EU</option>
+          </select>
+        </label>
+        <button
+          type="submit"
+          disabled={pending || name.trim().length < 2}
+          className="rounded-lg bg-accent px-5 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50 dark:text-zinc-900"
+        >
+          {pending ? "Searching…" : "Search"}
+        </button>
+      </form>
+
       {error ? (
         <div
           role="alert"
-          className="w-full rounded-xl border border-danger/40 bg-danger/10 px-4 py-3 text-sm"
+          className="rounded-xl border border-danger/40 bg-danger/10 px-4 py-3 text-sm"
         >
           {error}
         </div>
       ) : null}
-    </form>
+
+      {feedback ? (
+        <div
+          role="status"
+          className="rounded-xl border border-accent/40 bg-accent/10 px-4 py-3 text-sm"
+        >
+          {feedback}
+        </div>
+      ) : null}
+
+      {result ? (
+        <div className="flex flex-wrap items-center gap-4 rounded-xl border border-border bg-surface/80 px-4 py-3">
+          {result.characterImgURL ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={result.characterImgURL}
+              alt=""
+              width={56}
+              height={56}
+              className="h-14 w-14 shrink-0 object-contain"
+            />
+          ) : (
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-surface-muted text-[0.65rem] opacity-60">
+              No img
+            </div>
+          )}
+          <div className="min-w-0 flex-1">
+            <p className="font-display text-base font-bold tracking-tight">
+              {result.name}
+            </p>
+            <p className="text-sm opacity-75">
+              Lv. {result.level}
+              {result.worldName ? ` · ${result.worldName}` : ""}
+              {result.jobName ? ` · ${result.jobName}` : ""}
+              {` · ${result.region.toUpperCase()}`}
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {profileHref ? (
+              <Link
+                href={profileHref}
+                className="rounded-lg border border-border px-3 py-1.5 text-sm font-semibold transition hover:bg-surface-muted"
+              >
+                View
+              </Link>
+            ) : null}
+            {alreadyOnRoster ? (
+              <span className="rounded-lg border border-border/60 bg-surface-muted px-3 py-1.5 text-sm font-semibold opacity-70">
+                On roster
+              </span>
+            ) : (
+              <button
+                type="button"
+                onClick={handleAdd}
+                disabled={adding}
+                className="rounded-lg bg-accent px-3 py-1.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50 dark:text-zinc-900"
+              >
+                {adding ? "Adding…" : "Add to roster"}
+              </button>
+            )}
+          </div>
+        </div>
+      ) : null}
+    </section>
   );
 }
 
@@ -277,8 +366,16 @@ function DashboardInner() {
     setReloadToken((n) => n + 1);
   }
 
-  function handleRosterAdded(next: RosterEntry[]) {
-    // New entries aren't in loadedKeys yet → effect will fetch them.
+  function handleRosterAdded(
+    next: RosterEntry[],
+    character: CharacterLookupResult,
+  ) {
+    const key = slotKey(character);
+    loadedKeys.current.add(key);
+    setSlots((prev) => ({
+      ...prev,
+      [key]: { status: "ready", character },
+    }));
     setRoster(next);
   }
 
@@ -313,24 +410,23 @@ function DashboardInner() {
         ) : null}
       </header>
 
-      {!hydrated ? (
-        <div className="rounded-2xl border border-border/50 bg-surface/80 px-4 py-16 text-center text-sm opacity-70">
+      {hydrated ? (
+        <CharacterSearchBar roster={roster} onAdded={handleRosterAdded} />
+      ) : (
+        <div className="rounded-2xl border border-border/50 bg-surface/80 px-4 py-8 text-center text-sm opacity-70">
           Loading…
         </div>
-      ) : null}
+      )}
 
       {hydrated && managing ? (
-        <section className="space-y-3">
-          <div>
-            <h2 className="font-display text-lg font-bold tracking-tight">
-              Manage roster
-            </h2>
-            <p className="mt-1 text-sm opacity-75">
-              Add by IGN (NA/EU), reorder with ↑↓, or remove. Multiple names can
-              be comma-separated.
-            </p>
-          </div>
-          <AddToRosterForm onAdded={handleRosterAdded} />
+        <section className="space-y-1">
+          <h2 className="font-display text-lg font-bold tracking-tight">
+            Manage roster
+          </h2>
+          <p className="text-sm opacity-75">
+            Reorder with ↑↓ on each card, or remove. Search above to add
+            characters.
+          </p>
         </section>
       ) : null}
 
@@ -341,18 +437,9 @@ function DashboardInner() {
               No characters yet
             </h2>
             <p className="mx-auto mt-2 max-w-md text-sm opacity-75">
-              Add a GMS character to start your roster. Data comes from the same
-              Character Lookup API.
+              Search a GMS character above, then tap Add to roster. Data comes
+              from the same Character Lookup API.
             </p>
-            {!managing ? (
-              <button
-                type="button"
-                onClick={() => setManageMode(true)}
-                className="mt-4 rounded-lg bg-accent px-5 py-2 text-sm font-semibold text-white transition hover:opacity-90 dark:text-zinc-900"
-              >
-                Manage roster
-              </button>
-            ) : null}
           </div>
         </section>
       ) : null}
@@ -365,7 +452,7 @@ function DashboardInner() {
             </h2>
             {!managing ? (
               <p className="text-xs opacity-55">
-                Tip: open Manage roster to add, remove, or reorder.
+                Tip: open Manage roster to remove or reorder.
               </p>
             ) : null}
           </div>
