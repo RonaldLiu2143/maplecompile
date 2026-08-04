@@ -585,10 +585,14 @@ export function defaultLinkState(): LinkState {
 
 export function defaultHexaLevels(): number[] {
   return Array.from({ length: HEXA_SLOT_COUNT }, (_, i) => {
+    if (
+      (GMS_UNAVAILABLE_HEXA_INDICES as readonly number[]).includes(i)
+    ) {
+      return 0;
+    }
     if (i < 4) return 30; // mastery
     if (i < 8) return 30; // reinforcement
     if (i < 10) return 30; // skill 1–2
-    if (i === 10 || i === 11) return 0; // skill3 + class common (not in GMS)
     return 1; // sol Janus / Hecate
   });
 }

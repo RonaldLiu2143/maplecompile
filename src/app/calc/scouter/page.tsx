@@ -566,6 +566,8 @@ export default function ScouterPage() {
       ];
     })();
 
+  const classSpecificReq = getClassSpecificRequirements(input.charType);
+
   return (
     <div className="space-y-5">
       <header className="flex flex-wrap items-end justify-between gap-3">
@@ -600,6 +602,7 @@ export default function ScouterPage() {
                   const id = e.target.value;
                   if (!id) {
                     setSelectedPresetId("");
+                    setLoadedPresetId("");
                     setPresetName("");
                     return;
                   }
@@ -686,9 +689,9 @@ export default function ScouterPage() {
             General Requirements: No Buffs, Link Equipped (No Stacks), Oz Ring
             Equipped / Summons On / (Decent) Combat Orders, Sharp Eyes On /
             Soul Gauge 0/1000 / Familiars On.
-            {getClassSpecificRequirements(input.charType)
-              ? ` Class Specific: ${getClassSpecificRequirements(input.charType)}.`
-              : " Class Specific: Maple Warrior / job buffs as listed on MapleScouter."}
+            {classSpecificReq
+              ? ` Class Specific: ${classSpecificReq}.`
+              : null}
           </p>
 
           <div className="flex flex-wrap gap-x-4 gap-y-2 border-b border-border/40 px-3 py-2 text-sm">

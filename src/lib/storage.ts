@@ -139,17 +139,18 @@ export const storage = {
     const now = Date.now();
     if (args.id) {
       const idx = list.findIndex((p) => p.id === args.id);
-      if (idx >= 0) {
-        const updated: ScouterPreset = {
-          ...list[idx]!,
-          name,
-          updatedAt: now,
-          ...args.state,
-        };
-        list[idx] = updated;
-        writePresets(list);
-        return updated;
+      if (idx < 0) {
+        throw new Error(`Preset not found: ${args.id}`);
       }
+      const updated: ScouterPreset = {
+        ...list[idx]!,
+        name,
+        updatedAt: now,
+        ...args.state,
+      };
+      list[idx] = updated;
+      writePresets(list);
+      return updated;
     }
     const created: ScouterPreset = {
       id: newPresetId(),

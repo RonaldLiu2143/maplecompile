@@ -690,7 +690,10 @@ export default function ScouterDetailedResultPage() {
               </p>
             </StatBlock>
 
-            <AdditionalSpecSimulation baseline={data} />
+            <AdditionalSpecSimulation
+              baseline={data}
+              is30min={fightMinutes === 30}
+            />
           </div>
         </div>
       ) : null}

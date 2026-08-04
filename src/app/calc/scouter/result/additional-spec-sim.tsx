@@ -325,9 +325,14 @@ function Accordion({
 
 type Props = {
   baseline: MapleScouterCalculatedData;
+  /** Match Result page 20/30 min toggle (MapleScouter special.is30min). */
+  is30min?: boolean;
 };
 
-export function AdditionalSpecSimulation({ baseline }: Props) {
+export function AdditionalSpecSimulation({
+  baseline,
+  is30min = true,
+}: Props) {
   const draftMeta = useMemo(() => loadDraftMeta(), []);
   const hexaSlots = useMemo(
     () => getHexaSlots(draftMeta.input.charType),
@@ -460,7 +465,7 @@ export function AdditionalSpecSimulation({ baseline }: Props) {
           buffs: simBuffs,
           links: draftMeta.links,
           hexa: simHexa,
-          is30min: true,
+          is30min,
         }),
       });
       const json = (await res.json()) as {

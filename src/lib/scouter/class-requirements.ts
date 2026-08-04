@@ -1,10 +1,9 @@
 /**
- * MapleScouter class-specific input requirements (Korean → English).
- * These buffs/states are assumed when using the class FD tables.
+ * MapleScouter class-specific input requirements (English).
+ * Assumed when using class FD tables. Omit classes with no extra requirements.
  */
 export const CLASS_SPECIFIC_REQUIREMENTS: Record<string, string> = {
   nl: "Bleeding Toxin On",
-  nw: "",
   dk: "Beholder, Cross of Styx, Dark Resonance On",
   ds: "Metamorphosis On",
   da: "Diabolic Recovery, Decent Holy Fountain On; Overload Release Off",
@@ -39,22 +38,16 @@ export const CLASS_SPECIFIC_REQUIREMENTS: Record<string, string> = {
   zero: "Zero-Beta Divine Force",
   cadena: "0 stacks",
   kaiser: "Human form, Attack mode, Morph 0, Blaze Up",
-  kain: "",
-  khali: "",
   cm: "Monkey Magic On; Loaded Dice Off",
   captain: "Pirate Style On; Loaded Dice Off",
-  kinesis: "",
   /** Divine Blessing FD is baked into Paladin class FD (65.77). */
   paladin: "Combat Orders, Divine Blessing On; 0 Charge stacks",
   pf: "Sharp Eyes On",
   phantom: "Final Cut Off; Cross of Styx Off; Spirit Blade Off",
   fw: "Spirit of Flame On",
-  hy: "",
   hero: "10 combo; Enrage On; Rage",
-  hayato: "",
   mx: "Inner Training 5 stacks; Loaded Dice Off",
   lynn: "Nature's Providence On",
-  kanna: "",
   sia: "Celestial Align On",
 };
 
