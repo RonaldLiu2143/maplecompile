@@ -59,6 +59,12 @@ export default function RootLayout({
               >
                 Scouter
               </Link>
+              <Link
+                href="/calc/scouter/gallery"
+                className="rounded-lg px-3 py-2 transition-colors hover:bg-accent-soft hover:text-accent"
+              >
+                Gallery
+              </Link>
             </nav>
           </div>
         </header>

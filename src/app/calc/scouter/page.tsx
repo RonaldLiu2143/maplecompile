@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   BUFF_DEFS,
@@ -647,19 +648,27 @@ export default function ScouterPage() {
                   or share a link.
                 </p>
               </div>
-              {loadedPresetId ? (
-                <span className="rounded-full bg-accent-soft/40 px-2 py-0.5 text-[11px] font-semibold text-accent">
-                  Editing “
-                  {presetName.trim() ||
-                    presets.find((p) => p.id === loadedPresetId)?.name ||
-                    "preset"}
-                  ”
-                </span>
-              ) : (
-                <span className="text-[11px] font-medium opacity-50">
-                  Unsaved draft
-                </span>
-              )}
+              <div className="flex flex-wrap items-center gap-2">
+                <Link
+                  href="/calc/scouter/gallery"
+                  className="text-[11px] font-semibold text-accent underline-offset-2 hover:underline"
+                >
+                  Public gallery
+                </Link>
+                {loadedPresetId ? (
+                  <span className="rounded-full bg-accent-soft/40 px-2 py-0.5 text-[11px] font-semibold text-accent">
+                    Editing “
+                    {presetName.trim() ||
+                      presets.find((p) => p.id === loadedPresetId)?.name ||
+                      "preset"}
+                    ”
+                  </span>
+                ) : (
+                  <span className="text-[11px] font-medium opacity-50">
+                    Unsaved draft
+                  </span>
+                )}
+              </div>
             </div>
 
             <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center">

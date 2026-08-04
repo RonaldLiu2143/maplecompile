@@ -43,6 +43,12 @@ export default function Home() {
           >
             Scouter
           </Link>
+          <Link
+            href="/calc/scouter/gallery"
+            className="rounded-lg border-2 border-border bg-surface px-5 py-2.5 font-semibold transition hover:bg-surface-muted"
+          >
+            Public Gallery
+          </Link>
         </div>
       </section>
 

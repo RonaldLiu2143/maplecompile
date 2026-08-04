@@ -2,9 +2,31 @@ import { NextResponse } from "next/server";
 import {
   createShare,
   isRedisConfigured,
+  listPublicShares,
   SHARE_MAX_BYTES,
   type ScouterShareState,
 } from "@/lib/scouter/share";
+
+export async function GET() {
+  try {
+    if (!isRedisConfigured()) {
+      return NextResponse.json(
+        {
+          error:
+            "Sharing is not configured. Set UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN.",
+          items: [],
+        },
+        { status: 503 },
+      );
+    }
+
+    const items = await listPublicShares();
+    return NextResponse.json({ items });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    return NextResponse.json({ error: message, items: [] }, { status: 500 });
+  }
+}
 
 export async function POST(req: Request) {
   try {

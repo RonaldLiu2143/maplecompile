@@ -128,3 +128,54 @@ export async function getShare(
     state: normalizeShareState(raw.state),
   };
 }
+
+/** Lightweight row for the public gallery (no full buff/link/hexa payload). */
+export type ScouterGalleryItem = {
+  id: string;
+  name: string;
+  createdAt: number;
+  level: number;
+  jobType: string;
+  charType: string;
+  reboot: boolean;
+  liberation: boolean;
+};
+
+export async function listPublicShares(): Promise<ScouterGalleryItem[]> {
+  const redis = getRedis();
+  const ids = await redis.smembers(SHARE_PUBLIC_SET);
+  if (!ids.length) return [];
+
+  const keys = ids.map((id) => shareKey(id));
+  const rawList = (await redis.mget(...keys)) as (ScouterShareRecord | null)[];
+
+  const stale: string[] = [];
+  const items: ScouterGalleryItem[] = [];
+
+  for (let i = 0; i < ids.length; i++) {
+    const id = ids[i]!;
+    const raw = rawList[i];
+    if (!raw || typeof raw !== "object" || !raw.state?.input || raw.public === false) {
+      stale.push(id);
+      continue;
+    }
+    const input = raw.state.input;
+    items.push({
+      id: raw.id || id,
+      name: (raw.name || "Untitled").trim() || "Untitled",
+      createdAt: Number(raw.createdAt) || 0,
+      level: Number(input.level) || 0,
+      jobType: String(input.jobType || ""),
+      charType: String(input.charType || ""),
+      reboot: !!input.reboot,
+      liberation: !!input.liberation,
+    });
+  }
+
+  if (stale.length) {
+    await redis.srem(SHARE_PUBLIC_SET, ...stale);
+  }
+
+  items.sort((a, b) => b.createdAt - a.createdAt);
+  return items;
+}
