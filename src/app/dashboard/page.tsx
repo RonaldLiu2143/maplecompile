@@ -21,10 +21,14 @@ import {
 } from "@/lib/character/lookup";
 import {
   addToRoster,
+  isPrimary,
   moveRosterEntry,
-  readRoster,
+  readRosterState,
   removeFromRoster,
+  setPrimary,
   type RosterEntry,
+  type RosterPrimary,
+  type RosterState,
 } from "@/lib/dashboard/roster";
 
 type ApiOk = { ok: true; character: CharacterLookupResult };
@@ -73,7 +77,7 @@ function CharacterSearchBar({
 }: {
   roster: RosterEntry[];
   onAdded: (
-    next: RosterEntry[],
+    next: RosterState,
     character: CharacterLookupResult,
   ) => void;
 }) {
@@ -128,12 +132,12 @@ function CharacterSearchBar({
     if (!result) return;
     setAdding(true);
     try {
-      const { roster: next, added } = addToRoster({
+      const { state, added } = addToRoster({
         name: result.name,
         region: result.region,
       });
       if (added) {
-        onAdded(next, result);
+        onAdded(state, result);
         setFeedback(`Added ${result.name} to your roster.`);
       } else {
         setFeedback(`${result.name} is already on your roster.`);
@@ -222,13 +226,19 @@ function DashboardInner() {
 
   const [hydrated, setHydrated] = useState(false);
   const [roster, setRoster] = useState<RosterEntry[]>([]);
+  const [primary, setPrimaryState] = useState<RosterPrimary | null>(null);
   const [managing, setManaging] = useState(manageFromUrl);
   const [slots, setSlots] = useState<Record<string, SlotState>>({});
   const [reloadToken, setReloadToken] = useState(0);
   const loadedKeys = useRef<Set<string>>(new Set());
 
+  function applyRosterState(state: RosterState) {
+    setRoster(state.entries);
+    setPrimaryState(state.primary);
+  }
+
   useEffect(() => {
-    setRoster(readRoster());
+    applyRosterState(readRosterState());
     setHydrated(true);
   }, []);
 
@@ -306,11 +316,15 @@ function DashboardInner() {
   function handleRemove(entry: RosterEntry) {
     const key = slotKey(entry);
     loadedKeys.current.delete(key);
-    setRoster(removeFromRoster(entry));
+    applyRosterState(removeFromRoster(entry));
   }
 
   function handleMove(entry: RosterEntry, direction: "up" | "down") {
-    setRoster(moveRosterEntry(entry, direction));
+    applyRosterState(moveRosterEntry(entry, direction));
+  }
+
+  function handleSetPrimary(entry: RosterEntry) {
+    applyRosterState(setPrimary(entry));
   }
 
   function handleRetry(entry: RosterEntry) {
@@ -319,7 +333,7 @@ function DashboardInner() {
   }
 
   function handleRosterAdded(
-    next: RosterEntry[],
+    next: RosterState,
     character: CharacterLookupResult,
   ) {
     const key = slotKey(character);
@@ -328,7 +342,7 @@ function DashboardInner() {
       ...prev,
       [key]: { status: "ready", character },
     }));
-    setRoster(next);
+    applyRosterState(next);
   }
 
   return (
@@ -343,7 +357,7 @@ function DashboardInner() {
           </h1>
           <p className="mt-2 text-sm opacity-80">
             Your character roster — level, EXP pace, class rank in world, and
-            legion. First in the list is your primary.
+            legion. Mark any character as primary in Manage roster.
           </p>
         </div>
         {hydrated ? (
@@ -376,8 +390,8 @@ function DashboardInner() {
             Manage roster
           </h2>
           <p className="text-sm opacity-75">
-            Reorder with ↑↓ on each card, or remove. Search above to add
-            characters.
+            Set primary, reorder with ↑↓, or remove. Search above to add
+            characters. Primary is independent of list order.
           </p>
         </section>
       ) : null}
@@ -404,7 +418,7 @@ function DashboardInner() {
             </h2>
             {!managing ? (
               <p className="text-xs opacity-55">
-                Tip: open Manage roster to remove or reorder.
+                Tip: open Manage roster to set primary, remove, or reorder.
               </p>
             ) : null}
           </div>
@@ -434,10 +448,12 @@ function DashboardInner() {
                   character={slot.character}
                   index={index}
                   total={roster.length}
+                  isPrimary={isPrimary(entry, primary)}
                   managing={managing}
                   onRemove={() => handleRemove(entry)}
                   onMoveUp={() => handleMove(entry, "up")}
                   onMoveDown={() => handleMove(entry, "down")}
+                  onSetPrimary={() => handleSetPrimary(entry)}
                 />
               );
             })}

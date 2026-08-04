@@ -25,18 +25,22 @@ export function RosterCharacterCard({
   character,
   index,
   total,
+  isPrimary,
   managing,
   onRemove,
   onMoveUp,
   onMoveDown,
+  onSetPrimary,
 }: {
   character: CharacterLookupResult;
   index: number;
   total: number;
+  isPrimary?: boolean;
   managing?: boolean;
   onRemove?: () => void;
   onMoveUp?: () => void;
   onMoveDown?: () => void;
+  onSetPrimary?: () => void;
 }) {
   const world = character.worldName;
   const classRankInWorld = character.ranking?.jobRank;
@@ -44,7 +48,12 @@ export function RosterCharacterCard({
   const profileHref = `/calc/character/${encodeURIComponent(character.name)}?region=${character.region}`;
 
   return (
-    <article className="flex flex-col overflow-hidden rounded-2xl border-2 border-border bg-surface">
+    <article
+      className={[
+        "flex flex-col overflow-hidden rounded-2xl border-2 bg-surface",
+        isPrimary ? "border-accent/70" : "border-border",
+      ].join(" ")}
+    >
       <div className="flex flex-1 flex-col gap-4 p-4 sm:flex-row sm:items-start">
         <div className="flex shrink-0 justify-center sm:justify-start">
           {character.characterImgURL ? (
@@ -66,7 +75,7 @@ export function RosterCharacterCard({
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-start justify-between gap-2">
             <div className="min-w-0">
-              {index === 0 ? (
+              {isPrimary ? (
                 <p className="text-[0.65rem] font-semibold uppercase tracking-wider text-accent opacity-80">
                   Primary
                 </p>
@@ -81,6 +90,16 @@ export function RosterCharacterCard({
             </div>
             {managing ? (
               <div className="flex flex-wrap gap-1.5">
+                {!isPrimary && onSetPrimary ? (
+                  <button
+                    type="button"
+                    onClick={onSetPrimary}
+                    className="rounded-lg border border-accent/50 px-2 py-1 text-xs font-semibold text-accent transition hover:bg-accent/10"
+                    title="Set as primary"
+                  >
+                    Set primary
+                  </button>
+                ) : null}
                 <button
                   type="button"
                   onClick={onMoveUp}
