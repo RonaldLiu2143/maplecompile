@@ -56,33 +56,35 @@ html {
 
 /*
   Opera-style wallpaper stack:
-  html::before = backdrop (gradient mesh / custom image)
-  html::after  = readability dim + blur
+  html::before = backdrop (gradient mesh / custom image) + blur via filter
+  html::after  = readability dim overlay
+  (filter on ::before is more reliable than backdrop-filter over a sibling layer)
   body falls back to solid theme canvas when backdrop is none
 */
 html::before,
 html::after {
   content: "";
   position: fixed;
-  inset: 0;
   pointer-events: none;
   opacity: 0;
   transition: opacity 0.2s ease;
 }
 
 html::before {
+  /* Expand by blur radius so filter:blur doesn't show empty edges */
+  inset: calc(-1.5 * var(--mc-blur));
   z-index: -2;
   background-color: var(--background);
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
+  filter: blur(var(--mc-blur));
 }
 
 html::after {
+  inset: 0;
   z-index: -1;
   background: rgb(0 0 0 / var(--mc-dim));
-  -webkit-backdrop-filter: blur(var(--mc-blur));
-  backdrop-filter: blur(var(--mc-blur));
 }
 
 html[data-backdrop]:not([data-backdrop="none"])::before,

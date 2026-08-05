@@ -1,6 +1,13 @@
 "use client";
 
-import { useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
+import {
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import {
   BACKDROP_PRESETS,
   BLUR_MAX,
@@ -110,17 +117,19 @@ export function ThemePicker({
   );
   const [open, setOpen] = useState(false);
   const [customDraft, setCustomDraft] = useState("");
+  const [urlError, setUrlError] = useState<string | null>(null);
   const panelId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
 
-  // Keep <html> tokens in sync when prefs change (boot script handles first paint).
-  useEffect(() => {
+  // Before paint — avoids hydration wiping boot-script wallpaper for a frame.
+  useLayoutEffect(() => {
     applyThemeToDocument(prefs);
   }, [prefs]);
 
   useEffect(() => {
     if (!open) return;
     setCustomDraft(prefs.backdropUrl ?? "");
+    setUrlError(null);
     const onPointer = (e: MouseEvent) => {
       if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
     };
@@ -150,6 +159,7 @@ export function ThemePicker({
 
   const setBackdrop = (backdrop: BackdropId) => {
     if (backdrop === "none") {
+      setUrlError(null);
       commit({
         ...prefs,
         backdrop: "none",
@@ -161,6 +171,12 @@ export function ThemePicker({
     }
     if (backdrop === "custom") {
       const url = sanitizeBackdropUrl(customDraft || prefs.backdropUrl);
+      if (!url) {
+        setUrlError("Paste an https image URL, then Apply.");
+        return;
+      }
+      setUrlError(null);
+      setCustomDraft(url);
       commit({
         ...prefs,
         backdrop: "custom",
@@ -170,6 +186,7 @@ export function ThemePicker({
       });
       return;
     }
+    setUrlError(null);
     const fromNone = (prefs.backdrop ?? DEFAULT_BACKDROP_ID) === "none";
     commit({
       ...prefs,
@@ -184,7 +201,12 @@ export function ThemePicker({
 
   const applyCustomUrl = () => {
     const url = sanitizeBackdropUrl(customDraft);
-    if (!url) return;
+    if (!url) {
+      setUrlError("Need a valid http(s) image URL.");
+      return;
+    }
+    setUrlError(null);
+    setCustomDraft(url);
     commit({
       ...prefs,
       backdrop: "custom",
@@ -320,6 +342,38 @@ export function ThemePicker({
                 </button>
               );
             })}
+            <button
+              type="button"
+              title="Custom image"
+              aria-label="Backdrop Custom"
+              aria-pressed={backdrop === "custom"}
+              onClick={() => setBackdrop("custom")}
+              className={[
+                "flex flex-col items-center gap-1 rounded-lg p-1 transition",
+                backdrop === "custom"
+                  ? "ring-2 ring-accent"
+                  : "hover:bg-surface-muted/60",
+              ].join(" ")}
+            >
+              <span
+                className="flex h-8 w-full items-center justify-center rounded-md border border-dashed border-border/50 bg-surface-muted/40 text-[10px] font-bold opacity-70"
+                style={
+                  backdrop === "custom" && prefs.backdropUrl
+                    ? {
+                        backgroundImage: `linear-gradient(rgba(0,0,0,.35),rgba(0,0,0,.35)), url(${JSON.stringify(prefs.backdropUrl)})`,
+                        backgroundSize: "cover",
+                        backgroundPosition: "center",
+                        borderStyle: "solid",
+                      }
+                    : undefined
+                }
+              >
+                {backdrop === "custom" && prefs.backdropUrl ? "" : "URL"}
+              </span>
+              <span className="w-full truncate text-center text-[10px] font-semibold opacity-70">
+                Custom
+              </span>
+            </button>
           </div>
 
           <div className="mt-2.5 space-y-2">
@@ -347,11 +401,27 @@ export function ThemePicker({
             </p>
             <div className="flex gap-1.5">
               <input
-                type="url"
+                type="text"
                 inputMode="url"
-                placeholder="https://…"
+                autoComplete="off"
+                spellCheck={false}
+                placeholder="https://…/image.jpg"
                 value={customDraft}
-                onChange={(e) => setCustomDraft(e.target.value)}
+                onChange={(e) => {
+                  setCustomDraft(e.target.value);
+                  if (urlError) setUrlError(null);
+                }}
+                onBlur={() => {
+                  // Apply when leaving the field if the draft is a valid URL.
+                  if (!customDraft.trim()) return;
+                  const url = sanitizeBackdropUrl(customDraft);
+                  if (
+                    url &&
+                    (backdrop !== "custom" || url !== prefs.backdropUrl)
+                  ) {
+                    applyCustomUrl();
+                  }
+                }}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
                     e.preventDefault();
@@ -368,11 +438,17 @@ export function ThemePicker({
                 Apply
               </button>
             </div>
-            {backdrop === "custom" ? (
+            {urlError ? (
+              <p className="mt-1 text-[10px] text-danger">{urlError}</p>
+            ) : backdrop === "custom" ? (
               <p className="mt-1 text-[10px] opacity-50">
                 Using custom wallpaper
               </p>
-            ) : null}
+            ) : (
+              <p className="mt-1 text-[10px] opacity-40">
+                Direct image link (https). Apply or press Enter.
+              </p>
+            )}
           </div>
         </div>
       </div>

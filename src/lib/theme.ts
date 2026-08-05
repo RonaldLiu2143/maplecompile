@@ -173,18 +173,43 @@ export function clampBlur(n: number): number {
   return Math.max(0, Math.min(BLUR_MAX, Math.round(n)));
 }
 
-/** Allow only safe http(s) image URLs — no data:/blob: (quota + XSS). */
+/**
+ * Allow only safe http(s) image URLs — no data:/blob: (quota + XSS).
+ * Tolerates common paste noise: wrapping quotes/brackets, missing scheme.
+ */
 export function sanitizeBackdropUrl(value: unknown): string | null {
   if (typeof value !== "string") return null;
-  const trimmed = value.trim();
+  let trimmed = value.trim();
   if (!trimmed || trimmed.length > 2048) return null;
+  // Strip wrapping quotes / angle brackets from chat or markdown pastes.
+  if (
+    (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+    (trimmed.startsWith("'") && trimmed.endsWith("'")) ||
+    (trimmed.startsWith("<") && trimmed.endsWith(">"))
+  ) {
+    trimmed = trimmed.slice(1, -1).trim();
+  }
+  if (!trimmed || trimmed.length > 2048) return null;
+  // Protocol-relative or bare host/path → assume https.
+  if (trimmed.startsWith("//")) {
+    trimmed = `https:${trimmed}`;
+  } else if (!/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(trimmed)) {
+    trimmed = `https://${trimmed}`;
+  }
   try {
     const u = new URL(trimmed);
     if (u.protocol !== "http:" && u.protocol !== "https:") return null;
+    // Reject obvious non-http(s) leftovers and empty hosts.
+    if (!u.hostname) return null;
     return u.href;
   } catch {
     return null;
   }
+}
+
+/** CSS value for --mc-wallpaper-image (quoted url()). */
+export function wallpaperImageCssValue(url: string): string {
+  return `url(${JSON.stringify(url)})`;
 }
 
 function prefsEqual(a: ThemePrefs, b: ThemePrefs): boolean {
@@ -415,7 +440,7 @@ export function applyThemeToDocument(prefs: ThemePrefs): void {
     if (activeBackdrop === "custom" && url) {
       root.style.setProperty(
         "--mc-wallpaper-image",
-        `url(${JSON.stringify(url)})`,
+        wallpaperImageCssValue(url),
       );
     } else {
       root.style.removeProperty("--mc-wallpaper-image");
@@ -427,5 +452,6 @@ export function applyThemeToDocument(prefs: ThemePrefs): void {
 export function themeBootScript(): string {
   // Legacy maple/mist ids fall through to compile (not in `ids`).
   // Backdrop / dim / blur applied so wallpaper paints before React.
-  return `(function(){try{var k=${JSON.stringify(THEME_STORAGE_KEY)};var ids=${JSON.stringify([...THEME_IDS])};var backs=${JSON.stringify([...BACKDROP_IDS])};var schemes={compile:"dark",contrast:"dark"};var raw=localStorage.getItem(k);var prefs=raw?JSON.parse(raw):{};var id=ids.indexOf(prefs.id)>=0?prefs.id:"compile";var accent=typeof prefs.accent==="string"&&/^#[0-9a-fA-F]{6}$/.test(prefs.accent)?prefs.accent:null;var backdrop=backs.indexOf(prefs.backdrop)>=0?prefs.backdrop:"none";var url=null;if(typeof prefs.backdropUrl==="string"){try{var u=new URL(prefs.backdropUrl.trim());if((u.protocol==="http:"||u.protocol==="https:")&&prefs.backdropUrl.trim().length<=2048)url=u.href}catch(e){}}if(backdrop==="custom"&&!url)backdrop="none";var dim=typeof prefs.dim==="number"&&isFinite(prefs.dim)?Math.max(0,Math.min(${DIM_MAX},Math.round(prefs.dim))):0;var blur=typeof prefs.blur==="number"&&isFinite(prefs.blur)?Math.max(0,Math.min(${BLUR_MAX},Math.round(prefs.blur))):0;var scheme=schemes[id]||"dark";var r=document.documentElement;r.setAttribute("data-theme",id);r.setAttribute("data-backdrop",backdrop);r.style.colorScheme=scheme;if(scheme==="dark")r.classList.add("dark");else r.classList.remove("dark");if(accent){r.style.setProperty("--accent",accent);var hr=parseInt(accent.slice(1,3),16),hg=parseInt(accent.slice(3,5),16),hb=parseInt(accent.slice(5,7),16);var soft=scheme==="dark"?"rgb("+Math.round(hr*0.22)+" "+Math.round(hg*0.22)+" "+Math.round(hb*0.28)+")":"rgb("+Math.min(255,Math.round(hr+(255-hr)*0.72))+" "+Math.min(255,Math.round(hg+(255-hg)*0.72))+" "+Math.min(255,Math.round(hb+(255-hb)*0.65))+")";r.style.setProperty("--accent-soft",soft)}if(backdrop==="none"){r.style.setProperty("--mc-dim","0");r.style.setProperty("--mc-blur","0px");r.style.removeProperty("--mc-wallpaper-image")}else{r.style.setProperty("--mc-dim",String(dim/100));r.style.setProperty("--mc-blur",blur+"px");if(backdrop==="custom"&&url)r.style.setProperty("--mc-wallpaper-image","url("+JSON.stringify(url)+")");else r.style.removeProperty("--mc-wallpaper-image")}}catch(e){var d=document.documentElement;d.setAttribute("data-theme","compile");d.setAttribute("data-backdrop","none");d.classList.add("dark");d.style.colorScheme="dark"}})();`;
+  // URL sanitize mirrors sanitizeBackdropUrl (quotes / missing scheme).
+  return `(function(){try{var k=${JSON.stringify(THEME_STORAGE_KEY)};var ids=${JSON.stringify([...THEME_IDS])};var backs=${JSON.stringify([...BACKDROP_IDS])};var schemes={compile:"dark",contrast:"dark"};var raw=localStorage.getItem(k);var prefs=raw?JSON.parse(raw):{};var id=ids.indexOf(prefs.id)>=0?prefs.id:"compile";var accent=typeof prefs.accent==="string"&&/^#[0-9a-fA-F]{6}$/.test(prefs.accent)?prefs.accent:null;var backdrop=backs.indexOf(prefs.backdrop)>=0?prefs.backdrop:"none";var url=null;if(typeof prefs.backdropUrl==="string"){var t=prefs.backdropUrl.trim();if((t.charAt(0)==='"'&&t.charAt(t.length-1)==='"')||(t.charAt(0)==="'"&&t.charAt(t.length-1)==="'")||(t.charAt(0)==="<"&&t.charAt(t.length-1)===">"))t=t.slice(1,-1).trim();if(t.indexOf("//")===0)t="https:"+t;else if(!/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(t))t="https://"+t;if(t&&t.length<=2048){try{var u=new URL(t);if((u.protocol==="http:"||u.protocol==="https:")&&u.hostname)url=u.href}catch(e){}}}if(backdrop==="custom"&&!url)backdrop="none";var dim=typeof prefs.dim==="number"&&isFinite(prefs.dim)?Math.max(0,Math.min(${DIM_MAX},Math.round(prefs.dim))):0;var blur=typeof prefs.blur==="number"&&isFinite(prefs.blur)?Math.max(0,Math.min(${BLUR_MAX},Math.round(prefs.blur))):0;var scheme=schemes[id]||"dark";var r=document.documentElement;r.setAttribute("data-theme",id);r.setAttribute("data-backdrop",backdrop);r.style.colorScheme=scheme;if(scheme==="dark")r.classList.add("dark");else r.classList.remove("dark");if(accent){r.style.setProperty("--accent",accent);var hr=parseInt(accent.slice(1,3),16),hg=parseInt(accent.slice(3,5),16),hb=parseInt(accent.slice(5,7),16);var soft=scheme==="dark"?"rgb("+Math.round(hr*0.22)+" "+Math.round(hg*0.22)+" "+Math.round(hb*0.28)+")":"rgb("+Math.min(255,Math.round(hr+(255-hr)*0.72))+" "+Math.min(255,Math.round(hg+(255-hg)*0.72))+" "+Math.min(255,Math.round(hb+(255-hb)*0.65))+")";r.style.setProperty("--accent-soft",soft)}if(backdrop==="none"){r.style.setProperty("--mc-dim","0");r.style.setProperty("--mc-blur","0px");r.style.removeProperty("--mc-wallpaper-image")}else{r.style.setProperty("--mc-dim",String(dim/100));r.style.setProperty("--mc-blur",blur+"px");if(backdrop==="custom"&&url)r.style.setProperty("--mc-wallpaper-image","url("+JSON.stringify(url)+")");else r.style.removeProperty("--mc-wallpaper-image")}}catch(e){var d=document.documentElement;d.setAttribute("data-theme","compile");d.setAttribute("data-backdrop","none");d.classList.add("dark");d.style.colorScheme="dark"}})();`;
 }
