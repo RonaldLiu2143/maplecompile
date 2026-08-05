@@ -2,6 +2,11 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { CharacterSprite } from "@/components/character/CharacterSprite";
+import {
+  characterAvatarKey,
+  useCharacterAvatars,
+} from "@/hooks/useCharacterAvatars";
 import { getCharName } from "@/lib/jobs";
 import {
   GALLERY_LEADERBOARD_LIMIT,
@@ -99,6 +104,22 @@ export function GalleryClient({
   const [owned, setOwned] = useState(() => storage.getScouterShareTokens());
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+
+  const avatarRefs = useMemo(
+    () =>
+      items.flatMap((item) =>
+        item.characterName && item.characterRegion
+          ? [
+              {
+                name: item.characterName,
+                region: item.characterRegion,
+              },
+            ]
+          : [],
+      ),
+    [items],
+  );
+  const avatars = useCharacterAvatars(avatarRefs);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -284,6 +305,18 @@ export function GalleryClient({
               {filtered.map((item, index) => {
                 const className = getCharName(item.jobType, item.charType);
                 const canRemove = Boolean(owned[item.id]?.deleteToken);
+                const paired =
+                  item.characterName && item.characterRegion
+                    ? {
+                        name: item.characterName,
+                        region: item.characterRegion,
+                      }
+                    : null;
+                const avatarUrl = paired
+                  ? avatars[
+                      characterAvatarKey(paired.region, paired.name)
+                    ]
+                  : undefined;
                 return (
                   <tr
                     key={item.id}
@@ -295,22 +328,35 @@ export function GalleryClient({
                       </td>
                     ) : null}
                     <td className="px-3 py-2.5 font-medium">
-                      <span className="inline-flex flex-wrap items-center">
-                        {item.name}
-                        <IdentityBadge identity={item.identity} />
-                        {item.hasEquipment ? (
-                          <span
-                            className="ml-1.5 inline-block rounded border border-emerald-500/40 bg-emerald-500/10 px-1 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-400"
-                            title={
-                              item.equipCount
-                                ? `${item.equipCount} equipped pieces`
-                                : "Includes equipment"
-                            }
-                          >
-                            Gear
-                            {item.equipCount > 0 ? ` ${item.equipCount}` : ""}
-                          </span>
+                      <span className="inline-flex flex-wrap items-center gap-2">
+                        {paired ? (
+                          <CharacterSprite
+                            src={avatarUrl}
+                            alt=""
+                            size={40}
+                            reserveSpace
+                            className="rounded-lg"
+                          />
                         ) : null}
+                        <span className="inline-flex min-w-0 flex-wrap items-center">
+                          {item.name}
+                          <IdentityBadge identity={item.identity} />
+                          {item.hasEquipment ? (
+                            <span
+                              className="ml-1.5 inline-block rounded border border-emerald-500/40 bg-emerald-500/10 px-1 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-400"
+                              title={
+                                item.equipCount
+                                  ? `${item.equipCount} equipped pieces`
+                                  : "Includes equipment"
+                              }
+                            >
+                              Gear
+                              {item.equipCount > 0
+                                ? ` ${item.equipCount}`
+                                : ""}
+                            </span>
+                          ) : null}
+                        </span>
                       </span>
                     </td>
                     <td className="px-3 py-2.5">{className}</td>

@@ -3,12 +3,17 @@
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import { CharacterSprite } from "@/components/character/CharacterSprite";
 import { EquipGrid } from "@/components/EquipGrid";
 import {
   activeCharacterKey,
   importBuildToCharacter,
   persistLiveToWorkspace,
 } from "@/lib/character-workspace";
+import {
+  fetchCharacterLookup,
+  readSessionCharacter,
+} from "@/lib/character/client";
 import {
   CHARACTER_NAME_REGEX,
   type NexonRegion,
@@ -48,6 +53,7 @@ export default function CharacterShareProfilePage() {
   const [busy, setBusy] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
   const [importName, setImportName] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (!id) {
@@ -93,6 +99,46 @@ export default function CharacterShareProfilePage() {
   }, [id]);
 
   const record = load.status === "ready" ? load.record : null;
+  const pairedCharacter = record?.character;
+
+  useEffect(() => {
+    if (!pairedCharacter?.name || !pairedCharacter.region) {
+      setAvatarUrl(null);
+      return;
+    }
+    const region: NexonRegion =
+      pairedCharacter.region === "eu" ? "eu" : "na";
+    const name = pairedCharacter.name.trim();
+    if (!name) {
+      setAvatarUrl(null);
+      return;
+    }
+
+    const cached = readSessionCharacter(name, region);
+    if (cached?.characterImgURL) {
+      setAvatarUrl(cached.characterImgURL);
+    } else {
+      setAvatarUrl(null);
+    }
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const character = await fetchCharacterLookup(name, region, {
+          fields: "card",
+        });
+        if (cancelled) return;
+        setAvatarUrl(character.characterImgURL || null);
+      } catch {
+        if (cancelled) return;
+        // Keep session seed if any; otherwise leave empty placeholder.
+        if (!cached?.characterImgURL) setAvatarUrl(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [pairedCharacter?.name, pairedCharacter?.region]);
   const input = record?.state.input;
   const buffs = record?.state.buffs ?? defaultBuffState();
   const links = record?.state.links ?? defaultLinkState();
@@ -347,35 +393,45 @@ export default function CharacterShareProfilePage() {
   return (
     <div className="mx-auto max-w-5xl space-y-8 px-4 py-8">
       <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
-        <div className="min-w-0 flex-1">
-          <p className="text-[0.65rem] font-semibold uppercase tracking-wide opacity-60">
-            Character build profile
-          </p>
-          <h1 className="font-display text-xl font-bold tracking-tight sm:text-2xl">
-            {record.name}
-          </h1>
-          <p className="mt-0.5 text-xs opacity-75">
-            {className}
-            {input.level ? ` · Lv. ${input.level}` : ""}
-            {record.character
-              ? ` · ${record.character.name} (${record.character.region.toUpperCase()})`
-              : ""}
-            {record.public === false ? " · Private link" : ""}
-            {equipCount > 0 ? ` · ${equipCount} equips` : ""}
-          </p>
-          {record.achievement ? (
-            <p className="mt-1 max-w-xl text-xs opacity-80">
-              {record.achievement}
-            </p>
+        <div className="flex min-w-0 flex-1 items-start gap-3">
+          {pairedCharacter ? (
+            <CharacterSprite
+              src={avatarUrl}
+              alt={`${pairedCharacter.name} avatar`}
+              size={96}
+              reserveSpace
+              className="rounded-lg"
+            />
           ) : null}
-          <p className="mt-1 text-[0.7rem] opacity-55">
-            {(record.views ?? 0).toLocaleString()} views
-            {record.boss300HexaStat != null
-              ? ` · BCS HEXA 300 ${formatStat(record.boss300HexaStat)} / 380 ${formatStat(record.boss380HexaStat)}`
-              : ""}
-          </p>
+          <div className="min-w-0 flex-1">
+            <p className="text-[0.65rem] font-semibold uppercase tracking-wide opacity-60">
+              Character build profile
+            </p>
+            <h1 className="font-display text-xl font-bold tracking-tight sm:text-2xl">
+              {record.name}
+            </h1>
+            <p className="mt-0.5 text-xs opacity-75">
+              {className}
+              {input.level ? ` · Lv. ${input.level}` : ""}
+              {record.character
+                ? ` · ${record.character.name} (${record.character.region.toUpperCase()})`
+                : ""}
+              {record.public === false ? " · Private link" : ""}
+              {equipCount > 0 ? ` · ${equipCount} equips` : ""}
+            </p>
+            {record.achievement ? (
+              <p className="mt-1 max-w-xl text-xs opacity-80">
+                {record.achievement}
+              </p>
+            ) : null}
+            <p className="mt-1 text-[0.7rem] opacity-55">
+              {(record.views ?? 0).toLocaleString()} views
+              {record.boss300HexaStat != null
+                ? ` · BCS HEXA 300 ${formatStat(record.boss300HexaStat)} / 380 ${formatStat(record.boss380HexaStat)}`
+                : ""}
+            </p>
+          </div>
         </div>
-
         <div className="flex shrink-0 flex-col items-stretch gap-2 sm:items-end">
           <div className="flex flex-wrap items-center justify-end gap-2">
             <span
