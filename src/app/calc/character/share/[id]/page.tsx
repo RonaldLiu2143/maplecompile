@@ -437,35 +437,43 @@ export default function CharacterShareProfilePage() {
       ) : null}
 
       <section className="grid items-start gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.95fr)]">
-        <ShareScouterStatsPanel input={input} />
+        <div className="space-y-4">
+          <ShareScouterStatsPanel input={input} />
+          <section className="overflow-hidden rounded-lg border border-border/60 bg-surface/90">
+            <div className="border-b border-border/40 px-3 py-2.5">
+              <h2 className="text-sm font-semibold">Equipment</h2>
+              {equipCount > 0 ? (
+                <p className="mt-0.5 text-xs opacity-60">
+                  {equipCount} piece{equipCount === 1 ? "" : "s"}
+                </p>
+              ) : null}
+            </div>
+            {record.equipment && equipCount > 0 ? (
+              <div className="flex justify-center overflow-x-auto p-2">
+                <EquipGrid
+                  setup={record.equipment.setup}
+                  readOnly
+                  charLabel={
+                    getCharName(
+                      record.equipment.jobType,
+                      record.equipment.charType,
+                    ) || className
+                  }
+                />
+              </div>
+            ) : (
+              <p className="px-3 py-2.5 text-sm opacity-65">
+                No equipment snapshot on this share (legacy scouter-only post).
+              </p>
+            )}
+          </section>
+        </div>
         <ShareScouterExtrasPanel
           input={input}
           buffs={buffs}
           links={links}
           hexa={hexa}
         />
-      </section>
-
-      <section className="rounded-lg border border-border/50 bg-surface/80 p-4">
-        <h2 className="font-display text-lg font-semibold">Equipment</h2>
-        {record.equipment && equipCount > 0 ? (
-          <div className="mt-3 overflow-x-auto">
-            <EquipGrid
-              setup={record.equipment.setup}
-              readOnly
-              charLabel={
-                getCharName(
-                  record.equipment.jobType,
-                  record.equipment.charType,
-                ) || className
-              }
-            />
-          </div>
-        ) : (
-          <p className="mt-2 text-sm opacity-65">
-            No equipment snapshot on this share (legacy scouter-only post).
-          </p>
-        )}
       </section>
 
       {ownedToken ? (
