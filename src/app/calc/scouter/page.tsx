@@ -390,6 +390,9 @@ export default function ScouterPage() {
   useEffect(() => {
     if (!draftReady || skipWorkspaceAutosave.current) return;
     const trimmed = presetName.trim();
+    // Keep live equip job/char in sync so Equipment Setup switches with Active character.
+    storage.setJobType((input.jobType || DEFAULT_JOB) as typeof DEFAULT_JOB);
+    storage.setCharType(input.charType || DEFAULT_CHAR);
     storage.setScouterLast({
       input,
       buffs,

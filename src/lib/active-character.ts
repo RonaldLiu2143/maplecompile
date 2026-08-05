@@ -3,6 +3,7 @@
  * Dashboard Manager star and ActiveCharacterBar both use this path.
  */
 
+import { readSessionCharacter } from "@/lib/character/client";
 import {
   applyWorkspaceToLive,
   emptyWorkspace,
@@ -16,6 +17,7 @@ import {
   type RosterEntry,
   type RosterState,
 } from "@/lib/dashboard/roster";
+import { classFromJobName } from "@/lib/jobs";
 import {
   ensureCharacterBundle,
   readLiberationStore,
@@ -27,6 +29,8 @@ import {
 } from "@/lib/bosses/persist";
 import { notifyMapleDataChanged } from "@/lib/maple-events";
 import { applyLivePairingForCharacter } from "@/lib/pairing";
+import { storage } from "@/lib/storage";
+import type { JobType } from "@/lib/types";
 
 /** Sync Boss Income focus to the active roster key. */
 export function syncBossActiveKey(characterKey: string): void {
@@ -80,6 +84,15 @@ export function switchActiveCharacter(entry: RosterEntry): RosterState {
   if (prevKey !== nextKey) {
     const ws = getWorkspace(nextKey) ?? emptyWorkspace();
     applyWorkspaceToLive(ws);
+    // Empty workspace / no scouter class: infer from cached character jobName.
+    if (!storage.getJobType() || !storage.getCharType()) {
+      const session = readSessionCharacter(entry.name, entry.region);
+      const mapped = classFromJobName(session?.jobName);
+      if (mapped) {
+        storage.setJobType(mapped.jobType as JobType);
+        storage.setCharType(mapped.charType);
+      }
+    }
     applyLivePairingForCharacter(nextKey);
     syncBossActiveKey(nextKey);
     syncLiberationActive(nextKey);

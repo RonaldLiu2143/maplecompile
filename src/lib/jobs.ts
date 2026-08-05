@@ -125,3 +125,14 @@ export function parseClassValue(value: string): {
   if (!JOBS.some((j) => j.id === jobType)) return null;
   return { jobType: jobType as JobType, charType };
 }
+
+/** Map a MapleHub / Nexon display job name to scouter jobType + charType. */
+export function classFromJobName(
+  jobName: string | null | undefined,
+): { jobType: JobType; charType: string } | null {
+  if (!jobName?.trim()) return null;
+  const needle = jobName.trim().toLowerCase();
+  const hit = CLASS_OPTIONS.find((o) => o.name.toLowerCase() === needle);
+  if (!hit) return null;
+  return { jobType: hit.jobType, charType: hit.charType };
+}

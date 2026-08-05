@@ -171,15 +171,39 @@ export function migrateGlobalsToPrimaryWorkspace(): void {
   }
 }
 
+/**
+ * Resolve job/char for a workspace.
+ * Prefer equip-stored class when gear exists; otherwise prefer scouter input
+ * (avoids stale jobType bleed when a character only configured class in Scouter).
+ */
+export function resolveWorkspaceClass(workspace: CharacterWorkspace): {
+  jobType: string;
+  charType: string;
+} {
+  const fromScouterJob = workspace.scouterLast?.input?.jobType || "";
+  const fromScouterChar = workspace.scouterLast?.input?.charType || "";
+  const hasEquip = countFilledSlots(workspace.equipSetup) > 0;
+  if (hasEquip) {
+    return {
+      jobType: workspace.jobType || fromScouterJob || "",
+      charType: workspace.charType || fromScouterChar || "",
+    };
+  }
+  return {
+    jobType: fromScouterJob || workspace.jobType || "",
+    charType: fromScouterChar || workspace.charType || "",
+  };
+}
+
 /** Push a character workspace into the live Scouter / Equipment localStorage. */
 export function applyWorkspaceToLive(workspace: CharacterWorkspace): void {
   if (workspace.scouterLast?.input) {
     storage.setScouterLast(workspace.scouterLast);
   }
-  if (workspace.jobType) {
-    storage.setJobType(workspace.jobType as JobType | "");
-  }
-  if (workspace.charType) storage.setCharType(workspace.charType);
+  const { jobType, charType } = resolveWorkspaceClass(workspace);
+  // Always write so a previous character's class cannot linger in live storage.
+  storage.setJobType((jobType || "") as JobType | "");
+  storage.setCharType(charType || "");
   storage.setEquipSetup(workspace.equipSetup ?? {});
 }
 
@@ -188,14 +212,13 @@ export function persistLiveToWorkspace(key: string | null | undefined): void {
   if (!key) return;
   const scouterLast = storage.getScouterLast();
   const equipSetup = storage.getEquipSetup();
-  const jobType =
-    storage.getJobType() ||
-    scouterLast?.input?.jobType ||
-    "";
-  const charType =
-    storage.getCharType() ||
-    scouterLast?.input?.charType ||
-    "";
+  const { jobType, charType } = resolveWorkspaceClass({
+    scouterLast,
+    equipSetup,
+    jobType: storage.getJobType() || "",
+    charType: storage.getCharType() || "",
+    updatedAt: Date.now(),
+  });
   const prev = getWorkspace(key);
   patchWorkspace(key, {
     scouterLast,
