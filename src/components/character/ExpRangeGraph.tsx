@@ -43,6 +43,13 @@ function shouldShowAxisLabel(i: number, count: number, step: number): boolean {
   return i % step === 0 && i !== count - 1;
 }
 
+function barGapClass(count: number, compact: boolean): string {
+  if (count <= 7) return compact ? "gap-1" : "gap-1.5";
+  if (count <= 14) return compact ? "gap-0.5" : "gap-1";
+  if (count <= 30) return "gap-0.5";
+  return "gap-px";
+}
+
 function SparkBars({
   values,
   labels,
@@ -65,67 +72,84 @@ function SparkBars({
   const n = values.length;
   const step = axisStep(n, Boolean(compact));
   const hasAxis = Boolean(labels?.length);
+  const yTicks = [max, max / 2, 0] as const;
+  const barH = compact ? "h-14" : "h-20";
+  const gap = barGapClass(n, Boolean(compact));
 
   return (
-    <div className="relative">
-      {tipIdx != null && tipLabel != null && tipExp != null ? (
-        <div
-          className="pointer-events-none absolute bottom-full z-10 mb-1.5 -translate-x-1/2 whitespace-nowrap rounded-md border border-border bg-surface px-2 py-1 text-center shadow-sm"
-          style={{
-            left: `${((tipIdx + 0.5) / n) * 100}%`,
-          }}
-          role="tooltip"
-        >
-          <p className="text-[0.65rem] font-semibold opacity-65">{tipLabel}</p>
-          <p className="font-mono text-xs font-bold tabular-nums">{tipExp}</p>
-        </div>
-      ) : null}
-
+    <div className="flex gap-1.5 sm:gap-2">
       <div
-        className={`flex items-end gap-px ${compact ? "h-14" : "h-20"}`}
-        role="img"
-        aria-label="Daily EXP gained"
+        className={`flex w-9 shrink-0 flex-col justify-between text-right sm:w-11 ${barH}`}
+        aria-hidden
       >
-        {values.map((v, i) => {
-          const h = Math.max(v > 0 ? 4 : 2, Math.round((v / max) * 100));
-          const active = hover === i;
-          return (
-            <div
-              key={i}
-              className={`min-w-0 flex-1 cursor-default rounded-sm transition-colors ${
-                active ? "bg-accent" : "bg-accent/65 hover:bg-accent/90"
-              }`}
-              style={{ height: `${h}%` }}
-              onMouseEnter={() => setHover(i)}
-              onMouseLeave={() => setHover(null)}
-              onFocus={() => setHover(i)}
-              onBlur={() => setHover(null)}
-              tabIndex={0}
-              aria-label={`${labels?.[i] ?? `Day ${i + 1}`}: ${formatCompact(v)} EXP`}
-            />
-          );
-        })}
+        {yTicks.map((tick, i) => (
+          <span
+            key={i}
+            className="font-mono text-[0.55rem] leading-none tabular-nums opacity-50 sm:text-[0.6rem]"
+          >
+            {formatCompact(tick)}
+          </span>
+        ))}
       </div>
 
-      {hasAxis ? (
+      <div className="relative min-w-0 flex-1">
+        {tipIdx != null && tipLabel != null && tipExp != null ? (
+          <div
+            className="pointer-events-none absolute bottom-full z-10 mb-1.5 -translate-x-1/2 whitespace-nowrap rounded-md border border-border bg-surface px-2 py-1 text-center shadow-sm"
+            style={{ left: `${((tipIdx + 0.5) / n) * 100}%` }}
+            role="tooltip"
+          >
+            <p className="text-[0.65rem] font-semibold opacity-65">{tipLabel}</p>
+            <p className="font-mono text-xs font-bold tabular-nums">{tipExp}</p>
+          </div>
+        ) : null}
+
         <div
-          className={`relative mt-1 ${compact ? "h-3.5" : "h-4"}`}
-          aria-hidden
+          className={`flex items-end ${gap} ${barH}`}
+          role="img"
+          aria-label="Daily EXP gained"
         >
-          {labels!.map((label, i) => {
-            if (!shouldShowAxisLabel(i, n, step)) return null;
+          {values.map((v, i) => {
+            const h = Math.max(v > 0 ? 4 : 2, Math.round((v / max) * 100));
+            const active = hover === i;
             return (
-              <span
+              <div
                 key={i}
-                className="absolute top-0 -translate-x-1/2 text-center font-mono text-[0.6rem] tabular-nums leading-none opacity-50"
-                style={{ left: `${((i + 0.5) / n) * 100}%` }}
-              >
-                {label}
-              </span>
+                className={`min-w-0 flex-1 cursor-default rounded-sm transition-colors ${
+                  active ? "bg-accent" : "bg-accent/65 hover:bg-accent/90"
+                }`}
+                style={{ height: `${h}%` }}
+                onMouseEnter={() => setHover(i)}
+                onMouseLeave={() => setHover(null)}
+                onFocus={() => setHover(i)}
+                onBlur={() => setHover(null)}
+                tabIndex={0}
+                aria-label={`${labels?.[i] ?? `Day ${i + 1}`}: ${formatCompact(v)} EXP`}
+              />
             );
           })}
         </div>
-      ) : null}
+
+        {hasAxis ? (
+          <div
+            className={`relative mt-1 ${compact ? "h-3.5" : "h-4"}`}
+            aria-hidden
+          >
+            {labels!.map((label, i) => {
+              if (!shouldShowAxisLabel(i, n, step)) return null;
+              return (
+                <span
+                  key={i}
+                  className="absolute top-0 -translate-x-1/2 text-center font-mono text-[0.6rem] tabular-nums leading-none opacity-50"
+                  style={{ left: `${((i + 0.5) / n) * 100}%` }}
+                >
+                  {label}
+                </span>
+              );
+            })}
+          </div>
+        ) : null}
+      </div>
     </div>
   );
 }
