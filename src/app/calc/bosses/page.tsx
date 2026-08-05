@@ -6,6 +6,7 @@ import {
   ACCOUNT_WEEKLY_CRYSTAL_LIMIT,
   BOSS_CRYSTALS,
   WEEKLY_CRYSTAL_LIMIT,
+  bossIconUrl,
   countEnabledWeekly,
   defaultSelections,
   formatMesos,
@@ -30,17 +31,10 @@ import {
   type RosterEntry,
 } from "@/lib/dashboard/roster";
 import { useRoster } from "@/hooks/useRoster";
+import { AddBossesModal } from "./add-bosses-modal";
 
 const inputClass =
   "rounded border border-border bg-background px-2 py-1 text-sm outline-none focus:border-accent";
-
-const CATEGORY_LABEL: Record<string, string> = {
-  "pre-lomien": "Pre-Lomien",
-  "lomien-arcane": "Lomien + Arcane",
-  grandis: "Grandis",
-  seasonal: "Seasonal",
-  unknown: "Other",
-};
 
 export default function BossesIncomePage() {
   const { hydrated, roster, primary, slots } = useRoster();
@@ -51,10 +45,9 @@ export default function BossesIncomePage() {
     activeKey: null,
     byCharacter: {},
   }));
-  const [editingKey, setEditingKey] = useState<string | null>(null);
-  const [categoryFilter, setCategoryFilter] = useState<string[]>([]);
-  const [query, setQuery] = useState("");
+  const [modalKey, setModalKey] = useState<string | null>(null);
   const [capToast, setCapToast] = useState<string | null>(null);
+  const [brokenIcons, setBrokenIcons] = useState<Record<string, true>>({});
 
   useEffect(() => {
     if (!hydrated) return;
@@ -62,7 +55,6 @@ export default function BossesIncomePage() {
     const primaryKey = primary ? entryKey(primary) : null;
     next = maybeMigrateLocalToPrimary(next, primaryKey);
 
-    // Ensure every roster character has a bucket.
     for (const entry of roster) {
       const key = entryKey(entry);
       if (!next.byCharacter[key]) {
@@ -115,11 +107,11 @@ export default function BossesIncomePage() {
     key: string,
     bossId: string,
     partial: Partial<BossClearSelection>,
-  ) => {
+  ): boolean => {
+    let applied = true;
     setStore((prev) => {
       const current = getCharacterBossState(prev, key);
 
-      // Hard cap: at most 14 enabled weekly bosses per character.
       if (partial.enabled === true) {
         const boss = BOSS_CRYSTALS.find((b) => b.id === bossId);
         if (boss?.frequency === "weekly") {
@@ -128,11 +120,7 @@ export default function BossesIncomePage() {
             (s) => s.bossId === bossId && s.enabled,
           );
           if (!wasEnabled && already >= WEEKLY_CRYSTAL_LIMIT) {
-            queueMicrotask(() =>
-              setCapToast(
-                `Weekly boss limit reached (${WEEKLY_CRYSTAL_LIMIT}). Remove another boss first.`,
-              ),
-            );
+            applied = false;
             return prev;
           }
         }
@@ -143,6 +131,12 @@ export default function BossesIncomePage() {
       );
       return upsertCharacterState(prev, key, { selections });
     });
+    if (!applied) {
+      setCapToast(
+        `Weekly boss limit reached (${WEEKLY_CRYSTAL_LIMIT}). Remove another boss first.`,
+      );
+    }
+    return applied;
   };
 
   const resetCharacter = (key: string) => {
@@ -153,36 +147,20 @@ export default function BossesIncomePage() {
     );
   };
 
-  const filteredBosses = BOSS_CRYSTALS.filter((boss) => {
-    if (
-      categoryFilter.length > 0 &&
-      !categoryFilter.includes(boss.category)
-    ) {
-      return false;
-    }
-    if (query && !boss.name.toLowerCase().includes(query.toLowerCase())) {
-      return false;
-    }
-    return true;
-  });
-
-  const toggleCategory = (cat: string) => {
-    setCategoryFilter((prev) =>
-      prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat],
-    );
-  };
-
   const hasRoster = roster.length > 0;
-  const editingEntry =
-    editingKey && editingKey !== LOCAL_BOSS_KEY
-      ? (roster.find((e) => entryKey(e) === editingKey) ?? null)
+  const modalEntry =
+    modalKey && modalKey !== LOCAL_BOSS_KEY
+      ? (roster.find((e) => entryKey(e) === modalKey) ?? null)
       : null;
-  const editingSelections = editingKey
-    ? getCharacterBossState(store, editingKey).selections
+  const modalSelections = modalKey
+    ? getCharacterBossState(store, modalKey).selections
     : null;
-  const editingWeeklyCount = editingSelections
-    ? countEnabledWeekly(editingSelections)
+  const modalWeeklyCount = modalSelections
+    ? countEnabledWeekly(modalSelections)
     : 0;
+  const modalLabel =
+    modalEntry?.name ??
+    (modalKey === LOCAL_BOSS_KEY ? "Local" : "Character");
 
   if (!hydrated || !ready) {
     return (
@@ -200,8 +178,8 @@ export default function BossesIncomePage() {
         </h1>
         <p className="mt-2 max-w-2xl text-sm opacity-75">
           Roster crystal planner — {WEEKLY_CRYSTAL_LIMIT} weekly bosses per
-          character, account sell cap{" "}
-          {ACCOUNT_WEEKLY_CRYSTAL_LIMIT}, Heroic (5×) prices by default.
+          character, account sell cap {ACCOUNT_WEEKLY_CRYSTAL_LIMIT}, Heroic
+          (5×) prices by default.
         </p>
       </header>
 
@@ -305,11 +283,18 @@ export default function BossesIncomePage() {
                     error={slot?.status === "error" ? slot.error : null}
                     primaryMark={isPrimary(entry, primary)}
                     summary={summary}
-                    editing={editingKey === key}
-                    onEdit={() =>
-                      setEditingKey((prev) => (prev === key ? null : key))
+                    brokenIcons={brokenIcons}
+                    onBrokenIcon={(bossId) =>
+                      setBrokenIcons((prev) => ({ ...prev, [bossId]: true }))
                     }
+                    onAddBosses={() => setModalKey(key)}
                     onReset={() => resetCharacter(key)}
+                    onPatch={(bossId, partial) =>
+                      patchCharacter(key, bossId, partial)
+                    }
+                    onRemove={(bossId) =>
+                      patchCharacter(key, bossId, { enabled: false })
+                    }
                   />
                 );
               })
@@ -327,192 +312,45 @@ export default function BossesIncomePage() {
                     primaryMark={false}
                     summary={summary}
                     localLabel="Local"
-                    editing={editingKey === LOCAL_BOSS_KEY}
-                    onEdit={() =>
-                      setEditingKey((prev) =>
-                        prev === LOCAL_BOSS_KEY ? null : LOCAL_BOSS_KEY,
-                      )
+                    brokenIcons={brokenIcons}
+                    onBrokenIcon={(bossId) =>
+                      setBrokenIcons((prev) => ({ ...prev, [bossId]: true }))
                     }
+                    onAddBosses={() => setModalKey(LOCAL_BOSS_KEY)}
                     onReset={() => resetCharacter(LOCAL_BOSS_KEY)}
+                    onPatch={(bossId, partial) =>
+                      patchCharacter(LOCAL_BOSS_KEY, bossId, partial)
+                    }
+                    onRemove={(bossId) =>
+                      patchCharacter(LOCAL_BOSS_KEY, bossId, {
+                        enabled: false,
+                      })
+                    }
                   />
                 );
               })()}
         </div>
       </section>
 
-      {editingKey && editingSelections ? (
-        <section className="space-y-3 rounded-xl border border-accent/30 bg-surface/90 p-4">
-          <div className="flex flex-wrap items-start justify-between gap-2">
-            <div>
-              <h2 className="font-display text-lg font-semibold">
-                Configure bosses
-                {editingEntry ? (
-                  <span className="ml-2 text-base font-medium opacity-70">
-                    · {editingEntry.name}
-                  </span>
-                ) : editingKey === LOCAL_BOSS_KEY ? (
-                  <span className="ml-2 text-base font-medium opacity-70">
-                    · Local
-                  </span>
-                ) : null}
-              </h2>
-              <p className="mt-0.5 text-xs opacity-70">
-                Weekly selected: {editingWeeklyCount} / {WEEKLY_CRYSTAL_LIMIT}
-                {editingWeeklyCount >= WEEKLY_CRYSTAL_LIMIT
-                  ? " — limit reached"
-                  : ""}
-                . Monthly bosses (Black Mage) do not use the weekly slot.
-              </p>
-            </div>
-            <button
-              type="button"
-              className="text-sm text-accent hover:underline"
-              onClick={() => {
-                setEditingKey(null);
-                setQuery("");
-                setCategoryFilter([]);
-              }}
-            >
-              Done
-            </button>
-          </div>
-
-          <div className="flex flex-wrap items-end gap-3">
-            <label className="flex flex-col gap-1 text-sm">
-              Search
-              <input
-                className={`${inputClass} min-w-[12rem]`}
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Boss name…"
-              />
-            </label>
-            <div className="flex flex-col gap-1.5">
-              <span className="text-xs font-semibold uppercase tracking-wider opacity-60">
-                Region
-              </span>
-              <div className="flex flex-wrap gap-1.5">
-                {Object.entries(CATEGORY_LABEL)
-                  .filter(([id]) => id !== "unknown" && id !== "seasonal")
-                  .map(([id, label]) => (
-                    <button
-                      key={id}
-                      type="button"
-                      onClick={() => toggleCategory(id)}
-                      className={[
-                        "rounded-lg px-3 py-1.5 text-sm transition-colors",
-                        categoryFilter.length === 0 ||
-                        categoryFilter.includes(id)
-                          ? "bg-accent-soft font-semibold text-accent"
-                          : "border border-border/40 opacity-70 hover:opacity-100",
-                      ].join(" ")}
-                    >
-                      {label}
-                    </button>
-                  ))}
-              </div>
-            </div>
-          </div>
-
-          <div className="overflow-x-auto rounded-xl border border-border/40">
-            <table className="w-full min-w-[40rem] text-left text-sm">
-              <thead className="bg-surface-muted/80 text-xs uppercase tracking-wider opacity-70">
-                <tr>
-                  <th className="px-3 py-2 font-semibold">Clear</th>
-                  <th className="px-3 py-2 font-semibold">Boss</th>
-                  <th className="px-3 py-2 font-semibold">Difficulty</th>
-                  <th className="px-3 py-2 font-semibold">Party</th>
-                  <th className="px-3 py-2 font-semibold">Your crystal</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredBosses.map((boss) => {
-                  const sel = editingSelections.find(
-                    (s) => s.bossId === boss.id,
-                  )!;
-                  const personalLine = summarizeIncome(
-                    [
-                      {
-                        ...sel,
-                        enabled: true,
-                      },
-                    ],
-                    world,
-                  ).lines[0];
-                  const atCap =
-                    !sel.enabled &&
-                    boss.frequency === "weekly" &&
-                    editingWeeklyCount >= WEEKLY_CRYSTAL_LIMIT;
-                  return (
-                    <tr
-                      key={boss.id}
-                      className="border-t border-border/30 odd:bg-surface/40"
-                    >
-                      <td className="px-3 py-2">
-                        <input
-                          type="checkbox"
-                          checked={sel.enabled}
-                          disabled={atCap}
-                          onChange={(e) =>
-                            patchCharacter(editingKey, boss.id, {
-                              enabled: e.target.checked,
-                            })
-                          }
-                          aria-label={`Clear ${boss.name}`}
-                        />
-                      </td>
-                      <td className="px-3 py-2 font-medium">
-                        {boss.name}
-                        <span className="ml-2 text-xs opacity-55">
-                          {boss.frequency}
-                        </span>
-                      </td>
-                      <td className="px-3 py-2">
-                        <select
-                          className={inputClass}
-                          value={sel.difficulty}
-                          onChange={(e) =>
-                            patchCharacter(editingKey, boss.id, {
-                              difficulty: e.target.value,
-                            })
-                          }
-                        >
-                          {boss.difficulties.map((d) => (
-                            <option key={d.name} value={d.name}>
-                              {d.name}
-                            </option>
-                          ))}
-                        </select>
-                      </td>
-                      <td className="px-3 py-2">
-                        <input
-                          type="number"
-                          min={1}
-                          max={6}
-                          className={`${inputClass} w-16`}
-                          value={sel.partySize}
-                          onChange={(e) =>
-                            patchCharacter(editingKey, boss.id, {
-                              partySize: Math.max(
-                                1,
-                                Math.min(6, Number(e.target.value) || 1),
-                              ),
-                            })
-                          }
-                        />
-                      </td>
-                      <td className="px-3 py-2 tabular-nums">
-                        {personalLine
-                          ? formatMesos(personalLine.crystalPersonal)
-                          : "—"}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </section>
+      {modalKey && modalSelections ? (
+        <AddBossesModal
+          open
+          characterLabel={modalLabel}
+          selections={modalSelections}
+          world={world}
+          weeklyCount={modalWeeklyCount}
+          onClose={() => setModalKey(null)}
+          onAdd={({ bossId, difficulty, partySize }) =>
+            patchCharacter(modalKey, bossId, {
+              enabled: true,
+              difficulty,
+              partySize,
+            })
+          }
+          onRemove={(bossId) =>
+            patchCharacter(modalKey, bossId, { enabled: false })
+          }
+        />
       ) : null}
 
       <section className="space-y-2 rounded-xl border border-border/30 bg-surface/50 p-4 text-xs opacity-70">
@@ -522,17 +360,19 @@ export default function BossesIncomePage() {
         <ul className="list-disc space-y-1 pl-4">
           <li>
             <span className="font-semibold">{WEEKLY_CRYSTAL_LIMIT}</span> —
-            max weekly boss crystals sold per character (GMS). This page hard-caps
-            selections at {WEEKLY_CRYSTAL_LIMIT} and lists those bosses under each
-            card.
+            max weekly boss crystals sold per character (GMS). This page
+            hard-caps selections at {WEEKLY_CRYSTAL_LIMIT} and lists those
+            bosses under each card.
           </li>
           <li>
             <span className="font-semibold">
               {ACCOUNT_WEEKLY_CRYSTAL_LIMIT}
             </span>{" "}
-            — account/world weekly crystal sell limit (all crystal types). MapleHub
-            shows roster weekly bosses as{" "}
-            <span className="font-semibold">N / {ACCOUNT_WEEKLY_CRYSTAL_LIMIT}</span>
+            — account/world weekly crystal sell limit (all crystal types).
+            MapleHub shows roster weekly bosses as{" "}
+            <span className="font-semibold">
+              N / {ACCOUNT_WEEKLY_CRYSTAL_LIMIT}
+            </span>
             ; we match that display.
           </li>
         </ul>
@@ -577,9 +417,12 @@ function CharacterBossCard({
   error,
   primaryMark,
   summary,
-  editing,
-  onEdit,
+  onAddBosses,
   onReset,
+  onPatch,
+  onRemove,
+  brokenIcons,
+  onBrokenIcon,
   localLabel,
 }: {
   entry: RosterEntry | null;
@@ -588,9 +431,12 @@ function CharacterBossCard({
   error: string | null;
   primaryMark: boolean;
   summary: IncomeSummary;
-  editing: boolean;
-  onEdit: () => void;
+  onAddBosses: () => void;
   onReset: () => void;
+  onPatch: (bossId: string, partial: Partial<BossClearSelection>) => void;
+  onRemove: (bossId: string) => void;
+  brokenIcons: Record<string, true>;
+  onBrokenIcon: (bossId: string) => void;
   localLabel?: string;
 }) {
   const name = character?.name ?? entry?.name ?? localLabel ?? "Character";
@@ -602,6 +448,7 @@ function CharacterBossCard({
   const profileHref = entry ? characterProfileHref(entry) : null;
   const listed = summary.weeklyListed;
   const monthly = summary.lines.filter((l) => l.frequency === "monthly");
+  const hasBosses = listed.length > 0 || monthly.length > 0;
 
   return (
     <article className="overflow-hidden rounded-xl border border-border/40 bg-surface/80">
@@ -674,112 +521,171 @@ function CharacterBossCard({
           <p className="text-xs opacity-55">
             {summary.weeklyCrystalsUsed}/{summary.weeklyCrystalLimit} weekly
           </p>
-          <div className="mt-1 flex gap-2">
-            <button
-              type="button"
-              onClick={onEdit}
-              className={[
-                "rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors",
-                editing
-                  ? "bg-accent text-white dark:text-zinc-900"
-                  : "border border-border/50 hover:bg-accent-soft hover:text-accent",
-              ].join(" ")}
-            >
-              {editing
-                ? "Editing…"
-                : listed.length === 0
-                  ? "Add bosses"
-                  : "Configure"}
-            </button>
-            <button
-              type="button"
-              onClick={onReset}
-              className="text-xs opacity-60 hover:text-accent hover:opacity-100"
-            >
-              Reset
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={onReset}
+            className="mt-1 text-xs opacity-60 hover:text-accent hover:opacity-100"
+          >
+            Reset
+          </button>
         </div>
       </div>
 
       <div className="p-3 sm:p-4">
-        {listed.length === 0 && monthly.length === 0 ? (
+        {!hasBosses ? (
           <div className="flex flex-col items-center gap-2 py-6 text-center">
             <p className="text-sm opacity-65">No bosses configured</p>
             <button
               type="button"
-              onClick={onEdit}
+              onClick={onAddBosses}
               className="rounded-lg border border-border/50 px-3 py-1.5 text-sm font-semibold hover:bg-accent-soft hover:text-accent"
             >
               Add bosses
             </button>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[28rem] text-left text-sm">
-              <thead className="text-xs uppercase tracking-wider opacity-55">
-                <tr>
-                  <th className="pb-2 pr-2 font-semibold">Difficulty</th>
-                  <th className="pb-2 pr-2 font-semibold">Boss</th>
-                  <th className="pb-2 pr-2 text-center font-semibold">Party</th>
-                  <th className="pb-2 text-right font-semibold">Crystal</th>
-                </tr>
-              </thead>
-              <tbody>
-                {listed.map((line) => (
-                  <tr
-                    key={`${line.bossId}-${line.difficulty}`}
-                    className="border-t border-border/20"
-                  >
-                    <td className="py-1.5 pr-2 text-xs font-semibold uppercase opacity-70">
-                      {line.difficulty}
-                    </td>
-                    <td className="py-1.5 pr-2 font-medium">{line.bossName}</td>
-                    <td className="py-1.5 pr-2 text-center tabular-nums">
-                      {line.partySize}
-                    </td>
-                    <td className="py-1.5 text-right tabular-nums">
-                      {formatMesos(line.crystalPersonal)}
-                    </td>
+          <div className="space-y-3">
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[32rem] text-left text-sm">
+                <thead className="text-xs uppercase tracking-wider opacity-55">
+                  <tr>
+                    <th className="pb-2 pr-2 font-semibold">Boss</th>
+                    <th className="pb-2 pr-2 font-semibold">Difficulty</th>
+                    <th className="pb-2 pr-2 text-center font-semibold">
+                      Party
+                    </th>
+                    <th className="pb-2 pr-2 text-right font-semibold">
+                      Crystal
+                    </th>
+                    <th className="pb-2 w-8 font-semibold">
+                      <span className="sr-only">Remove</span>
+                    </th>
                   </tr>
-                ))}
-                {monthly.map((line) => (
-                  <tr
-                    key={`${line.bossId}-${line.difficulty}-m`}
-                    className="border-t border-border/20 opacity-80"
-                  >
-                    <td className="py-1.5 pr-2 text-xs font-semibold uppercase opacity-70">
-                      {line.difficulty}
+                </thead>
+                <tbody>
+                  {[...listed, ...monthly].map((line) => {
+                    const boss = BOSS_CRYSTALS.find((b) => b.id === line.bossId);
+                    const icon = boss ? bossIconUrl(boss) : null;
+                    const showIcon = icon && !brokenIcons[line.bossId];
+                    return (
+                      <tr
+                        key={`${line.bossId}-${line.difficulty}-${line.frequency}`}
+                        className="border-t border-border/20"
+                      >
+                        <td className="py-1.5 pr-2">
+                          <div className="flex items-center gap-2">
+                            <div className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded bg-surface-muted/60">
+                              {showIcon ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img
+                                  src={icon}
+                                  alt=""
+                                  width={32}
+                                  height={32}
+                                  className="h-8 w-8 object-contain"
+                                  style={{ imageRendering: "pixelated" }}
+                                  onError={() => onBrokenIcon(line.bossId)}
+                                />
+                              ) : (
+                                <span className="text-[9px] font-semibold opacity-50">
+                                  {line.bossName.slice(0, 2)}
+                                </span>
+                              )}
+                            </div>
+                            <span className="font-medium">
+                              {line.bossName}
+                              {line.frequency === "monthly" ? (
+                                <span className="ml-1.5 text-xs opacity-55">
+                                  monthly
+                                </span>
+                              ) : null}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="py-1.5 pr-2">
+                          {boss ? (
+                            <select
+                              className={inputClass}
+                              value={line.difficulty}
+                              onChange={(e) =>
+                                onPatch(line.bossId, {
+                                  difficulty: e.target.value,
+                                })
+                              }
+                            >
+                              {boss.difficulties.map((d) => (
+                                <option key={d.name} value={d.name}>
+                                  {d.name}
+                                </option>
+                              ))}
+                            </select>
+                          ) : (
+                            <span className="text-xs font-semibold uppercase opacity-70">
+                              {line.difficulty}
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-1.5 pr-2 text-center">
+                          <input
+                            type="number"
+                            min={1}
+                            max={6}
+                            className={`${inputClass} w-14 text-center`}
+                            value={line.partySize}
+                            onChange={(e) =>
+                              onPatch(line.bossId, {
+                                partySize: Math.max(
+                                  1,
+                                  Math.min(6, Number(e.target.value) || 1),
+                                ),
+                              })
+                            }
+                          />
+                        </td>
+                        <td className="py-1.5 pr-2 text-right tabular-nums">
+                          {formatMesos(line.crystalPersonal)}
+                        </td>
+                        <td className="py-1.5 text-right">
+                          <button
+                            type="button"
+                            onClick={() => onRemove(line.bossId)}
+                            className="rounded px-1.5 text-xs opacity-50 hover:text-red-500 hover:opacity-100"
+                            aria-label={`Remove ${line.bossName}`}
+                          >
+                            ×
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+                <tfoot>
+                  <tr className="border-t border-border/40">
+                    <td
+                      colSpan={3}
+                      className="pt-2 text-xs font-semibold uppercase tracking-wider opacity-55"
+                    >
+                      Character total
                     </td>
-                    <td className="py-1.5 pr-2 font-medium">
-                      {line.bossName}
-                      <span className="ml-1.5 text-xs opacity-55">monthly</span>
+                    <td className="pt-2 text-right font-semibold tabular-nums text-accent">
+                      {formatMesos(
+                        summary.maxPossibleMesos + summary.monthlyMesos,
+                      )}
                     </td>
-                    <td className="py-1.5 pr-2 text-center tabular-nums">
-                      {line.partySize}
-                    </td>
-                    <td className="py-1.5 text-right tabular-nums">
-                      {formatMesos(line.crystalPersonal)}
-                    </td>
+                    <td />
                   </tr>
-                ))}
-              </tbody>
-              <tfoot>
-                <tr className="border-t border-border/40">
-                  <td
-                    colSpan={3}
-                    className="pt-2 text-xs font-semibold uppercase tracking-wider opacity-55"
-                  >
-                    Character total
-                  </td>
-                  <td className="pt-2 text-right font-semibold tabular-nums text-accent">
-                    {formatMesos(
-                      summary.maxPossibleMesos + summary.monthlyMesos,
-                    )}
-                  </td>
-                </tr>
-              </tfoot>
-            </table>
+                </tfoot>
+              </table>
+            </div>
+            <div className="flex justify-center">
+              <button
+                type="button"
+                onClick={onAddBosses}
+                className="rounded-lg border border-border/50 px-3 py-1.5 text-sm font-semibold hover:bg-accent-soft hover:text-accent"
+              >
+                Add bosses
+              </button>
+            </div>
           </div>
         )}
       </div>

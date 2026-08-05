@@ -18,7 +18,17 @@ export type BossEntry = {
   category: BossCategory;
   frequency: BossFrequency;
   difficulties: BossDifficulty[];
+  /** MapleHub CDN filename under `https://cdn.maplehub.app/bosses/`. */
+  iconFile?: string;
 };
+
+/** Host for boss portrait icons (MapleHub CDN). */
+export const BOSS_ICON_CDN = "https://cdn.maplehub.app/bosses";
+
+export function bossIconUrl(boss: BossEntry): string | null {
+  const file = boss.iconFile ?? `${boss.id}.webp`;
+  return `${BOSS_ICON_CDN}/${file}`;
+}
 
 /** GMS per-character weekly boss crystal sell cap. */
 export const WEEKLY_CRYSTAL_LIMIT = 14;
@@ -49,7 +59,7 @@ export const BOSS_CRYSTALS: BossEntry[] = [
   { id: "verus-hilla", name: "Verus Hilla", category: "lomien-arcane", frequency: "weekly", difficulties: [{ name: "Normal", crystal: 116376000 }, { name: "Hard", crystal: 152421000 }] },
   { id: "chosen-seren", name: "Chosen Seren", category: "grandis", frequency: "weekly", difficulties: [{ name: "Normal", crystal: 177804375 }, { name: "Hard", crystal: 219312000 }, { name: "Extreme", crystal: 847000000 }] },
   { id: "kalos-the-guardian", name: "Kalos the Guardian", category: "grandis", frequency: "weekly", difficulties: [{ name: "Easy", crystal: 187500000 }, { name: "Normal", crystal: 260000000 }, { name: "Chaos", crystal: 520000000 }, { name: "Extreme", crystal: 1040000000 }] },
-  { id: "first-adversary", name: "First Adversary", category: "grandis", frequency: "weekly", difficulties: [{ name: "Easy", crystal: 197000000 }, { name: "Normal", crystal: 273000000 }, { name: "Hard", crystal: 588000000 }, { name: "Extreme", crystal: 1176000000 }] },
+  { id: "first-adversary", name: "First Adversary", category: "grandis", frequency: "weekly", difficulties: [{ name: "Easy", crystal: 197000000 }, { name: "Normal", crystal: 273000000 }, { name: "Hard", crystal: 588000000 }, { name: "Extreme", crystal: 1176000000 }], iconFile: "the-first-adversary.webp" },
   { id: "kaling", name: "Kaling", category: "grandis", frequency: "weekly", difficulties: [{ name: "Easy", crystal: 206250000 }, { name: "Normal", crystal: 301300000 }, { name: "Hard", crystal: 598000000 }, { name: "Extreme", crystal: 1205200000 }] },
   { id: "malefic-star", name: "Malefic Star", category: "grandis", frequency: "weekly", difficulties: [{ name: "Normal", crystal: 290400000 }, { name: "Hard", crystal: 798000000 }] },
   { id: "limbo", name: "Limbo", category: "grandis", frequency: "weekly", difficulties: [{ name: "Normal", crystal: 420000000 }, { name: "Hard", crystal: 749000000 }] },

@@ -1,8 +1,10 @@
 export {
   BOSS_CRYSTALS,
+  BOSS_ICON_CDN,
   WEEKLY_CRYSTAL_LIMIT,
   ACCOUNT_WEEKLY_CRYSTAL_LIMIT,
   HEROIC_CRYSTAL_MULT,
+  bossIconUrl,
   crystalMesos,
   type BossEntry,
   type BossDifficulty,
