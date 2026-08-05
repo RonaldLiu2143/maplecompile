@@ -3,8 +3,11 @@
 export const THEME_STORAGE_KEY = "maplecompile-theme";
 export const THEME_CHANGE_EVENT = "maplecompile-theme-change";
 
-export const THEME_IDS = ["compile", "contrast", "maple", "mist"] as const;
+export const THEME_IDS = ["compile", "contrast"] as const;
 export type ThemeId = (typeof THEME_IDS)[number];
+
+/** Removed presets — remapped to Compile when reading stored prefs. */
+const LEGACY_THEME_IDS = new Set(["maple", "mist"]);
 
 export type ThemeScheme = "dark" | "light";
 
@@ -31,20 +34,6 @@ export const THEME_PRESETS: readonly ThemePreset[] = [
     description: "Near-black canvas, bright text, crisp cyan for max clarity.",
     scheme: "dark",
     defaultAccent: "#22d3ee",
-  },
-  {
-    id: "maple",
-    name: "Maple",
-    description: "Deep teal forest with amber-gold accents — Maple-flavored.",
-    scheme: "dark",
-    defaultAccent: "#f59e0b",
-  },
-  {
-    id: "mist",
-    name: "Mist",
-    description: "Soft light blue-gray surfaces for daytime browsing.",
-    scheme: "light",
-    defaultAccent: "#0369a1",
   },
 ] as const;
 
@@ -92,6 +81,7 @@ export function normalizeThemePrefs(raw: unknown): ThemePrefs {
     return DEFAULT_THEME_PREFS;
   }
   const obj = raw as Partial<ThemePrefs>;
+  // Mist/Maple (and any unknown id) → Compile.
   const id = isThemeId(obj.id) ? obj.id : DEFAULT_THEME_ID;
   const accent =
     typeof obj.accent === "string" && /^#[0-9a-fA-F]{6}$/.test(obj.accent)
@@ -107,15 +97,42 @@ function prefsEqual(a: ThemePrefs, b: ThemePrefs): boolean {
   return a.id === b.id && (a.accent ?? null) === (b.accent ?? null);
 }
 
+function isLegacyThemeId(value: unknown): boolean {
+  return typeof value === "string" && LEGACY_THEME_IDS.has(value);
+}
+
 export function readThemePrefs(): ThemePrefs {
   if (typeof window === "undefined") return DEFAULT_THEME_PREFS;
   try {
     const raw = localStorage.getItem(THEME_STORAGE_KEY);
     if (raw === cachedStorageRaw) return cachedPrefs;
     cachedStorageRaw = raw;
-    const next = raw
-      ? normalizeThemePrefs(JSON.parse(raw))
-      : DEFAULT_THEME_PREFS;
+    let parsed: unknown = null;
+    if (raw) {
+      try {
+        parsed = JSON.parse(raw);
+      } catch {
+        parsed = null;
+      }
+    }
+    const next = parsed ? normalizeThemePrefs(parsed) : DEFAULT_THEME_PREFS;
+    // Persist migration when stored id was Mist/Maple (or otherwise invalid).
+    if (
+      parsed &&
+      typeof parsed === "object" &&
+      isLegacyThemeId((parsed as Partial<ThemePrefs>).id)
+    ) {
+      const serialized = JSON.stringify({
+        id: next.id,
+        accent: next.accent ?? null,
+      });
+      try {
+        localStorage.setItem(THEME_STORAGE_KEY, serialized);
+      } catch {
+        /* ignore quota */
+      }
+      cachedStorageRaw = serialized;
+    }
     // Keep previous object identity when values are unchanged.
     if (prefsEqual(next, cachedPrefs)) return cachedPrefs;
     cachedPrefs = next;
@@ -208,5 +225,6 @@ export function applyThemeToDocument(prefs: ThemePrefs): void {
 
 /** Inline script source for FOUC-free boot (keep in sync with applyThemeToDocument). */
 export function themeBootScript(): string {
-  return `(function(){try{var k=${JSON.stringify(THEME_STORAGE_KEY)};var ids=${JSON.stringify([...THEME_IDS])};var schemes={compile:"dark",contrast:"dark",maple:"dark",mist:"light"};var raw=localStorage.getItem(k);var prefs=raw?JSON.parse(raw):{};var id=ids.indexOf(prefs.id)>=0?prefs.id:"compile";var accent=typeof prefs.accent==="string"&&/^#[0-9a-fA-F]{6}$/.test(prefs.accent)?prefs.accent:null;var scheme=schemes[id]||"dark";var r=document.documentElement;r.setAttribute("data-theme",id);r.style.colorScheme=scheme;if(scheme==="dark")r.classList.add("dark");else r.classList.remove("dark");if(accent){r.style.setProperty("--accent",accent);var hr=parseInt(accent.slice(1,3),16),hg=parseInt(accent.slice(3,5),16),hb=parseInt(accent.slice(5,7),16);var soft=scheme==="dark"?"rgb("+Math.round(hr*0.22)+" "+Math.round(hg*0.22)+" "+Math.round(hb*0.28)+")":"rgb("+Math.min(255,Math.round(hr+(255-hr)*0.72))+" "+Math.min(255,Math.round(hg+(255-hg)*0.72))+" "+Math.min(255,Math.round(hb+(255-hb)*0.65))+")";r.style.setProperty("--accent-soft",soft)}}catch(e){var d=document.documentElement;d.setAttribute("data-theme","compile");d.classList.add("dark");d.style.colorScheme="dark"}})();`;
+  // Legacy maple/mist ids fall through to compile (not in `ids`).
+  return `(function(){try{var k=${JSON.stringify(THEME_STORAGE_KEY)};var ids=${JSON.stringify([...THEME_IDS])};var schemes={compile:"dark",contrast:"dark"};var raw=localStorage.getItem(k);var prefs=raw?JSON.parse(raw):{};var id=ids.indexOf(prefs.id)>=0?prefs.id:"compile";var accent=typeof prefs.accent==="string"&&/^#[0-9a-fA-F]{6}$/.test(prefs.accent)?prefs.accent:null;var scheme=schemes[id]||"dark";var r=document.documentElement;r.setAttribute("data-theme",id);r.style.colorScheme=scheme;if(scheme==="dark")r.classList.add("dark");else r.classList.remove("dark");if(accent){r.style.setProperty("--accent",accent);var hr=parseInt(accent.slice(1,3),16),hg=parseInt(accent.slice(3,5),16),hb=parseInt(accent.slice(5,7),16);var soft=scheme==="dark"?"rgb("+Math.round(hr*0.22)+" "+Math.round(hg*0.22)+" "+Math.round(hb*0.28)+")":"rgb("+Math.min(255,Math.round(hr+(255-hr)*0.72))+" "+Math.min(255,Math.round(hg+(255-hg)*0.72))+" "+Math.min(255,Math.round(hb+(255-hb)*0.65))+")";r.style.setProperty("--accent-soft",soft)}}catch(e){var d=document.documentElement;d.setAttribute("data-theme","compile");d.classList.add("dark");d.style.colorScheme="dark"}})();`;
 }

@@ -31,32 +31,6 @@
   --glow-b: #18181b99;
 }
 
-[data-theme="maple"] {
-  --background: #0c1a17;
-  --foreground: #ecfdf5;
-  --surface: #143029;
-  --surface-muted: #1a3d34;
-  --border: #2d5a4c;
-  --accent: #f59e0b;
-  --accent-soft: #3d2e0a;
-  --danger: #f87171;
-  --glow-a: #134e4a55;
-  --glow-b: #78350f33;
-}
-
-[data-theme="mist"] {
-  --background: #e8f1f8;
-  --foreground: #18181b;
-  --surface: #ffffff;
-  --surface-muted: #dbeaf5;
-  --border: #3f4a55;
-  --accent: #0369a1;
-  --accent-soft: #bae6fd;
-  --danger: #b91c1c;
-  --glow-a: #bae6fd66;
-  --glow-b: #e0f2fe88;
-}
-
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
