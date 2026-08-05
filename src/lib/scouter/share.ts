@@ -1,5 +1,6 @@
 import { Redis } from "@upstash/redis";
 import { getCharName } from "@/lib/jobs";
+import type { EquipSetup } from "@/lib/types";
 import { clampHexaForGms } from "./buffs";
 import type { BuffState, LinkState } from "./buffs";
 import {
@@ -8,14 +9,14 @@ import {
 } from "./maple-dmg";
 import type { ScouterInput } from "./types";
 
-/** Max JSON body size for share payloads (~64 KB). */
-export const SHARE_MAX_BYTES = 64 * 1024;
+/** Max JSON body size for share payloads (equipment snapshots need headroom). */
+export const SHARE_MAX_BYTES = 256 * 1024;
 
 const SHARE_KEY_PREFIX = "scouter:share:";
 export const SHARE_PUBLIC_SET = "scouter:share:public";
 /** NX keys: scouter:share:public:name:{normalized} → id (unique public IGN names). */
 const SHARE_PUBLIC_NAME_PREFIX = "scouter:share:public:name:";
-/** Delete tokens kept separate from the share payload so GET can't leak them. */
+/** Edit/delete tokens kept separate from the share payload so GET can't leak them. */
 const SHARE_DELETE_PREFIX = "scouter:share:delete:";
 /** Atomic view counters: scouter:share:views:{id} → number. */
 const SHARE_VIEWS_PREFIX = "scouter:share:views:";
@@ -35,6 +36,19 @@ export type ScouterShareState = {
   hexa: number[];
 };
 
+/** Optional roster identity attached to a published build. */
+export type ShareCharacterRef = {
+  region: "na" | "eu";
+  name: string;
+};
+
+/** Equipment snapshot published with a scouter loadout. */
+export type ShareEquipmentPayload = {
+  jobType: string;
+  charType: string;
+  setup: EquipSetup;
+};
+
 export type ScouterShareRecord = {
   id: string;
   /** Gallery / link display name (IGN or Class·suffix). */
@@ -47,6 +61,8 @@ export type ScouterShareRecord = {
   /** Character IGN when identity is `ign`. */
   ign?: string;
   createdAt: number;
+  /** Last in-place update (PATCH). */
+  updatedAt?: number;
   public: boolean;
   /** Short gallery blurb (achievement / explanation). */
   achievement?: string;
@@ -62,6 +78,12 @@ export type ScouterShareRecord = {
    */
   views?: number;
   state: ScouterShareState;
+  /** Roster identity when published from a known character. */
+  character?: ShareCharacterRef;
+  /** Equipment snapshot (optional on legacy shares). */
+  equipment?: ShareEquipmentPayload;
+  /** Cheap gallery flag — true when equipment setup has at least one piece. */
+  hasEquipment?: boolean;
 };
 
 /** Max length for public gallery achievement text. */
@@ -116,6 +138,42 @@ export function normalizeShareState(state: ScouterShareState): ScouterShareState
       Array.isArray(state.hexa) ? state.hexa.map((n) => Number(n) || 0) : [],
     ),
   };
+}
+
+export function countEquipPieces(setup: EquipSetup | null | undefined): number {
+  if (!setup || typeof setup !== "object") return 0;
+  let n = 0;
+  for (const list of Object.values(setup)) {
+    if (!Array.isArray(list)) continue;
+    for (const item of list) {
+      if (item) n += 1;
+    }
+  }
+  return n;
+}
+
+export function normalizeShareCharacter(
+  raw: ShareCharacterRef | null | undefined,
+): ShareCharacterRef | undefined {
+  if (!raw || typeof raw !== "object") return undefined;
+  const region = raw.region === "eu" ? "eu" : raw.region === "na" ? "na" : null;
+  const name = typeof raw.name === "string" ? raw.name.trim() : "";
+  if (!region || !name) return undefined;
+  return { region, name };
+}
+
+export function normalizeShareEquipment(
+  raw: ShareEquipmentPayload | null | undefined,
+): ShareEquipmentPayload | undefined {
+  if (!raw || typeof raw !== "object") return undefined;
+  const jobType = typeof raw.jobType === "string" ? raw.jobType : "";
+  const charType = typeof raw.charType === "string" ? raw.charType : "";
+  const setup =
+    raw.setup && typeof raw.setup === "object" && !Array.isArray(raw.setup)
+      ? (raw.setup as EquipSetup)
+      : null;
+  if (!setup || countEquipPieces(setup) === 0) return undefined;
+  return { jobType, charType, setup };
 }
 
 export function estimateJsonBytes(value: unknown): number {
@@ -178,7 +236,10 @@ function deleteTokenKey(id: string): string {
 
 export type CreateShareResult = {
   record: ScouterShareRecord;
+  /** Same secret as deleteToken — used for in-place edits and removal. */
   deleteToken: string;
+  /** Alias for clients that prefer editToken naming. */
+  editToken: string;
 };
 
 export async function createShare(args: {
@@ -192,6 +253,8 @@ export async function createShare(args: {
   /** Precomputed BCS HEXA (20 min / KMS). Computed server-side when public and missing. */
   boss300HexaStat?: number;
   boss380HexaStat?: number;
+  character?: ShareCharacterRef;
+  equipment?: ShareEquipmentPayload;
 }): Promise<CreateShareResult> {
   if (!args?.state?.input) {
     throw new Error("Missing state.input");
@@ -200,6 +263,9 @@ export async function createShare(args: {
   const isPublic = args.public === true;
   const achievement = normalizeAchievement(args.achievement);
   const state = normalizeShareState(args.state);
+  const character = normalizeShareCharacter(args.character);
+  const equipment = normalizeShareEquipment(args.equipment);
+  const hasEquipment = Boolean(equipment);
 
   let boss300HexaStat = normalizeBossConvertedHexaStat(args.boss300HexaStat);
   let boss380HexaStat = normalizeBossConvertedHexaStat(args.boss380HexaStat);
@@ -251,6 +317,9 @@ export async function createShare(args: {
     ...(boss380HexaStat != null ? { boss380HexaStat } : {}),
     views: 0,
     state,
+    ...(character ? { character } : {}),
+    ...(equipment ? { equipment } : {}),
+    hasEquipment,
   };
   const bytes = estimateJsonBytes(recordDraft);
   if (bytes > SHARE_MAX_BYTES) {
@@ -292,18 +361,23 @@ export async function createShare(args: {
     }
   }
 
+  const now = Date.now();
   const record: ScouterShareRecord = {
     id,
     name,
     identity,
     ...(ign ? { ign } : {}),
-    createdAt: Date.now(),
+    createdAt: now,
+    updatedAt: now,
     public: isPublic,
     ...(achievement ? { achievement } : {}),
     ...(boss300HexaStat != null ? { boss300HexaStat } : {}),
     ...(boss380HexaStat != null ? { boss380HexaStat } : {}),
     views: 0,
     state,
+    ...(character ? { character } : {}),
+    ...(equipment ? { equipment } : {}),
+    hasEquipment,
   };
   const deleteToken = newShareId(24);
 
@@ -329,7 +403,7 @@ export async function createShare(args: {
       // ignore
     }
   }
-  return { record, deleteToken };
+  return { record, deleteToken, editToken: deleteToken };
 }
 
 export async function getShare(
@@ -344,12 +418,217 @@ export async function getShare(
     0,
     Number(viewsRaw ?? raw.views ?? 0) || 0,
   );
+  const character = normalizeShareCharacter(raw.character);
+  const equipment = normalizeShareEquipment(raw.equipment);
+  const hasEquipment =
+    raw.hasEquipment === true || Boolean(equipment);
   return {
     ...raw,
     identity: resolveShareIdentity(raw),
     views,
     state: normalizeShareState(raw.state),
+    ...(character ? { character } : { character: undefined }),
+    ...(equipment ? { equipment } : { equipment: undefined }),
+    hasEquipment,
   };
+}
+
+/**
+ * In-place update authenticated by edit/delete token.
+ * Keeps the same share id and view counter.
+ */
+export async function updateShare(args: {
+  id: string;
+  editToken: string;
+  state?: ScouterShareState;
+  name?: string;
+  ign?: string;
+  identity?: ShareIdentity;
+  achievement?: string;
+  public?: boolean;
+  boss300HexaStat?: number;
+  boss380HexaStat?: number;
+  character?: ShareCharacterRef | null;
+  equipment?: ShareEquipmentPayload | null;
+}): Promise<ScouterShareRecord> {
+  const id = args.id?.trim();
+  const editToken = (args.editToken ?? "").trim();
+  const { redis, raw } = await assertDeleteToken(id, editToken);
+  if (!raw?.state?.input) {
+    throw new Error("Share not found");
+  }
+
+  const prevIdentity = resolveShareIdentity(raw);
+  const nextState = args.state
+    ? normalizeShareState(args.state)
+    : normalizeShareState(raw.state);
+
+  let identity: ShareIdentity =
+    args.identity === "anonymous" || args.identity === "ign"
+      ? args.identity
+      : prevIdentity;
+  const isPublic =
+    typeof args.public === "boolean" ? args.public : raw.public === true;
+  if (!isPublic) {
+    identity = "ign";
+  }
+
+  const achievement =
+    args.achievement !== undefined
+      ? normalizeAchievement(args.achievement)
+      : normalizeAchievement(raw.achievement);
+
+  let character: ShareCharacterRef | undefined;
+  if (args.character === null) {
+    character = undefined;
+  } else if (args.character !== undefined) {
+    character = normalizeShareCharacter(args.character);
+  } else {
+    character = normalizeShareCharacter(raw.character);
+  }
+
+  let equipment: ShareEquipmentPayload | undefined;
+  if (args.equipment === null) {
+    equipment = undefined;
+  } else if (args.equipment !== undefined) {
+    equipment = normalizeShareEquipment(args.equipment);
+  } else {
+    equipment = normalizeShareEquipment(raw.equipment);
+  }
+  const hasEquipment = Boolean(equipment);
+
+  let boss300HexaStat =
+    args.boss300HexaStat !== undefined
+      ? normalizeBossConvertedHexaStat(args.boss300HexaStat)
+      : normalizeBossConvertedHexaStat(raw.boss300HexaStat);
+  let boss380HexaStat =
+    args.boss380HexaStat !== undefined
+      ? normalizeBossConvertedHexaStat(args.boss380HexaStat)
+      : normalizeBossConvertedHexaStat(raw.boss380HexaStat);
+
+  if (
+    isPublic &&
+    args.state &&
+    (boss300HexaStat == null || boss380HexaStat == null)
+  ) {
+    try {
+      const bcs = await fetchBossConvertedHexaStats({
+        ...nextState,
+        is30min: false,
+      });
+      boss300HexaStat ??= normalizeBossConvertedHexaStat(bcs.boss300HexaStat);
+      boss380HexaStat ??= normalizeBossConvertedHexaStat(bcs.boss380HexaStat);
+    } catch {
+      // keep prior / null
+    }
+  }
+
+  let name = (raw.name || "Untitled").trim() || "Untitled";
+  let ign = raw.ign;
+
+  if (isPublic && identity === "anonymous") {
+    name = buildAnonymousDisplayName({
+      jobType: nextState.input.jobType,
+      charType: nextState.input.charType,
+      id,
+    });
+    ign = undefined;
+  } else if (isPublic && identity === "ign") {
+    const nextIgn = normalizeIgn(args.ign ?? args.name ?? raw.ign ?? raw.name ?? "");
+    if (!nextIgn || nextIgn.toLowerCase() === "untitled") {
+      throw new Error("Enter your IGN before sharing to the gallery");
+    }
+    name = nextIgn;
+    ign = nextIgn;
+  } else if (args.name !== undefined || args.ign !== undefined) {
+    name = (args.name ?? args.ign ?? name).trim() || "Untitled";
+    if (args.ign !== undefined) ign = normalizeIgn(args.ign) || undefined;
+  }
+
+  const draft: ScouterShareRecord = {
+    ...raw,
+    id,
+    name,
+    identity,
+    ...(ign ? { ign } : {}),
+    public: isPublic,
+    ...(achievement ? { achievement } : {}),
+    ...(boss300HexaStat != null ? { boss300HexaStat } : {}),
+    ...(boss380HexaStat != null ? { boss380HexaStat } : {}),
+    state: nextState,
+    ...(character ? { character } : {}),
+    ...(equipment ? { equipment } : {}),
+    hasEquipment,
+    updatedAt: Date.now(),
+  };
+  // Drop cleared optional fields explicitly so Redis doesn't keep stale gear.
+  if (!character) delete draft.character;
+  if (!equipment) delete draft.equipment;
+  if (!achievement) delete draft.achievement;
+  if (!ign) delete draft.ign;
+  if (boss300HexaStat == null) delete draft.boss300HexaStat;
+  if (boss380HexaStat == null) delete draft.boss380HexaStat;
+
+  const bytes = estimateJsonBytes(draft);
+  if (bytes > SHARE_MAX_BYTES) {
+    throw new Error(
+      `Loadout too large to share (${bytes} bytes; max ${SHARE_MAX_BYTES})`,
+    );
+  }
+
+  const prevNameLock =
+    prevIdentity === "ign" && raw.public
+      ? normalizePublicShareName(raw.name || raw.ign || "")
+      : "";
+  const nextNameLock =
+    isPublic && identity === "ign"
+      ? normalizePublicShareName(name)
+      : "";
+
+  if (nextNameLock && nextNameLock !== prevNameLock) {
+    const reserved = await redis.set(publicNameKey(nextNameLock), id, {
+      nx: true,
+    });
+    if (!reserved) {
+      throw new Error(
+        `A public loadout named “${name}” already exists. Pick another IGN.`,
+      );
+    }
+  }
+
+  try {
+    await redis.set(shareKey(id), draft);
+  } catch (err) {
+    if (nextNameLock && nextNameLock !== prevNameLock) {
+      await redis.del(publicNameKey(nextNameLock)).catch(() => undefined);
+    }
+    throw err;
+  }
+
+  if (prevNameLock && prevNameLock !== nextNameLock) {
+    const owned = await redis.get<string>(publicNameKey(prevNameLock));
+    if (owned === id) {
+      await redis.del(publicNameKey(prevNameLock)).catch(() => undefined);
+    }
+  }
+
+  if (isPublic) {
+    try {
+      await redis.sadd(SHARE_PUBLIC_SET, id);
+    } catch {
+      // ignore
+    }
+  } else if (raw.public) {
+    await releasePublicNameLock(redis, id, draft);
+    await redis.srem(SHARE_PUBLIC_SET, id).catch(() => undefined);
+  }
+
+  const viewsRaw = await redis.get<number | string>(viewsKey(id));
+  const views = Math.max(
+    0,
+    Number(viewsRaw ?? raw.views ?? 0) || 0,
+  );
+  return { ...draft, views };
 }
 
 /**
@@ -382,6 +661,13 @@ export type ScouterGalleryItem = {
   /** Boss Converted Stat HEXA @ 380% PDR (20 min / KMS). Null if unknown. */
   boss380HexaStat: number | null;
   views: number;
+  /** True when the share includes an equipment snapshot. */
+  hasEquipment: boolean;
+  /** Equipped piece count when hasEquipment (0 if unknown / none). */
+  equipCount: number;
+  /** Roster character name when published with one. */
+  characterName?: string;
+  characterRegion?: "na" | "eu";
 };
 
 /** Cap gallery responses so unbounded public sets stay usable. */
@@ -557,6 +843,10 @@ export async function listPublicShares(): Promise<ScouterGalleryItem[]> {
 
   const items: ScouterGalleryItem[] = pending.map((row) => {
     const input = row.raw.state.input;
+    const equipment = normalizeShareEquipment(row.raw.equipment);
+    const character = normalizeShareCharacter(row.raw.character);
+    const hasEquipment =
+      row.raw.hasEquipment === true || Boolean(equipment);
     return {
       id: row.id,
       name: (row.raw.name || "Untitled").trim() || "Untitled",
@@ -569,6 +859,14 @@ export async function listPublicShares(): Promise<ScouterGalleryItem[]> {
       boss300HexaStat: row.boss300HexaStat,
       boss380HexaStat: row.boss380HexaStat,
       views: row.views,
+      hasEquipment,
+      equipCount: equipment ? countEquipPieces(equipment.setup) : 0,
+      ...(character
+        ? {
+            characterName: character.name,
+            characterRegion: character.region,
+          }
+        : {}),
     };
   });
 

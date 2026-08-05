@@ -70,6 +70,7 @@ export function subscribeMapleDataReload(onReload: () => void): () => void {
       e.key === "flameSetup" ||
       e.key === "maplecompile-scouter-last" ||
       e.key === "maplehub-scouter-last" ||
+      e.key === "maplecompile-character-workspace-v1" ||
       e.key === "maplecompile-scouter-presets" ||
       e.key === "maplecompile-planner-overrides" ||
       e.key === "jobType" ||

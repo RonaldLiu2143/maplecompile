@@ -5,6 +5,12 @@ import {
   isRedisConfigured,
   purgeShare,
   removeFromPublicGallery,
+  SHARE_MAX_BYTES,
+  updateShare,
+  type ScouterShareState,
+  type ShareCharacterRef,
+  type ShareEquipmentPayload,
+  type ShareIdentity,
 } from "@/lib/scouter/share";
 
 type Params = { params: Promise<{ id: string }> };
@@ -43,6 +49,99 @@ export async function GET(req: Request, { params }: Params) {
   }
 }
 
+export async function PATCH(req: Request, { params }: Params) {
+  try {
+    if (!isRedisConfigured()) {
+      return NextResponse.json(
+        {
+          error:
+            "Sharing is not configured. Set UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN.",
+        },
+        { status: 503 },
+      );
+    }
+
+    const contentLength = Number(req.headers.get("content-length") || 0);
+    if (contentLength > SHARE_MAX_BYTES) {
+      return NextResponse.json(
+        { error: `Payload too large (max ${SHARE_MAX_BYTES} bytes)` },
+        { status: 413 },
+      );
+    }
+
+    const { id } = await params;
+    const body = (await req.json()) as {
+      editToken?: string;
+      deleteToken?: string;
+      state?: ScouterShareState;
+      name?: string;
+      ign?: string;
+      identity?: ShareIdentity;
+      achievement?: string;
+      public?: boolean;
+      boss300HexaStat?: number;
+      boss380HexaStat?: number;
+      character?: ShareCharacterRef | null;
+      equipment?: ShareEquipmentPayload | null;
+    };
+
+    const editToken = (body.editToken ?? body.deleteToken ?? "").trim();
+    if (!editToken) {
+      return NextResponse.json(
+        { error: "Missing editToken" },
+        { status: 400 },
+      );
+    }
+
+    const bodyBytes = new TextEncoder().encode(JSON.stringify(body)).length;
+    if (bodyBytes > SHARE_MAX_BYTES) {
+      return NextResponse.json(
+        { error: `Payload too large (max ${SHARE_MAX_BYTES} bytes)` },
+        { status: 413 },
+      );
+    }
+
+    const record = await updateShare({
+      id,
+      editToken,
+      state: body.state,
+      name: body.name,
+      ign: body.ign,
+      identity: body.identity,
+      achievement: body.achievement,
+      public: body.public,
+      boss300HexaStat: body.boss300HexaStat,
+      boss380HexaStat: body.boss380HexaStat,
+      character: body.character,
+      equipment: body.equipment,
+    });
+
+    const origin = new URL(req.url).origin;
+    const url = `${origin}/calc/character/share/${record.id}`;
+
+    return NextResponse.json({
+      ...record,
+      url,
+      editToken,
+      deleteToken: editToken,
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    const status = message.includes("too large")
+      ? 413
+      : message.includes("already exists")
+        ? 409
+        : message.includes("Not allowed")
+          ? 403
+          : message.includes("Invalid") ||
+              message.includes("Enter your IGN") ||
+              message.includes("Share not found")
+            ? 400
+            : 500;
+    return NextResponse.json({ error: message }, { status });
+  }
+}
+
 export async function DELETE(req: Request, { params }: Params) {
   try {
     if (!isRedisConfigured()) {
@@ -58,18 +157,20 @@ export async function DELETE(req: Request, { params }: Params) {
     const { id } = await params;
     const body = (await req.json().catch(() => ({}))) as {
       deleteToken?: string;
+      editToken?: string;
       /** When true, permanently delete (404). Used for gallery replace. */
       hard?: boolean;
     };
+    const token = (body.editToken ?? body.deleteToken ?? "").trim();
     if (body.hard === true) {
       await purgeShare({
         id,
-        deleteToken: body.deleteToken ?? "",
+        deleteToken: token,
       });
     } else {
       await removeFromPublicGallery({
         id,
-        deleteToken: body.deleteToken ?? "",
+        deleteToken: token,
       });
     }
     return NextResponse.json({ ok: true });

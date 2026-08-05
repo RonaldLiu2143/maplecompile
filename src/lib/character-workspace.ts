@@ -1,0 +1,260 @@
+import {
+  entryKey,
+  readRosterState,
+  type RosterPrimary,
+} from "@/lib/dashboard/roster";
+import { notifyMapleDataChanged } from "@/lib/maple-events";
+import { countFilledSlots } from "@/lib/starter-loadouts";
+import {
+  storage,
+  type ScouterLastState,
+} from "@/lib/storage";
+import type { EquipSetup, JobType } from "@/lib/types";
+import type { NexonRegion } from "@/lib/character/lookup";
+
+export const CHARACTER_WORKSPACE_KEY = "maplecompile-character-workspace-v1";
+const WORKSPACE_MIGRATED_KEY = "maplecompile-character-workspace-migrated-v1";
+
+export type CharacterWorkspace = {
+  scouterLast: ScouterLastState | null;
+  equipSetup: EquipSetup;
+  jobType: string;
+  charType: string;
+  /** When scouter + equip were last paired for this character. */
+  pairedAt?: number;
+  updatedAt: number;
+};
+
+type WorkspaceMap = Record<string, CharacterWorkspace>;
+
+function readMap(): WorkspaceMap {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = localStorage.getItem(CHARACTER_WORKSPACE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw) as unknown;
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      return {};
+    }
+    return parsed as WorkspaceMap;
+  } catch {
+    return {};
+  }
+}
+
+function writeMap(map: WorkspaceMap) {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(CHARACTER_WORKSPACE_KEY, JSON.stringify(map));
+  notifyMapleDataChanged("other");
+}
+
+export function emptyWorkspace(): CharacterWorkspace {
+  return {
+    scouterLast: null,
+    equipSetup: {},
+    jobType: "",
+    charType: "",
+    updatedAt: Date.now(),
+  };
+}
+
+export function getWorkspace(key: string): CharacterWorkspace | null {
+  if (!key) return null;
+  const hit = readMap()[key];
+  if (!hit || typeof hit !== "object") return null;
+  return {
+    scouterLast: hit.scouterLast ?? null,
+    equipSetup:
+      hit.equipSetup && typeof hit.equipSetup === "object"
+        ? hit.equipSetup
+        : {},
+    jobType: typeof hit.jobType === "string" ? hit.jobType : "",
+    charType: typeof hit.charType === "string" ? hit.charType : "",
+    pairedAt: typeof hit.pairedAt === "number" ? hit.pairedAt : undefined,
+    updatedAt: typeof hit.updatedAt === "number" ? hit.updatedAt : Date.now(),
+  };
+}
+
+export function setWorkspace(key: string, workspace: CharacterWorkspace) {
+  if (!key) return;
+  const map = readMap();
+  map[key] = { ...workspace, updatedAt: Date.now() };
+  writeMap(map);
+}
+
+export function patchWorkspace(
+  key: string,
+  patch: Partial<CharacterWorkspace>,
+): CharacterWorkspace {
+  const prev = getWorkspace(key) ?? emptyWorkspace();
+  const next: CharacterWorkspace = {
+    ...prev,
+    ...patch,
+    updatedAt: Date.now(),
+  };
+  setWorkspace(key, next);
+  return next;
+}
+
+export function activeCharacterKey(
+  primary?: RosterPrimary | null,
+): string | null {
+  const p = primary ?? readRosterState().primary;
+  if (!p) return null;
+  return entryKey(p);
+}
+
+/**
+ * One-shot: copy global scouter-last + equipSetup + pairing into the primary
+ * character workspace when that key has no workspace yet.
+ */
+export function migrateGlobalsToPrimaryWorkspace(): void {
+  if (typeof window === "undefined") return;
+  try {
+    if (localStorage.getItem(WORKSPACE_MIGRATED_KEY) === "1") return;
+  } catch {
+    return;
+  }
+
+  const primary = readRosterState().primary;
+  if (!primary) {
+    try {
+      localStorage.setItem(WORKSPACE_MIGRATED_KEY, "1");
+    } catch {
+      /* ignore */
+    }
+    return;
+  }
+
+  const key = entryKey(primary);
+  const existing = getWorkspace(key);
+  const hasExisting =
+    existing &&
+    (existing.scouterLast?.input != null ||
+      countFilledSlots(existing.equipSetup) > 0);
+
+  if (!hasExisting) {
+    const scouterLast = storage.getScouterLast();
+    const equipSetup = storage.getEquipSetup();
+    const jobType =
+      storage.getJobType() ||
+      scouterLast?.input?.jobType ||
+      "";
+    const charType =
+      storage.getCharType() ||
+      scouterLast?.input?.charType ||
+      "";
+    let pairedAt: number | undefined;
+    try {
+      const pairRaw = localStorage.getItem("maplecompile-scouter-equip-pair");
+      if (pairRaw) {
+        const pair = JSON.parse(pairRaw) as { updatedAt?: number };
+        if (typeof pair.updatedAt === "number") pairedAt = pair.updatedAt;
+      }
+    } catch {
+      /* ignore */
+    }
+    setWorkspace(key, {
+      scouterLast,
+      equipSetup,
+      jobType,
+      charType,
+      pairedAt,
+      updatedAt: Date.now(),
+    });
+  }
+
+  try {
+    localStorage.setItem(WORKSPACE_MIGRATED_KEY, "1");
+  } catch {
+    /* ignore */
+  }
+}
+
+/** Push a character workspace into the live Scouter / Equipment localStorage. */
+export function applyWorkspaceToLive(workspace: CharacterWorkspace): void {
+  if (workspace.scouterLast?.input) {
+    storage.setScouterLast(workspace.scouterLast);
+  }
+  if (workspace.jobType) {
+    storage.setJobType(workspace.jobType as JobType | "");
+  }
+  if (workspace.charType) storage.setCharType(workspace.charType);
+  storage.setEquipSetup(workspace.equipSetup ?? {});
+}
+
+/** Snapshot live Scouter / Equipment into the given character workspace key. */
+export function persistLiveToWorkspace(key: string | null | undefined): void {
+  if (!key) return;
+  const scouterLast = storage.getScouterLast();
+  const equipSetup = storage.getEquipSetup();
+  const jobType =
+    storage.getJobType() ||
+    scouterLast?.input?.jobType ||
+    "";
+  const charType =
+    storage.getCharType() ||
+    scouterLast?.input?.charType ||
+    "";
+  const prev = getWorkspace(key);
+  patchWorkspace(key, {
+    scouterLast,
+    equipSetup,
+    jobType,
+    charType,
+    pairedAt: prev?.pairedAt,
+  });
+}
+
+/**
+ * Ensure migration ran, then load the active (primary) character workspace
+ * into live storage. Returns the active key (or null if no primary).
+ */
+export function ensureActiveWorkspaceLoaded(): string | null {
+  migrateGlobalsToPrimaryWorkspace();
+  const key = activeCharacterKey();
+  if (!key) return null;
+  const ws = getWorkspace(key);
+  if (ws) {
+    applyWorkspaceToLive(ws);
+  } else {
+    // Seed from whatever is currently live so the key exists.
+    persistLiveToWorkspace(key);
+  }
+  return key;
+}
+
+/** Write an imported build into a roster character workspace (+ live). */
+export function importBuildToCharacter(args: {
+  region: NexonRegion;
+  name: string;
+  scouterLast: ScouterLastState;
+  equipSetup?: EquipSetup;
+  jobType?: string;
+  charType?: string;
+}): string {
+  const key = entryKey({ region: args.region, name: args.name });
+  const jobType =
+    args.jobType ||
+    args.scouterLast.input?.jobType ||
+    "";
+  const charType =
+    args.charType ||
+    args.scouterLast.input?.charType ||
+    "";
+  const equipSetup = args.equipSetup ?? {};
+  const workspace: CharacterWorkspace = {
+    scouterLast: args.scouterLast,
+    equipSetup,
+    jobType,
+    charType,
+    pairedAt:
+      countFilledSlots(equipSetup) > 0 && args.scouterLast.input
+        ? Date.now()
+        : undefined,
+    updatedAt: Date.now(),
+  };
+  setWorkspace(key, workspace);
+  applyWorkspaceToLive(workspace);
+  return key;
+}

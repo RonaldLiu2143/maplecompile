@@ -5,6 +5,8 @@ import {
   listPublicShares,
   SHARE_MAX_BYTES,
   type ScouterShareState,
+  type ShareCharacterRef,
+  type ShareEquipmentPayload,
   type ShareIdentity,
 } from "@/lib/scouter/share";
 
@@ -58,6 +60,8 @@ export async function POST(req: Request) {
       ign?: string;
       boss300HexaStat?: number;
       boss380HexaStat?: number;
+      character?: ShareCharacterRef;
+      equipment?: ShareEquipmentPayload;
     };
 
     if (!body?.state?.input) {
@@ -84,10 +88,12 @@ export async function POST(req: Request) {
       ign: body.ign ?? body.name,
       boss300HexaStat: body.boss300HexaStat,
       boss380HexaStat: body.boss380HexaStat,
+      character: body.character,
+      equipment: body.equipment,
     });
 
     const origin = new URL(req.url).origin;
-    const url = `${origin}/calc/scouter/s/${created.record.id}`;
+    const url = `${origin}/calc/character/share/${created.record.id}`;
 
     return NextResponse.json({
       id: created.record.id,
@@ -96,7 +102,9 @@ export async function POST(req: Request) {
       name: created.record.name,
       identity: created.record.identity ?? identity,
       views: created.record.views ?? 0,
+      hasEquipment: created.record.hasEquipment === true,
       deleteToken: created.deleteToken,
+      editToken: created.editToken,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";

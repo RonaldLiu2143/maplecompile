@@ -112,7 +112,10 @@ export function GalleryClient({
             item.id.toLowerCase().includes(q) ||
             String(item.level).includes(q) ||
             item.achievement.toLowerCase().includes(q) ||
-            item.identity.includes(q)
+            item.identity.includes(q) ||
+            (item.characterName?.toLowerCase().includes(q) ?? false) ||
+            (item.characterRegion?.includes(q) ?? false) ||
+            (item.hasEquipment && (q === "gear" || q === "equipment"))
           );
         });
 
@@ -170,12 +173,12 @@ export function GalleryClient({
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="font-display text-3xl font-bold tracking-tight">
-            Public Scouter Gallery
+            Public Build Gallery
           </h1>
           <p className="mt-1 max-w-2xl text-sm opacity-75">
-            Shared loadouts (anonymous class-code or IGN). Open one to load it
-            into Scouter. Leaderboard ranks by share-page views. BCS HEXA is 20
-            min / KMS.
+            Shared Scouter + Equipment builds (anonymous class-code or IGN).
+            Open a profile to view, import, or edit if you own the token.
+            Leaderboard ranks by profile views. BCS HEXA is 20 min / KMS.
           </p>
         </div>
         <Link
@@ -265,6 +268,7 @@ export function GalleryClient({
                 <th className="px-3 py-2.5 font-semibold">Name</th>
                 <th className="px-3 py-2.5 font-semibold">Class</th>
                 <th className="px-3 py-2.5 font-semibold">Level</th>
+                <th className="px-3 py-2.5 font-semibold">Gear</th>
                 <th className="px-3 py-2.5 font-semibold">Views</th>
                 <th className="px-3 py-2.5 font-semibold" title="Boss Converted Stat HEXA · 20 min / KMS">
                   BCS HEXA
@@ -294,11 +298,35 @@ export function GalleryClient({
                       <span className="inline-flex flex-wrap items-center">
                         {item.name}
                         <IdentityBadge identity={item.identity} />
+                        {item.hasEquipment ? (
+                          <span
+                            className="ml-1.5 inline-block rounded border border-emerald-500/40 bg-emerald-500/10 px-1 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-400"
+                            title={
+                              item.equipCount
+                                ? `${item.equipCount} equipped pieces`
+                                : "Includes equipment"
+                            }
+                          >
+                            Gear
+                            {item.equipCount > 0 ? ` ${item.equipCount}` : ""}
+                          </span>
+                        ) : null}
                       </span>
                     </td>
                     <td className="px-3 py-2.5">{className}</td>
                     <td className="px-3 py-2.5 tabular-nums">
                       {item.level || "—"}
+                    </td>
+                    <td className="px-3 py-2.5 text-xs">
+                      {item.hasEquipment ? (
+                        <span className="font-semibold text-emerald-700 dark:text-emerald-400">
+                          {item.equipCount > 0
+                            ? `${item.equipCount} pcs`
+                            : "Yes"}
+                        </span>
+                      ) : (
+                        <span className="opacity-45">—</span>
+                      )}
                     </td>
                     <td className="px-3 py-2.5 tabular-nums">
                       {(item.views ?? 0).toLocaleString()}
@@ -320,7 +348,7 @@ export function GalleryClient({
                     <td className="px-3 py-2.5 text-right">
                       <div className="inline-flex flex-wrap items-center justify-end gap-1.5">
                         <Link
-                          href={`/calc/scouter/s/${item.id}`}
+                          href={`/calc/character/share/${item.id}`}
                           className="inline-block rounded bg-accent px-2.5 py-1 text-xs font-semibold text-white transition hover:opacity-90"
                         >
                           Open

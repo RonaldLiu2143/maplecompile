@@ -37,6 +37,11 @@ import {
 import { storage } from "@/lib/storage";
 import { PairingBar } from "@/components/PairingBar";
 import {
+  activeCharacterKey,
+  ensureActiveWorkspaceLoaded,
+  persistLiveToWorkspace,
+} from "@/lib/character-workspace";
+import {
   STARTER_LOADOUTS,
   buildStarterSetup,
   countFilledSlots,
@@ -188,6 +193,7 @@ export default function SetupClient() {
   }, []);
 
   useEffect(() => {
+    ensureActiveWorkspaceLoaded();
     const savedJob = storage.getJobType();
     const savedChar = storage.getCharType();
     const savedSetup = storage.getEquipSetup();
@@ -207,6 +213,7 @@ export default function SetupClient() {
     storage.setJobType(jobType);
     storage.setCharType(charType);
     storage.setEquipSetup(setup);
+    persistLiveToWorkspace(activeCharacterKey());
   }, [jobType, charType, setup, hydrated]);
 
   const syncPlannerOverride = useCallback(

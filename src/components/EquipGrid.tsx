@@ -15,12 +15,14 @@ import { EquipItemTooltip } from "@/components/EquipItemTooltip";
 
 type Props = {
   setup: EquipSetup;
-  onSlotClick: (slotId: string) => void;
+  onSlotClick?: (slotId: string) => void;
   charLabel?: string;
   /** Highlight the slot currently being edited / picked. */
   activeSlot?: string | null;
   /** Flame lines by equip id — used for hover tooltips. */
   flameSetup?: FlameSetup;
+  /** When true, slots are not clickable (profile / import preview). */
+  readOnly?: boolean;
 };
 
 const SLOT = "3rem";
@@ -38,13 +40,15 @@ function EquipSlot({
   onSlotClick,
   style,
   active,
+  readOnly,
 }: {
   slotId: string;
   setup: EquipSetup;
   flameSetup?: FlameSetup;
-  onSlotClick: (slotId: string) => void;
+  onSlotClick?: (slotId: string) => void;
   style: CSSProperties;
   active: boolean;
+  readOnly?: boolean;
 }) {
   const equip = slotEquip(setup, slotId);
   const filled = !!equip;
@@ -67,6 +71,7 @@ function EquipSlot({
     <div className="group relative" style={style}>
       <button
         type="button"
+        disabled={readOnly}
         title={
           equip
             ? showStars
@@ -74,8 +79,13 @@ function EquipSlot({
               : equip.name
             : (SLOT_LABELS[slotId] ?? slotId)
         }
-        onClick={() => onSlotClick(slotId)}
+        onClick={() => {
+          if (readOnly) return;
+          onSlotClick?.(slotId);
+        }}
         className={`relative flex h-full w-full items-center justify-center rounded-[2px] border transition ${
+          readOnly ? "cursor-default" : ""
+        } ${
           active
             ? "border-sky-400 bg-[#3a4a5c] ring-1 ring-sky-400/60"
             : filled
@@ -125,6 +135,7 @@ export function EquipGrid({
   charLabel,
   activeSlot,
   flameSetup,
+  readOnly,
 }: Props) {
   return (
     <div
@@ -194,6 +205,7 @@ export function EquipGrid({
           flameSetup={flameSetup}
           onSlotClick={onSlotClick}
           active={activeSlot === slot.id}
+          readOnly={readOnly}
           style={{ gridColumn: slot.col, gridRow: slot.row }}
         />
       ))}

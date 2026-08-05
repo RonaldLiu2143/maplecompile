@@ -39,9 +39,16 @@ import {
   parseClassValue,
 } from "@/lib/jobs";
 import { storage, type ScouterPreset } from "@/lib/storage";
+import {
+  activeCharacterKey,
+  ensureActiveWorkspaceLoaded,
+  persistLiveToWorkspace,
+} from "@/lib/character-workspace";
 import { PairingBar } from "@/components/PairingBar";
 import { HexaEfficiencyPanel } from "./hexa-efficiency";
 import { ShareGalleryModal } from "./share-gallery-modal";
+import { countFilledSlots } from "@/lib/starter-loadouts";
+import { readRosterState } from "@/lib/dashboard/roster";
 
 const cell =
   "border border-border/50 bg-background px-2 py-1.5 text-sm outline-none focus:relative focus:z-10 focus:border-accent";
@@ -299,6 +306,8 @@ export default function ScouterPage() {
   const prevExceptionFd = useRef<number | null>(null);
 
   useEffect(() => {
+    // Bind live draft to the roster primary's per-character workspace.
+    ensureActiveWorkspaceLoaded();
     const last = storage.getScouterLast();
     if (last?.input) {
       const job = last.input.jobType || DEFAULT_JOB;
@@ -371,6 +380,7 @@ export default function ScouterPage() {
       hexa: clampHexaForGms(hexa),
       ...(trimmed ? { name: trimmed } : {}),
     });
+    persistLiveToWorkspace(activeCharacterKey());
   }, [input, buffs, links, hexa, presetName, draftReady]);
 
   const patch = (partial: Partial<ScouterInput>) =>
@@ -597,43 +607,112 @@ export default function ScouterPage() {
     setShareUrl(null);
     const presetKey = loadedPresetId || null;
     try {
-      // Replace: hard-delete the previous public post so the IGN lock frees
-      // and the old share id 404s before creating a fresh gallery entry.
+      const equipSetup = storage.getEquipSetup();
+      const equipCount = countFilledSlots(equipSetup);
+      const equipment =
+        equipCount > 0
+          ? {
+              jobType:
+                storage.getJobType() ||
+                input.jobType ||
+                "",
+              charType:
+                storage.getCharType() ||
+                input.charType ||
+                "",
+              setup: structuredClone(equipSetup),
+            }
+          : undefined;
+      const primary = readRosterState().primary;
+      const character = primary
+        ? { region: primary.region, name: primary.name }
+        : undefined;
+
+      const shareState = {
+        input: structuredClone(input),
+        buffs: structuredClone(buffs),
+        links: structuredClone(links),
+        hexa: clampHexaForGms(hexa),
+      };
+      const shareName = name.trim() || "Untitled";
+      const achievement = args.achievement ?? shareAchievement;
+
+      // In-place update when replacing an owned public gallery post.
       if (args.asPublic && args.replaceExisting) {
         const previous =
           storage.getScouterGalleryShareForPreset(presetKey);
         if (previous) {
-          const delRes = await fetch(
+          const patchRes = await fetch(
             `/api/scouter/share/${encodeURIComponent(previous.id)}`,
             {
-              method: "DELETE",
+              method: "PATCH",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
-                deleteToken: previous.deleteToken,
-                hard: true,
+                editToken: previous.deleteToken,
+                name: shareName,
+                ign: identity === "ign" ? shareName : undefined,
+                identity,
+                public: true,
+                achievement,
+                boss300HexaStat:
+                  args.boss300HexaStat != null
+                    ? args.boss300HexaStat
+                    : undefined,
+                boss380HexaStat:
+                  args.boss380HexaStat != null
+                    ? args.boss380HexaStat
+                    : undefined,
+                state: shareState,
+                character: character ?? null,
+                equipment: equipment ?? null,
               }),
             },
           );
-          const delData = (await delRes.json()) as { error?: string };
-          if (!delRes.ok) {
-            // Stale local ownership: drop it and still try to create the new post.
-            if (delRes.status === 403 || delRes.status === 400) {
-              storage.clearScouterShareToken(previous.id);
-            } else {
-              throw new Error(
-                delData.error ||
-                  `Could not remove previous gallery post (${delRes.status})`,
-              );
+          const patchData = (await patchRes.json()) as {
+            id?: string;
+            url?: string;
+            public?: boolean;
+            name?: string;
+            error?: string;
+          };
+          if (patchRes.ok && patchData.url && patchData.id) {
+            const savedName =
+              (patchData.name ?? shareName).trim() || shareName;
+            storage.saveScouterShareToken({
+              id: patchData.id,
+              deleteToken: previous.deleteToken,
+              name: savedName,
+              public: true,
+            });
+            storage.linkScouterGalleryShare({
+              shareId: patchData.id,
+              presetId: presetKey,
+            });
+            setShareUrl(patchData.url);
+            if (identity === "ign") setPresetName(savedName);
+            setShareAchievement(achievement.trim());
+            setExistingGalleryPost({ id: patchData.id, name: savedName });
+            setGalleryModalOpen(false);
+            try {
+              await navigator.clipboard.writeText(patchData.url);
+              flashPresetMsg(`Updated gallery as ${savedName} — link copied`);
+            } catch {
+              flashPresetMsg(`Updated gallery as ${savedName}`);
             }
-          } else {
+            return;
+          }
+          // Stale ownership — clear and fall through to create.
+          if (patchRes.status === 403 || patchRes.status === 400) {
             storage.clearScouterShareToken(previous.id);
+          } else {
+            throw new Error(
+              patchData.error ||
+                `Could not update gallery post (${patchRes.status})`,
+            );
           }
         }
       }
 
-      const shareName = name.trim() || "Untitled";
-      const achievement =
-        args.achievement ?? shareAchievement;
       const res = await fetch("/api/scouter/share", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -651,12 +730,9 @@ export default function ScouterPage() {
             args.asPublic && args.boss380HexaStat != null
               ? args.boss380HexaStat
               : undefined,
-          state: {
-            input: structuredClone(input),
-            buffs: structuredClone(buffs),
-            links: structuredClone(links),
-            hexa: clampHexaForGms(hexa),
-          },
+          state: shareState,
+          character,
+          equipment,
         }),
       });
       const data = (await res.json()) as {
@@ -665,16 +741,18 @@ export default function ScouterPage() {
         public?: boolean;
         name?: string;
         deleteToken?: string;
+        editToken?: string;
         error?: string;
       };
       if (!res.ok || !data.url || !data.id) {
         throw new Error(data.error || `Share failed (${res.status})`);
       }
       const savedName = (data.name ?? shareName).trim() || shareName;
-      if (data.deleteToken) {
+      const token = data.editToken ?? data.deleteToken;
+      if (token) {
         storage.saveScouterShareToken({
           id: data.id,
-          deleteToken: data.deleteToken,
+          deleteToken: token,
           name: savedName,
           public: !!data.public,
         });
@@ -694,12 +772,7 @@ export default function ScouterPage() {
         setExistingGalleryPost({ id: data.id, name: savedName });
         setGalleryModalOpen(false);
       }
-      const replaced = Boolean(args.replaceExisting);
-      const visibility = data.public
-        ? replaced
-          ? "Updated gallery"
-          : "Public"
-        : "Link-only";
+      const visibility = data.public ? "Public" : "Link-only";
       try {
         await navigator.clipboard.writeText(data.url);
         flashPresetMsg(
@@ -708,11 +781,15 @@ export default function ScouterPage() {
             : `${visibility} link copied`,
         );
       } catch {
-        flashPresetMsg(`${visibility} link ready`);
+        flashPresetMsg(
+          data.public
+            ? `${visibility} as ${savedName}`
+            : `${visibility} link ready`,
+        );
       }
     } catch (err) {
       flashPresetMsg(
-        err instanceof Error ? err.message : "Could not share",
+        err instanceof Error ? err.message : "Share failed",
       );
     } finally {
       setSharing(false);
