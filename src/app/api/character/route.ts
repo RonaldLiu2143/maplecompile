@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import {
+  lookupGmsCharacterCached,
+  toCardCharacter,
+} from "@/lib/character/cache";
+import {
   CHARACTER_NAME_REGEX,
-  lookupGmsCharacter,
   normalizeRegion,
   type CharacterLookupErrorCode,
 } from "@/lib/character/lookup";
@@ -24,6 +27,8 @@ export async function GET(req: Request) {
   const name = (searchParams.get("name") ?? searchParams.get("character_name") ?? "")
     .trim();
   const regionRaw = searchParams.get("region") ?? searchParams.get("world") ?? "na";
+  const fields = (searchParams.get("fields") ?? "").trim().toLowerCase();
+  const lean = fields === "card";
 
   if (!name) {
     return errorJson("Character name is required.", "missing_name", 400);
@@ -42,7 +47,7 @@ export async function GET(req: Request) {
   }
 
   try {
-    const character = await lookupGmsCharacter(name, region);
+    const character = await lookupGmsCharacterCached(name, region);
     if (!character) {
       return errorJson(
         `No ranked character named “${name}” on GMS ${region.toUpperCase()}. Low-level or unranked characters may not appear.`,
@@ -52,10 +57,14 @@ export async function GET(req: Request) {
     }
 
     return NextResponse.json(
-      { ok: true as const, character },
+      {
+        ok: true as const,
+        character: lean ? toCardCharacter(character) : character,
+      },
       {
         headers: {
           // Rankings refresh periodically; short CDN cache is fine.
+          // Server also keeps a ~60s in-memory TTL shared with batch.
           "Cache-Control": "public, s-maxage=60, stale-while-revalidate=120",
         },
       },

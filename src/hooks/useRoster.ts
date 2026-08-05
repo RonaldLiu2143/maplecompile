@@ -5,6 +5,9 @@ import type { RosterDragProps } from "@/components/dashboard/RosterCharacterCard
 import {
   CHARACTER_LOOKUP_NETWORK_ERROR,
   fetchCharacterLookup,
+  fetchCharacterLookupBatch,
+  readSessionCharacter,
+  writeSessionCharacter,
 } from "@/lib/character/client";
 import type { CharacterLookupResult } from "@/lib/character/lookup";
 import {
@@ -52,8 +55,17 @@ export function useRoster() {
 
     setSlots((prev) => {
       const next: Record<string, RosterSlotState> = {};
-      for (const { key } of wanted) {
-        next[key] = prev[key] ?? { status: "loading" };
+      for (const { entry, key } of wanted) {
+        if (prev[key]) {
+          next[key] = prev[key];
+          continue;
+        }
+        const stale = readSessionCharacter(entry.name, entry.region);
+        if (stale) {
+          next[key] = { status: "ready", character: stale };
+        } else {
+          next[key] = { status: "loading" };
+        }
       }
       return next;
     });
@@ -61,36 +73,92 @@ export function useRoster() {
       if (!wantedKeys.has(key)) loadedKeys.current.delete(key);
     }
 
-    async function loadOne(entry: RosterEntry, key: string) {
-      setSlots((prev) => ({ ...prev, [key]: { status: "loading" } }));
-      try {
-        const character = await fetchCharacterLookup(entry.name, entry.region);
-        if (cancelled) return;
-        loadedKeys.current.add(key);
-        setSlots((prev) => ({
-          ...prev,
-          [key]: { status: "ready", character },
-        }));
-      } catch (err) {
-        if (cancelled) return;
+    const toLoad = wanted.filter(({ key }) => !loadedKeys.current.has(key));
+
+    function applyReady(key: string, character: CharacterLookupResult) {
+      if (cancelled) return;
+      writeSessionCharacter(character);
+      loadedKeys.current.add(key);
+      setSlots((prev) => ({
+        ...prev,
+        [key]: { status: "ready", character },
+      }));
+    }
+
+    function applyError(key: string, error: string) {
+      if (cancelled) return;
+      setSlots((prev) => {
+        // Keep showing last-good card while a background refresh fails.
+        if (prev[key]?.status === "ready") return prev;
         loadedKeys.current.delete(key);
-        setSlots((prev) => ({
-          ...prev,
-          [key]: {
-            status: "error",
-            error:
-              err instanceof Error
-                ? err.message
-                : CHARACTER_LOOKUP_NETWORK_ERROR,
-          },
-        }));
+        return { ...prev, [key]: { status: "error", error } };
+      });
+    }
+
+    async function loadOne(entry: RosterEntry, key: string) {
+      setSlots((prev) => {
+        if (prev[key]?.status === "ready") return prev;
+        return { ...prev, [key]: { status: "loading" } };
+      });
+      try {
+        const character = await fetchCharacterLookup(entry.name, entry.region, {
+          fields: "card",
+        });
+        applyReady(key, character);
+      } catch (err) {
+        applyError(
+          key,
+          err instanceof Error ? err.message : CHARACTER_LOOKUP_NETWORK_ERROR,
+        );
       }
     }
 
-    for (const { entry, key } of wanted) {
-      if (!loadedKeys.current.has(key)) {
-        void loadOne(entry, key);
+    async function loadBatch(
+      items: Array<{ entry: RosterEntry; key: string }>,
+    ) {
+      for (const { key } of items) {
+        setSlots((prev) => {
+          if (prev[key]?.status === "ready") return prev;
+          return { ...prev, [key]: { status: "loading" } };
+        });
       }
+
+      try {
+        const results = await fetchCharacterLookupBatch(
+          items.map(({ entry }) => ({
+            name: entry.name,
+            region: entry.region,
+          })),
+          { fields: "card" },
+        );
+
+        if (cancelled) return;
+
+        for (const { key } of items) {
+          const hit = results[key];
+          if (hit?.ok) {
+            applyReady(key, hit.character);
+          } else {
+            applyError(
+              key,
+              hit && !hit.ok ? hit.error : CHARACTER_LOOKUP_NETWORK_ERROR,
+            );
+          }
+        }
+      } catch (err) {
+        if (cancelled) return;
+        const message =
+          err instanceof Error ? err.message : CHARACTER_LOOKUP_NETWORK_ERROR;
+        for (const { key } of items) {
+          applyError(key, message);
+        }
+      }
+    }
+
+    if (toLoad.length === 1) {
+      void loadOne(toLoad[0]!.entry, toLoad[0]!.key);
+    } else if (toLoad.length > 1) {
+      void loadBatch(toLoad);
     }
 
     return () => {
@@ -179,6 +247,7 @@ export function useRoster() {
   ) {
     const key = entryKey(character);
     loadedKeys.current.add(key);
+    writeSessionCharacter(character);
     setSlots((prev) => ({
       ...prev,
       [key]: { status: "ready", character },
