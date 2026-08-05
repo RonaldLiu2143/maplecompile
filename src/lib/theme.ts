@@ -56,6 +56,9 @@ export type ThemePrefs = {
 
 export const DEFAULT_THEME_ID: ThemeId = "compile";
 
+/** Stable default for SSR / empty storage — useSyncExternalStore requires referential equality. */
+export const DEFAULT_THEME_PREFS: ThemePrefs = { id: DEFAULT_THEME_ID };
+
 const ACCENT_SWATCHES = [
   "#38bdf8",
   "#22d3ee",
@@ -68,6 +71,10 @@ const ACCENT_SWATCHES = [
 ] as const;
 
 export const THEME_ACCENT_SWATCHES: readonly string[] = ACCENT_SWATCHES;
+
+/** Cache so getSnapshot returns the same object when localStorage is unchanged. */
+let cachedStorageRaw: string | null | undefined;
+let cachedPrefs: ThemePrefs = DEFAULT_THEME_PREFS;
 
 export function isThemeId(value: unknown): value is ThemeId {
   return (
@@ -82,7 +89,7 @@ export function getThemePreset(id: ThemeId): ThemePreset {
 
 export function normalizeThemePrefs(raw: unknown): ThemePrefs {
   if (!raw || typeof raw !== "object") {
-    return { id: DEFAULT_THEME_ID };
+    return DEFAULT_THEME_PREFS;
   }
   const obj = raw as Partial<ThemePrefs>;
   const id = isThemeId(obj.id) ? obj.id : DEFAULT_THEME_ID;
@@ -90,17 +97,33 @@ export function normalizeThemePrefs(raw: unknown): ThemePrefs {
     typeof obj.accent === "string" && /^#[0-9a-fA-F]{6}$/.test(obj.accent)
       ? obj.accent
       : null;
+  if (id === DEFAULT_THEME_ID && accent == null) {
+    return DEFAULT_THEME_PREFS;
+  }
   return { id, accent };
 }
 
+function prefsEqual(a: ThemePrefs, b: ThemePrefs): boolean {
+  return a.id === b.id && (a.accent ?? null) === (b.accent ?? null);
+}
+
 export function readThemePrefs(): ThemePrefs {
-  if (typeof window === "undefined") return { id: DEFAULT_THEME_ID };
+  if (typeof window === "undefined") return DEFAULT_THEME_PREFS;
   try {
     const raw = localStorage.getItem(THEME_STORAGE_KEY);
-    if (!raw) return { id: DEFAULT_THEME_ID };
-    return normalizeThemePrefs(JSON.parse(raw));
+    if (raw === cachedStorageRaw) return cachedPrefs;
+    cachedStorageRaw = raw;
+    const next = raw
+      ? normalizeThemePrefs(JSON.parse(raw))
+      : DEFAULT_THEME_PREFS;
+    // Keep previous object identity when values are unchanged.
+    if (prefsEqual(next, cachedPrefs)) return cachedPrefs;
+    cachedPrefs = next;
+    return cachedPrefs;
   } catch {
-    return { id: DEFAULT_THEME_ID };
+    cachedStorageRaw = undefined;
+    cachedPrefs = DEFAULT_THEME_PREFS;
+    return cachedPrefs;
   }
 }
 
@@ -111,16 +134,25 @@ function notifyThemeChange() {
 
 export function writeThemePrefs(prefs: ThemePrefs): void {
   if (typeof window === "undefined") return;
+  const next: ThemePrefs = {
+    id: prefs.id,
+    accent: prefs.accent ?? null,
+  };
+  const serialized = JSON.stringify({
+    id: next.id,
+    accent: next.accent,
+  });
   try {
-    localStorage.setItem(
-      THEME_STORAGE_KEY,
-      JSON.stringify({
-        id: prefs.id,
-        accent: prefs.accent ?? null,
-      }),
-    );
+    localStorage.setItem(THEME_STORAGE_KEY, serialized);
   } catch {
     /* ignore quota */
+  }
+  cachedStorageRaw = serialized;
+  if (!prefsEqual(next, cachedPrefs)) {
+    cachedPrefs =
+      next.id === DEFAULT_THEME_ID && next.accent == null
+        ? DEFAULT_THEME_PREFS
+        : next;
   }
   notifyThemeChange();
 }

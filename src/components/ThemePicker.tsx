@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
 import {
-  DEFAULT_THEME_ID,
+  DEFAULT_THEME_PREFS,
   THEME_ACCENT_SWATCHES,
   THEME_PRESETS,
   applyThemeToDocument,
@@ -40,7 +40,9 @@ function ThemeIcon({ className }: { className?: string }) {
   );
 }
 
-const serverPrefs: ThemePrefs = { id: DEFAULT_THEME_ID };
+function getServerThemePrefs(): ThemePrefs {
+  return DEFAULT_THEME_PREFS;
+}
 
 export function ThemePicker({
   compact = false,
@@ -53,7 +55,7 @@ export function ThemePicker({
   const prefs = useSyncExternalStore(
     subscribeThemePrefs,
     readThemePrefs,
-    () => serverPrefs,
+    getServerThemePrefs,
   );
   const [open, setOpen] = useState(false);
   const panelId = useId();
