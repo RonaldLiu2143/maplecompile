@@ -16,13 +16,14 @@ import {
 import { addToRoster, setPrimary } from "@/lib/dashboard/roster";
 import { getCharName } from "@/lib/jobs";
 import { pairScouterAndEquip } from "@/lib/pairing";
-import { clampHexaForGms, getHexaSlots } from "@/lib/scouter";
+import { clampHexaForGms } from "@/lib/scouter";
 import {
   countEquipPieces,
   type ScouterShareRecord,
 } from "@/lib/scouter/share";
 import { storage } from "@/lib/storage";
 import { ShareScouterStatsPanel } from "../share-scouter-stats";
+import { ShareScouterExtrasPanel } from "../share-scouter-extras";
 
 type LoadState =
   | { status: "loading" }
@@ -92,10 +93,8 @@ export default function CharacterShareProfilePage() {
 
   const record = load.status === "ready" ? load.record : null;
   const input = record?.state.input;
-  const hexaSlots = useMemo(
-    () => (input ? getHexaSlots(input.charType) : []),
-    [input],
-  );
+  const buffs = record?.state.buffs;
+  const links = record?.state.links;
   const hexa = useMemo(
     () => (record ? clampHexaForGms(record.state.hexa ?? []) : []),
     [record],
@@ -386,51 +385,38 @@ export default function CharacterShareProfilePage() {
         </p>
       ) : null}
 
-      <section className="grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.9fr)] lg:items-start">
-        <div className="space-y-3">
-          <ShareScouterStatsPanel input={input} />
+      <section className="grid items-start gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.95fr)]">
+        <ShareScouterStatsPanel input={input} />
+        {buffs && links ? (
+          <ShareScouterExtrasPanel
+            input={input}
+            buffs={buffs}
+            links={links}
+            hexa={hexa}
+          />
+        ) : null}
+      </section>
 
-          <div className="rounded-lg border border-border/50 bg-surface/80 p-4">
-            <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide opacity-60">
-              HEXA
-            </h3>
-            <ul className="grid grid-cols-2 gap-1.5 text-xs sm:grid-cols-3">
-              {hexaSlots.map((slot, i) => (
-                <li
-                  key={slot.id}
-                  className="rounded border border-border/40 bg-background/70 px-2 py-1.5"
-                >
-                  <span className="opacity-60">{slot.label}</span>
-                  <span className="ml-1 font-semibold tabular-nums">
-                    {hexa[i] ?? 0}
-                  </span>
-                </li>
-              ))}
-            </ul>
+      <section className="rounded-lg border border-border/50 bg-surface/80 p-4">
+        <h2 className="font-display text-lg font-semibold">Equipment</h2>
+        {record.equipment && equipCount > 0 ? (
+          <div className="mt-3 overflow-x-auto">
+            <EquipGrid
+              setup={record.equipment.setup}
+              readOnly
+              charLabel={
+                getCharName(
+                  record.equipment.jobType,
+                  record.equipment.charType,
+                ) || className
+              }
+            />
           </div>
-        </div>
-
-        <div className="space-y-3 rounded-lg border border-border/50 bg-surface/80 p-4">
-          <h2 className="font-display text-lg font-semibold">Equipment</h2>
-          {record.equipment && equipCount > 0 ? (
-            <div className="overflow-x-auto">
-              <EquipGrid
-                setup={record.equipment.setup}
-                readOnly
-                charLabel={
-                  getCharName(
-                    record.equipment.jobType,
-                    record.equipment.charType,
-                  ) || className
-                }
-              />
-            </div>
-          ) : (
-            <p className="text-sm opacity-65">
-              No equipment snapshot on this share (legacy scouter-only post).
-            </p>
-          )}
-        </div>
+        ) : (
+          <p className="mt-2 text-sm opacity-65">
+            No equipment snapshot on this share (legacy scouter-only post).
+          </p>
+        )}
       </section>
 
       <section className="space-y-3 rounded-lg border border-border/50 bg-surface/80 p-4">
