@@ -1,26 +1,13 @@
 /**
  * GMS reset times (UTC):
- * - Daily: every day at 00:00 UTC
- * - Weekly boss crystal: Thursday 00:00 UTC
+ * - Daily content / dailies — every day at 00:00 UTC
+ * - Weekly boss crystals — Thursday 00:00 UTC
  * Week id is the ISO date (YYYY-MM-DD) of that Thursday.
  */
 
 const MS_DAY = 24 * 60 * 60 * 1000;
-
-/** Next daily reset — tomorrow's (or upcoming) 00:00 UTC. */
-export function nextDailyReset(now: Date = new Date()): Date {
-  return new Date(
-    Date.UTC(
-      now.getUTCFullYear(),
-      now.getUTCMonth(),
-      now.getUTCDate() + 1,
-      0,
-      0,
-      0,
-      0,
-    ),
-  );
-}
+const MS_HOUR = 60 * 60 * 1000;
+const MS_MINUTE = 60 * 1000;
 
 /** UTC Thursday 00:00 that starts the current GMS weekly boss period. */
 export function currentWeeklyResetStart(now: Date = new Date()): Date {
@@ -50,14 +37,29 @@ export function nextWeeklyReset(now: Date = new Date()): Date {
   return new Date(end.getTime() + 7 * MS_DAY);
 }
 
-/** Compact countdown like `3d 12h`, `5h 20m`, or `12m`. */
-export function formatCountdownCompact(msRemaining: number): string {
+/** Next daily reset — tomorrow 00:00 UTC (GMS day boundary). */
+export function nextDailyReset(now: Date = new Date()): Date {
+  return new Date(
+    Date.UTC(
+      now.getUTCFullYear(),
+      now.getUTCMonth(),
+      now.getUTCDate() + 1,
+      0,
+      0,
+      0,
+      0,
+    ),
+  );
+}
+
+/** Compact duration: `2d 4h`, `4h 12m`, or `12m`. */
+export function formatCompactCountdown(msRemaining: number): string {
   const ms = Math.max(0, msRemaining);
-  const totalHours = Math.floor(ms / (60 * 60 * 1000));
+  const totalHours = Math.floor(ms / MS_HOUR);
   const days = Math.floor(totalHours / 24);
   const hours = totalHours % 24;
-  const minutes = Math.floor((ms % (60 * 60 * 1000)) / (60 * 1000));
   if (days > 0) return `${days}d ${hours}h`;
+  const minutes = Math.floor((ms % MS_HOUR) / MS_MINUTE);
   if (totalHours > 0) return `${hours}h ${minutes}m`;
   return `${minutes}m`;
 }
@@ -68,7 +70,29 @@ export function formatResetCountdown(
   const target = nextWeeklyReset(now);
   const msRemaining = Math.max(0, target.getTime() - now.getTime());
   return {
-    label: `${formatCountdownCompact(msRemaining)} until reset`,
+    label: `${formatCompactCountdown(msRemaining)} until reset`,
+    msRemaining,
+  };
+}
+
+export function formatDailyResetCountdown(
+  now: Date = new Date(),
+): { label: string; msRemaining: number } {
+  const target = nextDailyReset(now);
+  const msRemaining = Math.max(0, target.getTime() - now.getTime());
+  return {
+    label: formatCompactCountdown(msRemaining),
+    msRemaining,
+  };
+}
+
+export function formatWeeklyResetCountdown(
+  now: Date = new Date(),
+): { label: string; msRemaining: number } {
+  const target = nextWeeklyReset(now);
+  const msRemaining = Math.max(0, target.getTime() - now.getTime());
+  return {
+    label: formatCompactCountdown(msRemaining),
     msRemaining,
   };
 }

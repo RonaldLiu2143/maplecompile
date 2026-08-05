@@ -56,8 +56,10 @@ export {
   currentWeeklyResetStart,
   nextDailyReset,
   nextWeeklyReset,
-  formatCountdownCompact,
+  formatCompactCountdown,
   formatResetCountdown,
+  formatDailyResetCountdown,
+  formatWeeklyResetCountdown,
 } from "./weekly-reset";
 
 export {
