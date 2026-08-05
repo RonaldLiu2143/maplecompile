@@ -41,8 +41,8 @@ export default function RosterPage() {
             Roster
           </h1>
           <p className="mt-2 text-sm opacity-80">
-            Tap a card to open the character profile. Use Manage to reorder, set
-            primary, or remove.
+            Tap a card to open the character profile. Use the star to set
+            primary, the trash to remove, or Manage to reorder.
           </p>
         </div>
         <Link
@@ -81,7 +81,7 @@ export default function RosterPage() {
                 </p>
               ) : roster.length > 0 ? (
                 <p className="text-xs opacity-55">
-                  Tip: open Manage to reorder, set primary, or remove.
+                  Tip: star = primary, trash = remove. Open Manage to reorder.
                 </p>
               ) : null}
             </div>

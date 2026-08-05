@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState, type DragEvent } from "react";
+import type { DragEvent, MouseEvent } from "react";
 import { characterProfileHref } from "@/lib/character/client";
 import type { CharacterLookupResult } from "@/lib/character/lookup";
 
@@ -19,12 +19,27 @@ function DragHandle() {
   );
 }
 
-function EllipsisIcon({ size = 16 }: { size?: number }) {
+function StarIcon({ size = 16 }: { size?: number }) {
   return (
-    <svg viewBox="0 0 20 20" width={size} height={size} aria-hidden fill="currentColor">
-      <circle cx="10" cy="4.5" r="1.5" />
-      <circle cx="10" cy="10" r="1.5" />
-      <circle cx="10" cy="15.5" r="1.5" />
+    <svg viewBox="0 0 24 24" width={size} height={size} aria-hidden>
+      <path
+        fill="currentColor"
+        d="M12 2.5l2.6 6.2 6.7.6-5.1 4.4 1.5 6.5L12 16.8 6.3 20.2l1.5-6.5-5.1-4.4 6.7-.6L12 2.5z"
+      />
+    </svg>
+  );
+}
+
+function TrashIcon({ size = 16 }: { size?: number }) {
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} aria-hidden fill="none">
+      <path
+        stroke="currentColor"
+        strokeWidth="1.75"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M5 7h14M10 11v6M14 11v6M8.5 7l.7-2h5.6l.7 2M7 7l.8 12.5a1.5 1.5 0 0 0 1.5 1.4h5.4a1.5 1.5 0 0 0 1.5-1.4L17 7"
+      />
     </svg>
   );
 }
@@ -76,6 +91,11 @@ function formatExpPercent(pct: number | null | undefined): string | null {
   return `${rounded}%`;
 }
 
+function stopCardNav(e: MouseEvent) {
+  e.preventDefault();
+  e.stopPropagation();
+}
+
 export function RosterCharacterCard({
   character,
   isPrimary,
@@ -94,27 +114,23 @@ export function RosterCharacterCard({
   onSetPrimary?: () => void;
   drag?: RosterDragProps;
 }) {
-  const [menuOpen, setMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
   const profileHref = characterProfileHref(character);
   const expPct = formatExpPercent(character.expPercent);
-  const showMenu = Boolean(onRemove || onSetPrimary);
+  const showActions = Boolean(onRemove || onSetPrimary);
 
-  useEffect(() => {
-    if (!menuOpen) return;
-    function onDoc(e: MouseEvent) {
-      if (!menuRef.current?.contains(e.target as Node)) setMenuOpen(false);
-    }
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") setMenuOpen(false);
-    }
-    document.addEventListener("mousedown", onDoc);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("mousedown", onDoc);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [menuOpen]);
+  function handleRemove(e: MouseEvent) {
+    stopCardNav(e);
+    if (!onRemove) return;
+    const ok = window.confirm(
+      `Remove ${character.name} from your roster?`,
+    );
+    if (ok) onRemove();
+  }
+
+  function handleSetPrimary(e: MouseEvent) {
+    stopCardNav(e);
+    onSetPrimary?.();
+  }
 
   return (
     <article
@@ -182,69 +198,45 @@ export function RosterCharacterCard({
           </p>
         </div>
 
-        <div className="flex shrink-0 items-start gap-2 pt-0.5 pointer-events-auto">
+        <div className="flex shrink-0 items-start gap-1.5 pt-0.5 pointer-events-auto">
           {badge ? (
-            <span className="rounded-full bg-violet-600/90 px-2.5 py-0.5 text-xs font-semibold text-white tabular-nums">
+            <span className="mr-0.5 rounded-full bg-violet-600/90 px-2.5 py-0.5 text-xs font-semibold text-white tabular-nums">
               {badge}
             </span>
           ) : null}
 
-          {showMenu ? (
-            <div className="relative" ref={menuRef}>
-              <button
-                type="button"
-                aria-label={`Actions for ${character.name}`}
-                aria-expanded={menuOpen}
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setMenuOpen((v) => !v);
-                }}
-                className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border/70 bg-surface text-foreground/70 transition hover:bg-surface-muted hover:text-foreground"
-              >
-                <EllipsisIcon />
-              </button>
-              {menuOpen ? (
-                <div
-                  role="menu"
-                  className="absolute right-0 top-full z-20 mt-1 min-w-[9.5rem] overflow-hidden rounded-lg border border-border bg-surface shadow-lg"
+          {showActions ? (
+            <div className="flex items-center gap-1">
+              {isPrimary ? (
+                <span
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-amber-400"
+                  title="Primary character"
+                  aria-label={`${character.name} is primary`}
                 >
-                  {!isPrimary && onSetPrimary ? (
-                    <button
-                      type="button"
-                      role="menuitem"
-                      className="block w-full px-3 py-2 text-left text-sm font-semibold transition hover:bg-surface-muted"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setMenuOpen(false);
-                        onSetPrimary();
-                      }}
-                    >
-                      Set primary
-                    </button>
-                  ) : null}
-                  {isPrimary ? (
-                    <p className="px-3 py-2 text-xs font-semibold uppercase tracking-wider text-accent opacity-80">
-                      Primary
-                    </p>
-                  ) : null}
-                  {onRemove ? (
-                    <button
-                      type="button"
-                      role="menuitem"
-                      className="block w-full px-3 py-2 text-left text-sm font-semibold text-danger transition hover:bg-danger/10"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setMenuOpen(false);
-                        onRemove();
-                      }}
-                    >
-                      Remove
-                    </button>
-                  ) : null}
-                </div>
+                  <StarIcon />
+                </span>
+              ) : onSetPrimary ? (
+                <button
+                  type="button"
+                  onClick={handleSetPrimary}
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border/70 bg-surface text-foreground/35 transition hover:border-amber-400/50 hover:bg-surface-muted hover:text-amber-400"
+                  title="Set as primary"
+                  aria-label={`Set ${character.name} as primary`}
+                >
+                  <StarIcon />
+                </button>
+              ) : null}
+
+              {onRemove ? (
+                <button
+                  type="button"
+                  onClick={handleRemove}
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border/70 bg-surface text-foreground/45 transition hover:border-danger/40 hover:bg-danger/10 hover:text-danger"
+                  title="Remove from roster"
+                  aria-label={`Remove ${character.name} from roster`}
+                >
+                  <TrashIcon />
+                </button>
               ) : null}
             </div>
           ) : null}
@@ -278,7 +270,6 @@ export function RosterCardError({
   name,
   region,
   error,
-  managing,
   onRemove,
   onRetry,
   drag,
@@ -286,11 +277,20 @@ export function RosterCardError({
   name: string;
   region: string;
   error: string;
+  /** Kept for call-site compatibility. */
   managing?: boolean;
   onRemove?: () => void;
   onRetry?: () => void;
   drag?: RosterDragProps;
 }) {
+  function handleRemove(e: MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!onRemove) return;
+    const ok = window.confirm(`Remove ${name} from your roster?`);
+    if (ok) onRemove();
+  }
+
   return (
     <div
       role="alert"
@@ -305,7 +305,7 @@ export function RosterCardError({
       </p>
       <p className="mt-1 opacity-90">{error}</p>
       <div
-        className="mt-3 flex flex-wrap gap-2"
+        className="mt-3 flex flex-wrap items-center gap-2"
         onPointerDown={(e) => e.stopPropagation()}
       >
         {onRetry ? (
@@ -317,13 +317,15 @@ export function RosterCardError({
             Retry
           </button>
         ) : null}
-        {managing && onRemove ? (
+        {onRemove ? (
           <button
             type="button"
-            onClick={onRemove}
-            className="rounded-lg border border-danger/40 px-3 py-1.5 text-sm font-semibold text-danger transition hover:bg-danger/10"
+            onClick={handleRemove}
+            className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-danger/40 text-danger transition hover:bg-danger/10"
+            title="Remove from roster"
+            aria-label={`Remove ${name} from roster`}
           >
-            Remove
+            <TrashIcon />
           </button>
         ) : null}
       </div>

@@ -23,6 +23,20 @@ function StarIcon({ className, size = 14 }: { className?: string; size?: number 
   );
 }
 
+function TrashIcon({ size = 14 }: { size?: number }) {
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} aria-hidden fill="none">
+      <path
+        stroke="currentColor"
+        strokeWidth="1.75"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M5 7h14M10 11v6M14 11v6M8.5 7l.7-2h5.6l.7 2M7 7l.8 12.5a1.5 1.5 0 0 0 1.5 1.4h5.4a1.5 1.5 0 0 0 1.5-1.4L17 7"
+      />
+    </svg>
+  );
+}
+
 function ChevronUpIcon({ size = 14 }: { size?: number }) {
   return (
     <svg viewBox="0 0 20 20" width={size} height={size} aria-hidden fill="currentColor">
@@ -256,14 +270,20 @@ export function RosterListRow({
       {managing && onRemove ? (
         <button
           type="button"
-          onClick={onRemove}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const ok = window.confirm(`Remove ${name} from your roster?`);
+            if (ok) onRemove();
+          }}
           className={[
-            "shrink-0 rounded-lg border border-danger/35 font-semibold text-danger transition hover:bg-danger/10",
-            compact ? "px-1.5 py-0.5 text-[11px]" : "px-2 py-1 text-xs",
+            "inline-flex shrink-0 items-center justify-center rounded-lg border border-danger/35 text-danger transition hover:bg-danger/10",
+            compact ? "h-7 w-7" : "h-8 w-8",
           ].join(" ")}
+          title="Remove from roster"
           aria-label={`Remove ${name}`}
         >
-          Remove
+          <TrashIcon size={compact ? 13 : 15} />
         </button>
       ) : null}
 
