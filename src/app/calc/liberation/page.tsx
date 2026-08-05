@@ -457,7 +457,7 @@ export default function LiberationPage() {
                 </div>
               </div>
               <p className="mt-2 text-[10px] opacity-55">
-                Tap a character to edit · Manage display to show/hide
+                Tap a character to edit · Gear icon to show/hide
               </p>
             </section>
           ) : null}
@@ -772,7 +772,7 @@ export default function LiberationPage() {
                           </span>
                         )}
                       </div>
-                      <div className="min-w-0 flex-1 space-y-2">
+                      <div className="min-w-0 flex-1">
                         <div className="flex items-baseline justify-between gap-2">
                           <div className="min-w-0">
                             <h3 className="truncate text-sm font-semibold leading-tight">
@@ -788,66 +788,61 @@ export default function LiberationPage() {
                             {doing ? gained : 0}
                           </span>
                         </div>
-                        <div
-                          className="grid grid-cols-[minmax(0,1fr)_4.25rem] gap-1.5"
-                          onClick={stop}
-                        >
-                          <select
-                            className={`${inputClass} min-w-0 w-full py-1 text-xs`}
-                            value={sel.difficulty}
-                            onChange={(e) =>
-                              patchBoss(boss.name, {
-                                difficulty: e.target.value,
-                                cleared:
-                                  e.target.value === NOT_DOING
-                                    ? false
-                                    : sel.cleared,
-                              })
-                            }
-                            aria-label={`${boss.name} difficulty`}
-                          >
-                            <option value={NOT_DOING}>Not doing</option>
-                            {boss.difficulties.map((d) => (
-                              <option key={d.label} value={d.label}>
-                                {d.label} ({d.baseTraces})
-                              </option>
-                            ))}
-                          </select>
-                          <select
-                            className={`${inputClass} w-full py-1 text-xs`}
-                            value={sel.partySize}
-                            disabled={!doing}
-                            onChange={(e) =>
-                              patchBoss(boss.name, {
-                                partySize: clampPartySize(
-                                  Number(e.target.value),
-                                ),
-                              })
-                            }
-                            aria-label={`${boss.name} party size`}
-                          >
-                            {PARTY_SIZES.map((n) => (
-                              <option key={n} value={n}>
-                                {n === 1 ? "Solo" : n}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
                       </div>
                     </div>
 
-                    {/* Fixed-width status column — always reserved so layout doesn't jump */}
                     <div
-                      className={`flex ${CLEAR_CHIP_WIDTH} shrink-0 items-center justify-end sm:justify-center`}
+                      className="flex min-w-0 flex-col gap-1.5"
                       onClick={stop}
                     >
+                      <div className="flex min-w-0 items-stretch gap-1.5">
+                        <select
+                          className={`${inputClass} min-w-0 flex-1 py-1.5 text-xs`}
+                          value={sel.difficulty}
+                          onChange={(e) =>
+                            patchBoss(boss.name, {
+                              difficulty: e.target.value,
+                              cleared:
+                                e.target.value === NOT_DOING
+                                  ? false
+                                  : sel.cleared,
+                            })
+                          }
+                          aria-label={`${boss.name} difficulty`}
+                        >
+                          <option value={NOT_DOING}>Not doing</option>
+                          {boss.difficulties.map((d) => (
+                            <option key={d.label} value={d.label}>
+                              {d.label} ({d.baseTraces})
+                            </option>
+                          ))}
+                        </select>
+                        <select
+                          className={`${inputClass} w-[4.75rem] shrink-0 py-1.5 text-xs`}
+                          value={sel.partySize}
+                          disabled={!doing}
+                          onChange={(e) =>
+                            patchBoss(boss.name, {
+                              partySize: clampPartySize(
+                                Number(e.target.value),
+                              ),
+                            })
+                          }
+                          aria-label={`${boss.name} party size`}
+                        >
+                          {PARTY_SIZES.map((n) => (
+                            <option key={n} value={n}>
+                              {n === 1 ? "Solo" : n}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
                       {doing ? (
                         <button
                           type="button"
                           onClick={() => toggleCleared(boss.name)}
                           className={[
-                            CLEAR_CHIP_WIDTH,
-                            "rounded-md border px-2 py-1.5 text-center text-[11px] font-semibold transition-colors",
+                            "w-full rounded-md border px-2 py-1.5 text-center text-[11px] font-semibold transition-colors",
                             sel.cleared
                               ? "border-accent bg-accent text-white dark:text-zinc-900"
                               : "border-border/50 bg-surface-muted/60 opacity-80 hover:border-accent/50 hover:text-accent",
@@ -855,14 +850,7 @@ export default function LiberationPage() {
                         >
                           {sel.cleared ? "Done" : "Not cleared"}
                         </button>
-                      ) : (
-                        <span
-                          className={`${CLEAR_CHIP_WIDTH} invisible select-none px-2 py-1.5 text-[11px]`}
-                          aria-hidden
-                        >
-                          Not cleared
-                        </span>
-                      )}
+                      ) : null}
                     </div>
                   </div>
                 );
