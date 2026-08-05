@@ -72,20 +72,18 @@ function DashboardInner() {
       )}
 
       {hydrated ? (
-        <DashboardWeeklyChecklist
-          roster={roster}
-          slots={slots}
-          primary={primary}
-          hydrated={hydrated}
-        />
-      ) : null}
-
-      {hydrated ? (
         <CharacterSearchBar roster={roster} onAdded={handleRosterAdded} />
       ) : null}
 
       {hydrated ? (
-        <div className="grid gap-4 lg:grid-cols-2 lg:items-stretch">
+        <div className="grid gap-4 lg:grid-cols-3 lg:items-stretch">
+          <DashboardWeeklyChecklist
+            roster={roster}
+            slots={slots}
+            primary={primary}
+            hydrated={hydrated}
+          />
+
           <section className="flex min-h-0 flex-col rounded-xl border border-border/50 bg-surface/80 p-3 sm:p-3.5">
             <div className="flex shrink-0 flex-wrap items-start justify-between gap-2">
               <div className="min-w-0 space-y-0.5">

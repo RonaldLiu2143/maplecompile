@@ -132,7 +132,7 @@ export function DashboardWeeklyChecklist({
 
   if (!hydrated) {
     return (
-      <section className="rounded-xl border border-border/50 bg-surface/80 px-4 py-5 text-sm opacity-70">
+      <section className="flex min-h-0 flex-col rounded-xl border border-border/50 bg-surface/80 p-3 sm:p-3.5 text-sm opacity-70">
         Loading weekly checklist…
       </section>
     );
@@ -140,11 +140,11 @@ export function DashboardWeeklyChecklist({
 
   if (roster.length === 0) {
     return (
-      <section className="rounded-xl border border-dashed border-border/60 bg-surface/60 px-4 py-5">
+      <section className="flex min-h-0 flex-col rounded-xl border border-dashed border-border/60 bg-surface/60 p-3 sm:p-3.5">
         <h2 className="font-display text-base font-bold tracking-tight">
           Weekly bosses
         </h2>
-        <p className="mt-1 text-sm opacity-70">
+        <p className="mt-1 text-xs opacity-70">
           Add roster characters, then configure clears in Boss Income. Resets
           Thursday 00:00 UTC.
         </p>
@@ -170,8 +170,8 @@ export function DashboardWeeklyChecklist({
           : "warn";
 
   return (
-    <section className="rounded-xl border border-border/50 bg-surface/80 p-3 sm:p-3.5">
-      <div className="flex flex-wrap items-start justify-between gap-2">
+    <section className="flex min-h-0 flex-col rounded-xl border border-border/50 bg-surface/80 p-3 sm:p-3.5">
+      <div className="flex shrink-0 flex-wrap items-start justify-between gap-2">
         <div className="min-w-0 space-y-0.5">
           <h2 className="font-display text-base font-bold tracking-tight">
             Weekly bosses
@@ -181,8 +181,8 @@ export function DashboardWeeklyChecklist({
         <div className="flex flex-wrap items-center gap-1.5">
           <Chip tone={overallTone}>
             {totals.enabled > 0
-              ? `${totals.cleared}/${totals.enabled} clears`
-              : "No bosses set"}
+              ? `${totals.cleared}/${totals.enabled}`
+              : "None set"}
           </Chip>
           <Link
             href="/calc/bosses"
@@ -193,74 +193,79 @@ export function DashboardWeeklyChecklist({
         </div>
       </div>
 
-      {totals.withBosses === 0 ? (
-        <p className="mt-3 rounded-lg border border-dashed border-border/50 px-3 py-4 text-center text-xs opacity-65">
-          No weekly bosses enabled yet.{" "}
-          <Link href="/calc/bosses" className="font-semibold text-accent hover:underline">
-            Add bosses
-          </Link>{" "}
-          on each character to track clears here.
-        </p>
-      ) : (
-        <ul className="mt-3 space-y-1.5">
-          {rows.map((row) => {
-            if (row.enabled === 0) return null;
-            const done = row.cleared >= row.enabled;
-            const tone = done
-              ? "good"
-              : row.cleared > 0
-                ? "accent"
-                : "warn";
-            return (
-              <li
-                key={row.key}
-                className={[
-                  "flex items-center gap-2 rounded-lg border px-2 py-1.5",
-                  row.isPrimary
-                    ? "border-accent/40 bg-accent-soft/25"
-                    : "border-border/40 bg-background/40",
-                ].join(" ")}
-              >
-                {row.avatar ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={row.avatar}
-                    alt=""
-                    width={32}
-                    height={32}
-                    className="h-8 w-8 shrink-0 object-contain"
-                  />
-                ) : (
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-surface-muted text-[10px] font-bold uppercase opacity-50">
-                    {row.name.slice(0, 2)}
+      <div className="mt-2.5 min-h-0 flex-1">
+        {totals.withBosses === 0 ? (
+          <p className="rounded-lg border border-dashed border-border/50 px-3 py-4 text-center text-xs opacity-65">
+            No weekly bosses enabled yet.{" "}
+            <Link
+              href="/calc/bosses"
+              className="font-semibold text-accent hover:underline"
+            >
+              Add bosses
+            </Link>{" "}
+            on each character to track clears here.
+          </p>
+        ) : (
+          <ul className="maple-scroll max-h-[22rem] space-y-1 rounded-lg border border-border/35 bg-surface-muted/25 p-1.5 lg:max-h-[26rem]">
+            {rows.map((row) => {
+              if (row.enabled === 0) return null;
+              const done = row.cleared >= row.enabled;
+              const tone = done
+                ? "good"
+                : row.cleared > 0
+                  ? "accent"
+                  : "warn";
+              return (
+                <li
+                  key={row.key}
+                  className={[
+                    "flex items-center gap-1.5 rounded-md border px-1.5 py-1",
+                    row.isPrimary
+                      ? "border-accent/40 bg-accent-soft/25"
+                      : "border-border/40 bg-background/40",
+                  ].join(" ")}
+                >
+                  {row.avatar ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={row.avatar}
+                      alt=""
+                      width={28}
+                      height={28}
+                      className="h-7 w-7 shrink-0 object-contain"
+                    />
+                  ) : (
+                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded bg-surface-muted text-[10px] font-bold uppercase opacity-50">
+                      {row.name.slice(0, 2)}
+                    </div>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-xs font-semibold">
+                      {row.name}
+                      {row.isPrimary ? (
+                        <span className="ml-1 text-[10px] font-semibold text-accent">
+                          ★
+                        </span>
+                      ) : null}
+                    </p>
+                    <p className="text-[10px] opacity-55">
+                      {row.mesos > 0
+                        ? formatMesosCompact(row.mesos)
+                        : "No crystal value"}
+                    </p>
                   </div>
-                )}
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold">
-                    {row.name}
-                    {row.isPrimary ? (
-                      <span className="ml-1 text-[10px] font-semibold text-accent">
-                        ★
-                      </span>
-                    ) : null}
-                  </p>
-                  <p className="text-[10px] opacity-55">
-                    {row.mesos > 0
-                      ? formatMesosCompact(row.mesos)
-                      : "No crystal value"}
-                  </p>
-                </div>
-                <Chip tone={tone}>
-                  {row.cleared}/{row.enabled}
-                </Chip>
-              </li>
-            );
-          })}
-        </ul>
-      )}
+                  <Chip tone={tone}>
+                    {row.cleared}/{row.enabled}
+                  </Chip>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
 
-      <p className="mt-2 text-[10px] opacity-50">
-        Clears reset automatically each Thursday 00:00 UTC. Dailies coming later.
+      <p className="mt-2 shrink-0 text-[10px] opacity-50">
+        Clears reset Thursday 00:00 UTC.
       </p>
     </section>
   );
