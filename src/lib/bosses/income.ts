@@ -1,4 +1,5 @@
 import {
+  ACCOUNT_WEEKLY_CRYSTAL_LIMIT,
   BOSS_CRYSTALS,
   WEEKLY_CRYSTAL_LIMIT,
   crystalMesos,
@@ -27,12 +28,28 @@ export type IncomeLine = {
 
 export type IncomeSummary = {
   lines: IncomeLine[];
+  /** Weekly boss lines that count toward the 14-cap (sorted by value). */
+  weeklyListed: IncomeLine[];
   weeklyCrystalsUsed: number;
   weeklyCrystalLimit: number;
   weeklyMesos: number;
   monthlyMesos: number;
   /** Monthly crystal converted to weekly-equivalent for display only. */
   monthlyAsWeeklyMesos: number;
+  /** Alias of weeklyMesos — max sellable from this character's weekly clears. */
+  maxPossibleMesos: number;
+};
+
+export type RosterIncomeSummary = {
+  characters: Array<{
+    key: string;
+    summary: IncomeSummary;
+  }>;
+  /** Sum of each character's max possible weekly mesos. */
+  maxPossibleMesos: number;
+  /** Weekly boss crystals across roster (capped contribution per char at 14). */
+  weeklyCrystalsUsed: number;
+  accountCrystalLimit: number;
 };
 
 export function defaultSelections(): BossClearSelection[] {
@@ -60,6 +77,19 @@ export function personalCrystal(
 ): number {
   const sized = Math.floor(crystalMesos(base, world) / Math.max(1, partySize));
   return sized;
+}
+
+/** Count of enabled weekly (non-monthly) boss clears for a character. */
+export function countEnabledWeekly(
+  selections: BossClearSelection[],
+): number {
+  let n = 0;
+  for (const sel of selections) {
+    if (!sel.enabled) continue;
+    const boss = findBoss(sel.bossId);
+    if (boss && boss.frequency === "weekly") n += 1;
+  }
+  return n;
 }
 
 /**
@@ -112,13 +142,41 @@ export function summarizeIncome(
   );
   for (const line of monthlyLines) line.sells = true;
 
+  const weeklyListed = weeklyCandidates.filter((l) => l.sells);
+
   return {
     lines: [...weeklyCandidates, ...monthlyLines],
+    weeklyListed,
     weeklyCrystalsUsed: used,
     weeklyCrystalLimit: crystalLimit,
     weeklyMesos,
     monthlyMesos,
     monthlyAsWeeklyMesos: Math.floor(monthlyMesos / 4),
+    maxPossibleMesos: weeklyMesos,
+  };
+}
+
+/** Aggregate max possible mesos + account crystal usage across roster keys. */
+export function summarizeRosterIncome(
+  byCharacter: Record<string, BossClearSelection[]>,
+  world: WorldType,
+  keys: string[],
+): RosterIncomeSummary {
+  const characters = keys.map((key) => ({
+    key,
+    summary: summarizeIncome(byCharacter[key] ?? defaultSelections(), world),
+  }));
+  return {
+    characters,
+    maxPossibleMesos: characters.reduce(
+      (sum, c) => sum + c.summary.maxPossibleMesos,
+      0,
+    ),
+    weeklyCrystalsUsed: characters.reduce(
+      (sum, c) => sum + c.summary.weeklyCrystalsUsed,
+      0,
+    ),
+    accountCrystalLimit: ACCOUNT_WEEKLY_CRYSTAL_LIMIT,
   };
 }
 

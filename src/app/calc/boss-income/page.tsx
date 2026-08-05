@@ -22,7 +22,8 @@ export default function BossIncomeHubPage() {
           <h2 className="font-display text-lg font-semibold">Boss Income</h2>
           <p className="mt-2 text-sm opacity-80">
             Weekly crystal sell planner wired to your roster — Heroic prices,
-            party splits, and the 14-crystal cap per character.
+            party splits, 14 bosses per character, and the 180 account crystal
+            display.
           </p>
         </Link>
         <Link

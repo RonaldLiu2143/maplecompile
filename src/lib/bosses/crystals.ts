@@ -20,7 +20,10 @@ export type BossEntry = {
   difficulties: BossDifficulty[];
 };
 
+/** GMS per-character weekly boss crystal sell cap. */
 export const WEEKLY_CRYSTAL_LIMIT = 14;
+/** GMS account/world weekly crystal sell cap (all crystal types). */
+export const ACCOUNT_WEEKLY_CRYSTAL_LIMIT = 180;
 export const HEROIC_CRYSTAL_MULT = 5;
 
 export const BOSS_CRYSTALS: BossEntry[] = [
