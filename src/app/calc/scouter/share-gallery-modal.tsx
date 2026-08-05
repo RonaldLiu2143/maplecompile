@@ -179,7 +179,7 @@ export function ShareGalleryModal({
         if (e.target === e.currentTarget && !submitting) onClose();
       }}
     >
-      <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border border-border/60 bg-surface p-5 shadow-xl">
+      <div className="maple-scroll max-h-[90vh] w-full max-w-lg rounded-xl border border-border/60 bg-surface p-5 shadow-xl">
         <h2
           id="share-gallery-title"
           className="font-display text-xl font-bold tracking-tight"

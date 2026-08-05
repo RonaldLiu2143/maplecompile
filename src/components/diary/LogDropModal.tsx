@@ -178,7 +178,7 @@ export function LogDropModal({
           </button>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
+        <div className="maple-scroll min-h-0 flex-1 px-4 py-3">
           {step === 1 ? (
             characters.length === 0 ? (
               <p className="text-sm opacity-65">

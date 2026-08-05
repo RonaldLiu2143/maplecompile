@@ -161,7 +161,7 @@ export function EquipItemEditor({
         </button>
       </div>
 
-      <div className="max-h-[36rem] space-y-4 overflow-y-auto p-3">
+      <div className="maple-scroll max-h-[36rem] space-y-4 p-3">
         {!showAnyEditor && (
           <p className="text-xs text-zinc-500">
             This item cannot take Star Force, flames, or potential.

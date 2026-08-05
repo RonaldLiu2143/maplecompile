@@ -64,7 +64,7 @@ export function EquipPicker({
           className="w-full rounded border border-[#555] bg-[#1f1f1f] px-2 py-1 text-sm text-zinc-100 outline-none placeholder:text-zinc-500 focus:border-sky-500"
         />
       </div>
-      <ul className="flex-1 space-y-1.5 overflow-y-auto p-2">
+      <ul className="maple-scroll flex-1 space-y-1.5 p-2">
         {filtered.length === 0 && (
           <li className="py-6 text-center text-sm text-zinc-500">
             No items match.

@@ -156,7 +156,7 @@ export function ManageDisplayModal({
           </div>
         </header>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-3 py-2.5">
+        <div className="maple-scroll min-h-0 flex-1 px-3 py-2.5">
           {roster.length === 0 ? (
             <p className="rounded-lg border border-dashed border-border/50 px-3 py-6 text-center text-sm opacity-65">
               No roster characters yet. Add some on the Roster page first.

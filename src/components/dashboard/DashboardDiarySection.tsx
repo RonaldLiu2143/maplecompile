@@ -31,7 +31,7 @@ function CompactCounter({
   onDrop: () => void;
 }) {
   return (
-    <div className="flex min-w-0 flex-1 items-center gap-2 rounded-lg border border-border/50 bg-background/60 px-2.5 py-2">
+    <div className="flex min-w-0 flex-1 items-center gap-2 rounded-lg border border-border/45 bg-surface-muted/30 px-2.5 py-2">
       <div className="min-w-0 flex-1">
         <p className="text-[0.65rem] font-semibold uppercase tracking-wider opacity-55">
           {title}
@@ -126,19 +126,19 @@ export function DashboardDiarySection({
 
   const characters =
     hydrated && ready ? wizardCharsFromRoster(roster, slots) : [];
-  const recent = [...state.pitchLogs].reverse().slice(0, 4);
+  const recent = [...state.pitchLogs].reverse();
 
   if (!ready) {
     return (
-      <section className="rounded-xl border border-border/50 bg-surface/80 p-3 sm:p-3.5">
+      <section className="flex min-h-0 flex-col rounded-xl border border-border/50 bg-surface/80 p-3 sm:p-3.5">
         <p className="text-xs opacity-60">Loading diary…</p>
       </section>
     );
   }
 
   return (
-    <section className="rounded-xl border border-border/50 bg-surface/80 p-3 sm:p-3.5">
-      <div className="flex flex-wrap items-start justify-between gap-2">
+    <section className="flex min-h-0 flex-col rounded-xl border border-border/50 bg-surface/80 p-3 sm:p-3.5">
+      <div className="flex shrink-0 flex-wrap items-start justify-between gap-2">
         <div className="min-w-0 space-y-0.5">
           <h2 className="font-display text-base font-bold tracking-tight">
             Diary
@@ -164,7 +164,7 @@ export function DashboardDiarySection({
         </div>
       </div>
 
-      <div className="mt-2.5 flex flex-col gap-2 sm:flex-row">
+      <div className="mt-2.5 flex shrink-0 flex-col gap-2 sm:flex-row">
         <CompactCounter
           title="Grindstones"
           value={state.grindstone}
@@ -191,16 +191,19 @@ export function DashboardDiarySection({
         />
       </div>
 
-      <div className="mt-3">
-        <p className="mb-1.5 text-[0.65rem] font-semibold uppercase tracking-wider opacity-55">
+      <div className="mt-3 flex min-h-0 flex-1 flex-col">
+        <p className="mb-1.5 shrink-0 text-[0.65rem] font-semibold uppercase tracking-wider opacity-55">
           Recent drops
+          {recent.length > 0 ? (
+            <span className="ml-1 opacity-70">({recent.length})</span>
+          ) : null}
         </p>
         {recent.length === 0 ? (
-          <p className="rounded-lg border border-dashed border-border/50 bg-background/40 px-3 py-4 text-center text-xs opacity-60">
+          <p className="rounded-lg border border-dashed border-border/45 bg-surface-muted/20 px-3 py-4 text-center text-xs opacity-60">
             No drops yet — tap + Log Drop to add one.
           </p>
         ) : (
-          <ul className="divide-y divide-border/40 overflow-hidden rounded-lg border border-border/40 bg-background/40">
+          <ul className="maple-scroll max-h-[14rem] divide-y divide-border/35 rounded-lg border border-border/35 bg-surface-muted/25 lg:max-h-[18rem]">
             {recent.map((log: PitchDropLog) => (
               <li
                 key={log.id}

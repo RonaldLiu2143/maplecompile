@@ -367,7 +367,7 @@ export function AddBossesModal({
           )}
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3 sm:px-5">
+        <div className="maple-scroll min-h-0 flex-1 px-4 py-3 sm:px-5">
           {bosses.length === 0 ? (
             <p className="py-8 text-center text-sm opacity-60">
               No bosses match.
@@ -578,7 +578,7 @@ export function AddBossesModal({
               previous list). Weekly cap of {WEEKLY_CRYSTAL_LIMIT} still
               applies.
             </p>
-            <ul className="mt-3 max-h-56 space-y-1.5 overflow-y-auto">
+            <ul className="maple-scroll mt-3 max-h-56 space-y-1.5">
               {applyTargets.map((t) => {
                 const checked = applyKeys.includes(t.key);
                 return (

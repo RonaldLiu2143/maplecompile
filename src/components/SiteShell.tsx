@@ -319,7 +319,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
         {open ? (
           <nav
             id="site-sidebar-nav"
-            className="flex flex-1 flex-col gap-2 overflow-y-auto px-1 py-2"
+            className="maple-scroll flex flex-1 flex-col gap-2 px-1 py-2"
           >
             <NavSection links={PRIMARY_LINKS.slice(0, 1)} pathname={pathname} />
             <NavGroup title="Roster" links={ROSTER_LINKS} pathname={pathname} />
