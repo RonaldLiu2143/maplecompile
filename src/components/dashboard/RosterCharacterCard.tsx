@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import type { DragEvent, MouseEvent } from "react";
+import { useRef, type DragEvent, type MouseEvent } from "react";
 import { characterProfileHref } from "@/lib/character/client";
 import type { CharacterLookupResult } from "@/lib/character/lookup";
 
@@ -100,24 +100,31 @@ export function RosterCharacterCard({
   character,
   isPrimary,
   managing,
+  selected,
   badge,
   onRemove,
   onSetPrimary,
+  onSelect,
   drag,
 }: {
   character: CharacterLookupResult;
   isPrimary?: boolean;
   managing?: boolean;
+  /** Highlight when this card’s profile is open inline. */
+  selected?: boolean;
   /** Optional status pill (e.g. boss clears `0/14`). */
   badge?: string | null;
   onRemove?: () => void;
   onSetPrimary?: () => void;
+  /** When set, card click selects instead of navigating to the profile page. */
+  onSelect?: () => void;
   drag?: RosterDragProps;
 }) {
   const profileHref = characterProfileHref(character);
   const expPct = formatExpPercent(character.expPercent);
   const showActions = Boolean(onRemove || onSetPrimary);
   const showDragHandle = Boolean(managing || drag?.draggable);
+  const draggedRef = useRef(false);
 
   function handleRemove(e: MouseEvent) {
     stopCardNav(e);
@@ -133,27 +140,64 @@ export function RosterCharacterCard({
     onSetPrimary?.();
   }
 
+  const dragAttrs = withDragAttrs(drag);
+  if (dragAttrs.draggable && dragAttrs.onDragStart) {
+    const userStart = dragAttrs.onDragStart;
+    dragAttrs.onDragStart = (e: DragEvent) => {
+      draggedRef.current = true;
+      userStart(e);
+    };
+  }
+  if (dragAttrs.draggable && dragAttrs.onDragEnd) {
+    const userEnd = dragAttrs.onDragEnd;
+    dragAttrs.onDragEnd = (e: DragEvent) => {
+      userEnd(e);
+      // Click can fire after dragend; clear on next tick.
+      window.setTimeout(() => {
+        draggedRef.current = false;
+      }, 0);
+    };
+  }
+
   return (
     <article
-      {...withDragAttrs(drag)}
+      {...dragAttrs}
       className={dragShellClass(
         [
           "group relative overflow-hidden rounded-xl border bg-surface transition",
-          isPrimary ? "border-accent/60" : "border-border/70",
+          selected
+            ? "border-accent ring-2 ring-accent/35"
+            : isPrimary
+              ? "border-accent/60"
+              : "border-border/70",
           managing ? "" : "hover:border-accent/45 hover:bg-surface-muted/40",
         ].join(" "),
         drag,
       )}
     >
-      <Link
-        href={profileHref}
-        className="absolute inset-0 z-0"
-        aria-label={`Open ${character.name} profile`}
-        draggable={false}
-        onClick={(e) => {
-          if (managing) e.preventDefault();
-        }}
-      />
+      {onSelect ? (
+        <button
+          type="button"
+          className="absolute inset-0 z-0 cursor-pointer"
+          aria-label={`Show ${character.name} profile`}
+          aria-pressed={selected}
+          draggable={false}
+          onClick={() => {
+            if (managing || draggedRef.current) return;
+            onSelect();
+          }}
+        />
+      ) : (
+        <Link
+          href={profileHref}
+          className="absolute inset-0 z-0"
+          aria-label={`Open ${character.name} profile`}
+          draggable={false}
+          onClick={(e) => {
+            if (managing) e.preventDefault();
+          }}
+        />
+      )}
 
       <div className="relative z-10 flex items-stretch gap-3 p-3 pointer-events-none sm:gap-4 sm:p-3.5">
         {showDragHandle ? (

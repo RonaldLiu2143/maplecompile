@@ -24,8 +24,11 @@ function StatRow({
 
 export function CharacterProfile({
   character,
+  embedded,
 }: {
   character: CharacterLookupResult;
+  /** Hide standalone-page chrome (e.g. Back to Roster) when shown inline. */
+  embedded?: boolean;
 }) {
   const pct = character.expPercent;
   const regionLabel = character.region.toUpperCase();
@@ -230,12 +233,14 @@ export function CharacterProfile({
         >
           Open on MapleHub ↗
         </a>
-        <Link
-          href="/roster"
-          className="rounded-lg border border-border px-3 py-1.5 font-semibold transition hover:bg-surface-muted"
-        >
-          Back to Roster
-        </Link>
+        {!embedded ? (
+          <Link
+            href="/roster"
+            className="rounded-lg border border-border px-3 py-1.5 font-semibold transition hover:bg-surface-muted"
+          >
+            Back to Roster
+          </Link>
+        ) : null}
       </div>
 
       <p className="text-xs opacity-50">{character.note}</p>

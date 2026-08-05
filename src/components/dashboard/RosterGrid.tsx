@@ -53,22 +53,26 @@ export function RosterGrid({
   primary,
   slots,
   managing,
+  selectedKey,
   emptyTitle,
   emptyBody,
   makeDragProps,
   onRemove,
   onSetPrimary,
+  onSelect,
   onRetry,
 }: {
   roster: RosterEntry[];
   primary: RosterPrimary | null;
   slots: Record<string, RosterSlotState>;
   managing?: boolean;
+  selectedKey?: string | null;
   emptyTitle?: string;
   emptyBody?: string;
   makeDragProps: (index: number) => RosterDragProps | undefined;
   onRemove: (entry: RosterEntry) => void;
   onSetPrimary: (entry: RosterEntry) => void;
+  onSelect?: (entry: RosterEntry) => void;
   onRetry: (entry: RosterEntry) => void;
 }) {
   const [badges, setBadges] = useState<Record<string, string | null>>({});
@@ -129,9 +133,11 @@ export function RosterGrid({
             character={slot.character}
             isPrimary={isPrimary(entry, primary)}
             managing={managing}
+            selected={selectedKey === key}
             badge={badges[key]}
             onRemove={() => onRemove(entry)}
             onSetPrimary={() => onSetPrimary(entry)}
+            onSelect={onSelect ? () => onSelect(entry) : undefined}
             drag={drag}
           />
         );
