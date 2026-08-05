@@ -41,6 +41,7 @@ function normalizeSelections(raw: unknown): BossClearSelection[] {
       difficulty: typeof s.difficulty === "string" ? s.difficulty : "",
       enabled: !!s.enabled,
       partySize: clampPartySize(s.bossId, Number(s.partySize) || 1),
+      cleared: !!s.cleared,
     });
   }
   return defaults.map((d) => {
@@ -51,6 +52,8 @@ function normalizeSelections(raw: unknown): BossClearSelection[] {
       difficulty: saved.difficulty || d.difficulty,
       enabled: saved.enabled,
       partySize: clampPartySize(d.bossId, saved.partySize),
+      // Disabled bosses cannot stay marked cleared.
+      cleared: saved.enabled ? saved.cleared : false,
     };
   });
 }

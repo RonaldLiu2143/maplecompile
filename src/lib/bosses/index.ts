@@ -28,6 +28,7 @@ export {
   summarizeIncome,
   summarizeRosterIncome,
   formatMesos,
+  formatMesosCompact,
   type WorldType,
   type BossClearSelection,
   type IncomeLine,

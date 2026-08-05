@@ -1,19 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ACCOUNT_WEEKLY_CRYSTAL_LIMIT,
   BOSS_CRYSTALS,
-  DEFAULT_MAX_PARTY,
   WEEKLY_CRYSTAL_LIMIT,
   bossIconUrl,
-  bossMaxParty,
   clampPartySize,
   countEnabledWeekly,
   defaultSelections,
   formatBossLabel,
   formatMesos,
+  formatMesosCompact,
   getCharacterBossState,
   maybeMigrateLocalToPrimary,
   readBossIncomeStore,
@@ -24,6 +23,7 @@ import {
   LOCAL_BOSS_KEY,
   type BossClearSelection,
   type BossIncomeStore,
+  type IncomeLine,
   type IncomeSummary,
   type WorldType,
 } from "@/lib/bosses";
@@ -36,9 +36,6 @@ import {
 } from "@/lib/dashboard/roster";
 import { useRoster } from "@/hooks/useRoster";
 import { AddBossesModal } from "./add-bosses-modal";
-
-const inputClass =
-  "rounded border border-border bg-background px-2 py-1 text-sm outline-none focus:border-accent";
 
 export default function BossesIncomePage() {
   const { hydrated, roster, primary, slots } = useRoster();
@@ -136,6 +133,9 @@ export default function BossesIncomePage() {
         if (partial.partySize != null) {
           next.partySize = clampPartySize(bossId, partial.partySize);
         }
+        if (partial.enabled === false) {
+          next.cleared = false;
+        }
         return next;
       });
       return upsertCharacterState(prev, key, { selections });
@@ -148,12 +148,31 @@ export default function BossesIncomePage() {
     return applied;
   };
 
-  const resetCharacter = (key: string) => {
-    setStore((prev) =>
-      upsertCharacterState(prev, key, {
-        selections: defaultSelections(),
-      }),
-    );
+  const setListedCleared = (key: string, cleared: boolean) => {
+    setStore((prev) => {
+      const current = getCharacterBossState(prev, key);
+      const summary = summarizeIncome(current.selections, prev.world);
+      const listedIds = new Set(
+        [...summary.weeklyListed, ...summary.lines.filter((l) => l.frequency === "monthly")].map(
+          (l) => l.bossId,
+        ),
+      );
+      const selections = current.selections.map((s) =>
+        listedIds.has(s.bossId) && s.enabled ? { ...s, cleared } : s,
+      );
+      return upsertCharacterState(prev, key, { selections });
+    });
+  };
+
+  const resetClears = (key: string) => {
+    setStore((prev) => {
+      const current = getCharacterBossState(prev, key);
+      const selections = current.selections.map((s) => ({
+        ...s,
+        cleared: false,
+      }));
+      return upsertCharacterState(prev, key, { selections });
+    });
   };
 
   const hasRoster = roster.length > 0;
@@ -273,13 +292,14 @@ export default function BossesIncomePage() {
           </div>
         </div>
 
-        <div className="space-y-4">
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
           {hasRoster
             ? roster.map((entry) => {
                 const key = entryKey(entry);
                 const slot = slots[key];
                 const character =
                   slot?.status === "ready" ? slot.character : null;
+                const charState = getCharacterBossState(store, key);
                 const summary =
                   rosterSummary.characters.find((c) => c.key === key)
                     ?.summary ?? summarizeIncome(defaultSelections(), world);
@@ -291,23 +311,29 @@ export default function BossesIncomePage() {
                     loading={slot?.status === "loading"}
                     error={slot?.status === "error" ? slot.error : null}
                     primaryMark={isPrimary(entry, primary)}
+                    selections={charState.selections}
                     summary={summary}
                     brokenIcons={brokenIcons}
                     onBrokenIcon={(bossId) =>
                       setBrokenIcons((prev) => ({ ...prev, [bossId]: true }))
                     }
                     onAddBosses={() => setModalKey(key)}
-                    onReset={() => resetCharacter(key)}
-                    onPatch={(bossId, partial) =>
-                      patchCharacter(key, bossId, partial)
-                    }
-                    onRemove={(bossId) =>
-                      patchCharacter(key, bossId, { enabled: false })
-                    }
+                    onResetClears={() => resetClears(key)}
+                    onToggleCleared={(bossId) => {
+                      const sel = charState.selections.find(
+                        (s) => s.bossId === bossId,
+                      );
+                      if (!sel?.enabled) return;
+                      patchCharacter(key, bossId, {
+                        cleared: !sel.cleared,
+                      });
+                    }}
+                    onCheckAll={(cleared) => setListedCleared(key, cleared)}
                   />
                 );
               })
             : (() => {
+                const charState = getCharacterBossState(store, LOCAL_BOSS_KEY);
                 const summary =
                   rosterSummary.characters.find((c) => c.key === LOCAL_BOSS_KEY)
                     ?.summary ?? summarizeIncome(defaultSelections(), world);
@@ -319,6 +345,7 @@ export default function BossesIncomePage() {
                     loading={false}
                     error={null}
                     primaryMark={false}
+                    selections={charState.selections}
                     summary={summary}
                     localLabel="Local"
                     brokenIcons={brokenIcons}
@@ -326,14 +353,18 @@ export default function BossesIncomePage() {
                       setBrokenIcons((prev) => ({ ...prev, [bossId]: true }))
                     }
                     onAddBosses={() => setModalKey(LOCAL_BOSS_KEY)}
-                    onReset={() => resetCharacter(LOCAL_BOSS_KEY)}
-                    onPatch={(bossId, partial) =>
-                      patchCharacter(LOCAL_BOSS_KEY, bossId, partial)
-                    }
-                    onRemove={(bossId) =>
+                    onResetClears={() => resetClears(LOCAL_BOSS_KEY)}
+                    onToggleCleared={(bossId) => {
+                      const sel = charState.selections.find(
+                        (s) => s.bossId === bossId,
+                      );
+                      if (!sel?.enabled) return;
                       patchCharacter(LOCAL_BOSS_KEY, bossId, {
-                        enabled: false,
-                      })
+                        cleared: !sel.cleared,
+                      });
+                    }}
+                    onCheckAll={(cleared) =>
+                      setListedCleared(LOCAL_BOSS_KEY, cleared)
                     }
                   />
                 );
@@ -419,17 +450,23 @@ function Stat({
   );
 }
 
+function listedRows(summary: IncomeSummary): IncomeLine[] {
+  const monthly = summary.lines.filter((l) => l.frequency === "monthly");
+  return [...summary.weeklyListed, ...monthly];
+}
+
 function CharacterBossCard({
   entry,
   character,
   loading,
   error,
   primaryMark,
+  selections,
   summary,
   onAddBosses,
-  onReset,
-  onPatch,
-  onRemove,
+  onResetClears,
+  onToggleCleared,
+  onCheckAll,
   brokenIcons,
   onBrokenIcon,
   localLabel,
@@ -439,147 +476,202 @@ function CharacterBossCard({
   loading: boolean;
   error: string | null;
   primaryMark: boolean;
+  selections: BossClearSelection[];
   summary: IncomeSummary;
   onAddBosses: () => void;
-  onReset: () => void;
-  onPatch: (bossId: string, partial: Partial<BossClearSelection>) => void;
-  onRemove: (bossId: string) => void;
+  onResetClears: () => void;
+  onToggleCleared: (bossId: string) => void;
+  onCheckAll: (cleared: boolean) => void;
   brokenIcons: Record<string, true>;
   onBrokenIcon: (bossId: string) => void;
   localLabel?: string;
 }) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onPointer = (e: MouseEvent) => {
+      if (!menuRef.current?.contains(e.target as Node)) setMenuOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMenuOpen(false);
+    };
+    document.addEventListener("mousedown", onPointer);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onPointer);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [menuOpen]);
+
   const name = character?.name ?? entry?.name ?? localLabel ?? "Character";
   const level = character?.level;
   const job = character?.jobName;
   const worldName = character?.worldName;
-  const region = (character?.region ?? entry?.region)?.toUpperCase();
   const avatar = character?.characterImgURL;
+  const expPct = character?.expPercent;
   const profileHref = entry ? characterProfileHref(entry) : null;
-  // MapleHub: personal crystal value desc (already applied in summarizeIncome).
-  const listed = summary.weeklyListed;
-  const monthly = summary.lines.filter((l) => l.frequency === "monthly");
-  const rows = [...listed, ...monthly];
+  const rows = listedRows(summary);
   const hasBosses = rows.length > 0;
 
+  const clearedById = new Map<string, boolean>();
+  for (const s of selections) {
+    clearedById.set(s.bossId, !!s.cleared && s.enabled);
+  }
+
+  const clearedCount = rows.filter((r) => clearedById.get(r.bossId)).length;
+  const allCleared = hasBosses && clearedCount === rows.length;
+  const clearedValue = rows.reduce(
+    (sum, line) =>
+      clearedById.get(line.bossId) ? sum + line.crystalPersonal : sum,
+    0,
+  );
+  const totalValue = rows.reduce((sum, line) => sum + line.crystalPersonal, 0);
+
   return (
-    <article className="overflow-hidden rounded-xl border border-border/40 bg-surface/80">
-      <div className="flex flex-wrap items-start gap-3 border-b border-border/30 p-3 sm:p-4">
-        <div className="flex min-w-0 flex-1 items-center gap-3">
-          {avatar ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={avatar}
-              alt=""
-              width={56}
-              height={56}
-              className="h-14 w-14 shrink-0 object-contain"
-            />
-          ) : (
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-surface-muted text-xs font-semibold uppercase opacity-50">
-              {loading ? "…" : name.slice(0, 2)}
-            </div>
-          )}
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
+    <article className="flex flex-col overflow-hidden rounded-xl border border-border/40 bg-surface/80">
+      <div className="flex items-start gap-2.5 border-b border-border/30 p-3">
+        {avatar ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={avatar}
+            alt=""
+            width={44}
+            height={44}
+            className="h-11 w-11 shrink-0 object-contain"
+          />
+        ) : (
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-surface-muted text-[10px] font-semibold uppercase opacity-50">
+            {loading ? "…" : name.slice(0, 2)}
+          </div>
+        )}
+
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-1">
+            <div className="flex min-w-0 flex-wrap items-center gap-1.5">
               {profileHref ? (
                 <Link
                   href={profileHref}
-                  className="font-display text-lg font-bold tracking-tight hover:text-accent"
+                  className="truncate text-sm font-semibold tracking-tight text-accent hover:underline"
                 >
                   {name}
                 </Link>
               ) : (
-                <h3 className="font-display text-lg font-bold tracking-tight">
+                <h3 className="truncate text-sm font-semibold tracking-tight">
                   {name}
                 </h3>
               )}
               {primaryMark ? (
-                <span className="text-xs opacity-60" title="Primary">
+                <span className="text-[10px] opacity-60" title="Primary">
                   ★
                 </span>
               ) : null}
+              {hasBosses ? (
+                <span
+                  className={[
+                    "inline-flex shrink-0 items-center rounded-full px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-white dark:text-zinc-900",
+                    clearedCount === rows.length
+                      ? "bg-emerald-600 dark:bg-emerald-400"
+                      : "bg-accent",
+                  ].join(" ")}
+                  title="Cleared / configured this week"
+                >
+                  {clearedCount}/{rows.length}
+                </span>
+              ) : null}
             </div>
-            <p className="text-sm opacity-75">
-              {level != null ? (
-                <>
-                  Lv. {level}
-                  {job ? ` · ${job}` : ""}
-                  {worldName ? ` · ${worldName}` : ""}
-                  {region ? ` · ${region}` : ""}
-                </>
-              ) : loading ? (
-                "Loading character…"
-              ) : error ? (
-                <span className="opacity-70">{error}</span>
-              ) : (
-                <>
-                  {job ?? "Class unknown"}
-                  {worldName ? ` · ${worldName}` : ""}
-                  {region ? ` · ${region}` : ""}
-                </>
-              )}
-            </p>
-          </div>
-        </div>
 
-        <div className="flex flex-col items-end gap-1">
-          <p className="text-xs font-semibold uppercase tracking-wider opacity-55">
-            Character total
-          </p>
-          <p className="font-display text-lg font-semibold tabular-nums text-accent">
-            {formatMesos(summary.maxPossibleMesos)}
-          </p>
-          <p className="text-xs opacity-55">
-            {summary.weeklyCrystalsUsed}/{summary.weeklyCrystalLimit} weekly
-          </p>
-          <div className="mt-1 flex items-center gap-2">
-            {hasBosses ? (
+            <div ref={menuRef} className="relative shrink-0">
               <button
                 type="button"
-                onClick={onAddBosses}
-                className="cursor-pointer rounded-md border border-border/60 bg-background px-2.5 py-1 text-xs font-semibold opacity-90 shadow-sm transition-colors hover:border-accent/50 hover:bg-accent-soft hover:text-accent hover:opacity-100 active:bg-accent-soft/80"
+                aria-label="More actions"
+                aria-expanded={menuOpen}
+                aria-haspopup="menu"
+                onClick={() => setMenuOpen((o) => !o)}
+                className="flex h-7 w-7 items-center justify-center rounded-md border border-border/50 text-sm opacity-70 transition-colors hover:bg-surface-muted hover:opacity-100"
               >
-                Edit
+                ⋮
               </button>
-            ) : null}
-            <button
-              type="button"
-              onClick={onReset}
-              className="cursor-pointer rounded-md border border-border/60 bg-background px-2.5 py-1 text-xs font-semibold opacity-90 shadow-sm transition-colors hover:border-accent/50 hover:bg-accent-soft hover:text-accent hover:opacity-100 active:bg-accent-soft/80"
-            >
-              Reset
-            </button>
+              {menuOpen ? (
+                <div
+                  role="menu"
+                  className="absolute right-0 z-20 mt-1 min-w-[9.5rem] overflow-hidden rounded-lg border border-border/50 bg-surface py-1 shadow-lg"
+                >
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="block w-full px-3 py-1.5 text-left text-sm hover:bg-accent-soft hover:text-accent"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      onAddBosses();
+                    }}
+                  >
+                    Edit bosses
+                  </button>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="block w-full px-3 py-1.5 text-left text-sm hover:bg-accent-soft hover:text-accent"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      onResetClears();
+                    }}
+                  >
+                    Reset clears
+                  </button>
+                </div>
+              ) : null}
+            </div>
           </div>
+
+          <p className="mt-0.5 text-xs opacity-70">
+            {level != null ? (
+              <>
+                Lv. {level}
+                {expPct != null ? ` (${expPct}%)` : ""}
+              </>
+            ) : loading ? (
+              "Loading character…"
+            ) : error ? (
+              <span className="opacity-70">{error}</span>
+            ) : (
+              "Level unknown"
+            )}
+          </p>
+          {job ? <p className="text-xs opacity-70">{job}</p> : null}
+          {worldName ? (
+            <p className="text-[11px] opacity-55">{worldName}</p>
+          ) : null}
         </div>
       </div>
 
-      <div className="p-3 sm:p-4">
+      <div className="flex min-h-0 flex-1 flex-col p-3">
         {!hasBosses ? (
-          <div className="flex flex-col items-center gap-2 py-6 text-center">
+          <div className="flex flex-1 flex-col items-center justify-center gap-2 py-8 text-center">
             <p className="text-sm opacity-65">No bosses configured</p>
             <button
               type="button"
               onClick={onAddBosses}
-              className="cursor-pointer rounded-lg border border-border/50 bg-background px-3 py-1.5 text-sm font-semibold shadow-sm transition-colors hover:border-accent/50 hover:bg-accent-soft hover:text-accent active:bg-accent-soft/80"
+              className="cursor-pointer rounded-lg border border-border/50 bg-background px-3 py-1.5 text-sm font-semibold shadow-sm transition-colors hover:border-accent/50 hover:bg-accent-soft hover:text-accent"
             >
               Add bosses
             </button>
           </div>
         ) : (
-          <div className="space-y-3">
+          <>
             <div className="overflow-x-auto">
-              {/* Desktop: MapleHub columns Boss | Party | Value */}
-              <table className="hidden w-full min-w-[28rem] text-left text-sm sm:table">
-                <thead className="text-xs uppercase tracking-wider opacity-55">
+              <table className="w-full table-fixed text-left text-sm leading-tight">
+                <thead className="text-[11px] uppercase tracking-wider opacity-55">
                   <tr>
-                    <th className="w-6 pb-2 pr-1 font-semibold">
-                      <span className="sr-only">Remove</span>
+                    <th className="w-6 p-0.5 font-semibold">
+                      <span className="sr-only">Cleared</span>
                     </th>
-                    <th className="pb-2 pr-2 font-semibold">Boss</th>
-                    <th className="w-10 pb-2 pr-2 text-center font-semibold md:w-14">
+                    <th className="p-0.5 font-semibold">Boss</th>
+                    <th className="w-10 p-0.5 text-center font-semibold md:w-12">
                       Party
                     </th>
-                    <th className="w-24 pb-2 text-right font-semibold md:w-28">
+                    <th className="w-24 p-0.5 text-right font-semibold md:w-28">
                       Value
                     </th>
                   </tr>
@@ -589,29 +681,32 @@ function CharacterBossCard({
                     const boss = BOSS_CRYSTALS.find((b) => b.id === line.bossId);
                     const icon = boss ? bossIconUrl(boss) : null;
                     const showIcon = icon && !brokenIcons[line.bossId];
-                    const partyMax = boss
-                      ? bossMaxParty(boss)
-                      : DEFAULT_MAX_PARTY;
                     const label = formatBossLabel(
                       line.difficulty,
                       line.bossName,
                     );
+                    const cleared = !!clearedById.get(line.bossId);
                     return (
                       <tr
                         key={`${line.bossId}-${line.difficulty}-${line.frequency}`}
-                        className="border-t border-border/20"
+                        className="h-7 cursor-pointer border-t border-border/15 transition-colors hover:bg-surface-muted/40"
+                        onClick={() => onToggleCleared(line.bossId)}
                       >
-                        <td className="py-1 pr-1">
-                          <button
-                            type="button"
-                            onClick={() => onRemove(line.bossId)}
-                            className="rounded px-1 text-xs opacity-50 hover:text-red-500 hover:opacity-100"
-                            aria-label={`Remove ${label}`}
+                        <td className="p-0">
+                          <div
+                            className="flex items-center justify-center"
+                            onClick={(e) => e.stopPropagation()}
                           >
-                            ×
-                          </button>
+                            <input
+                              type="checkbox"
+                              checked={cleared}
+                              onChange={() => onToggleCleared(line.bossId)}
+                              aria-label={`Mark ${label} cleared`}
+                              className="h-3.5 w-3.5 accent-[var(--accent)]"
+                            />
+                          </div>
                         </td>
-                        <td className="py-1 pr-2 font-medium text-accent">
+                        <td className="p-0.5 font-medium text-accent">
                           <div className="flex min-w-0 items-center gap-1">
                             <div className="flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded-md bg-surface-muted/60">
                               {showIcon ? (
@@ -634,152 +729,55 @@ function CharacterBossCard({
                             <span className="truncate whitespace-nowrap text-sm">
                               {label}
                               {line.frequency === "monthly" ? (
-                                <span className="ml-1.5 text-xs font-normal opacity-55">
+                                <span className="ml-1 text-[10px] font-normal opacity-55">
                                   monthly
                                 </span>
                               ) : null}
                             </span>
                           </div>
                         </td>
-                        <td className="py-1 pr-2 text-center">
-                          <input
-                            type="number"
-                            min={1}
-                            max={partyMax}
-                            title={`Party size (max ${partyMax})`}
-                            aria-label={`${label} party size, max ${partyMax}`}
-                            className={`${inputClass} h-6 w-8 text-center text-xs`}
-                            value={line.partySize}
-                            onChange={(e) =>
-                              onPatch(line.bossId, {
-                                partySize: clampPartySize(
-                                  line.bossId,
-                                  Number(e.target.value) || 1,
-                                ),
-                              })
-                            }
-                          />
+                        <td className="p-0.5 text-center tabular-nums">
+                          {line.partySize}
                         </td>
-                        <td className="py-1 text-right font-mono text-sm tabular-nums">
+                        <td className="p-0.5 text-right font-mono text-xs tabular-nums md:text-sm">
                           {formatMesos(line.crystalPersonal)}
                         </td>
                       </tr>
                     );
                   })}
                 </tbody>
-                <tfoot>
-                  <tr className="border-t border-border/40">
-                    <td />
-                    <td
-                      colSpan={2}
-                      className="pt-2 text-xs font-semibold uppercase tracking-wider opacity-55"
-                    >
-                      Character total
-                    </td>
-                    <td className="pt-2 text-right font-semibold tabular-nums text-accent">
-                      {formatMesos(
-                        summary.maxPossibleMesos + summary.monthlyMesos,
-                      )}
-                    </td>
-                  </tr>
-                </tfoot>
               </table>
-
-              {/* Mobile: MapleHub-style stacked rows */}
-              <div className="space-y-2 sm:hidden">
-                {rows.map((line) => {
-                  const boss = BOSS_CRYSTALS.find((b) => b.id === line.bossId);
-                  const icon = boss ? bossIconUrl(boss) : null;
-                  const showIcon = icon && !brokenIcons[line.bossId];
-                  const partyMax = boss
-                    ? bossMaxParty(boss)
-                    : DEFAULT_MAX_PARTY;
-                  const label = formatBossLabel(
-                    line.difficulty,
-                    line.bossName,
-                  );
-                  return (
-                    <div
-                      key={`m-${line.bossId}-${line.difficulty}-${line.frequency}`}
-                      className="flex items-center justify-between gap-2 rounded border border-border/30 p-2"
-                    >
-                      <div className="flex min-w-0 flex-1 items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => onRemove(line.bossId)}
-                          className="shrink-0 rounded px-1 text-xs opacity-50 hover:text-red-500 hover:opacity-100"
-                          aria-label={`Remove ${label}`}
-                        >
-                          ×
-                        </button>
-                        <div className="flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded-md bg-surface-muted/60">
-                          {showIcon ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img
-                              src={icon}
-                              alt=""
-                              width={24}
-                              height={24}
-                              className="h-6 w-6 object-contain"
-                              style={{ imageRendering: "pixelated" }}
-                              onError={() => onBrokenIcon(line.bossId)}
-                            />
-                          ) : (
-                            <span className="text-[9px] font-semibold opacity-50">
-                              {line.bossName.slice(0, 2)}
-                            </span>
-                          )}
-                        </div>
-                        <span className="truncate text-sm font-medium text-accent">
-                          {label}
-                        </span>
-                      </div>
-                      <div className="shrink-0 text-right text-xs">
-                        <div className="flex flex-col items-end gap-1">
-                          <span className="opacity-55">
-                            Party
-                            {partyMax < DEFAULT_MAX_PARTY
-                              ? ` (max ${partyMax})`
-                              : ":"}
-                          </span>
-                          <input
-                            type="number"
-                            min={1}
-                            max={partyMax}
-                            title={`Party size (max ${partyMax})`}
-                            aria-label={`${label} party size, max ${partyMax}`}
-                            className={`${inputClass} h-6 w-8 text-center text-xs`}
-                            value={line.partySize}
-                            onChange={(e) =>
-                              onPatch(line.bossId, {
-                                partySize: clampPartySize(
-                                  line.bossId,
-                                  Number(e.target.value) || 1,
-                                ),
-                              })
-                            }
-                          />
-                          <span className="font-mono tabular-nums">
-                            {formatMesos(line.crystalPersonal)}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-                <div className="flex items-center justify-between border-t border-border/40 pt-2 text-xs">
-                  <span className="font-semibold uppercase tracking-wider opacity-55">
-                    Character total
-                  </span>
-                  <span className="font-semibold tabular-nums text-accent">
-                    {formatMesos(
-                      summary.maxPossibleMesos + summary.monthlyMesos,
-                    )}
-                  </span>
-                </div>
-              </div>
             </div>
-          </div>
+
+            <div className="mt-auto flex items-center justify-between gap-2 border-t border-border/30 pt-2.5">
+              <button
+                type="button"
+                onClick={() => onCheckAll(!allCleared)}
+                className="inline-flex items-center gap-1.5 rounded-md border border-border/50 bg-background px-2 py-1 text-xs font-semibold opacity-90 transition-colors hover:border-accent/40 hover:bg-accent-soft hover:text-accent"
+              >
+                <input
+                  type="checkbox"
+                  checked={allCleared}
+                  readOnly
+                  tabIndex={-1}
+                  className="pointer-events-none h-3.5 w-3.5 accent-[var(--accent)]"
+                  aria-hidden
+                />
+                {allCleared ? "Uncheck all" : "Check all"}
+              </button>
+              <span
+                className={[
+                  "font-mono text-sm tabular-nums",
+                  clearedValue === totalValue && totalValue > 0
+                    ? "text-emerald-500"
+                    : "opacity-70",
+                ].join(" ")}
+              >
+                {formatMesosCompact(clearedValue)} /{" "}
+                {formatMesosCompact(totalValue)}
+              </span>
+            </div>
+          </>
         )}
       </div>
     </article>

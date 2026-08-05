@@ -15,6 +15,8 @@ export type BossClearSelection = {
   difficulty: string;
   enabled: boolean;
   partySize: number;
+  /** Cleared / checked off for this week (progress only). */
+  cleared: boolean;
 };
 
 export type IncomeLine = {
@@ -63,6 +65,7 @@ export function defaultSelections(): BossClearSelection[] {
         difficulty: top.name,
         enabled: false,
         partySize: 1,
+        cleared: false,
       },
     ];
   });
@@ -202,5 +205,24 @@ export function summarizeRosterIncome(
 }
 
 export function formatMesos(n: number): string {
+  return Math.round(n).toLocaleString("en-US");
+}
+
+/** Compact mesos for card footers (e.g. `12.033B`). */
+export function formatMesosCompact(n: number): string {
+  if (!Number.isFinite(n) || n <= 0) return "0";
+  const abs = Math.abs(n);
+  if (abs >= 1e12) {
+    const t = n / 1e12;
+    return `${t >= 100 ? t.toFixed(1) : t.toFixed(3)}T`;
+  }
+  if (abs >= 1e9) {
+    const b = n / 1e9;
+    return `${b >= 100 ? b.toFixed(1) : b.toFixed(3)}B`;
+  }
+  if (abs >= 1e6) {
+    const m = n / 1e6;
+    return `${m >= 100 ? m.toFixed(1) : m.toFixed(3)}M`;
+  }
   return Math.round(n).toLocaleString("en-US");
 }
