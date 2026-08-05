@@ -16,7 +16,11 @@ import {
 import { addToRoster, setPrimary } from "@/lib/dashboard/roster";
 import { getCharName } from "@/lib/jobs";
 import { pairScouterAndEquip } from "@/lib/pairing";
-import { clampHexaForGms } from "@/lib/scouter";
+import {
+  clampHexaForGms,
+  defaultBuffState,
+  defaultLinkState,
+} from "@/lib/scouter";
 import {
   countEquipPieces,
   type ScouterShareRecord,
@@ -93,8 +97,8 @@ export default function CharacterShareProfilePage() {
 
   const record = load.status === "ready" ? load.record : null;
   const input = record?.state.input;
-  const buffs = record?.state.buffs;
-  const links = record?.state.links;
+  const buffs = record?.state.buffs ?? defaultBuffState();
+  const links = record?.state.links ?? defaultLinkState();
   const hexa = useMemo(
     () => (record ? clampHexaForGms(record.state.hexa ?? []) : []),
     [record],
@@ -387,14 +391,12 @@ export default function CharacterShareProfilePage() {
 
       <section className="grid items-start gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.95fr)]">
         <ShareScouterStatsPanel input={input} />
-        {buffs && links ? (
-          <ShareScouterExtrasPanel
-            input={input}
-            buffs={buffs}
-            links={links}
-            hexa={hexa}
-          />
-        ) : null}
+        <ShareScouterExtrasPanel
+          input={input}
+          buffs={buffs}
+          links={links}
+          hexa={hexa}
+        />
       </section>
 
       <section className="rounded-lg border border-border/50 bg-surface/80 p-4">
