@@ -47,7 +47,6 @@ export default function CharacterShareProfilePage() {
   const [ownedToken, setOwnedToken] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
-  const [importRegion, setImportRegion] = useState<NexonRegion>("na");
   const [importName, setImportName] = useState("");
 
   useEffect(() => {
@@ -79,9 +78,7 @@ export default function CharacterShareProfilePage() {
           (data.identity !== "anonymous" ? data.ign || data.name : "") ||
           "";
         setImportName(suggested);
-        if (data.character?.region === "eu" || data.character?.region === "na") {
-          setImportRegion(data.character.region);
-        }
+        // Region comes from the share character when present (no picker).
       } catch (err) {
         if (cancelled) return;
         setLoad({
@@ -109,6 +106,9 @@ export default function CharacterShareProfilePage() {
   const className = input
     ? getCharName(input.jobType, input.charType)
     : "";
+
+  const importRegion: NexonRegion =
+    record?.character?.region === "eu" ? "eu" : "na";
 
   const flash = (text: string) => {
     setMsg(text);
@@ -376,23 +376,18 @@ export default function CharacterShareProfilePage() {
           </p>
         </div>
 
-        <div className="flex shrink-0 flex-col items-stretch gap-1.5 sm:items-end">
-          <div className="flex flex-wrap items-center justify-end gap-1.5">
-            <select
-              value={importRegion}
-              onChange={(e) =>
-                setImportRegion(e.target.value === "eu" ? "eu" : "na")
-              }
-              aria-label="Import region"
-              className="rounded border border-border/50 bg-background px-1.5 py-1 text-[11px]"
+        <div className="flex shrink-0 flex-col items-stretch gap-2 sm:items-end">
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <span
+              className="rounded border border-border/50 bg-surface-muted/40 px-2 py-1.5 text-xs font-semibold uppercase tracking-wide opacity-80"
+              title="Region from this build profile"
             >
-              <option value="na">NA</option>
-              <option value="eu">EU</option>
-            </select>
+              {importRegion}
+            </span>
             <input
               value={importName}
               onChange={(e) => setImportName(e.target.value)}
-              className="w-[7.5rem] rounded border border-border/50 bg-background px-1.5 py-1 text-[11px] sm:w-28"
+              className="w-36 rounded border border-border/50 bg-background px-2.5 py-1.5 text-sm sm:w-40"
               placeholder="IGN"
               maxLength={13}
               aria-label="Import character name"
@@ -401,22 +396,24 @@ export default function CharacterShareProfilePage() {
               type="button"
               disabled={busy === "import"}
               onClick={importToRoster}
-              className="rounded bg-accent px-2 py-1 text-[11px] font-semibold text-white transition hover:opacity-90 disabled:opacity-40"
+              title="Add this IGN to your roster and save Scouter + Equipment into that character’s workspace"
+              className="rounded-md bg-accent px-3 py-1.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-40"
             >
-              {busy === "import" ? "…" : "Import"}
+              {busy === "import" ? "Importing…" : "Import to roster"}
             </button>
             <Link
               href="/calc/scouter/gallery"
-              className="rounded-md border border-border/50 bg-surface px-2 py-1 text-[11px] font-semibold transition hover:bg-surface-muted"
+              className="rounded-md border border-border/50 bg-surface px-3 py-1.5 text-sm font-semibold transition hover:bg-surface-muted"
             >
               Gallery
             </Link>
           </div>
-          <div className="flex flex-wrap justify-end gap-1.5">
+          <div className="flex flex-wrap justify-end gap-2">
             <button
               type="button"
               onClick={openInScouter}
-              className="rounded border border-border/50 bg-background px-2 py-1 text-[11px] font-semibold transition hover:bg-surface-muted"
+              title="Load Scouter stats into your current draft and open Scouter (does not add to roster)"
+              className="rounded-md border border-border/50 bg-background px-3 py-1.5 text-sm font-semibold transition hover:bg-surface-muted"
             >
               Open in Scouter
             </button>
@@ -424,7 +421,8 @@ export default function CharacterShareProfilePage() {
               type="button"
               onClick={openInEquipment}
               disabled={!record.equipment || equipCount === 0}
-              className="rounded border border-border/50 bg-background px-2 py-1 text-[11px] font-semibold transition hover:bg-surface-muted disabled:opacity-40"
+              title="Load equipment into Equipment Setup (does not add to roster)"
+              className="rounded-md border border-border/50 bg-background px-3 py-1.5 text-sm font-semibold transition hover:bg-surface-muted disabled:opacity-40"
             >
               Open in Equipment
             </button>
@@ -468,64 +466,6 @@ export default function CharacterShareProfilePage() {
             No equipment snapshot on this share (legacy scouter-only post).
           </p>
         )}
-      </section>
-
-      <section className="space-y-3 rounded-lg border border-border/50 bg-surface/80 p-4">
-        <h2 className="font-display text-lg font-semibold">Import</h2>
-        <p className="text-sm opacity-70">
-          Copies into your local character workspace. Does not change this
-          public profile unless you hold the edit token.
-        </p>
-        <div className="flex flex-wrap items-end gap-2">
-          <label className="text-sm">
-            <span className="mb-1 block text-xs opacity-60">Region</span>
-            <select
-              value={importRegion}
-              onChange={(e) =>
-                setImportRegion(e.target.value === "eu" ? "eu" : "na")
-              }
-              className="rounded border border-border/50 bg-background px-2 py-1.5"
-            >
-              <option value="na">NA</option>
-              <option value="eu">EU</option>
-            </select>
-          </label>
-          <label className="min-w-[10rem] flex-1 text-sm">
-            <span className="mb-1 block text-xs opacity-60">Character name</span>
-            <input
-              value={importName}
-              onChange={(e) => setImportName(e.target.value)}
-              className="w-full rounded border border-border/50 bg-background px-2 py-1.5"
-              placeholder="IGN"
-              maxLength={13}
-            />
-          </label>
-          <button
-            type="button"
-            disabled={busy === "import"}
-            onClick={importToRoster}
-            className="rounded bg-accent px-3 py-1.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-40"
-          >
-            {busy === "import" ? "Importing…" : "Import to my roster"}
-          </button>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={openInScouter}
-            className="rounded border border-border/50 bg-background px-3 py-1.5 text-sm font-semibold transition hover:bg-surface-muted"
-          >
-            Open in Scouter
-          </button>
-          <button
-            type="button"
-            onClick={openInEquipment}
-            disabled={!record.equipment || equipCount === 0}
-            className="rounded border border-border/50 bg-background px-3 py-1.5 text-sm font-semibold transition hover:bg-surface-muted disabled:opacity-40"
-          >
-            Open in Equipment
-          </button>
-        </div>
       </section>
 
       {ownedToken ? (
