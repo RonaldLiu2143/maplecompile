@@ -24,11 +24,11 @@ export function WeeklyResetBar() {
       aria-live="polite"
       aria-label="Weekly boss reset countdown"
     >
-      <div className="mx-auto flex w-full max-w-7xl items-center justify-center gap-2 text-center text-[0.7rem] font-semibold tracking-wide sm:justify-between sm:text-left sm:text-xs">
-        <span className="tabular-nums text-accent">{label}</span>
+      <div className="mx-auto flex w-full max-w-7xl items-center justify-end gap-2 text-right text-[0.7rem] font-semibold tracking-wide sm:text-xs">
         <span className="hidden opacity-55 sm:inline">
           Weekly bosses · Thursday 00:00 UTC
         </span>
+        <span className="tabular-nums text-accent">{label}</span>
       </div>
     </div>
   );
