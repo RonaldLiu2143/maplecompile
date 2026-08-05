@@ -1,152 +1,251 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { useRoster } from "@/hooks/useRoster";
+import { entryKey, isPrimary } from "@/lib/dashboard/roster";
 import {
-  TRACE_BANK_CAP,
-  TRACE_BOSSES,
+  DESTINY_CARRYOVER_CAP,
+  GENESIS_CARRYOVER_CAP,
+  NOT_DOING,
+  TRACE_INPUT_MAX,
+  bossIconSrc,
+  bossesFor,
   calculateLiberation,
-  defaultTraceSelections,
+  clampPartySize,
+  clampTracesHeld,
+  currencyLabel,
+  defaultInputs,
+  ensureCharacterBundle,
+  getActiveInputs,
+  getActiveKey,
   milestonesFor,
-  targetFor,
+  readLiberationStore,
   tracesFromClear,
+  upsertActiveInputs,
+  writeLiberationStore,
+  type LiberationCharacterInputs,
+  type LiberationMode,
+  type LiberationStore,
   type LiberationType,
   type TraceSelection,
 } from "@/lib/liberation";
 
-const STORAGE_KEY = "maplecompile.liberation.v1";
 const inputClass =
-  "rounded border border-border bg-background px-2 py-1 text-sm outline-none focus:border-accent";
+  "rounded border border-border bg-background px-2 py-1.5 text-sm outline-none focus:border-accent";
 
-type Persisted = {
-  type: LiberationType;
-  tracesHeld: number;
-  milestoneTraces: number;
-  useGenesisPass: boolean;
-  startDate: string;
-  selections: TraceSelection[];
-};
+const PARTY_SIZES = [1, 2, 3, 4, 5, 6] as const;
 
-function todayISO(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
-function loadState(): Persisted {
+function formatDisplayDate(iso: string | null): string {
+  if (!iso) return "—";
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) {
-      return {
-        type: "genesis",
-        tracesHeld: 0,
-        milestoneTraces: 0,
-        useGenesisPass: false,
-        startDate: todayISO(),
-        selections: defaultTraceSelections(),
-      };
-    }
-    const parsed = JSON.parse(raw) as Persisted;
-    const defaults = defaultTraceSelections();
-    const byName = new Map(
-      parsed.selections?.map((s) => [s.bossName, s]) ?? [],
-    );
-    return {
-      type: parsed.type === "destiny" ? "destiny" : "genesis",
-      tracesHeld: Number(parsed.tracesHeld) || 0,
-      milestoneTraces: Number(parsed.milestoneTraces) || 0,
-      useGenesisPass: !!parsed.useGenesisPass,
-      startDate: parsed.startDate || todayISO(),
-      selections: defaults.map((d) => byName.get(d.bossName) ?? d),
-    };
+    return new Intl.DateTimeFormat(undefined, {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(new Date(`${iso}T12:00:00`));
   } catch {
-    return {
-      type: "genesis",
-      tracesHeld: 0,
-      milestoneTraces: 0,
-      useGenesisPass: false,
-      startDate: todayISO(),
-      selections: defaultTraceSelections(),
-    };
+    return iso;
   }
 }
 
+function weeksLabel(weeks: number | null): string {
+  if (weeks == null) return "Select bosses";
+  if (weeks === 0) return "0 weeks (0 months)";
+  const w = Math.ceil(weeks * 10) / 10;
+  const months = Math.floor((weeks / 4) * 10) / 10;
+  return `${w} weeks (${months} months)`;
+}
+
 export default function LiberationPage() {
+  const { hydrated, roster, primary, slots } = useRoster();
   const [ready, setReady] = useState(false);
-  const [type, setType] = useState<LiberationType>("genesis");
-  const [tracesHeld, setTracesHeld] = useState(0);
-  const [milestoneTraces, setMilestoneTraces] = useState(0);
-  const [useGenesisPass, setUseGenesisPass] = useState(false);
-  const [startDate, setStartDate] = useState(todayISO);
-  const [selections, setSelections] = useState<TraceSelection[]>(
-    defaultTraceSelections,
+  const [store, setStore] = useState<LiberationStore>(() =>
+    readLiberationStore(),
   );
+  const [brokenIcons, setBrokenIcons] = useState<Record<string, true>>({});
+
+  const eligible = useMemo(() => {
+    return roster.filter((entry) => {
+      const slot = slots[entryKey(entry)];
+      if (!slot || slot.status !== "ready") return false;
+      return slot.character.level >= 255;
+    });
+  }, [roster, slots]);
 
   useEffect(() => {
-    const loaded = loadState();
-    setType(loaded.type);
-    setTracesHeld(loaded.tracesHeld);
-    setMilestoneTraces(loaded.milestoneTraces);
-    setUseGenesisPass(loaded.useGenesisPass);
-    setStartDate(loaded.startDate);
-    setSelections(loaded.selections);
+    if (!hydrated) return;
+    let next = readLiberationStore();
+
+    // Keep preview + ensure bundles for selected / primary
+    const preferred =
+      primary && eligible.some((e) => entryKey(e) === entryKey(primary))
+        ? entryKey(primary)
+        : eligible[0]
+          ? entryKey(eligible[0])
+          : null;
+
+    for (const entry of eligible) {
+      next = ensureCharacterBundle(next, entryKey(entry));
+    }
+
+    if (next.mode === "characters") {
+      const stillValid = next.selectedCharacterIds.filter((id) =>
+        eligible.some((e) => entryKey(e) === id),
+      );
+      next = { ...next, selectedCharacterIds: stillValid };
+      if (stillValid.length === 0) {
+        next = { ...next, mode: "preview", activeCharacterId: null };
+      } else if (
+        !next.activeCharacterId ||
+        !stillValid.includes(next.activeCharacterId)
+      ) {
+        next = {
+          ...next,
+          activeCharacterId: preferred ?? stillValid[0] ?? null,
+        };
+      }
+    }
+
+    setStore(next);
+    writeLiberationStore(next);
     setReady(true);
-  }, []);
+  }, [hydrated, eligible, primary]);
 
   useEffect(() => {
     if (!ready) return;
-    try {
-      localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify({
-          type,
-          tracesHeld,
-          milestoneTraces,
-          useGenesisPass,
-          startDate,
-          selections,
-        } satisfies Persisted),
-      );
-    } catch {
-      /* ignore */
-    }
-  }, [
-    ready,
-    type,
-    tracesHeld,
-    milestoneTraces,
-    useGenesisPass,
-    startDate,
-    selections,
-  ]);
+    writeLiberationStore(store);
+  }, [store, ready]);
+
+  const mode = store.mode;
+  const inputs = getActiveInputs(store);
+  const type = inputs.liberationType;
+  const bosses = bossesFor(type);
+  const milestones = milestonesFor(type);
+  const currency = currencyLabel(type);
 
   const result = useMemo(
     () =>
       calculateLiberation({
         type,
-        tracesHeld,
-        milestoneTraces,
-        useGenesisPass,
-        startDate,
-        selections,
+        tracesHeld: inputs.currentTraces,
+        liberationQuest: inputs.liberationQuest,
+        useGenesisPass: inputs.genesisPass,
+        startDate: inputs.startDate,
+        selections: inputs.bossSelections,
       }),
-    [
-      type,
-      tracesHeld,
-      milestoneTraces,
-      useGenesisPass,
-      startDate,
-      selections,
-    ],
+    [type, inputs],
   );
 
-  const milestones = milestonesFor(type);
-  const target = targetFor(type);
-
-  const patch = (bossName: string, partial: Partial<TraceSelection>) => {
-    setSelections((prev) =>
-      prev.map((s) => (s.bossName === bossName ? { ...s, ...partial } : s)),
+  // Persist completion % onto active character (MapleHub behavior)
+  useEffect(() => {
+    if (!ready) return;
+    if (inputs.completionRate === result.completionRate) return;
+    setStore((prev) =>
+      upsertActiveInputs(prev, { completionRate: result.completionRate }),
     );
+  }, [ready, result.completionRate, inputs.completionRate]);
+
+  const patch = (partial: Partial<LiberationCharacterInputs>) => {
+    setStore((prev) => upsertActiveInputs(prev, partial));
   };
 
-  const pct = Math.min(100, Math.round((result.progress / target) * 100));
+  const setType = (next: LiberationType) => {
+    setStore((prev) => {
+      const key = getActiveKey(prev);
+      const bundle = prev.characterData[key] ?? {
+        genesis: defaultInputs("genesis"),
+        destiny: defaultInputs("destiny"),
+        currentTab: "genesis" as const,
+      };
+      return {
+        ...prev,
+        characterData: {
+          ...prev.characterData,
+          [key]: { ...bundle, currentTab: next },
+        },
+      };
+    });
+  };
+
+  const patchBoss = (bossName: string, partial: Partial<TraceSelection>) => {
+    setStore((prev) => {
+      const current = getActiveInputs(prev);
+      const bossSelections = current.bossSelections.map((s) =>
+        s.bossName === bossName ? { ...s, ...partial } : s,
+      );
+      return upsertActiveInputs(prev, { bossSelections });
+    });
+  };
+
+  const resetActive = () => {
+    setStore((prev) => upsertActiveInputs(prev, defaultInputs(type)));
+  };
+
+  const setMode = (next: LiberationMode) => {
+    setStore((prev) => {
+      if (next === "preview") {
+        return {
+          ...prev,
+          mode: "preview",
+          activeCharacterId: null,
+        };
+      }
+      let s = prev;
+      const ids =
+        prev.selectedCharacterIds.length > 0
+          ? prev.selectedCharacterIds.filter((id) =>
+              eligible.some((e) => entryKey(e) === id),
+            )
+          : eligible.map((e) => entryKey(e));
+      for (const id of ids) s = ensureCharacterBundle(s, id);
+      const active =
+        (primary && ids.includes(entryKey(primary))
+          ? entryKey(primary)
+          : ids[0]) ?? null;
+      return {
+        ...s,
+        mode: "characters",
+        selectedCharacterIds: ids,
+        activeCharacterId: active,
+      };
+    });
+  };
+
+  const toggleCharacterVisible = (id: string) => {
+    setStore((prev) => {
+      const has = prev.selectedCharacterIds.includes(id);
+      const selectedCharacterIds = has
+        ? prev.selectedCharacterIds.filter((x) => x !== id)
+        : [...prev.selectedCharacterIds, id];
+      let s = ensureCharacterBundle(prev, id);
+      s = { ...s, selectedCharacterIds };
+      if (
+        !selectedCharacterIds.includes(s.activeCharacterId ?? "") &&
+        selectedCharacterIds.length > 0
+      ) {
+        s = { ...s, activeCharacterId: selectedCharacterIds[0]! };
+      }
+      if (selectedCharacterIds.length === 0) {
+        s = { ...s, mode: "preview", activeCharacterId: null };
+      }
+      return s;
+    });
+  };
+
+  const clearedCount = inputs.bossSelections.filter((s) => s.cleared).length;
+  const activeDoing = inputs.bossSelections.filter(
+    (s) => s.difficulty !== NOT_DOING,
+  ).length;
+  const achieved = result.remaining <= 0;
+  const pct = Math.min(100, result.completionRate);
+
+  const visibleChars =
+    mode === "characters"
+      ? eligible.filter((e) =>
+          store.selectedCharacterIds.includes(entryKey(e)),
+        )
+      : [];
 
   return (
     <div className="space-y-8">
@@ -155,224 +254,513 @@ export default function LiberationPage() {
           Liberation Calculator
         </h1>
         <p className="mt-2 max-w-2xl text-sm opacity-75">
-          Track Genesis or Destiny liberation progress with Traces of Darkness
-          from weekly bosses. Genesis Pass triples trace gains. Quest mission
-          penalties and Destiny material routes beyond Kaling are stubbed.
+          Calculate how long it will take to complete your MapleStory liberation
+          quest. Configure weekly boss clears and track progress toward Genesis
+          or Destiny liberation (Heroic / GMS-oriented).
         </p>
       </header>
 
-      <section className="flex flex-wrap items-end gap-4 rounded-xl border border-border/40 bg-surface/80 p-4">
-        <div className="flex flex-col gap-1.5">
-          <span className="text-xs font-semibold uppercase tracking-wider opacity-60">
-            Liberation type
+      {/* Mode */}
+      <section className="flex flex-wrap items-center gap-2 rounded-xl border border-border/40 bg-surface/80 p-3">
+        <span className="mr-1 text-xs font-semibold uppercase tracking-wider opacity-60">
+          Mode
+        </span>
+        <button
+          type="button"
+          onClick={() => setMode("characters")}
+          disabled={eligible.length === 0}
+          title={
+            eligible.length === 0
+              ? "No level 255+ roster characters available"
+              : undefined
+          }
+          className={[
+            "rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-45",
+            mode === "characters"
+              ? "bg-accent text-white dark:text-zinc-900"
+              : "border border-border/50 hover:bg-accent-soft hover:text-accent",
+          ].join(" ")}
+        >
+          My Characters
+        </button>
+        <button
+          type="button"
+          onClick={() => setMode("preview")}
+          className={[
+            "rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors",
+            mode === "preview"
+              ? "bg-accent text-white dark:text-zinc-900"
+              : "border border-border/50 hover:bg-accent-soft hover:text-accent",
+          ].join(" ")}
+        >
+          Preview
+        </button>
+        {mode === "preview" ? (
+          <span className="ml-auto rounded-md border border-border/40 bg-surface-muted/60 px-2 py-1 text-xs font-medium opacity-70">
+            Preview Mode
           </span>
-          <div className="flex gap-1.5">
-            {(
-              [
-                ["genesis", "Genesis"],
-                ["destiny", "Destiny"],
-              ] as const
-            ).map(([id, label]) => (
-              <button
-                key={id}
-                type="button"
-                onClick={() => {
-                  setType(id);
-                  setMilestoneTraces(0);
-                }}
-                className={[
-                  "rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors",
-                  type === id
-                    ? "bg-accent text-white dark:text-zinc-900"
-                    : "border border-border/50 hover:bg-accent-soft hover:text-accent",
-                ].join(" ")}
-              >
-                {label}
-              </button>
-            ))}
+        ) : (
+          <Link
+            href="/roster"
+            className="ml-auto text-xs font-medium text-accent hover:underline"
+          >
+            Manage roster
+          </Link>
+        )}
+      </section>
+
+      {mode === "characters" && eligible.length > 0 ? (
+        <section className="space-y-3">
+          <div className="flex flex-wrap gap-2">
+            {eligible.map((entry) => {
+              const key = entryKey(entry);
+              const selected = store.selectedCharacterIds.includes(key);
+              const active = store.activeCharacterId === key;
+              const slot = slots[key];
+              const name =
+                slot?.status === "ready" ? slot.character.name : entry.name;
+              const rate =
+                store.characterData[key]?.[
+                  store.characterData[key]?.currentTab ?? "genesis"
+                ]?.completionRate ?? 0;
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => {
+                    if (!selected) toggleCharacterVisible(key);
+                    setStore((prev) => ({
+                      ...ensureCharacterBundle(prev, key),
+                      mode: "characters",
+                      activeCharacterId: key,
+                      selectedCharacterIds: prev.selectedCharacterIds.includes(
+                        key,
+                      )
+                        ? prev.selectedCharacterIds
+                        : [...prev.selectedCharacterIds, key],
+                    }));
+                  }}
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    toggleCharacterVisible(key);
+                  }}
+                  className={[
+                    "min-w-[7.5rem] rounded-xl border px-3 py-2 text-left transition",
+                    active
+                      ? "border-accent bg-accent-soft/50"
+                      : selected
+                        ? "border-border/50 bg-surface/80 hover:border-accent/40"
+                        : "border-dashed border-border/40 opacity-55 hover:opacity-80",
+                  ].join(" ")}
+                >
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={[
+                        "flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-bold",
+                        (
+                          store.characterData[key]?.currentTab ?? "genesis"
+                        ) === "destiny"
+                          ? "bg-amber-600 text-white"
+                          : "bg-emerald-700 text-white",
+                      ].join(" ")}
+                    >
+                      {(store.characterData[key]?.currentTab ?? "genesis") ===
+                      "destiny"
+                        ? "D"
+                        : "G"}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-semibold">{name}</p>
+                      <p className="font-mono text-xs opacity-60">
+                        {rate}%
+                        {isPrimary(entry, primary) ? " · primary" : ""}
+                      </p>
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
           </div>
+          {visibleChars.length === 0 ? (
+            <p className="text-xs opacity-65">
+              Click a character to track liberation for them. Right-click to
+              hide from the strip.
+            </p>
+          ) : null}
+        </section>
+      ) : null}
+
+      {eligible.length === 0 && roster.length > 0 ? (
+        <p className="text-xs opacity-65">
+          Roster characters need level 255+ for My Characters mode (same as
+          MapleHub). Use Preview until then, or{" "}
+          <Link href="/roster" className="text-accent hover:underline">
+            check roster
+          </Link>
+          .
+        </p>
+      ) : null}
+
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
+        {/* Progress column */}
+        <section className="space-y-4 rounded-xl border border-border/40 bg-surface/80 p-4 sm:p-5">
+          <h2 className="font-display text-lg font-semibold">
+            Liberation Progress
+          </h2>
+
+          <div className="text-center">
+            <p className="font-display text-2xl font-bold tabular-nums tracking-tight sm:text-3xl">
+              {achieved
+                ? "Done"
+                : formatDisplayDate(result.etaISO)}
+            </p>
+            <p className="mt-1 text-sm opacity-65">
+              {achieved ? "Liberation achieved" : "Target liberation date"}
+            </p>
+          </div>
+
+          {!achieved ? (
+            <div className="space-y-2">
+              <div className="flex justify-between text-xs opacity-65">
+                <span>Current Progress</span>
+                <span className="font-mono tabular-nums">
+                  {result.progress.toLocaleString()} /{" "}
+                  {result.target.toLocaleString()} traces
+                </span>
+              </div>
+              <div className="h-2.5 overflow-hidden rounded-full bg-surface-muted">
+                <div
+                  className="h-full rounded-full bg-accent transition-[width] duration-300"
+                  style={{ width: `${pct}%` }}
+                />
+              </div>
+              <p className="text-right text-xs font-semibold tabular-nums opacity-70">
+                {pct}%
+              </p>
+            </div>
+          ) : null}
+
+          <div className="space-y-2 border-t border-border/30 pt-4">
+            <h3 className="text-sm font-semibold">Trace Sources</h3>
+            <Row
+              label="Weekly traces"
+              value={String(result.weeklyTraces)}
+            />
+            {type === "genesis" ? (
+              <Row
+                label="Black Mage (monthly)"
+                value={String(result.monthlyTraces)}
+              />
+            ) : null}
+            <Row
+              label="4-week total"
+              value={String(result.fourWeekTotal)}
+            />
+          </div>
+
+          <div className="space-y-2 rounded-lg bg-surface-muted/50 p-3">
+            <p className="text-xs font-semibold uppercase tracking-wider opacity-60">
+              Detailed Statistics
+            </p>
+            <Row
+              label={`Total acquisition ${type === "destiny" ? "Adversary's Determination" : "traces"}`}
+              value={`${result.weeklyTraces} /week${type === "genesis" ? ` + ${result.monthlyTraces} /month` : ""}`}
+            />
+            <Row
+              label={`Acquisition/demand ${currency}`}
+              value={`${result.progress.toLocaleString()} / ${result.target.toLocaleString()}`}
+            />
+            <Row
+              label="Expected liberation period"
+              value={weeksLabel(result.weeksNeeded)}
+            />
+          </div>
+
+          <div className="rounded-lg border border-border/30 bg-background/40 p-3 text-xs opacity-75">
+            <p className="mb-1 font-semibold text-foreground opacity-90">
+              Carryover Information
+            </p>
+            <p>
+              {type === "destiny"
+                ? `The game lets you hold up to ${DESTINY_CARRYOVER_CAP.toLocaleString()} Adversary's Determination across steps. Overshooting here simply accelerates the next step.`
+                : `The game lets you hold up to ${GENESIS_CARRYOVER_CAP.toLocaleString()} traces across steps. Overshooting here simply accelerates the next step.`}
+            </p>
+          </div>
+        </section>
+
+        {/* Config column */}
+        <section className="space-y-4 rounded-xl border border-border/40 bg-surface/80 p-4 sm:p-5">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex gap-1.5">
+              {(
+                [
+                  ["genesis", "GENESIS"],
+                  ["destiny", "DESTINY"],
+                ] as const
+              ).map(([id, label]) => (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => setType(id)}
+                  className={[
+                    "rounded-lg px-3 py-1.5 text-xs font-bold tracking-wide transition-colors",
+                    type === id
+                      ? "bg-accent text-white dark:text-zinc-900"
+                      : "border border-border/50 hover:bg-accent-soft hover:text-accent",
+                  ].join(" ")}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={resetActive}
+              className="text-xs font-semibold text-accent hover:underline"
+            >
+              Reset
+            </button>
+          </div>
+
+          <h2 className="font-display text-lg font-semibold">Configuration</h2>
+
+          <label className="flex flex-col gap-1 text-sm">
+            <span className="text-xs font-medium opacity-65">Current quest</span>
+            <select
+              className={inputClass}
+              value={inputs.liberationQuest}
+              onChange={(e) => patch({ liberationQuest: e.target.value })}
+            >
+              {milestones.map((m) => (
+                <option key={m.value} value={m.value}>
+                  {m.label}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="flex flex-col gap-1 text-sm">
+            <span className="text-xs font-medium opacity-65">
+              {type === "destiny"
+                ? "Adversary's Determination held"
+                : "Traces of darkness held"}
+            </span>
+            <input
+              type="number"
+              min={0}
+              max={TRACE_INPUT_MAX}
+              className={`${inputClass} w-full`}
+              value={inputs.currentTraces || ""}
+              placeholder={`0 ~ ${TRACE_INPUT_MAX}`}
+              onChange={(e) =>
+                patch({
+                  currentTraces: clampTracesHeld(
+                    e.target.value === "" ? 0 : Number(e.target.value),
+                  ),
+                })
+              }
+            />
+          </label>
+
+          {result.stepProgress ? (
+            <div className="text-xs opacity-75">
+              <div className="flex justify-between">
+                <span>Progress to {result.stepProgress.nextBossName}:</span>
+                <span className="font-medium text-foreground">
+                  {result.stepProgress.held} / {result.stepProgress.needed}
+                </span>
+              </div>
+              <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-surface-muted">
+                <div
+                  className="h-full rounded-full bg-accent transition-[width] duration-300"
+                  style={{
+                    width: `${Math.min(
+                      100,
+                      (result.stepProgress.held /
+                        Math.max(1, result.stepProgress.needed)) *
+                        100,
+                    )}%`,
+                  }}
+                />
+              </div>
+            </div>
+          ) : null}
+
+          <label className="flex flex-col gap-1 text-sm">
+            <span className="text-xs font-medium opacity-65">Start date</span>
+            <input
+              type="date"
+              className={inputClass}
+              value={inputs.startDate}
+              onChange={(e) => patch({ startDate: e.target.value })}
+            />
+          </label>
+
+          <label className="flex flex-col gap-1 text-sm">
+            <span className="text-xs font-medium opacity-65">Genesis Pass</span>
+            <select
+              className={inputClass}
+              value={inputs.genesisPass ? "yes" : "no"}
+              onChange={(e) =>
+                patch({ genesisPass: e.target.value === "yes" })
+              }
+            >
+              <option value="no">No</option>
+              <option value="yes">Yes (3× traces)</option>
+            </select>
+          </label>
+        </section>
+      </div>
+
+      {/* Boss selection */}
+      <section className="space-y-3">
+        <div className="flex flex-wrap items-end justify-between gap-2">
+          <div>
+            <h2 className="font-display text-lg font-semibold">
+              Boss Selection
+            </h2>
+            <p className="mt-1 text-sm opacity-70">
+              Track your weekly boss clears. Mark bosses as &quot;Cleared&quot;
+              when you complete them this week.
+            </p>
+          </div>
+          <span className="rounded-md border border-border/40 px-2 py-1 text-xs font-medium tabular-nums opacity-75">
+            {clearedCount} / {bosses.length} cleared this week
+            {activeDoing > 0 ? ` · ${activeDoing} configured` : ""}
+          </span>
         </div>
 
-        <label className="flex flex-col gap-1 text-sm">
-          Quest milestone reached
-          <select
-            className={inputClass}
-            value={milestoneTraces}
-            onChange={(e) => setMilestoneTraces(Number(e.target.value))}
-          >
-            {milestones.map((m) => (
-              <option key={m.label} value={m.requiredTraces}>
-                {m.label}
-              </option>
-            ))}
-          </select>
-        </label>
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {bosses.map((boss) => {
+            const sel = inputs.bossSelections.find(
+              (s) => s.bossName === boss.name,
+            ) ?? {
+              bossName: boss.name,
+              difficulty: NOT_DOING,
+              partySize: 1,
+              cleared: false,
+            };
+            const doing = sel.difficulty !== NOT_DOING;
+            const gained = doing
+              ? tracesFromClear(
+                  type,
+                  boss.name,
+                  sel.difficulty,
+                  sel.partySize,
+                  inputs.genesisPass,
+                )
+              : 0;
+            const icon = bossIconSrc(boss);
+            const broken = brokenIcons[boss.name];
 
-        <label className="flex flex-col gap-1 text-sm">
-          Traces held (0–{TRACE_BANK_CAP})
-          <input
-            type="number"
-            min={0}
-            max={TRACE_BANK_CAP}
-            className={`${inputClass} w-28`}
-            value={tracesHeld}
-            onChange={(e) =>
-              setTracesHeld(
-                Math.max(
-                  0,
-                  Math.min(TRACE_BANK_CAP, Number(e.target.value) || 0),
-                ),
-              )
-            }
-          />
-        </label>
+            return (
+              <div
+                key={boss.name}
+                className={[
+                  "rounded-xl border p-3 transition",
+                  doing
+                    ? "border-border/50 bg-surface/90"
+                    : "border-border/30 bg-surface/50 opacity-80",
+                  sel.cleared ? "ring-1 ring-emerald-600/40" : "",
+                ].join(" ")}
+              >
+                <div className="flex items-start gap-3">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-surface-muted">
+                    {!broken ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={icon}
+                        alt=""
+                        className="h-full w-full object-contain"
+                        onError={() =>
+                          setBrokenIcons((prev) => ({
+                            ...prev,
+                            [boss.name]: true,
+                          }))
+                        }
+                      />
+                    ) : (
+                      <span className="text-sm font-bold opacity-50">
+                        {boss.name.slice(0, 1)}
+                      </span>
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <h3 className="font-semibold leading-tight">
+                          {boss.name}
+                        </h3>
+                        {boss.frequency === "monthly" ? (
+                          <span className="text-[10px] font-semibold uppercase tracking-wider opacity-55">
+                            monthly
+                          </span>
+                        ) : null}
+                      </div>
+                      <span className="font-mono text-sm font-semibold tabular-nums text-accent">
+                        {doing ? gained : 0}
+                      </span>
+                    </div>
+                  </div>
+                </div>
 
-        <label className="flex flex-col gap-1 text-sm">
-          Start date
-          <input
-            type="date"
-            className={inputClass}
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-          />
-        </label>
-
-        <label className="flex items-center gap-2 text-sm font-medium">
-          <input
-            type="checkbox"
-            checked={useGenesisPass}
-            onChange={(e) => setUseGenesisPass(e.target.checked)}
-          />
-          Genesis Pass (3× traces)
-        </label>
-      </section>
-
-      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Stat label="Progress" value={`${result.progress.toLocaleString()} / ${target.toLocaleString()}`} />
-        <Stat label="Remaining" value={result.remaining.toLocaleString()} />
-        <Stat
-          label="Weekly traces"
-          value={result.weeklyTraces.toLocaleString()}
-        />
-        <Stat
-          label="ETA"
-          value={
-            result.weeksNeeded == null
-              ? "Select bosses"
-              : result.weeksNeeded === 0
-                ? "Done"
-                : `${result.weeksNeeded} wk${result.etaISO ? ` (${result.etaISO})` : ""}`
-          }
-        />
-      </section>
-
-      <div className="h-3 overflow-hidden rounded-full bg-surface-muted">
-        <div
-          className="h-full rounded-full bg-accent transition-[width] duration-300"
-          style={{ width: `${pct}%` }}
-        />
-      </div>
-      <p className="text-xs opacity-70">
-        {pct}% toward {type === "destiny" ? "Destiny" : "Genesis"} target
-        {result.nextMilestone
-          ? ` · next mission: ${result.nextMilestone.bossName}`
-          : ""}
-        {result.monthlyTraces > 0
-          ? ` · monthly BM traces: ${result.monthlyTraces}`
-          : ""}
-      </p>
-
-      <section className="space-y-3">
-        <h2 className="font-display text-lg font-semibold">
-          Weekly / monthly trace sources
-        </h2>
-        <p className="text-xs opacity-70">
-          Trace amounts use MapleHub&apos;s table: floor(base ÷ party) × pass
-          multiplier. Cap remains {TRACE_BANK_CAP} held at once.
-        </p>
-        <div className="overflow-x-auto rounded-xl border border-border/40">
-          <table className="w-full min-w-[40rem] text-left text-sm">
-            <thead className="bg-surface-muted/80 text-xs uppercase tracking-wider opacity-70">
-              <tr>
-                <th className="px-3 py-2 font-semibold">Include</th>
-                <th className="px-3 py-2 font-semibold">Boss</th>
-                <th className="px-3 py-2 font-semibold">Difficulty</th>
-                <th className="px-3 py-2 font-semibold">Party</th>
-                <th className="px-3 py-2 font-semibold">Your traces</th>
-              </tr>
-            </thead>
-            <tbody>
-              {TRACE_BOSSES.map((boss) => {
-                const sel = selections.find((s) => s.bossName === boss.name)!;
-                const gained = sel.included
-                  ? tracesFromClear(
-                      boss.name,
-                      sel.difficulty,
-                      sel.partySize,
-                      useGenesisPass,
-                    )
-                  : 0;
-                return (
-                  <tr
-                    key={boss.name}
-                    className="border-t border-border/30 odd:bg-surface/40"
+                <div className="mt-3 grid grid-cols-[1fr_auto] gap-2">
+                  <select
+                    className={`${inputClass} w-full text-xs`}
+                    value={sel.difficulty}
+                    onChange={(e) =>
+                      patchBoss(boss.name, {
+                        difficulty: e.target.value,
+                        cleared:
+                          e.target.value === NOT_DOING ? false : sel.cleared,
+                      })
+                    }
+                    aria-label={`${boss.name} difficulty`}
                   >
-                    <td className="px-3 py-2">
-                      <input
-                        type="checkbox"
-                        checked={sel.included}
-                        onChange={(e) =>
-                          patch(boss.name, { included: e.target.checked })
-                        }
-                        aria-label={`Include ${boss.name}`}
-                      />
-                    </td>
-                    <td className="px-3 py-2 font-medium">
-                      {boss.name}
-                      {boss.name === "Black Mage" ? (
-                        <span className="ml-2 text-xs opacity-55">monthly</span>
-                      ) : null}
-                    </td>
-                    <td className="px-3 py-2">
-                      <select
-                        className={inputClass}
-                        value={sel.difficulty}
-                        onChange={(e) =>
-                          patch(boss.name, { difficulty: e.target.value })
-                        }
-                      >
-                        {boss.difficulties.map((d) => (
-                          <option key={d.label} value={d.label}>
-                            {d.label} ({d.baseTraces})
-                          </option>
-                        ))}
-                      </select>
-                    </td>
-                    <td className="px-3 py-2">
-                      <input
-                        type="number"
-                        min={1}
-                        max={6}
-                        className={`${inputClass} w-16`}
-                        value={sel.partySize}
-                        onChange={(e) =>
-                          patch(boss.name, {
-                            partySize: Math.max(
-                              1,
-                              Math.min(6, Number(e.target.value) || 1),
-                            ),
-                          })
-                        }
-                      />
-                    </td>
-                    <td className="px-3 py-2 tabular-nums">
-                      {sel.included ? gained.toLocaleString() : "—"}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                    <option value={NOT_DOING}>Not doing</option>
+                    {boss.difficulties.map((d) => (
+                      <option key={d.label} value={d.label}>
+                        {d.label} ({d.baseTraces})
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    className={`${inputClass} w-[4.5rem] text-xs`}
+                    value={sel.partySize}
+                    disabled={!doing}
+                    onChange={(e) =>
+                      patchBoss(boss.name, {
+                        partySize: clampPartySize(Number(e.target.value)),
+                      })
+                    }
+                    aria-label={`${boss.name} party size`}
+                  >
+                    {PARTY_SIZES.map((n) => (
+                      <option key={n} value={n}>
+                        {n === 1 ? "Solo" : n}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <label className="mt-3 flex items-center justify-between gap-2 text-xs">
+                  <span className="opacity-65">
+                    {sel.cleared ? "Cleared" : "Not cleared"}
+                  </span>
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 accent-[var(--accent)]"
+                    checked={sel.cleared}
+                    disabled={!doing}
+                    onChange={(e) =>
+                      patchBoss(boss.name, { cleared: e.target.checked })
+                    }
+                    aria-label={`${boss.name} cleared this week`}
+                  />
+                </label>
+              </div>
+            );
+          })}
         </div>
       </section>
 
@@ -380,10 +768,12 @@ export default function LiberationPage() {
         <h2 className="font-display text-lg font-semibold">Milestones</h2>
         <ul className="mt-3 space-y-2 text-sm">
           {milestones.map((m) => {
-            const done = milestoneTraces >= m.requiredTraces;
+            const done =
+              parseInt(inputs.liberationQuest.split("|")[0] ?? "0", 10) >=
+              m.requiredTraces;
             return (
               <li
-                key={m.label}
+                key={m.value}
                 className={[
                   "flex items-center justify-between rounded-lg border border-border/30 px-3 py-2",
                   done ? "bg-accent-soft/40" : "opacity-70",
@@ -398,34 +788,56 @@ export default function LiberationPage() {
           })}
           <li className="flex items-center justify-between rounded-lg border border-border/30 px-3 py-2">
             <span>
-              Target — {target.toLocaleString()} (
-              {type === "destiny" ? "Destiny" : "Genesis"})
+              Target — {result.target.toLocaleString()} ({type === "destiny" ? "Destiny" : "Genesis"})
             </span>
             <span className="text-xs font-semibold uppercase tracking-wider">
-              {result.remaining <= 0 ? "Complete" : "In progress"}
+              {achieved ? "Complete" : "In progress"}
             </span>
           </li>
         </ul>
       </section>
 
-      <p className="text-xs opacity-60">
-        Trace table and milestones aligned with MapleHub&apos;s liberation
-        calculator. Mission fight conditions (FD penalties, consumable limits)
-        are not simulated here.
-      </p>
+      <details className="rounded-xl border border-border/40 bg-surface/60 p-4 text-sm">
+        <summary className="cursor-pointer font-display text-base font-semibold">
+          Notes & stubs
+        </summary>
+        <ul className="mt-3 list-disc space-y-1.5 pl-5 text-xs opacity-75">
+          <li>
+            Trace amounts, party split{" "}
+            <code className="rounded bg-surface-muted px-1">
+              floor(base ÷ party) × pass
+            </code>
+            , Thursday reset, and monthly Black Mage match MapleHub.
+          </li>
+          <li>
+            Genesis Pass triples all configured boss traces. Destiny uses
+            Adversary&apos;s Determination with a separate boss list.
+          </li>
+          <li>
+            Cleared-this-week bosses are excluded from the ETA &quot;start
+            total&quot; (assumed already reflected in held currency).
+          </li>
+          <li>
+            Per-character state persists in localStorage; Preview is a shared
+            sandbox. Characters must be 255+ for My Characters mode.
+          </li>
+          <li>
+            Stubbed / not ported: mission fight sims (FD penalties, consumable
+            limits), magnification scale / stepCollected fields MapleHub stores
+            but does not expose in the main UI, Destiny material routes beyond
+            Kaling milestones.
+          </li>
+        </ul>
+      </details>
     </div>
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+function Row({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-border/40 bg-surface/80 p-4">
-      <p className="text-xs font-semibold uppercase tracking-wider opacity-60">
-        {label}
-      </p>
-      <p className="mt-1 font-display text-lg font-semibold tabular-nums sm:text-xl">
-        {value}
-      </p>
+    <div className="flex items-center justify-between gap-3 text-sm">
+      <span className="opacity-75">{label}</span>
+      <span className="font-mono tabular-nums">{value}</span>
     </div>
   );
 }

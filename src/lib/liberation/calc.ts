@@ -1,80 +1,136 @@
 import {
-  DESTINY_MILESTONES,
-  DESTINY_TARGET,
-  GENESIS_MILESTONES,
-  GENESIS_TARGET,
-  TRACE_BANK_CAP,
-  TRACE_BOSSES,
+  TRACE_INPUT_MAX,
+  bossesFor,
+  milestonesForType,
+  targetForType,
   type LiberationMilestone,
   type LiberationType,
+  type TraceBoss,
 } from "./data";
+
+export const NOT_DOING = "Not doing";
 
 export type TraceSelection = {
   bossName: string;
+  /** Difficulty label, or {@link NOT_DOING} when excluded. */
   difficulty: string;
-  included: boolean;
   partySize: number;
+  /** Cleared this week — MapleHub `isClearing` / `alreadyCleared`. */
+  cleared: boolean;
 };
 
 export type LiberationInputs = {
   type: LiberationType;
-  /** Traces currently held in the bank (0–3000). */
+  /** Banked currency currently held (0–3000 input clamp). */
   tracesHeld: number;
-  /** Cumulative traces already spent / milestone reached. */
-  milestoneTraces: number;
+  /** Milestone select value `${required}|${bossName}`. */
+  liberationQuest: string;
   useGenesisPass: boolean;
   startDate: string;
   selections: TraceSelection[];
+  /** Thursday weekly reset — MapleHub default. */
+  weeklyResetDay?: number;
 };
 
 export type LiberationResult = {
   target: number;
+  /** Quest milestone + held (display progress). */
   progress: number;
   remaining: number;
+  questTraces: number;
   weeklyTraces: number;
   monthlyTraces: number;
+  /** 4× weekly (+ BM monthly on Genesis only). */
+  fourWeekTotal: number;
   weeksNeeded: number | null;
   etaISO: string | null;
+  /** Includes uncleared included bosses (ETA start total). */
+  startTotal: number;
   nextMilestone: LiberationMilestone | null;
-  tracesToNextMilestone: number | null;
+  /** Progress-to-next: held toward gap between current and next quest. */
+  stepProgress: {
+    nextBossName: string;
+    needed: number;
+    held: number;
+  } | null;
+  completionRate: number;
 };
 
 export function milestonesFor(type: LiberationType): LiberationMilestone[] {
-  return type === "destiny" ? DESTINY_MILESTONES : GENESIS_MILESTONES;
+  return milestonesForType(type);
 }
 
 export function targetFor(type: LiberationType): number {
-  return type === "destiny" ? DESTINY_TARGET : GENESIS_TARGET;
+  return targetForType(type);
 }
 
-export function defaultTraceSelections(): TraceSelection[] {
-  return TRACE_BOSSES.map((boss) => {
-    const top = boss.difficulties[boss.difficulties.length - 1];
-    return {
-      bossName: boss.name,
-      difficulty: top.label,
-      included: false,
-      partySize: 1,
-    };
-  });
+export function defaultTraceSelections(
+  type: LiberationType = "genesis",
+): TraceSelection[] {
+  return bossesFor(type).map((boss) => ({
+    bossName: boss.name,
+    difficulty: NOT_DOING,
+    partySize: 1,
+    cleared: false,
+  }));
 }
 
-export function baseTracesFor(bossName: string, difficulty: string): number {
-  const boss = TRACE_BOSSES.find((b) => b.name === bossName);
+export function defaultLiberationQuest(type: LiberationType): string {
+  return type === "destiny" ? "0|Seren" : "0|Von Leon";
+}
+
+export function parseQuestTraces(liberationQuest: string): number {
+  if (!liberationQuest || liberationQuest === "none") return 0;
+  const n = parseInt(liberationQuest.split("|")[0] ?? "0", 10);
+  return Number.isFinite(n) ? n : 0;
+}
+
+export function clampTracesHeld(n: number): number {
+  return Math.min(TRACE_INPUT_MAX, Math.max(0, Math.floor(n) || 0));
+}
+
+export function clampPartySize(n: number): number {
+  return Math.max(1, Math.min(6, Math.floor(n) || 1));
+}
+
+export function findBoss(
+  type: LiberationType,
+  bossName: string,
+): TraceBoss | undefined {
+  return bossesFor(type).find((b) => b.name === bossName);
+}
+
+export function baseTracesFor(
+  type: LiberationType,
+  bossName: string,
+  difficulty: string,
+): number {
+  if (!difficulty || difficulty === NOT_DOING) return 0;
+  const boss = findBoss(type, bossName);
   const diff = boss?.difficulties.find((d) => d.label === difficulty);
   return diff?.baseTraces ?? 0;
 }
 
-/** MapleHub formula: floor(base / party) * (pass ? 3 : 1) */
+/** MapleHub `we`: floor(base / party) * (pass ? 3 : 1) when included. */
 export function tracesFromClear(
+  type: LiberationType,
   bossName: string,
   difficulty: string,
   partySize: number,
   useGenesisPass: boolean,
 ): number {
-  const base = baseTracesFor(bossName, difficulty);
+  if (difficulty === NOT_DOING) return 0;
+  const base = baseTracesFor(type, bossName, difficulty);
   const share = Math.floor(base / Math.max(1, Math.floor(partySize)));
   return share * (useGenesisPass ? 3 : 1);
+}
+
+function isSameDay(a: Date, b: Date): boolean {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
 }
 
 function addDays(d: Date, days: number): Date {
@@ -83,28 +139,61 @@ function addDays(d: Date, days: number): Date {
   return n;
 }
 
+function addYears(d: Date, years: number): Date {
+  const n = new Date(d);
+  n.setFullYear(n.getFullYear() + years);
+  return n;
+}
+
+function startOfDay(d: Date): Date {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 12, 0, 0);
+}
+
 function toISODate(d: Date): string {
-  return d.toISOString().slice(0, 10);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function stepProgressFor(
+  type: LiberationType,
+  liberationQuest: string,
+  tracesHeld: number,
+): LiberationResult["stepProgress"] {
+  const list = milestonesFor(type);
+  const idx = list.findIndex((m) => m.value === liberationQuest);
+  if (idx < 0 || idx >= list.length - 1) return null;
+  const current = list[idx]!;
+  const next = list[idx + 1]!;
+  const needed = next.requiredTraces - current.requiredTraces;
+  return {
+    nextBossName: next.bossName,
+    needed,
+    held: tracesHeld,
+  };
 }
 
 /**
- * Approximate weeks until goal using MapleHub-style Thursday weekly reset
- * and 1st-of-month monthly Black Mage traces.
+ * MapleHub-style ETA: Thursday weekly reset, 1st-of-month monthly BM,
+ * skip same-day as start, uncleared included bosses add to startTotal.
  */
 export function calculateLiberation(input: LiberationInputs): LiberationResult {
   const target = targetFor(input.type);
-  const progress = Math.min(
-    target,
-    Math.max(0, input.milestoneTraces) +
-      Math.min(TRACE_BANK_CAP, Math.max(0, input.tracesHeld)),
-  );
+  const questTraces = parseQuestTraces(input.liberationQuest);
+  const tracesHeld = clampTracesHeld(input.tracesHeld);
+  const progress = Math.min(target, questTraces + tracesHeld);
   const remaining = Math.max(0, target - progress);
+  const weeklyResetDay = input.weeklyResetDay ?? 4;
 
   let weeklyTraces = 0;
   let monthlyTraces = 0;
+  let immediateFromBosses = 0;
+
   for (const sel of input.selections) {
-    if (!sel.included) continue;
+    if (sel.difficulty === NOT_DOING) continue;
     const gained = tracesFromClear(
+      input.type,
       sel.bossName,
       sel.difficulty,
       sel.partySize,
@@ -112,26 +201,58 @@ export function calculateLiberation(input: LiberationInputs): LiberationResult {
     );
     if (sel.bossName === "Black Mage") monthlyTraces += gained;
     else weeklyTraces += gained;
+    if (!sel.cleared) immediateFromBosses += gained;
   }
+
+  const startTotal = questTraces + tracesHeld + immediateFromBosses;
+  const fourWeekTotal =
+    4 * weeklyTraces +
+    (input.type === "genesis" ? monthlyTraces : 0);
 
   const ms = milestonesFor(input.type);
   const nextMilestone =
-    ms.find((m) => m.requiredTraces > input.milestoneTraces) ?? null;
-  const tracesToNextMilestone = nextMilestone
-    ? Math.max(0, nextMilestone.requiredTraces - progress)
-    : null;
+    ms.find((m) => m.requiredTraces > questTraces) ?? null;
+  const stepProgress = stepProgressFor(
+    input.type,
+    input.liberationQuest,
+    tracesHeld,
+  );
+  const completionRate =
+    target > 0 ? Math.round((progress / target) * 100) : 0;
 
-  if (remaining <= 0) {
+  if (progress >= target) {
     return {
       target,
       progress,
       remaining: 0,
+      questTraces,
       weeklyTraces,
       monthlyTraces,
+      fourWeekTotal,
       weeksNeeded: 0,
       etaISO: input.startDate,
+      startTotal,
       nextMilestone,
-      tracesToNextMilestone,
+      stepProgress,
+      completionRate: 100,
+    };
+  }
+
+  if (weeklyTraces <= 0 && monthlyTraces <= 0 && startTotal >= target) {
+    return {
+      target,
+      progress,
+      remaining,
+      questTraces,
+      weeklyTraces,
+      monthlyTraces,
+      fourWeekTotal,
+      weeksNeeded: 0,
+      etaISO: input.startDate,
+      startTotal,
+      nextMilestone,
+      stepProgress,
+      completionRate,
     };
   }
 
@@ -140,53 +261,92 @@ export function calculateLiberation(input: LiberationInputs): LiberationResult {
       target,
       progress,
       remaining,
+      questTraces,
       weeklyTraces,
       monthlyTraces,
+      fourWeekTotal,
       weeksNeeded: null,
       etaISO: null,
+      startTotal,
       nextMilestone,
-      tracesToNextMilestone,
+      stepProgress,
+      completionRate,
     };
   }
 
-  // Thursday = 4 (MapleHub weeklyResetDay)
-  const weeklyResetDay = 4;
-  let total = progress;
-  const start = new Date(`${input.startDate}T12:00:00`);
+  const start = startOfDay(new Date(`${input.startDate}T12:00:00`));
   if (Number.isNaN(start.getTime())) {
     return {
       target,
       progress,
       remaining,
+      questTraces,
       weeklyTraces,
       monthlyTraces,
+      fourWeekTotal,
       weeksNeeded: null,
       etaISO: null,
+      startTotal,
       nextMilestone,
-      tracesToNextMilestone,
+      stepProgress,
+      completionRate,
     };
   }
 
-  let cursor = new Date(start);
-  const hardStop = addDays(start, 365 * 5);
+  let total = startTotal;
+  let cursor = startOfDay(start);
+  const hardStop = addYears(start, 5);
+
   while (total < target && cursor < hardStop) {
     cursor = addDays(cursor, 1);
-    if (cursor.getDay() === weeklyResetDay) total += weeklyTraces;
-    if (cursor.getDate() === 1) total += monthlyTraces;
+    if (cursor.getDay() === weeklyResetDay && !isSameDay(cursor, start)) {
+      total += weeklyTraces;
+    }
+    if (cursor.getDate() === 1 && !isSameDay(cursor, start)) {
+      total += monthlyTraces;
+    }
   }
 
   const weeksNeeded =
-    Math.round(((cursor.getTime() - start.getTime()) / 86400000 / 7) * 10) / 10;
+    Math.floor((cursor.getTime() - start.getTime()) / 86400000) / 7;
 
   return {
     target,
     progress,
     remaining,
+    questTraces,
     weeklyTraces,
     monthlyTraces,
+    fourWeekTotal,
     weeksNeeded,
     etaISO: toISODate(cursor),
+    startTotal,
     nextMilestone,
-    tracesToNextMilestone,
+    stepProgress,
+    completionRate,
   };
+}
+
+/** Merge saved selections onto the boss list for a type. */
+export function mergeSelections(
+  type: LiberationType,
+  saved: TraceSelection[] | undefined,
+): TraceSelection[] {
+  const defaults = defaultTraceSelections(type);
+  if (!saved?.length) return defaults;
+  const byName = new Map(saved.map((s) => [s.bossName, s]));
+  return defaults.map((d) => {
+    const s = byName.get(d.bossName);
+    if (!s) return d;
+    const boss = findBoss(type, d.bossName);
+    const validDiff =
+      s.difficulty === NOT_DOING ||
+      boss?.difficulties.some((x) => x.label === s.difficulty);
+    return {
+      bossName: d.bossName,
+      difficulty: validDiff ? s.difficulty : NOT_DOING,
+      partySize: clampPartySize(s.partySize),
+      cleared: !!s.cleared,
+    };
+  });
 }
