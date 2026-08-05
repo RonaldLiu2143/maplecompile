@@ -2,7 +2,10 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState, type MouseEvent } from "react";
-import { ManageDisplayModal } from "@/components/ManageDisplayModal";
+import {
+  ManageDisplayButton,
+  ManageDisplayModal,
+} from "@/components/ManageDisplayModal";
 import { useRoster } from "@/hooks/useRoster";
 import { entryKey, isPrimary } from "@/lib/dashboard/roster";
 import {
@@ -43,7 +46,7 @@ const inputClass =
 const PARTY_SIZES = [1, 2, 3, 4, 5, 6] as const;
 
 /** Fixed width so Done / Not cleared never shove the difficulty select. */
-const CLEAR_CHIP_WIDTH = "w-[6.75rem]";
+const CLEAR_CHIP_WIDTH_SM = "sm:w-[6.75rem]";
 
 function formatDisplayDate(iso: string | null): string {
   if (!iso) return "—";
@@ -261,7 +264,12 @@ export default function LiberationPage() {
           ? s.activeCharacterId
           : (shown[0] ?? null);
       if (shown.length === 0) {
-        return { ...s, mode: "preview", selectedCharacterIds: [], activeCharacterId: null };
+        return {
+          ...s,
+          mode: "preview",
+          selectedCharacterIds: [],
+          activeCharacterId: null,
+        };
       }
       return {
         ...s,
@@ -283,9 +291,7 @@ export default function LiberationPage() {
       }
       let s = prev;
       const ids =
-        visibleIds.length > 0
-          ? visibleIds
-          : eligible.map((e) => entryKey(e));
+        visibleIds.length > 0 ? visibleIds : eligible.map((e) => entryKey(e));
       for (const id of ids) s = ensureCharacterBundle(s, id);
       const active =
         (primary && ids.includes(entryKey(primary))
@@ -306,8 +312,7 @@ export default function LiberationPage() {
 
   const currencyShort =
     type === "destiny" ? "Adversary's Determination" : "Traces of Darkness";
-  const currencyTiny =
-    type === "destiny" ? "AD" : "traces";
+  const currencyTiny = type === "destiny" ? "AD" : "traces";
 
   return (
     <div className="space-y-6">
@@ -356,14 +361,6 @@ export default function LiberationPage() {
             >
               Preview
             </button>
-            <button
-              type="button"
-              onClick={() => setManageOpen(true)}
-              disabled={eligible.length === 0}
-              className="rounded-lg border border-border/50 px-3 py-1.5 text-xs font-semibold transition hover:bg-accent-soft hover:text-accent disabled:cursor-not-allowed disabled:opacity-45"
-            >
-              Manage display
-            </button>
             {mode === "characters" ? (
               <Link
                 href="/roster"
@@ -380,82 +377,93 @@ export default function LiberationPage() {
           </section>
 
           {/* Character strip — only displayed characters */}
-          {mode === "characters" && visibleEntries.length > 0 ? (
+          {mode === "characters" && eligible.length > 0 ? (
             <section className="rounded-xl border border-border/40 bg-surface/80 p-3">
-              <div className="overflow-x-auto">
-                <div className="flex w-max gap-2">
-                  {visibleEntries.map((entry) => {
-                    const key = entryKey(entry);
-                    const active = store.activeCharacterId === key;
-                    const slot = slots[key];
-                    const character =
-                      slot?.status === "ready" ? slot.character : null;
-                    const name = character?.name ?? entry.name;
-                    const avatar = character?.characterImgURL;
-                    const rate =
-                      store.characterData[key]?.[
-                        store.characterData[key]?.currentTab ?? "genesis"
-                      ]?.completionRate ?? 0;
-                    const tab =
-                      store.characterData[key]?.currentTab ?? "genesis";
-                    return (
-                      <button
-                        key={key}
-                        type="button"
-                        onClick={() => {
-                          setStore((prev) => ({
-                            ...ensureCharacterBundle(prev, key),
-                            mode: "characters",
-                            activeCharacterId: key,
-                            selectedCharacterIds: visibleIds.includes(key)
-                              ? visibleIds
-                              : [...visibleIds, key],
-                          }));
-                        }}
-                        className={[
-                          "relative flex w-[4.75rem] shrink-0 flex-col items-center gap-1 rounded-xl border px-1.5 py-2 transition",
-                          active
-                            ? "border-accent bg-accent-soft/45"
-                            : "border-border/50 bg-background/40 hover:border-accent/40",
-                        ].join(" ")}
-                      >
-                        <span
-                          className={[
-                            "absolute left-1 top-1 flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-bold text-white",
-                            tab === "destiny"
-                              ? "bg-amber-600"
-                              : "bg-emerald-700",
-                          ].join(" ")}
-                          title={tab === "destiny" ? "Destiny" : "Genesis"}
-                        >
-                          {tab === "destiny" ? "D" : "G"}
-                        </span>
-                        {avatar ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            src={avatar}
-                            alt=""
-                            width={48}
-                            height={48}
-                            className="mt-1 h-12 w-12 object-contain"
-                          />
-                        ) : (
-                          <div className="mt-1 flex h-12 w-12 items-center justify-center rounded-md bg-surface-muted text-[10px] font-bold uppercase opacity-50">
-                            {name.slice(0, 2)}
-                          </div>
-                        )}
-                        <p className="w-full truncate text-center text-[10px] font-semibold leading-tight">
-                          {name}
-                        </p>
-                        <p className="font-mono text-[10px] tabular-nums opacity-65">
-                          {rate}%
-                          {isPrimary(entry, primary) ? " ★" : ""}
-                        </p>
-                      </button>
-                    );
-                  })}
-                </div>
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <h2 className="text-xs font-semibold uppercase tracking-wider opacity-60">
+                  My Characters
+                </h2>
+                <ManageDisplayButton onClick={() => setManageOpen(true)} />
               </div>
+              {visibleEntries.length === 0 ? (
+                <p className="rounded-lg border border-dashed border-border/50 px-3 py-4 text-center text-xs opacity-65">
+                  All characters are hidden. Use the gear icon to show some.
+                </p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <div className="flex w-max gap-2">
+                    {visibleEntries.map((entry) => {
+                      const key = entryKey(entry);
+                      const active = store.activeCharacterId === key;
+                      const slot = slots[key];
+                      const character =
+                        slot?.status === "ready" ? slot.character : null;
+                      const name = character?.name ?? entry.name;
+                      const avatar = character?.characterImgURL;
+                      const rate =
+                        store.characterData[key]?.[
+                          store.characterData[key]?.currentTab ?? "genesis"
+                        ]?.completionRate ?? 0;
+                      const tab =
+                        store.characterData[key]?.currentTab ?? "genesis";
+                      return (
+                        <button
+                          key={key}
+                          type="button"
+                          onClick={() => {
+                            setStore((prev) => ({
+                              ...ensureCharacterBundle(prev, key),
+                              mode: "characters",
+                              activeCharacterId: key,
+                              selectedCharacterIds: visibleIds.includes(key)
+                                ? visibleIds
+                                : [...visibleIds, key],
+                            }));
+                          }}
+                          className={[
+                            "relative flex w-[4.75rem] shrink-0 flex-col items-center gap-1 rounded-xl border px-1.5 py-2 transition",
+                            active
+                              ? "border-accent bg-accent-soft/45"
+                              : "border-border/50 bg-background/40 hover:border-accent/40",
+                          ].join(" ")}
+                        >
+                          <span
+                            className={[
+                              "absolute left-1 top-1 flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-bold text-white",
+                              tab === "destiny"
+                                ? "bg-amber-600"
+                                : "bg-emerald-700",
+                            ].join(" ")}
+                            title={tab === "destiny" ? "Destiny" : "Genesis"}
+                          >
+                            {tab === "destiny" ? "D" : "G"}
+                          </span>
+                          {avatar ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={avatar}
+                              alt=""
+                              width={48}
+                              height={48}
+                              className="mt-1 h-12 w-12 object-contain"
+                            />
+                          ) : (
+                            <div className="mt-1 flex h-12 w-12 items-center justify-center rounded-md bg-surface-muted text-[10px] font-bold uppercase opacity-50">
+                              {name.slice(0, 2)}
+                            </div>
+                          )}
+                          <p className="w-full truncate text-center text-[10px] font-semibold leading-tight">
+                            {name}
+                          </p>
+                          <p className="font-mono text-[10px] tabular-nums opacity-65">
+                            {rate}%{isPrimary(entry, primary) ? " ★" : ""}
+                          </p>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
               <p className="mt-2 text-[10px] opacity-55">
                 Tap a character to edit · Gear icon to show/hide
               </p>
@@ -507,9 +515,7 @@ export default function LiberationPage() {
               <h3 className="text-sm font-semibold">What you earn</h3>
               <Row
                 label={
-                  type === "destiny"
-                    ? "Each week (AD)"
-                    : "Each week (traces)"
+                  type === "destiny" ? "Each week (AD)" : "Each week (traces)"
                 }
                 value={String(result.weeklyTraces)}
               />
@@ -535,10 +541,7 @@ export default function LiberationPage() {
                 label={`Have / need (${currencyTiny})`}
                 value={`${result.progress.toLocaleString()} / ${result.target.toLocaleString()}`}
               />
-              <Row
-                label="Time left"
-                value={weeksLabel(result.weeksNeeded)}
-              />
+              <Row label="Time left" value={weeksLabel(result.weeksNeeded)} />
             </div>
 
             <p className="text-[11px] leading-relaxed opacity-60">
@@ -636,9 +639,7 @@ export default function LiberationPage() {
               {result.stepProgress ? (
                 <div className="space-y-1 text-xs opacity-75 sm:col-span-2">
                   <div className="flex justify-between">
-                    <span>
-                      Progress to {result.stepProgress.nextBossName}:
-                    </span>
+                    <span>Progress to {result.stepProgress.nextBossName}:</span>
                     <span className="font-medium text-foreground">
                       {result.stepProgress.held} / {result.stepProgress.needed}
                     </span>
@@ -772,77 +773,81 @@ export default function LiberationPage() {
                           </span>
                         )}
                       </div>
+
                       <div className="min-w-0 flex-1">
-                        <div className="flex items-baseline justify-between gap-2">
-                          <div className="min-w-0">
-                            <h3 className="truncate text-sm font-semibold leading-tight">
-                              {boss.name}
-                            </h3>
-                            {boss.frequency === "monthly" ? (
-                              <span className="text-[10px] font-semibold uppercase tracking-wider opacity-50">
-                                monthly
-                              </span>
-                            ) : null}
-                          </div>
-                          <span className="shrink-0 font-mono text-sm font-bold tabular-nums text-accent">
+                        <div className="flex min-w-0 items-baseline gap-2">
+                          <h3 className="truncate text-sm font-semibold leading-tight">
+                            {boss.name}
+                          </h3>
+                          <span
+                            className="shrink-0 font-mono text-sm font-bold tabular-nums text-accent"
+                            title={`${currencyTiny} per clear`}
+                          >
                             {doing ? gained : 0}
                           </span>
+                          {boss.frequency === "monthly" ? (
+                            <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wider opacity-50">
+                              monthly
+                            </span>
+                          ) : null}
+                        </div>
+
+                        <div
+                          className="mt-1.5 flex min-w-0 items-stretch gap-1.5"
+                          onClick={stop}
+                        >
+                          <select
+                            className={`${inputClass} min-w-0 flex-1 py-1.5 text-xs`}
+                            value={sel.difficulty}
+                            onChange={(e) =>
+                              patchBoss(boss.name, {
+                                difficulty: e.target.value,
+                                cleared:
+                                  e.target.value === NOT_DOING
+                                    ? false
+                                    : sel.cleared,
+                              })
+                            }
+                            aria-label={`${boss.name} difficulty`}
+                          >
+                            <option value={NOT_DOING}>Not doing</option>
+                            {boss.difficulties.map((d) => (
+                              <option key={d.label} value={d.label}>
+                                {d.label} ({d.baseTraces})
+                              </option>
+                            ))}
+                          </select>
+                          <select
+                            className={`${inputClass} w-[4.75rem] shrink-0 py-1.5 text-xs`}
+                            value={sel.partySize}
+                            disabled={!doing}
+                            onChange={(e) =>
+                              patchBoss(boss.name, {
+                                partySize: clampPartySize(
+                                  Number(e.target.value),
+                                ),
+                              })
+                            }
+                            aria-label={`${boss.name} party size`}
+                          >
+                            {PARTY_SIZES.map((n) => (
+                              <option key={n} value={n}>
+                                {n === 1 ? "Solo" : n}
+                              </option>
+                            ))}
+                          </select>
                         </div>
                       </div>
                     </div>
 
-                    <div
-                      className="flex min-w-0 flex-col gap-1.5"
-                      onClick={stop}
-                    >
-                      <div className="flex min-w-0 items-stretch gap-1.5">
-                        <select
-                          className={`${inputClass} min-w-0 flex-1 py-1.5 text-xs`}
-                          value={sel.difficulty}
-                          onChange={(e) =>
-                            patchBoss(boss.name, {
-                              difficulty: e.target.value,
-                              cleared:
-                                e.target.value === NOT_DOING
-                                  ? false
-                                  : sel.cleared,
-                            })
-                          }
-                          aria-label={`${boss.name} difficulty`}
-                        >
-                          <option value={NOT_DOING}>Not doing</option>
-                          {boss.difficulties.map((d) => (
-                            <option key={d.label} value={d.label}>
-                              {d.label} ({d.baseTraces})
-                            </option>
-                          ))}
-                        </select>
-                        <select
-                          className={`${inputClass} w-[4.75rem] shrink-0 py-1.5 text-xs`}
-                          value={sel.partySize}
-                          disabled={!doing}
-                          onChange={(e) =>
-                            patchBoss(boss.name, {
-                              partySize: clampPartySize(
-                                Number(e.target.value),
-                              ),
-                            })
-                          }
-                          aria-label={`${boss.name} party size`}
-                        >
-                          {PARTY_SIZES.map((n) => (
-                            <option key={n} value={n}>
-                              {n === 1 ? "Solo" : n}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
+                    <div className="flex min-w-0" onClick={stop}>
                       {doing ? (
                         <button
                           type="button"
                           onClick={() => toggleCleared(boss.name)}
                           className={[
                             "w-full rounded-md border px-2 py-1.5 text-center text-[11px] font-semibold transition-colors",
+                            CLEAR_CHIP_WIDTH_SM,
                             sel.cleared
                               ? "border-accent bg-accent text-white dark:text-zinc-900"
                               : "border-border/50 bg-surface-muted/60 opacity-80 hover:border-accent/50 hover:text-accent",
@@ -850,7 +855,13 @@ export default function LiberationPage() {
                         >
                           {sel.cleared ? "Done" : "Not cleared"}
                         </button>
-                      ) : null}
+                      ) : (
+                        <span
+                          className={`hidden text-center text-[11px] opacity-40 sm:block ${CLEAR_CHIP_WIDTH_SM}`}
+                        >
+                          —
+                        </span>
+                      )}
                     </div>
                   </div>
                 );

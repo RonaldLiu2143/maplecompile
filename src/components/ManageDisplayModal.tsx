@@ -24,6 +24,45 @@ type Props = {
   onSave: (visibleIds: string[]) => void;
 };
 
+function GearIcon({ size = 15 }: { size?: number }) {
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} aria-hidden fill="none">
+      <circle cx="12" cy="12" r="3.1" stroke="currentColor" strokeWidth="1.7" />
+      <path
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1.08-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 8.92 4.7 1.65 1.65 0 0 0 10 3.18V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"
+      />
+    </svg>
+  );
+}
+
+/** Compact gear button that opens {@link ManageDisplayModal}. */
+export function ManageDisplayButton({
+  onClick,
+  disabled,
+  label = "Manage display",
+}: {
+  onClick: () => void;
+  disabled?: boolean;
+  label?: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={label}
+      title={label}
+      className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-border/50 text-foreground/60 transition hover:border-accent/50 hover:bg-accent-soft hover:text-accent disabled:cursor-not-allowed disabled:opacity-40"
+    >
+      <GearIcon />
+    </button>
+  );
+}
+
 function AvatarThumb({
   src,
   name,
@@ -149,7 +188,9 @@ export function ManageDisplayModal({
                   <li key={key}>
                     <button
                       type="button"
-                      onClick={() => setDraft((prev) => toggleVisibleId(prev, key))}
+                      onClick={() =>
+                        setDraft((prev) => toggleVisibleId(prev, key))
+                      }
                       aria-pressed={selected}
                       className={[
                         "flex w-full items-center gap-2.5 rounded-lg border px-2.5 py-1.5 text-left transition",
@@ -203,9 +244,7 @@ export function ManageDisplayModal({
         <footer className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-border/40 px-4 py-3">
           <button
             type="button"
-            onClick={() =>
-              setDraft(roster.map((e) => entryKey(e)))
-            }
+            onClick={() => setDraft(roster.map((e) => entryKey(e)))}
             className="text-xs font-semibold text-accent hover:underline"
           >
             Show all
