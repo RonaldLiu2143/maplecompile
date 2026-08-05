@@ -128,3 +128,59 @@ export function formatCompact(n: number): string {
   if (abs >= 1e3) return `${(n / 1e3).toFixed(2)}K`;
   return n.toLocaleString();
 }
+
+/** Parse MapleHub-style compact EXP strings (`10.957T`, `40.92B/day`). */
+export function parseCompactExp(raw: string | null | undefined): number | null {
+  if (!raw) return null;
+  const m = raw
+    .trim()
+    .replace(/\/day$/i, "")
+    .trim()
+    .match(/^([\d.,]+)\s*([TBMK])?$/i);
+  if (!m) return null;
+  const n = Number(m[1].replace(/,/g, ""));
+  if (!Number.isFinite(n) || n < 0) return null;
+  const u = (m[2] ?? "").toUpperCase();
+  const mult =
+    u === "T" ? 1e12 : u === "B" ? 1e9 : u === "M" ? 1e6 : u === "K" ? 1e3 : 1;
+  return n * mult;
+}
+
+/**
+ * EXP still needed to reach `targetLevel` (exclusive of current progress
+ * already gained toward the current level).
+ */
+export function expRemainingToLevel(
+  currentLevel: number,
+  currentExp: number,
+  targetLevel: number,
+): number | null {
+  if (targetLevel <= currentLevel) return 0;
+  if (currentLevel >= 300) return null;
+  const needNow = expToNext(currentLevel);
+  if (needNow == null) return null;
+  let total = Math.max(0, needNow - Math.max(0, currentExp));
+  for (let lv = currentLevel + 1; lv < targetLevel; lv++) {
+    const need = expToNext(lv);
+    if (need == null) return null;
+    total += need;
+  }
+  return total;
+}
+
+/** Days to reach target level at a constant daily EXP rate. */
+export function daysToLevel(
+  currentLevel: number,
+  currentExp: number,
+  targetLevel: number,
+  avgDailyExp: number,
+): number | null {
+  if (!(avgDailyExp > 0)) return null;
+  const remaining = expRemainingToLevel(
+    currentLevel,
+    currentExp,
+    targetLevel,
+  );
+  if (remaining == null) return null;
+  return Math.round((remaining / avgDailyExp) * 10) / 10;
+}

@@ -300,7 +300,7 @@ export function ExpRangeGraph({
     <div className={compact ? "mt-3 border-t border-border/40 pt-3" : "mt-4"}>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-[0.65rem] font-semibold uppercase tracking-wider opacity-55">
-          {compact ? "Daily EXP" : `${days}d history`}
+          {compact ? "Daily EXP" : `${days}d chart`}
         </p>
         <div
           className="inline-flex rounded-lg border border-border/60 bg-surface-muted/40 p-0.5"

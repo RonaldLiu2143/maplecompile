@@ -56,26 +56,18 @@ function CharacterProfileLoader() {
   }, [rawName, region]);
 
   return (
-    <div className="flex flex-col gap-6 py-4">
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <p className="text-sm font-semibold uppercase tracking-wider text-accent opacity-80">
-            Character profile
-          </p>
-          <h1 className="font-display mt-1 text-3xl font-bold tracking-tight">
-            {rawName || "—"}
-          </h1>
-          <p className="mt-1 text-sm opacity-70">
-            Region {region.toUpperCase()}
-          </p>
-        </div>
+    <div className="flex flex-col gap-4 py-4">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-[0.7rem] font-semibold uppercase tracking-[0.14em] text-accent/90">
+          Character · {region.toUpperCase()}
+        </p>
         <Link
           href="/roster"
           className="rounded-lg border border-border px-3 py-1.5 text-sm font-semibold transition hover:bg-surface-muted"
         >
-          ← Roster
+          ← Manager
         </Link>
-      </header>
+      </div>
 
       {pending ? (
         <div className="rounded-2xl border border-border/50 bg-surface/80 px-4 py-16 text-center text-sm opacity-70">
