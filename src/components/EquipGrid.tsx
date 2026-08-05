@@ -1,6 +1,12 @@
 "use client";
 
-import type { CSSProperties } from "react";
+import {
+  useLayoutEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+} from "react";
+import { createPortal } from "react-dom";
 import type { Equip, EquipSetup, FlameSetup } from "@/lib/types";
 import { canStarForce, clampStarForce } from "@/lib/equip-capabilities";
 import {
@@ -33,6 +39,13 @@ export function slotEquip(setup: EquipSetup, slotId: string): Equip | undefined 
   return list[slotIndex(slotId)];
 }
 
+type TipPos = {
+  top?: number;
+  bottom?: number;
+  left?: number;
+  right?: number;
+};
+
 function EquipSlot({
   slotId,
   setup,
@@ -50,6 +63,10 @@ function EquipSlot({
   active: boolean;
   readOnly?: boolean;
 }) {
+  const slotRef = useRef<HTMLDivElement>(null);
+  const [open, setOpen] = useState(false);
+  const [tipPos, setTipPos] = useState<TipPos | null>(null);
+
   const equip = slotEquip(setup, slotId);
   const filled = !!equip;
   const showStars = !!equip && canStarForce(equip);
@@ -67,8 +84,57 @@ function EquipSlot({
   const col = typeof style.gridColumn === "number" ? style.gridColumn : 1;
   const tipSide = Number(col) <= 3 ? "right" : "left";
 
+  useLayoutEffect(() => {
+    if (!open || !equip) {
+      setTipPos(null);
+      return;
+    }
+
+    const place = () => {
+      const el = slotRef.current;
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      // Grow upward near the bottom of the viewport so tall tooltips stay readable.
+      const flipUp = r.bottom > window.innerHeight * 0.55;
+      const gap = 8;
+      const next: TipPos = flipUp
+        ? { bottom: window.innerHeight - r.bottom }
+        : { top: r.top };
+      if (tipSide === "right") {
+        next.left = r.right + gap;
+      } else {
+        next.right = window.innerWidth - r.left + gap;
+      }
+      setTipPos(next);
+    };
+
+    place();
+    window.addEventListener("scroll", place, true);
+    window.addEventListener("resize", place);
+    return () => {
+      window.removeEventListener("scroll", place, true);
+      window.removeEventListener("resize", place);
+    };
+  }, [open, equip, tipSide]);
+
   return (
-    <div className="group relative" style={style}>
+    <div
+      ref={slotRef}
+      className="relative"
+      style={style}
+      onMouseEnter={() => {
+        if (equip) setOpen(true);
+      }}
+      onMouseLeave={() => setOpen(false)}
+      onFocusCapture={() => {
+        if (equip) setOpen(true);
+      }}
+      onBlurCapture={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) {
+          setOpen(false);
+        }
+      }}
+    >
       <button
         type="button"
         disabled={readOnly}
@@ -109,22 +175,25 @@ function EquipSlot({
           />
         ) : null}
       </button>
-      {equip && (
-        <div
-          className={`pointer-events-none absolute top-0 z-40 hidden opacity-0 transition group-hover:block group-hover:opacity-100 group-focus-within:block group-focus-within:opacity-100 ${
-            tipSide === "right"
-              ? "left-full ml-2"
-              : "right-full mr-2"
-          }`}
-        >
-          <EquipItemTooltip
-            equip={equip}
-            flames={flames}
-            starForce={stars}
-            compact
-          />
-        </div>
-      )}
+      {equip &&
+        open &&
+        tipPos &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div
+            className="pointer-events-none fixed z-[200]"
+            style={tipPos}
+            role="tooltip"
+          >
+            <EquipItemTooltip
+              equip={equip}
+              flames={flames}
+              starForce={stars}
+              compact
+            />
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }
