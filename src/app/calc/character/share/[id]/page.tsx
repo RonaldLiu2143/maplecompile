@@ -22,7 +22,7 @@ import {
   type ScouterShareRecord,
 } from "@/lib/scouter/share";
 import { storage } from "@/lib/storage";
-import { ShareScouterStatsPanel } from "./share-scouter-stats";
+import { ShareScouterStatsPanel } from "../share-scouter-stats";
 
 type LoadState =
   | { status: "loading" }
