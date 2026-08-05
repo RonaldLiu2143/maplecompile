@@ -42,6 +42,7 @@ import { storage, type ScouterPreset } from "@/lib/storage";
 import {
   activeCharacterKey,
   ensureActiveWorkspaceLoaded,
+  migrateGlobalsToPrimaryWorkspace,
   persistLiveToWorkspace,
 } from "@/lib/character-workspace";
 import { PairingBar } from "@/components/PairingBar";
@@ -306,8 +307,17 @@ export default function ScouterPage() {
   const prevExceptionFd = useRef<number | null>(null);
 
   useEffect(() => {
-    // Bind live draft to the roster primary's per-character workspace.
-    ensureActiveWorkspaceLoaded();
+    // Gallery/profile "Open in Scouter" writes live storage first. Don't let the
+    // active character workspace clobber that pending share load.
+    const fromShare =
+      typeof window !== "undefined" &&
+      new URLSearchParams(window.location.search).get("from") === "share";
+    if (fromShare) {
+      migrateGlobalsToPrimaryWorkspace();
+      persistLiveToWorkspace(activeCharacterKey());
+    } else {
+      ensureActiveWorkspaceLoaded();
+    }
     const last = storage.getScouterLast();
     if (last?.input) {
       const job = last.input.jobType || DEFAULT_JOB;
@@ -343,6 +353,10 @@ export default function ScouterPage() {
     // Gallery/share loads set draft name only — do not auto-save as a preset.
     if (last?.name?.trim()) setPresetName(last.name.trim());
     setDraftReady(true);
+    if (fromShare) {
+      // Drop the flag so refresh uses the normal workspace bind.
+      window.history.replaceState(null, "", "/calc/scouter");
+    }
   }, []);
 
   // When Reboot / Liberation / level changes, multiply/divide the exception

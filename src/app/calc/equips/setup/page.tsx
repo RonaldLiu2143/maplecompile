@@ -39,6 +39,7 @@ import { PairingBar } from "@/components/PairingBar";
 import {
   activeCharacterKey,
   ensureActiveWorkspaceLoaded,
+  migrateGlobalsToPrimaryWorkspace,
   persistLiveToWorkspace,
 } from "@/lib/character-workspace";
 import {
@@ -193,7 +194,15 @@ export default function SetupClient() {
   }, []);
 
   useEffect(() => {
-    ensureActiveWorkspaceLoaded();
+    const fromShare =
+      typeof window !== "undefined" &&
+      new URLSearchParams(window.location.search).get("from") === "share";
+    if (fromShare) {
+      migrateGlobalsToPrimaryWorkspace();
+      persistLiveToWorkspace(activeCharacterKey());
+    } else {
+      ensureActiveWorkspaceLoaded();
+    }
     const savedJob = storage.getJobType();
     const savedChar = storage.getCharType();
     const savedSetup = storage.getEquipSetup();
@@ -206,6 +215,9 @@ export default function SetupClient() {
     setFlameSetup(savedFlames);
     setHydrated(true);
     void loadCatalog(job, char);
+    if (fromShare) {
+      window.history.replaceState(null, "", "/calc/equips/setup");
+    }
   }, [loadCatalog]);
 
   useEffect(() => {

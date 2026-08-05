@@ -4,7 +4,11 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { EquipGrid } from "@/components/EquipGrid";
-import { importBuildToCharacter } from "@/lib/character-workspace";
+import {
+  activeCharacterKey,
+  importBuildToCharacter,
+  persistLiveToWorkspace,
+} from "@/lib/character-workspace";
 import {
   CHARACTER_NAME_REGEX,
   type NexonRegion,
@@ -116,9 +120,9 @@ export default function CharacterShareProfilePage() {
     const displayName = (record.name || record.ign || "").trim();
     if (opts.scouter) {
       storage.setScouterLast({
-        input: record.state.input,
-        buffs: record.state.buffs,
-        links: record.state.links,
+        input: structuredClone(record.state.input),
+        buffs: structuredClone(record.state.buffs),
+        links: structuredClone(record.state.links),
         hexa: clampHexaForGms(record.state.hexa ?? []),
         ...(displayName ? { name: displayName } : {}),
       });
@@ -126,11 +130,14 @@ export default function CharacterShareProfilePage() {
     if (opts.equipment && record.equipment) {
       storage.setJobType(record.equipment.jobType as never);
       storage.setCharType(record.equipment.charType);
-      storage.setEquipSetup(record.equipment.setup);
+      storage.setEquipSetup(structuredClone(record.equipment.setup));
     }
     if (opts.pair && opts.scouter) {
       pairScouterAndEquip();
     }
+    // Scouter / Equipment mount reloads the active character workspace over
+    // live storage — keep workspace in sync so the share isn't clobbered.
+    persistLiveToWorkspace(activeCharacterKey());
   };
 
   const importToRoster = () => {
@@ -171,7 +178,7 @@ export default function CharacterShareProfilePage() {
 
   const openInScouter = () => {
     applyLocally({ scouter: true, equipment: false, pair: false });
-    router.push("/calc/scouter");
+    router.push("/calc/scouter?from=share");
   };
 
   const openInEquipment = () => {
@@ -180,7 +187,7 @@ export default function CharacterShareProfilePage() {
       return;
     }
     applyLocally({ scouter: false, equipment: true, pair: false });
-    router.push("/calc/equips/setup");
+    router.push("/calc/equips/setup?from=share");
   };
 
   const updateShare = async () => {
