@@ -54,6 +54,7 @@ export {
 export {
   currentBossWeekId,
   currentWeeklyResetStart,
+  currentDailyDayId,
   nextDailyReset,
   nextWeeklyReset,
   formatCompactCountdown,

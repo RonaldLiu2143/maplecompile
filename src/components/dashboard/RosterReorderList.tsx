@@ -11,6 +11,7 @@ import {
   type RosterEntry,
   type RosterPrimary,
 } from "@/lib/dashboard/roster";
+import type { RosterStatusSnapshot } from "@/lib/dashboard/roster-status";
 import type { RosterSlotState } from "@/hooks/useRoster";
 
 export function RosterReorderList({
@@ -21,6 +22,7 @@ export function RosterReorderList({
   managing = false,
   compact = false,
   weeklyByKey,
+  statusByKey,
   emptyTitle,
   emptyBody,
   makeDragProps,
@@ -39,6 +41,8 @@ export function RosterReorderList({
   compact?: boolean;
   /** Weekly boss clears keyed by entryKey — shown inline on each row */
   weeklyByKey?: Record<string, RosterWeeklyBossProgress>;
+  /** HEXA / Liberation / gear / scouter keyed by entryKey */
+  statusByKey?: Record<string, RosterStatusSnapshot>;
   emptyTitle?: string;
   emptyBody?: string;
   makeDragProps?: (index: number) => RosterDragProps | undefined;
@@ -99,7 +103,12 @@ export function RosterReorderList({
             reorderable={reorderable}
             managing={managing}
             compact={compact}
-            weeklyBoss={weeklyByKey ? (weeklyByKey[key] ?? { cleared: 0, enabled: 0 }) : null}
+            weeklyBoss={
+              weeklyByKey
+                ? (weeklyByKey[key] ?? { cleared: 0, enabled: 0 })
+                : null
+            }
+            status={statusByKey ? (statusByKey[key] ?? null) : null}
             drag={makeDragProps?.(index)}
             onMoveUp={() => onMoveUp(index)}
             onMoveDown={() => onMoveDown(index)}

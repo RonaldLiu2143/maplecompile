@@ -69,6 +69,7 @@ export function subscribeMapleDataReload(onReload: () => void): () => void {
       e.key === "maplecompile-hexa-tracker-v1" ||
       e.key === "maplecompile-hexa-tracker-by-char-v1" ||
       e.key === "maplecompile-diary-v1" ||
+      e.key === "maplecompile-dailies-v1" ||
       e.key === "equipSetup" ||
       e.key === "flameSetup" ||
       e.key === "maplecompile-scouter-last" ||

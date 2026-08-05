@@ -37,6 +37,23 @@ export function nextWeeklyReset(now: Date = new Date()): Date {
   return new Date(end.getTime() + 7 * MS_DAY);
 }
 
+/** UTC calendar day id (YYYY-MM-DD) for the current GMS daily period. */
+export function currentDailyDayId(now: Date = new Date()): string {
+  return new Date(
+    Date.UTC(
+      now.getUTCFullYear(),
+      now.getUTCMonth(),
+      now.getUTCDate(),
+      0,
+      0,
+      0,
+      0,
+    ),
+  )
+    .toISOString()
+    .slice(0, 10);
+}
+
 /** Next daily reset — tomorrow 00:00 UTC (GMS day boundary). */
 export function nextDailyReset(now: Date = new Date()): Date {
   return new Date(

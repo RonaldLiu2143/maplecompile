@@ -1,10 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import type { RosterDragProps } from "@/components/dashboard/RosterCharacterCard";
+import { switchActiveCharacter } from "@/lib/active-character";
 import { characterProfileHref } from "@/lib/character/client";
 import type { CharacterLookupResult } from "@/lib/character/lookup";
 import type { RosterEntry } from "@/lib/dashboard/roster";
+import type { RosterStatusSnapshot } from "@/lib/dashboard/roster-status";
 
 function StarIcon({ className, size = 14 }: { className?: string; size?: number }) {
   return (
@@ -130,50 +133,197 @@ export type RosterWeeklyBossProgress = {
   enabled: number;
 };
 
+function statusToneClass(
+  tone: "neutral" | "good" | "warn" | "accent",
+): string {
+  if (tone === "good") {
+    return "border-emerald-500/35 bg-emerald-500/10 text-emerald-800 dark:text-emerald-300";
+  }
+  if (tone === "warn") {
+    return "border-amber-500/35 bg-amber-500/10 text-amber-900 dark:text-amber-200";
+  }
+  if (tone === "accent") {
+    return "border-accent/40 bg-accent/10 text-accent";
+  }
+  return "border-border/50 bg-surface-muted/40 opacity-55";
+}
+
+function StatusLinkChip({
+  href,
+  label,
+  title,
+  tone,
+  compact,
+  priority,
+  onActivate,
+}: {
+  href: string;
+  label: string;
+  title: string;
+  tone: "neutral" | "good" | "warn" | "accent";
+  compact?: boolean;
+  /** Hide on very small screens to keep row height down. */
+  priority?: "always" | "sm";
+  onActivate: () => void;
+}) {
+  return (
+    <Link
+      href={href}
+      className={[
+        "inline-flex shrink-0 items-center rounded-md border font-semibold tabular-nums transition hover:opacity-90",
+        compact ? "px-1.5 py-0.5 text-[0.65rem]" : "px-2 py-0.5 text-[0.7rem]",
+        statusToneClass(tone),
+        priority === "sm" ? "hidden sm:inline-flex" : "",
+      ].join(" ")}
+      title={title}
+      draggable={false}
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        onActivate();
+      }}
+    >
+      {label}
+    </Link>
+  );
+}
+
 function WeeklyBossChip({
   progress,
   compact,
+  onActivate,
 }: {
   progress: RosterWeeklyBossProgress;
   compact?: boolean;
+  onActivate: () => void;
 }) {
   const { cleared, enabled } = progress;
   if (enabled <= 0) {
     return (
-      <Link
+      <StatusLinkChip
         href="/calc/bosses"
-        className={[
-          "inline-flex shrink-0 items-center rounded-md border border-border/50 bg-surface-muted/40 font-semibold opacity-55 transition hover:border-accent/40 hover:opacity-90",
-          compact ? "px-1.5 py-0.5 text-[0.65rem]" : "px-2 py-0.5 text-[0.7rem]",
-        ].join(" ")}
+        label="Bosses"
         title="Configure weekly bosses"
-        draggable={false}
-        onClick={(e) => e.stopPropagation()}
-      >
-        Bosses
-      </Link>
+        tone="neutral"
+        compact={compact}
+        onActivate={onActivate}
+      />
     );
   }
   const done = cleared >= enabled;
-  const tone = done
-    ? "border-emerald-500/35 bg-emerald-500/10 text-emerald-800 dark:text-emerald-300"
-    : cleared > 0
-      ? "border-accent/40 bg-accent/10 text-accent"
-      : "border-amber-500/35 bg-amber-500/10 text-amber-900 dark:text-amber-200";
+  const tone = done ? "good" : cleared > 0 ? "accent" : "warn";
   return (
-    <Link
+    <StatusLinkChip
       href="/calc/bosses"
-      className={[
-        "inline-flex shrink-0 items-center rounded-md border font-semibold tabular-nums transition hover:opacity-90",
-        compact ? "px-1.5 py-0.5 text-[0.65rem]" : "px-2 py-0.5 text-[0.7rem]",
-        tone,
-      ].join(" ")}
+      label={`${cleared}/${enabled}`}
       title={`Weekly bosses ${cleared}/${enabled} — open tracker`}
-      draggable={false}
-      onClick={(e) => e.stopPropagation()}
-    >
-      {cleared}/{enabled}
-    </Link>
+      tone={tone}
+      compact={compact}
+      onActivate={onActivate}
+    />
+  );
+}
+
+function RosterStatusChips({
+  status,
+  compact,
+  onActivate,
+}: {
+  status: RosterStatusSnapshot;
+  compact?: boolean;
+  onActivate: (href: string) => void;
+}) {
+  const hexaTone = status.hexa.hasData
+    ? status.hexa.pct >= 100
+      ? "good"
+      : status.hexa.pct > 0
+        ? "accent"
+        : "warn"
+    : "neutral";
+  const libTone = status.liberation.hasData
+    ? status.liberation.pct >= 100
+      ? "good"
+      : status.liberation.pct > 0
+        ? "accent"
+        : "warn"
+    : "neutral";
+  const gearTone =
+    status.gear.equipCount > 0
+      ? status.gear.paired
+        ? "good"
+        : "accent"
+      : "neutral";
+  const scoutTone = status.scouter.hasData
+    ? status.scouter.paired
+      ? "good"
+      : "accent"
+    : "neutral";
+
+  return (
+    <>
+      <StatusLinkChip
+        href="/calc/hexa-tracker"
+        label={status.hexa.hasData ? `HEXA ${status.hexa.pct}%` : "HEXA"}
+        title={
+          status.hexa.hasData
+            ? `HEXA ${status.hexa.levelsSum} levels · open tracker`
+            : "No HEXA progress yet — open tracker"
+        }
+        tone={hexaTone}
+        compact={compact}
+        priority="always"
+        onActivate={() => onActivate("/calc/hexa-tracker")}
+      />
+      <StatusLinkChip
+        href="/calc/liberation"
+        label={
+          status.liberation.hasData
+            ? `Lib ${status.liberation.pct}%`
+            : "Lib"
+        }
+        title={
+          status.liberation.hasData
+            ? `Liberation ${status.liberation.tab} ${status.liberation.pct}%`
+            : "No liberation data — open calculator"
+        }
+        tone={libTone}
+        compact={compact}
+        priority="sm"
+        onActivate={() => onActivate("/calc/liberation")}
+      />
+      <StatusLinkChip
+        href="/calc/equips/setup"
+        label={
+          status.gear.equipCount > 0
+            ? `${status.gear.equipCount}eq`
+            : "Gear"
+        }
+        title={
+          status.gear.equipCount > 0
+            ? `${status.gear.equipCount} equips saved${status.gear.paired ? " · paired" : ""}`
+            : "No gear saved — open equipment"
+        }
+        tone={gearTone}
+        compact={compact}
+        priority="always"
+        onActivate={() => onActivate("/calc/equips/setup")}
+      />
+      <StatusLinkChip
+        href="/calc/scouter"
+        label={status.scouter.paired ? "Paired" : "Scout"}
+        title={
+          status.scouter.hasData
+            ? status.scouter.paired
+              ? "Scouter ready · paired"
+              : "Scouter ready"
+            : "No scouter yet — open Scouter"
+        }
+        tone={scoutTone}
+        compact={compact}
+        priority="sm"
+        onActivate={() => onActivate("/calc/scouter")}
+      />
+    </>
   );
 }
 
@@ -189,6 +339,7 @@ export function RosterListRow({
   managing,
   compact = false,
   weeklyBoss,
+  status,
   drag,
   onMoveUp,
   onMoveDown,
@@ -211,6 +362,8 @@ export function RosterListRow({
   compact?: boolean;
   /** Weekly boss clears for this character (dashboard combined section) */
   weeklyBoss?: RosterWeeklyBossProgress | null;
+  /** HEXA / Liberation / gear / scouter chips */
+  status?: RosterStatusSnapshot | null;
   drag?: RosterDragProps;
   onMoveUp?: () => void;
   onMoveDown?: () => void;
@@ -218,6 +371,7 @@ export function RosterListRow({
   onRemove?: () => void;
   onRetry?: () => void;
 }) {
+  const router = useRouter();
   const name = character?.name ?? entry.name;
   const level = character?.level;
   const jobName = character?.jobName;
@@ -227,6 +381,12 @@ export function RosterListRow({
   const canMoveDown = reorderable && index < total - 1;
   const canDrag = Boolean(drag?.draggable);
   const iconSize = compact ? 12 : 14;
+  const showStatus = weeklyBoss != null || status != null;
+
+  function activateTool(href: string) {
+    switchActiveCharacter(entry);
+    router.push(href);
+  }
 
   const secondary =
     error != null
@@ -322,8 +482,29 @@ export function RosterListRow({
         ) : null}
       </div>
 
-      {weeklyBoss != null ? (
-        <WeeklyBossChip progress={weeklyBoss} compact={compact} />
+      {showStatus ? (
+        <div
+          className={[
+            "flex max-w-[11rem] flex-wrap items-center justify-end gap-1 sm:max-w-[16rem]",
+            compact ? "shrink" : "shrink-0",
+          ].join(" ")}
+          onPointerDown={(e) => e.stopPropagation()}
+        >
+          {status != null ? (
+            <RosterStatusChips
+              status={status}
+              compact={compact}
+              onActivate={activateTool}
+            />
+          ) : null}
+          {weeklyBoss != null ? (
+            <WeeklyBossChip
+              progress={weeklyBoss}
+              compact={compact}
+              onActivate={() => activateTool("/calc/bosses")}
+            />
+          ) : null}
+        </div>
       ) : null}
 
       {managing && onRemove ? (

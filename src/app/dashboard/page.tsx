@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CharacterSearchBar } from "@/components/dashboard/CharacterSearchBar";
 import { DashboardPrimaryHero } from "@/components/dashboard/DashboardCommandCenter";
+import { DashboardDailiesSection } from "@/components/dashboard/DashboardDailiesSection";
 import { DashboardDiarySection } from "@/components/dashboard/DashboardDiarySection";
 import { DashboardRosterWeeklySection } from "@/components/dashboard/DashboardWeeklyChecklist";
 import { useRoster } from "@/hooks/useRoster";
@@ -56,8 +57,8 @@ function DashboardInner() {
           Dashboard
         </h1>
         <p className="mt-2 text-sm opacity-80">
-          Your command center — primary character, weekly bosses, and quick
-          jumps into Scouter, gear, and income tools.
+          Your command center — primary character, dailies, weekly bosses, and
+          quick jumps into Scouter, gear, and income tools.
         </p>
       </header>
 
@@ -75,20 +76,23 @@ function DashboardInner() {
 
       {hydrated ? (
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)] lg:items-stretch">
-          <DashboardRosterWeeklySection
-            roster={roster}
-            slots={slots}
-            primary={primary}
-            hydrated={hydrated}
-            managing={managing}
-            onManageToggle={() => setManageMode(!managing)}
-            makeDragProps={(index) => makeDragProps(index, true)}
-            onMoveUp={handleMoveUp}
-            onMoveDown={handleMoveDown}
-            onSetPrimary={handleSetPrimary}
-            onRemove={handleRemove}
-            onRetry={handleRetry}
-          />
+          <div className="flex min-h-0 flex-col gap-4">
+            <DashboardRosterWeeklySection
+              roster={roster}
+              slots={slots}
+              primary={primary}
+              hydrated={hydrated}
+              managing={managing}
+              onManageToggle={() => setManageMode(!managing)}
+              makeDragProps={(index) => makeDragProps(index, true)}
+              onMoveUp={handleMoveUp}
+              onMoveDown={handleMoveDown}
+              onSetPrimary={handleSetPrimary}
+              onRemove={handleRemove}
+              onRetry={handleRetry}
+            />
+            <DashboardDailiesSection hydrated={hydrated} />
+          </div>
 
           <DashboardDiarySection
             roster={roster}

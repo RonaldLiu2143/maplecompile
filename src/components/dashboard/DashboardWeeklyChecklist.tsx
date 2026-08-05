@@ -13,6 +13,10 @@ import {
   type BossClearSelection,
 } from "@/lib/bosses";
 import { entryKey, type RosterEntry, type RosterPrimary } from "@/lib/dashboard/roster";
+import {
+  readRosterStatusByKey,
+  type RosterStatusSnapshot,
+} from "@/lib/dashboard/roster-status";
 import { subscribeMapleDataReload } from "@/lib/maple-events";
 
 function weeklyProgress(selections: BossClearSelection[]): RosterWeeklyBossProgress {
@@ -96,10 +100,16 @@ export function DashboardRosterWeeklySection({
   const [weeklyByKey, setWeeklyByKey] = useState<
     Record<string, RosterWeeklyBossProgress>
   >({});
+  const [statusByKey, setStatusByKey] = useState<
+    Record<string, RosterStatusSnapshot>
+  >({});
 
   useEffect(() => {
     if (!hydrated) return;
-    const reload = () => setWeeklyByKey(readWeeklyByKey(roster));
+    const reload = () => {
+      setWeeklyByKey(readWeeklyByKey(roster));
+      setStatusByKey(readRosterStatusByKey(roster));
+    };
     reload();
     return subscribeMapleDataReload(reload);
   }, [hydrated, roster, slots]);
@@ -218,6 +228,7 @@ export function DashboardRosterWeeklySection({
               managing={managing}
               compact
               weeklyByKey={weeklyByKey}
+              statusByKey={statusByKey}
               makeDragProps={(index) => makeDragProps(index)}
               onMoveUp={onMoveUp}
               onMoveDown={onMoveDown}
