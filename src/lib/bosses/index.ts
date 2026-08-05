@@ -54,7 +54,9 @@ export {
 export {
   currentBossWeekId,
   currentWeeklyResetStart,
+  nextDailyReset,
   nextWeeklyReset,
+  formatCountdownCompact,
   formatResetCountdown,
 } from "./weekly-reset";
 
