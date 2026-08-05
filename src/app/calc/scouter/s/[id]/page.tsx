@@ -36,11 +36,13 @@ export default function ScouterShareLoadPage() {
           throw new Error("Invalid share payload");
         }
         if (cancelled) return;
+        const displayName = (data.name || data.ign || "").trim();
         storage.setScouterLast({
           input: data.state.input,
           buffs: data.state.buffs,
           links: data.state.links,
           hexa: data.state.hexa,
+          ...(displayName ? { name: displayName } : {}),
         });
         router.replace("/calc/scouter");
       } catch (err) {

@@ -25,6 +25,8 @@ export type ScouterLastState = {
   buffs: BuffState;
   links: LinkState;
   hexa: number[];
+  /** Draft preset name (e.g. from a gallery share) — not auto-saved as a preset. */
+  name?: string;
 };
 
 export type ScouterPreset = ScouterLastState & {

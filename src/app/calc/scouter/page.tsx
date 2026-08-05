@@ -331,6 +331,8 @@ export default function ScouterPage() {
     if (last?.buffs) setBuffs(last.buffs);
     if (last?.links) setLinks(last.links);
     if (last?.hexa) setHexa(clampHexaForGms(last.hexa));
+    // Gallery/share loads set draft name only — do not auto-save as a preset.
+    if (last?.name?.trim()) setPresetName(last.name.trim());
     setDraftReady(true);
   }, []);
 
@@ -361,8 +363,15 @@ export default function ScouterPage() {
 
   useEffect(() => {
     if (!draftReady) return;
-    storage.setScouterLast({ input, buffs, links, hexa: clampHexaForGms(hexa) });
-  }, [input, buffs, links, hexa, draftReady]);
+    const trimmed = presetName.trim();
+    storage.setScouterLast({
+      input,
+      buffs,
+      links,
+      hexa: clampHexaForGms(hexa),
+      ...(trimmed ? { name: trimmed } : {}),
+    });
+  }, [input, buffs, links, hexa, presetName, draftReady]);
 
   const patch = (partial: Partial<ScouterInput>) =>
     setInput((prev) => ({ ...prev, ...partial }));
@@ -1282,11 +1291,13 @@ export default function ScouterPage() {
               type="button"
               className="w-full rounded-md bg-accent px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90"
               onClick={() => {
+                const trimmed = presetName.trim();
                 storage.setScouterLast({
                   input,
                   buffs,
                   links,
                   hexa: clampHexaForGms(hexa),
+                  ...(trimmed ? { name: trimmed } : {}),
                 });
                 setShowHexaEff(true);
               }}
@@ -1297,11 +1308,13 @@ export default function ScouterPage() {
               type="button"
               className="w-full rounded-md border-2 border-border bg-surface px-4 py-2.5 text-sm font-semibold transition hover:bg-surface-muted"
               onClick={() => {
+                const trimmed = presetName.trim();
                 storage.setScouterLast({
                   input,
                   buffs,
                   links,
                   hexa: clampHexaForGms(hexa),
+                  ...(trimmed ? { name: trimmed } : {}),
                 });
                 router.push("/calc/scouter/result");
               }}

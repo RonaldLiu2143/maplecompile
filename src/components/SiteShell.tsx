@@ -16,7 +16,6 @@ type NavLink = { href: string; label: string; match?: "exact" | "prefix" };
 
 const PRIMARY_LINKS: NavLink[] = [
   { href: "/dashboard", label: "Dashboard", match: "exact" },
-  { href: "/guide", label: "Guide", match: "exact" },
   { href: "/calc/scouter", label: "Scouter", match: "exact" },
   { href: "/calc/scouter/gallery", label: "Gallery" },
 ];
@@ -38,6 +37,8 @@ const CALCULATOR_LINKS: NavLink[] = [
 const EQUIPMENT_LINKS: NavLink[] = [
   { href: "/calc/equips/setup", label: "Equipment Setup" },
 ];
+
+const GUIDE_LINK: NavLink = { href: "/guide", label: "Guide", match: "exact" };
 
 function linkActive(pathname: string, link: NavLink): boolean {
   if (link.match === "exact") {
@@ -323,16 +324,17 @@ export function SiteShell({ children }: { children: ReactNode }) {
             <NavSection links={PRIMARY_LINKS.slice(0, 1)} pathname={pathname} />
             <NavGroup title="Roster" links={ROSTER_LINKS} pathname={pathname} />
             <NavSection links={PRIMARY_LINKS.slice(1)} pathname={pathname} />
-            <NavSection
+            <NavGroup
               title="Calculators"
               links={CALCULATOR_LINKS}
               pathname={pathname}
             />
-            <NavSection
+            <NavGroup
               title="Equipment"
               links={EQUIPMENT_LINKS}
               pathname={pathname}
             />
+            <NavSection links={[GUIDE_LINK]} pathname={pathname} />
           </nav>
         ) : null}
       </aside>
