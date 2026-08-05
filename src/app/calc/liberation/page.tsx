@@ -45,8 +45,8 @@ const inputClass =
 
 const PARTY_SIZES = [1, 2, 3, 4, 5, 6] as const;
 
-/** Fixed width so Done / Not cleared never shove the difficulty select. */
-const CLEAR_CHIP_WIDTH_SM = "sm:w-[6.75rem]";
+/** Fixed chip width so Done / Not cleared never shove the difficulty select. */
+const CLEAR_CHIP_WIDTH = "w-[7.25rem]";
 
 function formatDisplayDate(iso: string | null): string {
   if (!iso) return "—";
@@ -71,7 +71,7 @@ function weeksLabel(weeks: number | null): string {
 
 function bossCardClass(cleared: boolean, doing: boolean): string {
   const base =
-    "relative grid grid-cols-1 gap-2.5 rounded-xl border p-3 transition select-none sm:grid-cols-[minmax(0,1fr)_6.75rem] sm:items-center";
+    "relative flex flex-col gap-3 rounded-xl border p-3.5 transition select-none sm:flex-row sm:items-center sm:gap-4";
   if (!doing) {
     return `${base} cursor-default border-border/30 bg-surface/50 opacity-75`;
   }
@@ -691,185 +691,185 @@ export default function LiberationPage() {
               ) : null}
             </div>
           </section>
-
-          {/* Bosses */}
-          <section className="space-y-3 rounded-xl border border-border/40 bg-surface/80 p-4 sm:p-5">
-            <div className="flex flex-wrap items-end justify-between gap-2">
-              <div>
-                <h2 className="font-display text-lg font-semibold">
-                  Weekly bosses
-                </h2>
-                <p className="mt-0.5 text-xs opacity-65">
-                  Pick difficulty &amp; party size. Tap the card or status
-                  button when you clear that boss this week.
-                </p>
-              </div>
-              <span className="rounded-md border border-border/40 px-2.5 py-1 text-xs font-semibold tabular-nums opacity-80">
-                {clearedCount} / {bosses.length} cleared
-              </span>
-            </div>
-
-            <div className="grid gap-3 sm:grid-cols-2">
-              {bosses.map((boss) => {
-                const sel = inputs.bossSelections.find(
-                  (s) => s.bossName === boss.name,
-                ) ?? {
-                  bossName: boss.name,
-                  difficulty: NOT_DOING,
-                  partySize: 1,
-                  cleared: false,
-                };
-                const doing = sel.difficulty !== NOT_DOING;
-                const gained = doing
-                  ? tracesFromClear(
-                      type,
-                      boss.name,
-                      sel.difficulty,
-                      sel.partySize,
-                      useGenesisPass,
-                    )
-                  : 0;
-                const icon = bossIconSrc(boss);
-                const broken = brokenIcons[boss.name];
-                const stop = (e: MouseEvent) => e.stopPropagation();
-
-                return (
-                  <div
-                    key={boss.name}
-                    role={doing ? "button" : undefined}
-                    tabIndex={doing ? 0 : undefined}
-                    onClick={() => {
-                      if (!doing) return;
-                      toggleCleared(boss.name);
-                    }}
-                    onKeyDown={(e) => {
-                      if (!doing) return;
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        toggleCleared(boss.name);
-                      }
-                    }}
-                    aria-pressed={doing ? sel.cleared : undefined}
-                    className={bossCardClass(sel.cleared, doing)}
-                  >
-                    <div className="flex min-w-0 items-start gap-2.5">
-                      <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-surface-muted">
-                        {!broken ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            src={icon}
-                            alt=""
-                            className="h-full w-full object-contain"
-                            onError={() =>
-                              setBrokenIcons((prev) => ({
-                                ...prev,
-                                [boss.name]: true,
-                              }))
-                            }
-                          />
-                        ) : (
-                          <span className="text-sm font-bold opacity-50">
-                            {boss.name.slice(0, 1)}
-                          </span>
-                        )}
-                      </div>
-
-                      <div className="min-w-0 flex-1">
-                        <div className="flex min-w-0 items-baseline gap-2">
-                          <h3 className="truncate text-sm font-semibold leading-tight">
-                            {boss.name}
-                          </h3>
-                          <span
-                            className="shrink-0 font-mono text-sm font-bold tabular-nums text-accent"
-                            title={`${currencyTiny} per clear`}
-                          >
-                            {doing ? gained : 0}
-                          </span>
-                          {boss.frequency === "monthly" ? (
-                            <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wider opacity-50">
-                              monthly
-                            </span>
-                          ) : null}
-                        </div>
-
-                        <div
-                          className="mt-1.5 flex min-w-0 items-stretch gap-1.5"
-                          onClick={stop}
-                        >
-                          <select
-                            className={`${inputClass} min-w-0 flex-1 py-1.5 text-xs`}
-                            value={sel.difficulty}
-                            onChange={(e) =>
-                              patchBoss(boss.name, {
-                                difficulty: e.target.value,
-                                cleared:
-                                  e.target.value === NOT_DOING
-                                    ? false
-                                    : sel.cleared,
-                              })
-                            }
-                            aria-label={`${boss.name} difficulty`}
-                          >
-                            <option value={NOT_DOING}>Not doing</option>
-                            {boss.difficulties.map((d) => (
-                              <option key={d.label} value={d.label}>
-                                {d.label} ({d.baseTraces})
-                              </option>
-                            ))}
-                          </select>
-                          <select
-                            className={`${inputClass} w-[4.75rem] shrink-0 py-1.5 text-xs`}
-                            value={sel.partySize}
-                            disabled={!doing}
-                            onChange={(e) =>
-                              patchBoss(boss.name, {
-                                partySize: clampPartySize(
-                                  Number(e.target.value),
-                                ),
-                              })
-                            }
-                            aria-label={`${boss.name} party size`}
-                          >
-                            {PARTY_SIZES.map((n) => (
-                              <option key={n} value={n}>
-                                {n === 1 ? "Solo" : n}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex min-w-0" onClick={stop}>
-                      {doing ? (
-                        <button
-                          type="button"
-                          onClick={() => toggleCleared(boss.name)}
-                          className={[
-                            "w-full rounded-md border px-2 py-1.5 text-center text-[11px] font-semibold transition-colors",
-                            CLEAR_CHIP_WIDTH_SM,
-                            sel.cleared
-                              ? "border-accent bg-accent text-white dark:text-zinc-900"
-                              : "border-border/50 bg-surface-muted/60 opacity-80 hover:border-accent/50 hover:text-accent",
-                          ].join(" ")}
-                        >
-                          {sel.cleared ? "Done" : "Not cleared"}
-                        </button>
-                      ) : (
-                        <span
-                          className={`hidden text-center text-[11px] opacity-40 sm:block ${CLEAR_CHIP_WIDTH_SM}`}
-                        >
-                          —
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </section>
         </div>
       </div>
+
+      {/* Full-width weekly bosses — room for difficulty labels */}
+      <section className="space-y-3 rounded-xl border border-border/40 bg-surface/80 p-4 sm:p-5">
+        <div className="flex flex-wrap items-end justify-between gap-2">
+          <div>
+            <h2 className="font-display text-lg font-semibold">
+              Weekly bosses
+            </h2>
+            <p className="mt-0.5 text-xs opacity-65">
+              Pick difficulty &amp; party size. Tap the card or status button
+              when you clear that boss this week.
+            </p>
+          </div>
+          <span className="rounded-md border border-border/40 px-2.5 py-1 text-xs font-semibold tabular-nums opacity-80">
+            {clearedCount} / {bosses.length} cleared
+          </span>
+        </div>
+
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          {bosses.map((boss) => {
+            const sel = inputs.bossSelections.find(
+              (s) => s.bossName === boss.name,
+            ) ?? {
+              bossName: boss.name,
+              difficulty: NOT_DOING,
+              partySize: 1,
+              cleared: false,
+            };
+            const doing = sel.difficulty !== NOT_DOING;
+            const gained = doing
+              ? tracesFromClear(
+                  type,
+                  boss.name,
+                  sel.difficulty,
+                  sel.partySize,
+                  useGenesisPass,
+                )
+              : 0;
+            const icon = bossIconSrc(boss);
+            const broken = brokenIcons[boss.name];
+            const stop = (e: MouseEvent) => e.stopPropagation();
+
+            return (
+              <div
+                key={boss.name}
+                role={doing ? "button" : undefined}
+                tabIndex={doing ? 0 : undefined}
+                onClick={() => {
+                  if (!doing) return;
+                  toggleCleared(boss.name);
+                }}
+                onKeyDown={(e) => {
+                  if (!doing) return;
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    toggleCleared(boss.name);
+                  }
+                }}
+                aria-pressed={doing ? sel.cleared : undefined}
+                className={bossCardClass(sel.cleared, doing)}
+              >
+                <div className="flex min-w-0 flex-1 items-start gap-3">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-surface-muted">
+                    {!broken ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={icon}
+                        alt=""
+                        className="h-full w-full object-contain"
+                        onError={() =>
+                          setBrokenIcons((prev) => ({
+                            ...prev,
+                            [boss.name]: true,
+                          }))
+                        }
+                      />
+                    ) : (
+                      <span className="text-sm font-bold opacity-50">
+                        {boss.name.slice(0, 1)}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="min-w-0 flex-1 space-y-2">
+                    <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                      <h3 className="text-sm font-semibold leading-tight">
+                        {boss.name}
+                      </h3>
+                      <span
+                        className="shrink-0 font-mono text-sm font-bold tabular-nums text-accent"
+                        title={`${currencyTiny} per clear`}
+                      >
+                        {doing ? gained : 0}
+                      </span>
+                      {boss.frequency === "monthly" ? (
+                        <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wider opacity-50">
+                          monthly
+                        </span>
+                      ) : null}
+                    </div>
+
+                    <div
+                      className="flex min-w-0 flex-wrap items-center gap-2"
+                      onClick={stop}
+                    >
+                      <select
+                        className={`${inputClass} min-w-[11rem] flex-1 py-1.5 text-sm`}
+                        value={sel.difficulty}
+                        onChange={(e) =>
+                          patchBoss(boss.name, {
+                            difficulty: e.target.value,
+                            cleared:
+                              e.target.value === NOT_DOING
+                                ? false
+                                : sel.cleared,
+                          })
+                        }
+                        aria-label={`${boss.name} difficulty`}
+                      >
+                        <option value={NOT_DOING}>Not doing</option>
+                        {boss.difficulties.map((d) => (
+                          <option key={d.label} value={d.label}>
+                            {d.label} ({d.baseTraces})
+                          </option>
+                        ))}
+                      </select>
+                      <select
+                        className={`${inputClass} w-[5.5rem] shrink-0 py-1.5 text-sm`}
+                        value={sel.partySize}
+                        disabled={!doing}
+                        onChange={(e) =>
+                          patchBoss(boss.name, {
+                            partySize: clampPartySize(
+                              Number(e.target.value),
+                            ),
+                          })
+                        }
+                        aria-label={`${boss.name} party size`}
+                      >
+                        {PARTY_SIZES.map((n) => (
+                          <option key={n} value={n}>
+                            {n === 1 ? "Solo" : `${n}p`}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex shrink-0 self-stretch sm:items-center" onClick={stop}>
+                  {doing ? (
+                    <button
+                      type="button"
+                      onClick={() => toggleCleared(boss.name)}
+                      className={[
+                        "rounded-md border px-2.5 py-2 text-center text-xs font-semibold transition-colors",
+                        CLEAR_CHIP_WIDTH,
+                        sel.cleared
+                          ? "border-accent bg-accent text-white dark:text-zinc-900"
+                          : "border-border/50 bg-surface-muted/60 opacity-80 hover:border-accent/50 hover:text-accent",
+                      ].join(" ")}
+                    >
+                      {sel.cleared ? "Done" : "Not cleared"}
+                    </button>
+                  ) : (
+                    <span
+                      className={`hidden text-center text-xs opacity-40 sm:flex sm:items-center sm:justify-center ${CLEAR_CHIP_WIDTH}`}
+                    >
+                      —
+                    </span>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </section>
 
       <ManageDisplayModal
         open={manageOpen}

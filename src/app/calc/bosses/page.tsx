@@ -190,6 +190,10 @@ export default function BossesIncomePage() {
     });
   };
 
+  const replaceSelections = (key: string, selections: BossClearSelection[]) => {
+    setStore((prev) => upsertCharacterState(prev, key, { selections }));
+  };
+
   const hasRoster = roster.length > 0;
   const modalEntry =
     modalKey && modalKey !== LOCAL_BOSS_KEY
@@ -386,6 +390,22 @@ export default function BossesIncomePage() {
           selections={modalSelections}
           world={worldForKey(modalKey)}
           weeklyCount={modalWeeklyCount}
+          currentKey={modalKey}
+          applyTargets={
+            hasRoster
+              ? roster.map((entry) => {
+                  const key = entryKey(entry);
+                  const slot = slots[key];
+                  return {
+                    key,
+                    label:
+                      slot?.status === "ready"
+                        ? slot.character.name
+                        : entry.name,
+                  };
+                })
+              : [{ key: LOCAL_BOSS_KEY, label: "Local" }]
+          }
           onClose={() => setModalKey(null)}
           onAdd={({ bossId, difficulty, partySize }) =>
             patchCharacter(modalKey, bossId, {
@@ -397,6 +417,7 @@ export default function BossesIncomePage() {
           onRemove={(bossId) =>
             patchCharacter(modalKey, bossId, { enabled: false })
           }
+          onReplaceSelections={replaceSelections}
         />
       ) : null}
 
