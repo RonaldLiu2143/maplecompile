@@ -10,6 +10,17 @@ import {
 
 export type WorldType = "heroic" | "interactive";
 
+/**
+ * Crystal price world from roster character flags.
+ * Unknown / missing → Heroic (Reboot) prices.
+ */
+export function worldTypeFromCharacter(
+  character: { isHeroic?: boolean | null } | null | undefined,
+): WorldType {
+  if (character == null || character.isHeroic == null) return "heroic";
+  return character.isHeroic ? "heroic" : "interactive";
+}
+
 export type BossClearSelection = {
   bossId: string;
   difficulty: string;
@@ -183,13 +194,22 @@ export function summarizeIncome(
 /** Aggregate max possible mesos + account crystal usage across roster keys. */
 export function summarizeRosterIncome(
   byCharacter: Record<string, BossClearSelection[]>,
-  world: WorldType,
+  worldByKey: Record<string, WorldType> | WorldType,
   keys: string[],
 ): RosterIncomeSummary {
-  const characters = keys.map((key) => ({
-    key,
-    summary: summarizeIncome(byCharacter[key] ?? defaultSelections(), world),
-  }));
+  const characters = keys.map((key) => {
+    const world =
+      typeof worldByKey === "string"
+        ? worldByKey
+        : (worldByKey[key] ?? "heroic");
+    return {
+      key,
+      summary: summarizeIncome(
+        byCharacter[key] ?? defaultSelections(),
+        world,
+      ),
+    };
+  });
   return {
     characters,
     maxPossibleMesos: characters.reduce(

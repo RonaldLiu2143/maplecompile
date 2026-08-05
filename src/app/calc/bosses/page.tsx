@@ -19,6 +19,7 @@ import {
   summarizeIncome,
   summarizeRosterIncome,
   upsertCharacterState,
+  worldTypeFromCharacter,
   writeBossIncomeStore,
   LOCAL_BOSS_KEY,
   type BossClearSelection,
@@ -86,23 +87,36 @@ export default function BossesIncomePage() {
     return () => window.clearTimeout(t);
   }, [capToast]);
 
-  const world = store.world;
   const displayKeys = useMemo(() => {
     if (roster.length > 0) return roster.map((e) => entryKey(e));
     return [LOCAL_BOSS_KEY];
   }, [roster]);
+
+  const worldByKey = useMemo(() => {
+    const map: Record<string, WorldType> = {};
+    for (const key of displayKeys) {
+      if (key === LOCAL_BOSS_KEY) {
+        map[key] = "heroic";
+        continue;
+      }
+      const slot = slots[key];
+      const character =
+        slot?.status === "ready" ? slot.character : null;
+      map[key] = worldTypeFromCharacter(character);
+    }
+    return map;
+  }, [displayKeys, slots]);
 
   const rosterSummary = useMemo(() => {
     const bySelections: Record<string, BossClearSelection[]> = {};
     for (const key of displayKeys) {
       bySelections[key] = getCharacterBossState(store, key).selections;
     }
-    return summarizeRosterIncome(bySelections, world, displayKeys);
-  }, [displayKeys, store, world]);
+    return summarizeRosterIncome(bySelections, worldByKey, displayKeys);
+  }, [displayKeys, store, worldByKey]);
 
-  const setWorld = (next: WorldType) => {
-    setStore((prev) => ({ ...prev, world: next }));
-  };
+  const worldForKey = (key: string): WorldType =>
+    worldByKey[key] ?? "heroic";
 
   const patchCharacter = (
     key: string,
@@ -149,9 +163,10 @@ export default function BossesIncomePage() {
   };
 
   const setListedCleared = (key: string, cleared: boolean) => {
+    const world = worldForKey(key);
     setStore((prev) => {
       const current = getCharacterBossState(prev, key);
-      const summary = summarizeIncome(current.selections, prev.world);
+      const summary = summarizeIncome(current.selections, world);
       const listedIds = new Set(
         [...summary.weeklyListed, ...summary.lines.filter((l) => l.frequency === "monthly")].map(
           (l) => l.bossId,
@@ -206,8 +221,9 @@ export default function BossesIncomePage() {
         </h1>
         <p className="mt-2 max-w-2xl text-sm opacity-75">
           Roster crystal planner — {WEEKLY_CRYSTAL_LIMIT} weekly bosses per
-          character, account sell cap {ACCOUNT_WEEKLY_CRYSTAL_LIMIT}, Heroic
-          (5×) prices by default.
+          character, account sell cap {ACCOUNT_WEEKLY_CRYSTAL_LIMIT}. Crystal
+          prices follow each character&apos;s world (Heroic 5× / Interactive);
+          unknown world defaults to Heroic.
         </p>
       </header>
 
@@ -220,7 +236,7 @@ export default function BossesIncomePage() {
         </p>
       ) : null}
 
-      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <Stat
           label="Max possible mesos"
           value={formatMesos(rosterSummary.maxPossibleMesos)}
@@ -235,36 +251,22 @@ export default function BossesIncomePage() {
             rosterSummary.accountCrystalLimit
           }
         />
-        <div className="rounded-xl border border-border/40 bg-surface/80 p-4 sm:col-span-2">
+        <div className="rounded-xl border border-border/40 bg-surface/80 p-4">
           <p className="text-xs font-semibold uppercase tracking-wider opacity-60">
-            Crystal prices
+            Roster
           </p>
           <div className="mt-2 flex flex-wrap items-center gap-2">
-            {(
-              [
-                ["heroic", "Heroic"],
-                ["interactive", "Interactive"],
-              ] as const
-            ).map(([id, label]) => (
-              <button
-                key={id}
-                type="button"
-                onClick={() => setWorld(id)}
-                className={[
-                  "rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors",
-                  world === id
-                    ? "bg-accent text-white dark:text-zinc-900"
-                    : "border border-border/50 hover:bg-accent-soft hover:text-accent",
-                ].join(" ")}
-              >
-                {label}
-              </button>
-            ))}
             <Link
               href="/roster"
-              className="ml-auto text-sm font-semibold text-accent hover:underline"
+              className="text-sm font-semibold text-accent hover:underline"
             >
               {hasRoster ? "Manage roster" : "Add to roster"}
+            </Link>
+            <Link
+              href="/calc/boss-schedule"
+              className="ml-auto text-sm font-semibold text-accent hover:underline"
+            >
+              Boss Schedule
             </Link>
           </div>
         </div>
@@ -300,9 +302,11 @@ export default function BossesIncomePage() {
                 const character =
                   slot?.status === "ready" ? slot.character : null;
                 const charState = getCharacterBossState(store, key);
+                const charWorld = worldForKey(key);
                 const summary =
                   rosterSummary.characters.find((c) => c.key === key)
-                    ?.summary ?? summarizeIncome(defaultSelections(), world);
+                    ?.summary ??
+                  summarizeIncome(defaultSelections(), charWorld);
                 return (
                   <CharacterBossCard
                     key={key}
@@ -311,6 +315,7 @@ export default function BossesIncomePage() {
                     loading={slot?.status === "loading"}
                     error={slot?.status === "error" ? slot.error : null}
                     primaryMark={isPrimary(entry, primary)}
+                    priceWorld={charWorld}
                     selections={charState.selections}
                     summary={summary}
                     brokenIcons={brokenIcons}
@@ -336,7 +341,8 @@ export default function BossesIncomePage() {
                 const charState = getCharacterBossState(store, LOCAL_BOSS_KEY);
                 const summary =
                   rosterSummary.characters.find((c) => c.key === LOCAL_BOSS_KEY)
-                    ?.summary ?? summarizeIncome(defaultSelections(), world);
+                    ?.summary ??
+                  summarizeIncome(defaultSelections(), "heroic");
                 return (
                   <CharacterBossCard
                     key={LOCAL_BOSS_KEY}
@@ -345,6 +351,7 @@ export default function BossesIncomePage() {
                     loading={false}
                     error={null}
                     primaryMark={false}
+                    priceWorld="heroic"
                     selections={charState.selections}
                     summary={summary}
                     localLabel="Local"
@@ -377,7 +384,7 @@ export default function BossesIncomePage() {
           open
           characterLabel={modalLabel}
           selections={modalSelections}
-          world={world}
+          world={worldForKey(modalKey)}
           weeklyCount={modalWeeklyCount}
           onClose={() => setModalKey(null)}
           onAdd={({ bossId, difficulty, partySize }) =>
@@ -461,6 +468,7 @@ function CharacterBossCard({
   loading,
   error,
   primaryMark,
+  priceWorld,
   selections,
   summary,
   onAddBosses,
@@ -476,6 +484,7 @@ function CharacterBossCard({
   loading: boolean;
   error: string | null;
   primaryMark: boolean;
+  priceWorld: WorldType;
   selections: BossClearSelection[];
   summary: IncomeSummary;
   onAddBosses: () => void;
@@ -640,9 +649,10 @@ function CharacterBossCard({
             )}
           </p>
           {job ? <p className="text-xs opacity-70">{job}</p> : null}
-          {worldName ? (
-            <p className="text-[11px] opacity-55">{worldName}</p>
-          ) : null}
+          <p className="text-[11px] opacity-55">
+            {worldName ? `${worldName} · ` : ""}
+            {priceWorld === "heroic" ? "Heroic prices" : "Interactive prices"}
+          </p>
         </div>
       </div>
 

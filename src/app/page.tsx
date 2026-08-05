@@ -118,8 +118,8 @@ export default function Home() {
         <div className="rounded-xl border border-border/50 bg-surface/80 p-5">
           <h2 className="font-display text-lg font-semibold">Boss Income</h2>
           <p className="mt-2 text-sm opacity-80">
-            Plan weekly crystal sells with Heroic pricing, party splits, and the
-            14-crystal cap.
+            Plan weekly crystal sells with per-character world pricing, party
+            splits, and the 14-crystal cap.
           </p>
         </div>
         <div className="rounded-xl border border-border/50 bg-surface/80 p-5">

@@ -21,9 +21,19 @@ export default function BossIncomeHubPage() {
         >
           <h2 className="font-display text-lg font-semibold">Boss Income</h2>
           <p className="mt-2 text-sm opacity-80">
-            Weekly crystal sell planner wired to your roster — Heroic prices,
-            party splits, 14 bosses per character, and the 180 account crystal
-            display.
+            Weekly crystal sell planner wired to your roster — prices from each
+            character&apos;s world (Heroic / Interactive), party splits, 14
+            bosses per character, and the 180 account crystal display.
+          </p>
+        </Link>
+        <Link
+          href="/calc/boss-schedule"
+          className="rounded-xl border border-border/40 bg-surface/80 p-5 transition hover:border-accent hover:bg-accent-soft/30 sm:col-span-2"
+        >
+          <h2 className="font-display text-lg font-semibold">Boss Schedule</h2>
+          <p className="mt-2 text-sm opacity-80">
+            Party calendar for weekly boss runs with shareable view/edit links
+            and availability (available / maybe / unavailable).
           </p>
         </Link>
         <Link

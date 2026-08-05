@@ -27,6 +27,7 @@ export {
   countEnabledWeekly,
   summarizeIncome,
   summarizeRosterIncome,
+  worldTypeFromCharacter,
   formatMesos,
   formatMesosCompact,
   type WorldType,
