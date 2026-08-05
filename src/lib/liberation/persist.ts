@@ -13,27 +13,6 @@ export const PREVIEW_KEY = "__preview__";
 
 export type LiberationMode = "preview" | "characters";
 
-/**
- * Cleared boss card presentation (UI preference, not per-character).
- * - hybrid (default): accent highlight + Clear/Done chip
- * - highlight: accent border/fill only
- * - flip: Clear/Done chip only
- */
-export type ClearFormat = "hybrid" | "highlight" | "flip";
-
-export const CLEAR_FORMATS: ClearFormat[] = ["hybrid", "highlight", "flip"];
-
-export function isClearFormat(v: unknown): v is ClearFormat {
-  return v === "hybrid" || v === "highlight" || v === "flip";
-}
-
-/** Map legacy saved values (incl. dropped "stamp") onto current formats. */
-export function normalizeClearFormat(v: unknown): ClearFormat {
-  if (v === "stamp") return "hybrid";
-  if (isClearFormat(v)) return v;
-  return "hybrid";
-}
-
 export type LiberationCharacterInputs = {
   liberationType: LiberationType;
   currentTraces: number;
@@ -57,8 +36,6 @@ export type LiberationStore = {
   activeCharacterId: string | null;
   selectedCharacterIds: string[];
   characterData: Record<string, CharacterLiberationBundle>;
-  /** How cleared vs uncleared boss cards are shown. Default: hybrid (A+C). */
-  clearFormat: ClearFormat;
 };
 
 function todayISO(): string {
@@ -152,7 +129,6 @@ export function defaultStore(): LiberationStore {
     characterData: {
       [PREVIEW_KEY]: defaultBundle(),
     },
-    clearFormat: "hybrid",
   };
 }
 
@@ -264,7 +240,6 @@ export function readLiberationStore(): LiberationStore {
         ? parsed.selectedCharacterIds.filter((x) => typeof x === "string")
         : [],
       characterData,
-      clearFormat: normalizeClearFormat(parsed.clearFormat),
     };
   } catch {
     return defaultStore();
