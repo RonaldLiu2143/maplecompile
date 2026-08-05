@@ -623,17 +623,26 @@ export default function LiberationPage() {
                   type="number"
                   min={0}
                   max={TRACE_INPUT_MAX}
-                  className={`${inputClass} w-full`}
-                  value={inputs.currentTraces || ""}
-                  placeholder={`0 ~ ${TRACE_INPUT_MAX}`}
-                  onChange={(e) =>
-                    patch({
-                      currentTraces: clampTracesHeld(
-                        e.target.value === "" ? 0 : Number(e.target.value),
-                      ),
-                    })
+                  inputMode="numeric"
+                  className={`${inputClass} w-full placeholder:text-foreground/25`}
+                  value={
+                    inputs.currentTraces === 0 ? "" : inputs.currentTraces
                   }
+                  placeholder="0"
+                  onChange={(e) => {
+                    const raw = e.target.value.trim();
+                    if (raw === "") {
+                      patch({ currentTraces: 0 });
+                      return;
+                    }
+                    const n = Number(raw);
+                    if (!Number.isFinite(n)) return;
+                    patch({ currentTraces: clampTracesHeld(n) });
+                  }}
                 />
+                <span className="text-[11px] opacity-50">
+                  Leave blank for 0 · max {TRACE_INPUT_MAX.toLocaleString()}
+                </span>
               </label>
 
               {result.stepProgress ? (
@@ -740,8 +749,12 @@ export default function LiberationPage() {
                 key={boss.name}
                 role={doing ? "button" : undefined}
                 tabIndex={doing ? 0 : undefined}
-                onClick={() => {
+                onClick={(e) => {
                   if (!doing) return;
+                  const t = e.target as HTMLElement;
+                  if (t.closest("button, select, input, a, textarea, label")) {
+                    return;
+                  }
                   toggleCleared(boss.name);
                 }}
                 onKeyDown={(e) => {
@@ -842,11 +855,17 @@ export default function LiberationPage() {
                   </div>
                 </div>
 
-                <div className="flex shrink-0 self-stretch sm:items-center" onClick={stop}>
+                <div
+                  className="flex shrink-0 self-stretch sm:items-center"
+                  onClick={stop}
+                >
                   {doing ? (
                     <button
                       type="button"
-                      onClick={() => toggleCleared(boss.name)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleCleared(boss.name);
+                      }}
                       className={[
                         "rounded-md border px-2.5 py-2 text-center text-xs font-semibold transition-colors",
                         CLEAR_CHIP_WIDTH,

@@ -37,9 +37,10 @@ import {
 } from "@/lib/dashboard/roster";
 import { useRoster } from "@/hooks/useRoster";
 import { AddBossesModal } from "./add-bosses-modal";
+import type { RosterDragProps } from "@/components/dashboard/RosterCharacterCard";
 
 export default function BossesIncomePage() {
-  const { hydrated, roster, primary, slots } = useRoster();
+  const { hydrated, roster, primary, slots, makeDragProps } = useRoster();
   const [ready, setReady] = useState(false);
   const [store, setStore] = useState<BossIncomeStore>(() => ({
     version: 2,
@@ -299,7 +300,7 @@ export default function BossesIncomePage() {
             <h2 className="font-display text-lg font-semibold">Characters</h2>
             <p className="text-xs opacity-70">
               Up to {WEEKLY_CRYSTAL_LIMIT} weekly bosses listed per character.
-              Combined roster total:{" "}
+              Drag cards to reorder your roster. Combined total:{" "}
               <span className="font-semibold tabular-nums text-accent">
                 {formatMesos(rosterSummary.maxPossibleMesos)}
               </span>
@@ -309,7 +310,7 @@ export default function BossesIncomePage() {
 
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
           {hasRoster
-            ? roster.map((entry) => {
+            ? roster.map((entry, index) => {
                 const key = entryKey(entry);
                 const slot = slots[key];
                 const character =
@@ -332,6 +333,7 @@ export default function BossesIncomePage() {
                     selections={charState.selections}
                     summary={summary}
                     brokenIcons={brokenIcons}
+                    drag={makeDragProps(index, true)}
                     onBrokenIcon={(bossId) =>
                       setBrokenIcons((prev) => ({ ...prev, [bossId]: true }))
                     }
@@ -508,6 +510,7 @@ function CharacterBossCard({
   brokenIcons,
   onBrokenIcon,
   localLabel,
+  drag,
 }: {
   entry: RosterEntry | null;
   character: CharacterLookupResult | null;
@@ -524,6 +527,7 @@ function CharacterBossCard({
   brokenIcons: Record<string, true>;
   onBrokenIcon: (bossId: string) => void;
   localLabel?: string;
+  drag?: RosterDragProps;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
@@ -569,7 +573,24 @@ function CharacterBossCard({
   const totalValue = rows.reduce((sum, line) => sum + line.crystalPersonal, 0);
 
   return (
-    <article className="flex flex-col overflow-hidden rounded-xl border border-border/40 bg-surface/80">
+    <article
+      draggable={drag?.draggable}
+      onDragStart={drag?.onDragStart}
+      onDragOver={drag?.onDragOver}
+      onDragLeave={drag?.onDragLeave}
+      onDrop={drag?.onDrop}
+      onDragEnd={drag?.onDragEnd}
+      className={[
+        "flex flex-col overflow-hidden rounded-xl border border-border/40 bg-surface/80 transition",
+        drag?.draggable ? "cursor-grab active:cursor-grabbing" : "",
+        drag?.isDragging ? "opacity-40 scale-[0.98]" : "",
+        drag?.isDropTarget && !drag?.isDragging
+          ? "ring-2 ring-accent ring-offset-2 ring-offset-background"
+          : "",
+      ]
+        .filter(Boolean)
+        .join(" ")}
+    >
       <div className="flex items-start gap-2.5 border-b border-border/30 p-3">
         {avatar ? (
           // eslint-disable-next-line @next/next/no-img-element

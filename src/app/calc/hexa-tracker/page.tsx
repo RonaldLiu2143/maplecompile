@@ -72,11 +72,19 @@ function CounterField({
         <input
           type="number"
           min={0}
-          value={value}
-          onChange={(e) =>
-            onChange(Math.max(0, Math.floor(Number(e.target.value) || 0)))
-          }
-          className={`${inputClass} w-24 text-center font-semibold`}
+          value={value === 0 ? "" : value}
+          placeholder="0"
+          onChange={(e) => {
+            const raw = e.target.value.trim();
+            if (raw === "") {
+              onChange(0);
+              return;
+            }
+            const n = Number(raw);
+            if (!Number.isFinite(n)) return;
+            onChange(Math.max(0, Math.floor(n)));
+          }}
+          className={`${inputClass} w-24 text-center font-semibold placeholder:text-foreground/25`}
         />
         <button
           type="button"
@@ -258,12 +266,19 @@ function SlotRow({
           min={0}
           max={HEXA_MAX_LEVEL}
           disabled={disabled}
-          value={level}
+          value={level === 0 ? "" : level}
+          placeholder="0"
           onChange={(e) => {
-            const n = Math.floor(Number(e.target.value) || 0);
-            onChange(Math.max(0, Math.min(HEXA_MAX_LEVEL, n)));
+            const raw = e.target.value.trim();
+            if (raw === "") {
+              onChange(0);
+              return;
+            }
+            const n = Number(raw);
+            if (!Number.isFinite(n)) return;
+            onChange(Math.max(0, Math.min(HEXA_MAX_LEVEL, Math.floor(n))));
           }}
-          className={`${inputClass} w-14 text-center text-xs`}
+          className={`${inputClass} w-14 text-center text-xs placeholder:text-foreground/25`}
         />
         <button
           type="button"
