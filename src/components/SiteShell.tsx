@@ -9,6 +9,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { WeeklyResetBar } from "@/components/WeeklyResetBar";
 
 const STORAGE_KEY = "maplecompile-sidebar-open";
 
@@ -341,25 +342,28 @@ export function SiteShell({ children }: { children: ReactNode }) {
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        {isMobile ? (
-          <header className="sticky top-0 z-20 flex items-center gap-3 border-b-2 border-border bg-surface-muted/90 px-3 py-2.5 backdrop-blur-md">
-            <button
-              type="button"
-              onClick={toggle}
-              aria-expanded={open}
-              className="rounded-lg p-2 transition-colors hover:bg-accent-soft hover:text-accent"
-            >
-              <MenuIcon open={false} />
-              <span className="sr-only">Open navigation</span>
-            </button>
-            <Link
-              href="/"
-              className="font-display text-xl font-bold tracking-tight text-accent"
-            >
-              MapleCompile
-            </Link>
-          </header>
-        ) : null}
+        <div className="sticky top-0 z-20">
+          {isMobile ? (
+            <header className="flex items-center gap-3 border-b-2 border-border bg-surface-muted/90 px-3 py-2.5 backdrop-blur-md">
+              <button
+                type="button"
+                onClick={toggle}
+                aria-expanded={open}
+                className="rounded-lg p-2 transition-colors hover:bg-accent-soft hover:text-accent"
+              >
+                <MenuIcon open={false} />
+                <span className="sr-only">Open navigation</span>
+              </button>
+              <Link
+                href="/"
+                className="font-display text-xl font-bold tracking-tight text-accent"
+              >
+                MapleCompile
+              </Link>
+            </header>
+          ) : null}
+          <WeeklyResetBar />
+        </div>
 
         <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6">
           {children}

@@ -8,7 +8,6 @@ import { RosterReorderList } from "@/components/dashboard/RosterReorderList";
 import type { RosterSlotState } from "@/hooks/useRoster";
 import {
   findBoss,
-  formatResetCountdown,
   getCharacterBossState,
   readBossIncomeStore,
   type BossClearSelection,
@@ -59,7 +58,7 @@ function Chip({
           : "border-border/50 bg-surface-muted/40 opacity-90";
   return (
     <span
-      className={`inline-flex items-center rounded-md border px-2 py-0.5 text-[0.7rem] font-semibold ${toneClass}`}
+      className={`inline-flex items-center rounded-md border px-1.5 py-0.5 text-[0.65rem] font-semibold ${toneClass}`}
     >
       {children}
     </span>
@@ -97,7 +96,6 @@ export function DashboardRosterWeeklySection({
   const [weeklyByKey, setWeeklyByKey] = useState<
     Record<string, RosterWeeklyBossProgress>
   >({});
-  const [countdown, setCountdown] = useState(() => formatResetCountdown());
 
   useEffect(() => {
     if (!hydrated) return;
@@ -105,13 +103,6 @@ export function DashboardRosterWeeklySection({
     reload();
     return subscribeMapleDataReload(reload);
   }, [hydrated, roster, slots]);
-
-  useEffect(() => {
-    const tick = () => setCountdown(formatResetCountdown());
-    tick();
-    const id = window.setInterval(tick, 60_000);
-    return () => window.clearInterval(id);
-  }, []);
 
   const totals = useMemo(() => {
     let enabled = 0;
@@ -125,7 +116,7 @@ export function DashboardRosterWeeklySection({
 
   if (!hydrated) {
     return (
-      <section className="flex min-h-0 flex-col rounded-xl border border-border/50 bg-surface/80 p-3 sm:p-3.5 text-sm opacity-70">
+      <section className="flex min-h-0 flex-col rounded-lg border border-border/40 bg-surface/70 p-2.5 text-sm opacity-70">
         Loading roster…
       </section>
     );
@@ -141,32 +132,28 @@ export function DashboardRosterWeeklySection({
           : "warn";
 
   return (
-    <section className="flex min-h-0 flex-col rounded-xl border border-border/50 bg-surface/80 p-3 sm:p-3.5">
-      <div className="flex shrink-0 flex-wrap items-start justify-between gap-2">
-        <div className="min-w-0 space-y-0.5">
-          <h2 className="font-display text-base font-bold tracking-tight">
+    <section className="flex min-h-0 flex-col rounded-lg border border-border/40 bg-surface/70 p-2.5 sm:p-3">
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-1.5">
+        <div className="min-w-0">
+          <h2 className="font-display text-sm font-bold tracking-tight sm:text-base">
             Roster
             {roster.length > 0 ? (
-              <span className="ml-1.5 text-xs font-semibold opacity-55">
+              <span className="ml-1.5 text-[0.65rem] font-semibold opacity-55">
                 ({roster.length})
               </span>
             ) : null}
           </h2>
           {managing ? (
-            <p className="text-xs opacity-60">
+            <p className="mt-0.5 text-[0.65rem] opacity-60">
               Drag rows or use ↑↓ to reorder. Tap the star to set primary.
             </p>
-          ) : roster.length > 0 ? (
-            <p className="text-xs opacity-60">
-              {countdown.label} · clears reset Thursday 00:00 UTC
-            </p>
-          ) : (
-            <p className="text-xs opacity-60">
+          ) : roster.length === 0 ? (
+            <p className="mt-0.5 text-[0.65rem] opacity-60">
               Add characters, then track weekly clears in Boss Income.
             </p>
-          )}
+          ) : null}
         </div>
-        <div className="flex shrink-0 flex-wrap items-center gap-1.5">
+        <div className="flex shrink-0 flex-wrap items-center gap-1">
           {roster.length > 0 ? (
             <Chip tone={overallTone}>
               {totals.enabled > 0
@@ -176,13 +163,13 @@ export function DashboardRosterWeeklySection({
           ) : null}
           <Link
             href="/calc/bosses"
-            className="rounded-md border border-border px-2.5 py-1.5 text-xs font-semibold transition hover:bg-surface-muted"
+            className="rounded-md border border-border px-2 py-1 text-[0.65rem] font-semibold transition hover:bg-surface-muted"
           >
             Bosses
           </Link>
           <Link
             href="/roster"
-            className="rounded-md border border-border px-2.5 py-1.5 text-xs font-semibold transition hover:bg-surface-muted"
+            className="rounded-md border border-border px-2 py-1 text-[0.65rem] font-semibold transition hover:bg-surface-muted"
           >
             Open roster
           </Link>
@@ -190,7 +177,7 @@ export function DashboardRosterWeeklySection({
             type="button"
             onClick={onManageToggle}
             className={[
-              "rounded-md px-3 py-1.5 text-xs font-semibold transition",
+              "rounded-md px-2.5 py-1 text-[0.65rem] font-semibold transition",
               managing
                 ? "border border-border hover:bg-surface-muted"
                 : "bg-accent text-white hover:opacity-90 dark:text-zinc-900",
@@ -201,9 +188,9 @@ export function DashboardRosterWeeklySection({
         </div>
       </div>
 
-      <div className="mt-2.5 min-h-0 flex-1">
+      <div className="mt-2 min-h-0 flex-1">
         {roster.length === 0 ? (
-          <p className="text-xs opacity-70">
+          <p className="text-[0.7rem] opacity-70">
             No characters yet. Search a GMS character above, then tap Add to
             roster — or{" "}
             <Link
@@ -222,7 +209,7 @@ export function DashboardRosterWeeklySection({
             .
           </p>
         ) : (
-          <div className="maple-scroll max-h-[22rem] rounded-lg border border-border/35 bg-surface-muted/25 p-1.5 lg:max-h-[26rem]">
+          <div className="maple-scroll max-h-[14rem] rounded-md border border-border/30 bg-surface-muted/20 p-1 lg:max-h-[16rem]">
             <RosterReorderList
               roster={roster}
               primary={primary}
@@ -241,13 +228,6 @@ export function DashboardRosterWeeklySection({
           </div>
         )}
       </div>
-
-      {roster.length > 0 ? (
-        <p className="mt-2 shrink-0 text-[10px] opacity-50">
-          Weekly chips show cleared/enabled bosses per character. Tap a chip to
-          open the tracker.
-        </p>
-      ) : null}
     </section>
   );
 }
