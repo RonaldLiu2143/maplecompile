@@ -44,8 +44,10 @@ type Props = {
     partySize: number;
   }) => boolean;
   onRemove: (bossId: string) => void;
-  /** Replace a character's full selection list (used by presets). */
-  onReplaceSelections: (key: string, selections: BossClearSelection[]) => void;
+  /** Replace one or more characters' selection lists (used by presets). */
+  onReplaceSelections: (
+    updates: Array<{ key: string; selections: BossClearSelection[] }>,
+  ) => void;
 };
 
 function defaultDifficulty(boss: BossEntry, sel?: BossClearSelection): string {
@@ -182,8 +184,11 @@ export function AddBossesModal({
       return;
     }
     const next = [preset, ...presets];
+    if (!saveBossPresets(next)) {
+      setToast("Could not save preset — browser storage may be full.");
+      return;
+    }
     setPresets(next);
-    saveBossPresets(next);
     setPresetId(preset.id);
     setToast(`Saved preset “${preset.name}” (${preset.bosses.length} bosses).`);
   };
@@ -191,7 +196,7 @@ export function AddBossesModal({
   const applyPresetHere = () => {
     if (!selectedPreset) return;
     const next = applyPresetToSelections(selections, selectedPreset);
-    onReplaceSelections(currentKey, next);
+    onReplaceSelections([{ key: currentKey, selections: next }]);
     // Refresh drafts from applied preset
     const nextDiff: Record<string, string> = { ...draftDiff };
     const nextParty: Record<string, number> = { ...draftParty };
@@ -216,10 +221,12 @@ export function AddBossesModal({
 
   const confirmApplyMulti = () => {
     if (!selectedPreset || applyKeys.length === 0) return;
-    for (const key of applyKeys) {
-      // Use empty base — applyPresetToSelections fills from defaults
-      onReplaceSelections(key, applyPresetToSelections([], selectedPreset));
-    }
+    onReplaceSelections(
+      applyKeys.map((key) => ({
+        key,
+        selections: applyPresetToSelections([], selectedPreset),
+      })),
+    );
     setApplyOpen(false);
     setToast(
       `Applied “${selectedPreset.name}” to ${applyKeys.length} character${applyKeys.length === 1 ? "" : "s"}.`,
@@ -231,8 +238,11 @@ export function AddBossesModal({
     const ok = window.confirm(`Delete preset “${selectedPreset.name}”?`);
     if (!ok) return;
     const next = deleteBossPreset(presets, selectedPreset.id);
+    if (!saveBossPresets(next)) {
+      setToast("Could not delete preset — browser storage may be full.");
+      return;
+    }
     setPresets(next);
-    saveBossPresets(next);
     setPresetId("");
     setToast("Preset deleted.");
   };

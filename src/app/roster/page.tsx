@@ -17,6 +17,9 @@ import {
   type RosterPrimary,
 } from "@/lib/dashboard/roster";
 
+/** Skip network refresh when session cache is newer than this. */
+const SESSION_FRESH_MS = 5 * 60 * 1000;
+
 function ChevronIcon({ up }: { up?: boolean }) {
   return (
     <svg
@@ -32,17 +35,22 @@ function ChevronIcon({ up }: { up?: boolean }) {
   );
 }
 
-function defaultSelected(
+function defaultSelectedKey(
   roster: RosterEntry[],
   primary: RosterPrimary | null,
-): RosterEntry | null {
+): string | null {
   if (roster.length === 0) return null;
   if (primary) {
     const key = entryKey(primary);
-    const match = roster.find((e) => entryKey(e) === key);
-    if (match) return match;
+    if (roster.some((e) => entryKey(e) === key)) return key;
   }
-  return roster[0] ?? null;
+  return entryKey(roster[0]!);
+}
+
+function isSessionFresh(character: CharacterLookupResult): boolean {
+  const t = Date.parse(character.fetchedAt);
+  if (!Number.isFinite(t)) return false;
+  return Date.now() - t < SESSION_FRESH_MS;
 }
 
 export default function RosterPage() {
@@ -58,36 +66,29 @@ export default function RosterPage() {
     makeDragProps,
   } = useRoster();
 
-  const [selected, setSelected] = useState<RosterEntry | null>(null);
+  const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [minimized, setMinimized] = useState(false);
   const [profile, setProfile] = useState<CharacterLookupResult | null>(null);
   const [profilePending, setProfilePending] = useState(false);
   const [profileError, setProfileError] = useState<string | null>(null);
-  const [selectionSeeded, setSelectionSeeded] = useState(false);
 
-  // Seed selection to primary once roster hydrates.
+  // Keep selection valid once roster hydrates / changes.
   useEffect(() => {
-    if (!hydrated || selectionSeeded) return;
-    setSelected(defaultSelected(roster, primary));
-    setSelectionSeeded(true);
-  }, [hydrated, roster, primary, selectionSeeded]);
-
-  // Keep selection valid when roster/primary changes.
-  useEffect(() => {
-    if (!selectionSeeded) return;
+    if (!hydrated) return;
     if (roster.length === 0) {
-      setSelected(null);
+      setSelectedKey(null);
       return;
     }
-    if (!selected) {
-      setSelected(defaultSelected(roster, primary));
-      return;
-    }
-    const stillThere = roster.some((e) => entryKey(e) === entryKey(selected));
-    if (!stillThere) {
-      setSelected(defaultSelected(roster, primary));
-    }
-  }, [roster, primary, selected, selectionSeeded]);
+    setSelectedKey((prev) => {
+      if (prev && roster.some((e) => entryKey(e) === prev)) return prev;
+      return defaultSelectedKey(roster, primary);
+    });
+  }, [hydrated, roster, primary]);
+
+  const selected =
+    selectedKey != null
+      ? (roster.find((e) => entryKey(e) === selectedKey) ?? null)
+      : null;
 
   useEffect(() => {
     if (!selected) {
@@ -102,11 +103,17 @@ export default function RosterPage() {
     if (stale) {
       setProfile(stale);
       setProfilePending(false);
+      setProfileError(null);
+      if (isSessionFresh(stale)) {
+        return () => {
+          cancelled = true;
+        };
+      }
     } else {
       setProfile(null);
       setProfilePending(true);
+      setProfileError(null);
     }
-    setProfileError(null);
 
     async function load() {
       try {
@@ -135,14 +142,13 @@ export default function RosterPage() {
     return () => {
       cancelled = true;
     };
-  }, [selected]);
+  }, [selectedKey, selected?.name, selected?.region]);
 
   function handleSelect(entry: RosterEntry) {
-    setSelected(entry);
+    setSelectedKey(entryKey(entry));
     setMinimized(false);
   }
 
-  const selectedKey = selected ? entryKey(selected) : null;
   const selectedLabel = selected?.name ?? "Character";
 
   return (

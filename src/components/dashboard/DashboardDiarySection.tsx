@@ -1,23 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { LogDropModal } from "@/components/diary/LogDropModal";
+import { useDiary } from "@/hooks/useDiary";
+import type { RosterSlotState } from "@/hooks/useRoster";
 import {
-  LogDropModal,
-  type DiaryWizardChar,
-} from "@/components/diary/LogDropModal";
-import type { CharacterLookupResult } from "@/lib/character/lookup";
-import {
-  DIARY_KEY,
   dropLogCharacterLabel,
   dropLogDateTimeLabel,
-  loadDiary,
-  saveDiary,
-  type DiaryState,
+  wizardCharsFromRoster,
   type PitchDropLog,
 } from "@/lib/diary";
-import { entryKey, type RosterEntry } from "@/lib/dashboard/roster";
-import type { RosterSlotState } from "@/hooks/useRoster";
+import type { RosterEntry } from "@/lib/dashboard/roster";
+
+const RECENT_DROP_LIMIT = 40;
 
 function CompactCounter({
   title,
@@ -62,23 +58,6 @@ function CompactCounter({
   );
 }
 
-function wizardCharsFromRoster(
-  roster: RosterEntry[],
-  slots: Record<string, RosterSlotState>,
-): DiaryWizardChar[] {
-  return roster.map((entry) => {
-    const slot = slots[entryKey(entry)];
-    const character: CharacterLookupResult | null =
-      slot?.status === "ready" ? slot.character : null;
-    return {
-      name: character?.name ?? entry.name,
-      region: entry.region,
-      jobName: character?.jobName ?? "…",
-      avatar: character?.characterImgURL,
-    };
-  });
-}
-
 export function DashboardDiarySection({
   roster,
   slots,
@@ -88,45 +67,12 @@ export function DashboardDiarySection({
   slots: Record<string, RosterSlotState>;
   hydrated: boolean;
 }) {
-  const [ready, setReady] = useState(false);
-  const [state, setState] = useState<DiaryState>(() => ({
-    pitchLogs: [],
-    grindstone: 0,
-    familiar: 0,
-  }));
+  const { ready, state, persist } = useDiary();
   const [logOpen, setLogOpen] = useState(false);
-
-  useEffect(() => {
-    setState(loadDiary());
-    setReady(true);
-  }, []);
-
-  // Stay in sync if the dedicated Diary page updates localStorage.
-  useEffect(() => {
-    function onStorage(e: StorageEvent) {
-      if (e.key === DIARY_KEY) {
-        setState(loadDiary());
-      }
-    }
-    function onFocus() {
-      setState(loadDiary());
-    }
-    window.addEventListener("storage", onStorage);
-    window.addEventListener("focus", onFocus);
-    return () => {
-      window.removeEventListener("storage", onStorage);
-      window.removeEventListener("focus", onFocus);
-    };
-  }, []);
-
-  function persist(next: DiaryState) {
-    setState(next);
-    saveDiary(next);
-  }
 
   const characters =
     hydrated && ready ? wizardCharsFromRoster(roster, slots) : [];
-  const recent = [...state.pitchLogs].reverse();
+  const recent = [...state.pitchLogs].reverse().slice(0, RECENT_DROP_LIMIT);
 
   if (!ready) {
     return (
@@ -194,8 +140,14 @@ export function DashboardDiarySection({
       <div className="mt-3 flex min-h-0 flex-1 flex-col">
         <p className="mb-1.5 shrink-0 text-[0.65rem] font-semibold uppercase tracking-wider opacity-55">
           Recent drops
-          {recent.length > 0 ? (
-            <span className="ml-1 opacity-70">({recent.length})</span>
+          {state.pitchLogs.length > 0 ? (
+            <span className="ml-1 opacity-70">
+              ({Math.min(recent.length, state.pitchLogs.length)}
+              {state.pitchLogs.length > RECENT_DROP_LIMIT
+                ? ` of ${state.pitchLogs.length}`
+                : ""}
+              )
+            </span>
           ) : null}
         </p>
         {recent.length === 0 ? (

@@ -8,18 +8,14 @@ import {
   todayISO,
   nowTimeLocal,
   type DiaryDropItem,
+  type DiaryWizardChar,
   type PitchDropLog,
 } from "@/lib/diary";
 
+export type { DiaryWizardChar };
+
 const inputClass =
   "rounded border border-border bg-background px-2 py-1.5 text-sm outline-none focus:border-accent";
-
-export type DiaryWizardChar = {
-  name: string;
-  region: string;
-  jobName: string;
-  avatar?: string | null;
-};
 
 function CharPickCard({
   char,

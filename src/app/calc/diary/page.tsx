@@ -1,21 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import {
-  LogDropModal,
-  type DiaryWizardChar,
-} from "@/components/diary/LogDropModal";
+import { useState } from "react";
+import { LogDropModal } from "@/components/diary/LogDropModal";
+import { useDiary } from "@/hooks/useDiary";
+import { useRoster } from "@/hooks/useRoster";
 import {
   dropLogCharacterLabel,
   dropLogDateTimeLabel,
-  loadDiary,
-  saveDiary,
-  type DiaryState,
+  wizardCharsFromRoster,
   type PitchDropLog,
 } from "@/lib/diary";
-import { useRoster } from "@/hooks/useRoster";
-import { entryKey } from "@/lib/dashboard/roster";
-import type { CharacterLookupResult } from "@/lib/character/lookup";
 
 const inputClass =
   "rounded border border-border bg-background px-2 py-1.5 text-sm outline-none focus:border-accent";
@@ -123,42 +117,10 @@ function DropHistoryList({
   );
 }
 
-function wizardCharsFromRoster(
-  roster: ReturnType<typeof useRoster>["roster"],
-  slots: ReturnType<typeof useRoster>["slots"],
-): DiaryWizardChar[] {
-  return roster.map((entry) => {
-    const slot = slots[entryKey(entry)];
-    const character: CharacterLookupResult | null =
-      slot?.status === "ready" ? slot.character : null;
-    return {
-      name: character?.name ?? entry.name,
-      region: entry.region,
-      jobName: character?.jobName ?? "…",
-      avatar: character?.characterImgURL,
-    };
-  });
-}
-
 export default function DiaryPage() {
   const { hydrated, roster, slots } = useRoster();
-  const [ready, setReady] = useState(false);
-  const [state, setState] = useState<DiaryState>(() => ({
-    pitchLogs: [],
-    grindstone: 0,
-    familiar: 0,
-  }));
+  const { ready, state, persist } = useDiary();
   const [logOpen, setLogOpen] = useState(false);
-
-  useEffect(() => {
-    setState(loadDiary());
-    setReady(true);
-  }, []);
-
-  const persist = (next: DiaryState) => {
-    setState(next);
-    saveDiary(next);
-  };
 
   const characters =
     hydrated && ready ? wizardCharsFromRoster(roster, slots) : [];

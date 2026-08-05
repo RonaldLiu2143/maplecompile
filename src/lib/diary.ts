@@ -1,5 +1,7 @@
 /** Diary (drop history / grindstone / familiar) — localStorage only. */
 
+import { entryKey, type RosterEntry } from "@/lib/dashboard/roster";
+
 export const DIARY_KEY = "maplecompile-diary-v1";
 
 export type PitchDropLog = {
@@ -196,4 +198,42 @@ export function dropLogCharacterLabel(log: PitchDropLog): string {
 export function dropLogDateTimeLabel(log: PitchDropLog): string {
   if (log.time) return `${log.date} ${log.time}`;
   return log.date;
+}
+
+export type DiaryWizardChar = {
+  name: string;
+  region: string;
+  jobName: string;
+  avatar?: string | null;
+};
+
+/** Map roster + loaded slots into Log Drop wizard character cards. */
+export function wizardCharsFromRoster(
+  roster: ReadonlyArray<Pick<RosterEntry, "name" | "region">>,
+  slots: Record<
+    string,
+    | { status: "loading" }
+    | { status: "error"; error: string }
+    | {
+        status: "ready";
+        character: {
+          name: string;
+          jobName?: string | null;
+          characterImgURL?: string | null;
+        };
+      }
+    | undefined
+  >,
+): DiaryWizardChar[] {
+  return roster.map((entry) => {
+    const key = entryKey(entry);
+    const slot = slots[key];
+    const character = slot?.status === "ready" ? slot.character : null;
+    return {
+      name: character?.name ?? entry.name,
+      region: entry.region,
+      jobName: character?.jobName ?? "…",
+      avatar: character?.characterImgURL,
+    };
+  });
 }

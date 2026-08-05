@@ -190,8 +190,17 @@ export default function BossesIncomePage() {
     });
   };
 
-  const replaceSelections = (key: string, selections: BossClearSelection[]) => {
-    setStore((prev) => upsertCharacterState(prev, key, { selections }));
+  const replaceSelections = (
+    updates: Array<{ key: string; selections: BossClearSelection[] }>,
+  ) => {
+    if (updates.length === 0) return;
+    setStore((prev) => {
+      let next = prev;
+      for (const { key, selections } of updates) {
+        next = upsertCharacterState(next, key, { selections });
+      }
+      return next;
+    });
   };
 
   const hasRoster = roster.length > 0;

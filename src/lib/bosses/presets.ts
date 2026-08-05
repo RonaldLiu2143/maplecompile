@@ -24,22 +24,38 @@ function newId(): string {
   return `bp_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`;
 }
 
+function normalizePresetEntry(
+  raw: Partial<BossPresetEntry>,
+): BossPresetEntry | null {
+  if (typeof raw.bossId !== "string") return null;
+  const boss = BOSS_CRYSTALS.find((c) => c.id === raw.bossId);
+  if (!boss) return null;
+  const difficulty =
+    typeof raw.difficulty === "string" &&
+    boss.difficulties.some((d) => d.name === raw.difficulty)
+      ? raw.difficulty
+      : (boss.difficulties[boss.difficulties.length - 1]?.name ?? "");
+  if (!difficulty) return null;
+  return {
+    bossId: boss.id,
+    difficulty,
+    partySize: clampPartySize(boss.id, Number(raw.partySize) || 1),
+  };
+}
+
 function normalizePreset(raw: unknown): BossPreset | null {
   if (!raw || typeof raw !== "object") return null;
   const p = raw as Partial<BossPreset>;
   if (typeof p.id !== "string" || typeof p.name !== "string") return null;
   if (!Array.isArray(p.bosses)) return null;
+  const seen = new Set<string>();
   const bosses: BossPresetEntry[] = [];
   for (const item of p.bosses) {
     if (!item || typeof item !== "object") continue;
-    const b = item as Partial<BossPresetEntry>;
-    if (typeof b.bossId !== "string") continue;
-    if (!BOSS_CRYSTALS.some((c) => c.id === b.bossId)) continue;
-    bosses.push({
-      bossId: b.bossId,
-      difficulty: typeof b.difficulty === "string" ? b.difficulty : "",
-      partySize: clampPartySize(b.bossId, Number(b.partySize) || 1),
-    });
+    const entry = normalizePresetEntry(item as Partial<BossPresetEntry>);
+    if (!entry || seen.has(entry.bossId)) continue;
+    seen.add(entry.bossId);
+    bosses.push(entry);
   }
   if (bosses.length === 0) return null;
   return {
@@ -68,12 +84,14 @@ export function loadBossPresets(): BossPreset[] {
   }
 }
 
-export function saveBossPresets(presets: BossPreset[]): void {
-  if (typeof window === "undefined") return;
+/** Persist presets. Returns false when storage write fails. */
+export function saveBossPresets(presets: BossPreset[]): boolean {
+  if (typeof window === "undefined") return false;
   try {
     localStorage.setItem(BOSS_PRESETS_KEY, JSON.stringify(presets));
+    return true;
   } catch {
-    /* ignore */
+    return false;
   }
 }
 
@@ -82,13 +100,19 @@ export function presetFromSelections(
   selections: BossClearSelection[],
   name: string,
 ): BossPreset | null {
-  const bosses: BossPresetEntry[] = selections
-    .filter((s) => s.enabled)
-    .map((s) => ({
+  const seen = new Set<string>();
+  const bosses: BossPresetEntry[] = [];
+  for (const s of selections) {
+    if (!s.enabled || seen.has(s.bossId)) continue;
+    const entry = normalizePresetEntry({
       bossId: s.bossId,
       difficulty: s.difficulty,
-      partySize: clampPartySize(s.bossId, s.partySize || 1),
-    }));
+      partySize: s.partySize,
+    });
+    if (!entry) continue;
+    seen.add(entry.bossId);
+    bosses.push(entry);
+  }
   if (bosses.length === 0) return null;
   return {
     id: newId(),
