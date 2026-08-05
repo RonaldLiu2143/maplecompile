@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type MouseEvent } from "react";
 import { useRoster } from "@/hooks/useRoster";
 import { entryKey, isPrimary } from "@/lib/dashboard/roster";
 import {
+  CLEAR_FORMATS,
   DESTINY_CARRYOVER_CAP,
   GENESIS_CARRYOVER_CAP,
   NOT_DOING,
@@ -24,6 +25,7 @@ import {
   tracesFromClear,
   upsertActiveInputs,
   writeLiberationStore,
+  type ClearFormat,
   type LiberationCharacterInputs,
   type LiberationMode,
   type LiberationStore,
@@ -35,6 +37,12 @@ const inputClass =
   "rounded border border-border bg-background px-2 py-1.5 text-sm outline-none focus:border-accent";
 
 const PARTY_SIZES = [1, 2, 3, 4, 5, 6] as const;
+
+const CLEAR_FORMAT_LABELS: Record<ClearFormat, string> = {
+  hybrid: "Hybrid",
+  highlight: "Highlight",
+  flip: "Chip",
+};
 
 function formatDisplayDate(iso: string | null): string {
   if (!iso) return "—";
@@ -57,6 +65,36 @@ function weeksLabel(weeks: number | null): string {
   return `${w} weeks (${months} months)`;
 }
 
+function usesHighlight(format: ClearFormat): boolean {
+  return format === "hybrid" || format === "highlight";
+}
+
+function usesChip(format: ClearFormat): boolean {
+  return format === "hybrid" || format === "flip";
+}
+
+function bossCardClass(
+  format: ClearFormat,
+  cleared: boolean,
+  doing: boolean,
+): string {
+  const base = "relative rounded-xl border p-3 transition select-none";
+  if (!doing) {
+    return `${base} cursor-default border-border/30 bg-surface/50 opacity-80`;
+  }
+
+  if (usesHighlight(format)) {
+    return cleared
+      ? `${base} cursor-pointer border-accent bg-accent-soft/45 shadow-[inset_0_0_0_1px_var(--accent)]`
+      : `${base} cursor-pointer border-border/45 bg-surface/70 opacity-90 hover:border-border/70`;
+  }
+
+  // flip-only: neutral card, chip carries state
+  return cleared
+    ? `${base} cursor-pointer border-border/50 bg-surface/90`
+    : `${base} cursor-pointer border-border/50 bg-surface/90 hover:border-accent/35`;
+}
+
 export default function LiberationPage() {
   const { hydrated, roster, primary, slots } = useRoster();
   const [ready, setReady] = useState(false);
@@ -77,7 +115,6 @@ export default function LiberationPage() {
     if (!hydrated) return;
     let next = readLiberationStore();
 
-    // Keep preview + ensure bundles for selected / primary
     const preferred =
       primary && eligible.some((e) => entryKey(e) === entryKey(primary))
         ? entryKey(primary)
@@ -118,11 +155,13 @@ export default function LiberationPage() {
   }, [store, ready]);
 
   const mode = store.mode;
+  const clearFormat = store.clearFormat;
   const inputs = getActiveInputs(store);
   const type = inputs.liberationType;
   const bosses = bossesFor(type);
   const milestones = milestonesFor(type);
   const currency = currencyLabel(type);
+  const useGenesisPass = type === "genesis" && inputs.genesisPass;
 
   const result = useMemo(
     () =>
@@ -130,14 +169,13 @@ export default function LiberationPage() {
         type,
         tracesHeld: inputs.currentTraces,
         liberationQuest: inputs.liberationQuest,
-        useGenesisPass: inputs.genesisPass,
+        useGenesisPass,
         startDate: inputs.startDate,
         selections: inputs.bossSelections,
       }),
-    [type, inputs],
+    [type, inputs, useGenesisPass],
   );
 
-  // Persist completion % onto active character (MapleHub behavior)
   useEffect(() => {
     if (!ready) return;
     if (inputs.completionRate === result.completionRate) return;
@@ -178,8 +216,24 @@ export default function LiberationPage() {
     });
   };
 
+  const toggleCleared = (bossName: string) => {
+    setStore((prev) => {
+      const current = getActiveInputs(prev);
+      const bossSelections = current.bossSelections.map((s) => {
+        if (s.bossName !== bossName) return s;
+        if (s.difficulty === NOT_DOING) return s;
+        return { ...s, cleared: !s.cleared };
+      });
+      return upsertActiveInputs(prev, { bossSelections });
+    });
+  };
+
   const resetActive = () => {
     setStore((prev) => upsertActiveInputs(prev, defaultInputs(type)));
+  };
+
+  const setClearFormat = (next: ClearFormat) => {
+    setStore((prev) => ({ ...prev, clearFormat: next }));
   };
 
   const setMode = (next: LiberationMode) => {
@@ -260,7 +314,6 @@ export default function LiberationPage() {
         </p>
       </header>
 
-      {/* Mode */}
       <section className="flex flex-wrap items-center gap-2 rounded-xl border border-border/40 bg-surface/80 p-3">
         <span className="mr-1 text-xs font-semibold uppercase tracking-wider opacity-60">
           Mode
@@ -310,76 +363,88 @@ export default function LiberationPage() {
       </section>
 
       {mode === "characters" && eligible.length > 0 ? (
-        <section className="space-y-3">
-          <div className="flex flex-wrap gap-2">
-            {eligible.map((entry) => {
-              const key = entryKey(entry);
-              const selected = store.selectedCharacterIds.includes(key);
-              const active = store.activeCharacterId === key;
-              const slot = slots[key];
-              const name =
-                slot?.status === "ready" ? slot.character.name : entry.name;
-              const rate =
-                store.characterData[key]?.[
-                  store.characterData[key]?.currentTab ?? "genesis"
-                ]?.completionRate ?? 0;
-              return (
-                <button
-                  key={key}
-                  type="button"
-                  onClick={() => {
-                    if (!selected) toggleCharacterVisible(key);
-                    setStore((prev) => ({
-                      ...ensureCharacterBundle(prev, key),
-                      mode: "characters",
-                      activeCharacterId: key,
-                      selectedCharacterIds: prev.selectedCharacterIds.includes(
-                        key,
-                      )
-                        ? prev.selectedCharacterIds
-                        : [...prev.selectedCharacterIds, key],
-                    }));
-                  }}
-                  onContextMenu={(e) => {
-                    e.preventDefault();
-                    toggleCharacterVisible(key);
-                  }}
-                  className={[
-                    "min-w-[7.5rem] rounded-xl border px-3 py-2 text-left transition",
-                    active
-                      ? "border-accent bg-accent-soft/50"
-                      : selected
-                        ? "border-border/50 bg-surface/80 hover:border-accent/40"
-                        : "border-dashed border-border/40 opacity-55 hover:opacity-80",
-                  ].join(" ")}
-                >
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={[
-                        "flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-bold",
-                        (
-                          store.characterData[key]?.currentTab ?? "genesis"
-                        ) === "destiny"
-                          ? "bg-amber-600 text-white"
-                          : "bg-emerald-700 text-white",
-                      ].join(" ")}
-                    >
-                      {(store.characterData[key]?.currentTab ?? "genesis") ===
-                      "destiny"
-                        ? "D"
-                        : "G"}
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold">{name}</p>
-                      <p className="font-mono text-xs opacity-60">
+        <section className="space-y-2">
+          <div className="-mx-1 overflow-x-auto pb-1">
+            <div className="flex w-max gap-2 px-1">
+              {eligible.map((entry) => {
+                const key = entryKey(entry);
+                const selected = store.selectedCharacterIds.includes(key);
+                const active = store.activeCharacterId === key;
+                const slot = slots[key];
+                const character =
+                  slot?.status === "ready" ? slot.character : null;
+                const name = character?.name ?? entry.name;
+                const avatar = character?.characterImgURL;
+                const rate =
+                  store.characterData[key]?.[
+                    store.characterData[key]?.currentTab ?? "genesis"
+                  ]?.completionRate ?? 0;
+                const tab =
+                  store.characterData[key]?.currentTab ?? "genesis";
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => {
+                      if (!selected) toggleCharacterVisible(key);
+                      setStore((prev) => ({
+                        ...ensureCharacterBundle(prev, key),
+                        mode: "characters",
+                        activeCharacterId: key,
+                        selectedCharacterIds:
+                          prev.selectedCharacterIds.includes(key)
+                            ? prev.selectedCharacterIds
+                            : [...prev.selectedCharacterIds, key],
+                      }));
+                    }}
+                    onContextMenu={(e) => {
+                      e.preventDefault();
+                      toggleCharacterVisible(key);
+                    }}
+                    className={[
+                      "flex w-[7.75rem] shrink-0 flex-col items-center gap-1.5 rounded-xl border px-2 py-2.5 text-center transition",
+                      active
+                        ? "border-accent bg-accent-soft/50"
+                        : selected
+                          ? "border-border/50 bg-surface/80 hover:border-accent/40"
+                          : "border-dashed border-border/40 opacity-55 hover:opacity-80",
+                    ].join(" ")}
+                  >
+                    {avatar ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={avatar}
+                        alt=""
+                        width={56}
+                        height={56}
+                        className="h-14 w-14 object-contain"
+                      />
+                    ) : (
+                      <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-surface-muted text-xs font-bold uppercase opacity-50">
+                        {name.slice(0, 2)}
+                      </div>
+                    )}
+                    <div className="min-w-0 w-full">
+                      <p className="truncate text-xs font-semibold leading-tight">
+                        {name}
+                      </p>
+                      <p className="mt-0.5 font-mono text-[11px] tabular-nums opacity-65">
                         {rate}%
-                        {isPrimary(entry, primary) ? " · primary" : ""}
+                        {isPrimary(entry, primary) ? " · ★" : ""}
                       </p>
                     </div>
-                  </div>
-                </button>
-              );
-            })}
+                    <span
+                      className={[
+                        "rounded px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-white",
+                        tab === "destiny" ? "bg-amber-600" : "bg-emerald-700",
+                      ].join(" ")}
+                    >
+                      {tab === "destiny" ? "Destiny" : "Genesis"}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
           {visibleChars.length === 0 ? (
             <p className="text-xs opacity-65">
@@ -402,7 +467,6 @@ export default function LiberationPage() {
       ) : null}
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
-        {/* Progress column */}
         <section className="space-y-4 rounded-xl border border-border/40 bg-surface/80 p-4 sm:p-5">
           <h2 className="font-display text-lg font-semibold">
             Liberation Progress
@@ -410,9 +474,7 @@ export default function LiberationPage() {
 
           <div className="text-center">
             <p className="font-display text-2xl font-bold tabular-nums tracking-tight sm:text-3xl">
-              {achieved
-                ? "Done"
-                : formatDisplayDate(result.etaISO)}
+              {achieved ? "Done" : formatDisplayDate(result.etaISO)}
             </p>
             <p className="mt-1 text-sm opacity-65">
               {achieved ? "Liberation achieved" : "Target liberation date"}
@@ -442,20 +504,14 @@ export default function LiberationPage() {
 
           <div className="space-y-2 border-t border-border/30 pt-4">
             <h3 className="text-sm font-semibold">Trace Sources</h3>
-            <Row
-              label="Weekly traces"
-              value={String(result.weeklyTraces)}
-            />
+            <Row label="Weekly traces" value={String(result.weeklyTraces)} />
             {type === "genesis" ? (
               <Row
                 label="Black Mage (monthly)"
                 value={String(result.monthlyTraces)}
               />
             ) : null}
-            <Row
-              label="4-week total"
-              value={String(result.fourWeekTotal)}
-            />
+            <Row label="4-week total" value={String(result.fourWeekTotal)} />
           </div>
 
           <div className="space-y-2 rounded-lg bg-surface-muted/50 p-3">
@@ -488,7 +544,6 @@ export default function LiberationPage() {
           </div>
         </section>
 
-        {/* Config column */}
         <section className="space-y-4 rounded-xl border border-border/40 bg-surface/80 p-4 sm:p-5">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex gap-1.5">
@@ -596,23 +651,26 @@ export default function LiberationPage() {
             />
           </label>
 
-          <label className="flex flex-col gap-1 text-sm">
-            <span className="text-xs font-medium opacity-65">Genesis Pass</span>
-            <select
-              className={inputClass}
-              value={inputs.genesisPass ? "yes" : "no"}
-              onChange={(e) =>
-                patch({ genesisPass: e.target.value === "yes" })
-              }
-            >
-              <option value="no">No</option>
-              <option value="yes">Yes (3× traces)</option>
-            </select>
-          </label>
+          {type === "genesis" ? (
+            <label className="flex flex-col gap-1 text-sm">
+              <span className="text-xs font-medium opacity-65">
+                Genesis Pass
+              </span>
+              <select
+                className={inputClass}
+                value={inputs.genesisPass ? "yes" : "no"}
+                onChange={(e) =>
+                  patch({ genesisPass: e.target.value === "yes" })
+                }
+              >
+                <option value="no">No</option>
+                <option value="yes">Yes (3× traces)</option>
+              </select>
+            </label>
+          ) : null}
         </section>
       </div>
 
-      {/* Boss selection */}
       <section className="space-y-3">
         <div className="flex flex-wrap items-end justify-between gap-2">
           <div>
@@ -620,14 +678,38 @@ export default function LiberationPage() {
               Boss Selection
             </h2>
             <p className="mt-1 text-sm opacity-70">
-              Track your weekly boss clears. Mark bosses as &quot;Cleared&quot;
-              when you complete them this week.
+              Click a configured boss card to mark it cleared or not cleared
+              this week.
             </p>
           </div>
-          <span className="rounded-md border border-border/40 px-2 py-1 text-xs font-medium tabular-nums opacity-75">
-            {clearedCount} / {bosses.length} cleared this week
-            {activeDoing > 0 ? ` · ${activeDoing} configured` : ""}
-          </span>
+          <div className="flex flex-wrap items-center gap-2">
+            <div
+              className="flex items-center gap-1 rounded-lg border border-border/40 bg-surface/70 p-1"
+              role="group"
+              aria-label="Cleared boss card style"
+            >
+              {CLEAR_FORMATS.map((fmt) => (
+                <button
+                  key={fmt}
+                  type="button"
+                  onClick={() => setClearFormat(fmt)}
+                  title={CLEAR_FORMAT_LABELS[fmt]}
+                  className={[
+                    "rounded-md px-2 py-1 text-[11px] font-semibold transition-colors",
+                    clearFormat === fmt
+                      ? "bg-accent text-white dark:text-zinc-900"
+                      : "opacity-65 hover:opacity-100",
+                  ].join(" ")}
+                >
+                  {CLEAR_FORMAT_LABELS[fmt]}
+                </button>
+              ))}
+            </div>
+            <span className="rounded-md border border-border/40 px-2 py-1 text-xs font-medium tabular-nums opacity-75">
+              {clearedCount} / {bosses.length} cleared this week
+              {activeDoing > 0 ? ` · ${activeDoing} configured` : ""}
+            </span>
+          </div>
         </div>
 
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -647,22 +729,39 @@ export default function LiberationPage() {
                   boss.name,
                   sel.difficulty,
                   sel.partySize,
-                  inputs.genesisPass,
+                  useGenesisPass,
                 )
               : 0;
             const icon = bossIconSrc(boss);
             const broken = brokenIcons[boss.name];
 
+            const onCardClick = () => {
+              if (!doing) return;
+              toggleCleared(boss.name);
+            };
+
+            const stop = (e: MouseEvent) => e.stopPropagation();
+
             return (
               <div
                 key={boss.name}
-                className={[
-                  "rounded-xl border p-3 transition",
+                role={doing ? "button" : undefined}
+                tabIndex={doing ? 0 : undefined}
+                onClick={onCardClick}
+                onKeyDown={(e) => {
+                  if (!doing) return;
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    toggleCleared(boss.name);
+                  }
+                }}
+                aria-pressed={doing ? sel.cleared : undefined}
+                aria-label={
                   doing
-                    ? "border-border/50 bg-surface/90"
-                    : "border-border/30 bg-surface/50 opacity-80",
-                  sel.cleared ? "ring-1 ring-emerald-600/40" : "",
-                ].join(" ")}
+                    ? `${boss.name}: ${sel.cleared ? "cleared" : "not cleared"}. Activate to toggle.`
+                    : undefined
+                }
+                className={bossCardClass(clearFormat, sel.cleared, doing)}
               >
                 <div className="flex items-start gap-3">
                   <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-surface-muted">
@@ -704,7 +803,10 @@ export default function LiberationPage() {
                   </div>
                 </div>
 
-                <div className="mt-3 grid grid-cols-[1fr_auto] gap-2">
+                <div
+                  className="mt-3 grid grid-cols-[1fr_auto] gap-2"
+                  onClick={stop}
+                >
                   <select
                     className={`${inputClass} w-full text-xs`}
                     value={sel.difficulty}
@@ -743,58 +845,26 @@ export default function LiberationPage() {
                   </select>
                 </div>
 
-                <label className="mt-3 flex items-center justify-between gap-2 text-xs">
-                  <span className="opacity-65">
-                    {sel.cleared ? "Cleared" : "Not cleared"}
-                  </span>
-                  <input
-                    type="checkbox"
-                    className="h-4 w-4 accent-[var(--accent)]"
-                    checked={sel.cleared}
-                    disabled={!doing}
-                    onChange={(e) =>
-                      patchBoss(boss.name, { cleared: e.target.checked })
-                    }
-                    aria-label={`${boss.name} cleared this week`}
-                  />
-                </label>
+                {usesChip(clearFormat) && doing ? (
+                  <div className="mt-3 flex justify-end" onClick={stop}>
+                    <button
+                      type="button"
+                      onClick={() => toggleCleared(boss.name)}
+                      className={[
+                        "rounded-md border px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide transition-colors",
+                        sel.cleared
+                          ? "border-emerald-600/50 bg-emerald-600/15 text-emerald-700 dark:text-emerald-400"
+                          : "border-border/50 bg-background/60 opacity-80 hover:border-accent/50 hover:text-accent",
+                      ].join(" ")}
+                    >
+                      {sel.cleared ? "Done" : "Clear"}
+                    </button>
+                  </div>
+                ) : null}
               </div>
             );
           })}
         </div>
-      </section>
-
-      <section className="rounded-xl border border-border/40 bg-surface/80 p-4">
-        <h2 className="font-display text-lg font-semibold">Milestones</h2>
-        <ul className="mt-3 space-y-2 text-sm">
-          {milestones.map((m) => {
-            const done =
-              parseInt(inputs.liberationQuest.split("|")[0] ?? "0", 10) >=
-              m.requiredTraces;
-            return (
-              <li
-                key={m.value}
-                className={[
-                  "flex items-center justify-between rounded-lg border border-border/30 px-3 py-2",
-                  done ? "bg-accent-soft/40" : "opacity-70",
-                ].join(" ")}
-              >
-                <span>{m.label}</span>
-                <span className="text-xs font-semibold uppercase tracking-wider">
-                  {done ? "Reached" : "Locked"}
-                </span>
-              </li>
-            );
-          })}
-          <li className="flex items-center justify-between rounded-lg border border-border/30 px-3 py-2">
-            <span>
-              Target — {result.target.toLocaleString()} ({type === "destiny" ? "Destiny" : "Genesis"})
-            </span>
-            <span className="text-xs font-semibold uppercase tracking-wider">
-              {achieved ? "Complete" : "In progress"}
-            </span>
-          </li>
-        </ul>
       </section>
 
       <details className="rounded-xl border border-border/40 bg-surface/60 p-4 text-sm">
@@ -810,8 +880,9 @@ export default function LiberationPage() {
             , Thursday reset, and monthly Black Mage match MapleHub.
           </li>
           <li>
-            Genesis Pass triples all configured boss traces. Destiny uses
-            Adversary&apos;s Determination with a separate boss list.
+            Genesis Pass triples Genesis boss traces. Destiny uses
+            Adversary&apos;s Determination with a separate boss list (no Genesis
+            Pass).
           </li>
           <li>
             Cleared-this-week bosses are excluded from the ETA &quot;start
@@ -819,13 +890,13 @@ export default function LiberationPage() {
           </li>
           <li>
             Per-character state persists in localStorage; Preview is a shared
-            sandbox. Characters must be 255+ for My Characters mode.
+            sandbox. Characters must be 255+ for My Characters mode. Cleared
+            card style preference is also saved.
           </li>
           <li>
             Stubbed / not ported: mission fight sims (FD penalties, consumable
             limits), magnification scale / stepCollected fields MapleHub stores
-            but does not expose in the main UI, Destiny material routes beyond
-            Kaling milestones.
+            but does not expose in the main UI.
           </li>
         </ul>
       </details>

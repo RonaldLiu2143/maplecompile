@@ -135,7 +135,7 @@ export const DESTINY_BOSSES: TraceBoss[] = [
   },
   {
     name: "Adversary",
-    image: "bosses/adversary.webp",
+    image: "bosses/the-first-adversary.webp",
     frequency: "weekly",
     difficulties: [
       { label: "Normal", baseTraces: 15 },
