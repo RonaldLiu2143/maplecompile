@@ -22,6 +22,7 @@ import {
   type ScouterShareRecord,
 } from "@/lib/scouter/share";
 import { storage } from "@/lib/storage";
+import { ShareScouterStatsPanel } from "./share-scouter-stats";
 
 type LoadState =
   | { status: "loading" }
@@ -385,49 +386,11 @@ export default function CharacterShareProfilePage() {
         </p>
       ) : null}
 
-      <section className="grid gap-6 lg:grid-cols-2">
-        <div className="space-y-3 rounded-lg border border-border/50 bg-surface/80 p-4">
-          <h2 className="font-display text-lg font-semibold">Scouter</h2>
-          <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-            <div>
-              <dt className="text-xs opacity-55">Boss damage</dt>
-              <dd className="tabular-nums">
-                {formatStat(input.bossDamagePercent)}%
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs opacity-55">IED</dt>
-              <dd className="tabular-nums">
-                {formatStat(input.ignoreDefensePercent)}%
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs opacity-55">Crit damage</dt>
-              <dd className="tabular-nums">
-                {formatStat(input.criticalDamagePercent)}%
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs opacity-55">Final damage</dt>
-              <dd className="tabular-nums">
-                {formatStat(input.finalDamagePercent)}%
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs opacity-55">Attack / MA</dt>
-              <dd className="tabular-nums">
-                {input.useMagicAttack
-                  ? `MA ${formatStat(input.magicAttack.base)}`
-                  : `ATT ${formatStat(input.attack.base)}`}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs opacity-55">Views</dt>
-              <dd className="tabular-nums">{record.views ?? 0}</dd>
-            </div>
-          </dl>
+      <section className="grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.9fr)] lg:items-start">
+        <div className="space-y-3">
+          <ShareScouterStatsPanel input={input} />
 
-          <div>
+          <div className="rounded-lg border border-border/50 bg-surface/80 p-4">
             <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide opacity-60">
               HEXA
             </h3>
