@@ -2,31 +2,21 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
+import type { RosterDragProps } from "@/components/dashboard/RosterCharacterCard";
+import type { RosterWeeklyBossProgress } from "@/components/dashboard/RosterListRow";
+import { RosterReorderList } from "@/components/dashboard/RosterReorderList";
 import type { RosterSlotState } from "@/hooks/useRoster";
 import {
   findBoss,
-  formatMesosCompact,
   formatResetCountdown,
   getCharacterBossState,
   readBossIncomeStore,
-  summarizeIncome,
-  worldTypeFromCharacter,
   type BossClearSelection,
 } from "@/lib/bosses";
 import { entryKey, type RosterEntry, type RosterPrimary } from "@/lib/dashboard/roster";
 import { subscribeMapleDataReload } from "@/lib/maple-events";
 
-type CharWeekRow = {
-  key: string;
-  name: string;
-  avatar: string | null;
-  enabled: number;
-  cleared: number;
-  mesos: number;
-  isPrimary: boolean;
-};
-
-function weeklyProgress(selections: BossClearSelection[]) {
+function weeklyProgress(selections: BossClearSelection[]): RosterWeeklyBossProgress {
   let enabled = 0;
   let cleared = 0;
   for (const sel of selections) {
@@ -39,31 +29,17 @@ function weeklyProgress(selections: BossClearSelection[]) {
   return { enabled, cleared };
 }
 
-function readRows(
+function readWeeklyByKey(
   roster: RosterEntry[],
-  slots: Record<string, RosterSlotState>,
-  primary: RosterPrimary | null,
-): CharWeekRow[] {
+): Record<string, RosterWeeklyBossProgress> {
   const store = readBossIncomeStore();
-  const primaryKey = primary ? entryKey(primary) : null;
-  return roster.map((entry) => {
+  const out: Record<string, RosterWeeklyBossProgress> = {};
+  for (const entry of roster) {
     const key = entryKey(entry);
-    const slot = slots[key];
-    const character = slot?.status === "ready" ? slot.character : null;
     const state = getCharacterBossState(store, key);
-    const progress = weeklyProgress(state.selections);
-    const world = worldTypeFromCharacter(character);
-    const summary = summarizeIncome(state.selections, world);
-    return {
-      key,
-      name: character?.name ?? entry.name,
-      avatar: character?.characterImgURL ?? null,
-      enabled: progress.enabled,
-      cleared: progress.cleared,
-      mesos: summary.weeklyMesos,
-      isPrimary: primaryKey === key,
-    };
-  });
+    out[key] = weeklyProgress(state.selections);
+  }
+  return out;
 }
 
 function Chip({
@@ -90,26 +66,45 @@ function Chip({
   );
 }
 
-export function DashboardWeeklyChecklist({
+/** Combined roster list + weekly boss clears for the dashboard. */
+export function DashboardRosterWeeklySection({
   roster,
   slots,
   primary,
   hydrated,
+  managing,
+  onManageToggle,
+  makeDragProps,
+  onMoveUp,
+  onMoveDown,
+  onSetPrimary,
+  onRemove,
+  onRetry,
 }: {
   roster: RosterEntry[];
   slots: Record<string, RosterSlotState>;
   primary: RosterPrimary | null;
   hydrated: boolean;
+  managing: boolean;
+  onManageToggle: () => void;
+  makeDragProps: (index: number) => RosterDragProps | undefined;
+  onMoveUp: (index: number) => void;
+  onMoveDown: (index: number) => void;
+  onSetPrimary: (entry: RosterEntry) => void;
+  onRemove: (entry: RosterEntry) => void;
+  onRetry: (entry: RosterEntry) => void;
 }) {
-  const [rows, setRows] = useState<CharWeekRow[]>([]);
+  const [weeklyByKey, setWeeklyByKey] = useState<
+    Record<string, RosterWeeklyBossProgress>
+  >({});
   const [countdown, setCountdown] = useState(() => formatResetCountdown());
 
   useEffect(() => {
     if (!hydrated) return;
-    const reload = () => setRows(readRows(roster, slots, primary));
+    const reload = () => setWeeklyByKey(readWeeklyByKey(roster));
     reload();
     return subscribeMapleDataReload(reload);
-  }, [hydrated, roster, slots, primary]);
+  }, [hydrated, roster, slots]);
 
   useEffect(() => {
     const tick = () => setCountdown(formatResetCountdown());
@@ -121,41 +116,17 @@ export function DashboardWeeklyChecklist({
   const totals = useMemo(() => {
     let enabled = 0;
     let cleared = 0;
-    let withBosses = 0;
-    for (const row of rows) {
-      if (row.enabled > 0) withBosses += 1;
+    for (const row of Object.values(weeklyByKey)) {
       enabled += row.enabled;
       cleared += row.cleared;
     }
-    return { enabled, cleared, withBosses };
-  }, [rows]);
+    return { enabled, cleared };
+  }, [weeklyByKey]);
 
   if (!hydrated) {
     return (
       <section className="flex min-h-0 flex-col rounded-xl border border-border/50 bg-surface/80 p-3 sm:p-3.5 text-sm opacity-70">
-        Loading weekly checklist…
-      </section>
-    );
-  }
-
-  if (roster.length === 0) {
-    return (
-      <section className="flex min-h-0 flex-col rounded-xl border border-dashed border-border/60 bg-surface/60 p-3 sm:p-3.5">
-        <h2 className="font-display text-base font-bold tracking-tight">
-          Weekly bosses
-        </h2>
-        <p className="mt-1 text-xs opacity-70">
-          Add roster characters, then configure clears in Boss Income. Resets
-          Thursday 00:00 UTC.
-        </p>
-        <div className="mt-3 flex flex-wrap gap-2">
-          <Link
-            href="/calc/bosses"
-            className="rounded-md bg-accent px-3 py-1.5 text-xs font-semibold text-white transition hover:opacity-90 dark:text-zinc-900"
-          >
-            Boss Income
-          </Link>
-        </div>
+        Loading roster…
       </section>
     );
   }
@@ -174,99 +145,109 @@ export function DashboardWeeklyChecklist({
       <div className="flex shrink-0 flex-wrap items-start justify-between gap-2">
         <div className="min-w-0 space-y-0.5">
           <h2 className="font-display text-base font-bold tracking-tight">
-            Weekly bosses
+            Roster
+            {roster.length > 0 ? (
+              <span className="ml-1.5 text-xs font-semibold opacity-55">
+                ({roster.length})
+              </span>
+            ) : null}
           </h2>
-          <p className="text-xs opacity-60">{countdown.label}</p>
+          {managing ? (
+            <p className="text-xs opacity-60">
+              Drag rows or use ↑↓ to reorder. Tap the star to set primary.
+            </p>
+          ) : roster.length > 0 ? (
+            <p className="text-xs opacity-60">
+              {countdown.label} · clears reset Thursday 00:00 UTC
+            </p>
+          ) : (
+            <p className="text-xs opacity-60">
+              Add characters, then track weekly clears in Boss Income.
+            </p>
+          )}
         </div>
-        <div className="flex flex-wrap items-center gap-1.5">
-          <Chip tone={overallTone}>
-            {totals.enabled > 0
-              ? `${totals.cleared}/${totals.enabled}`
-              : "None set"}
-          </Chip>
+        <div className="flex shrink-0 flex-wrap items-center gap-1.5">
+          {roster.length > 0 ? (
+            <Chip tone={overallTone}>
+              {totals.enabled > 0
+                ? `${totals.cleared}/${totals.enabled}`
+                : "No bosses"}
+            </Chip>
+          ) : null}
           <Link
             href="/calc/bosses"
             className="rounded-md border border-border px-2.5 py-1.5 text-xs font-semibold transition hover:bg-surface-muted"
           >
-            Open tracker
+            Bosses
           </Link>
+          <Link
+            href="/roster"
+            className="rounded-md border border-border px-2.5 py-1.5 text-xs font-semibold transition hover:bg-surface-muted"
+          >
+            Open roster
+          </Link>
+          <button
+            type="button"
+            onClick={onManageToggle}
+            className={[
+              "rounded-md px-3 py-1.5 text-xs font-semibold transition",
+              managing
+                ? "border border-border hover:bg-surface-muted"
+                : "bg-accent text-white hover:opacity-90 dark:text-zinc-900",
+            ].join(" ")}
+          >
+            {managing ? "Done" : "Manage"}
+          </button>
         </div>
       </div>
 
       <div className="mt-2.5 min-h-0 flex-1">
-        {totals.withBosses === 0 ? (
-          <p className="rounded-lg border border-dashed border-border/50 px-3 py-4 text-center text-xs opacity-65">
-            No weekly bosses enabled yet.{" "}
+        {roster.length === 0 ? (
+          <p className="text-xs opacity-70">
+            No characters yet. Search a GMS character above, then tap Add to
+            roster — or{" "}
+            <Link
+              href="/roster"
+              className="font-semibold text-accent underline-offset-2 hover:underline"
+            >
+              open Roster
+            </Link>{" "}
+            for the full page. Configure weekly clears in{" "}
             <Link
               href="/calc/bosses"
-              className="font-semibold text-accent hover:underline"
+              className="font-semibold text-accent underline-offset-2 hover:underline"
             >
-              Add bosses
-            </Link>{" "}
-            on each character to track clears here.
+              Boss Income
+            </Link>
+            .
           </p>
         ) : (
-          <ul className="maple-scroll max-h-[22rem] space-y-1 rounded-lg border border-border/35 bg-surface-muted/25 p-1.5 lg:max-h-[26rem]">
-            {rows.map((row) => {
-              if (row.enabled === 0) return null;
-              const done = row.cleared >= row.enabled;
-              const tone = done
-                ? "good"
-                : row.cleared > 0
-                  ? "accent"
-                  : "warn";
-              return (
-                <li
-                  key={row.key}
-                  className={[
-                    "flex items-center gap-1.5 rounded-md border px-1.5 py-1",
-                    row.isPrimary
-                      ? "border-accent/40 bg-accent-soft/25"
-                      : "border-border/40 bg-background/40",
-                  ].join(" ")}
-                >
-                  {row.avatar ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={row.avatar}
-                      alt=""
-                      width={28}
-                      height={28}
-                      className="h-7 w-7 shrink-0 object-contain"
-                    />
-                  ) : (
-                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded bg-surface-muted text-[10px] font-bold uppercase opacity-50">
-                      {row.name.slice(0, 2)}
-                    </div>
-                  )}
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-xs font-semibold">
-                      {row.name}
-                      {row.isPrimary ? (
-                        <span className="ml-1 text-[10px] font-semibold text-accent">
-                          ★
-                        </span>
-                      ) : null}
-                    </p>
-                    <p className="text-[10px] opacity-55">
-                      {row.mesos > 0
-                        ? formatMesosCompact(row.mesos)
-                        : "No crystal value"}
-                    </p>
-                  </div>
-                  <Chip tone={tone}>
-                    {row.cleared}/{row.enabled}
-                  </Chip>
-                </li>
-              );
-            })}
-          </ul>
+          <div className="maple-scroll max-h-[22rem] rounded-lg border border-border/35 bg-surface-muted/25 p-1.5 lg:max-h-[26rem]">
+            <RosterReorderList
+              roster={roster}
+              primary={primary}
+              slots={slots}
+              reorderable
+              managing={managing}
+              compact
+              weeklyByKey={weeklyByKey}
+              makeDragProps={(index) => makeDragProps(index)}
+              onMoveUp={onMoveUp}
+              onMoveDown={onMoveDown}
+              onSetPrimary={managing ? onSetPrimary : undefined}
+              onRemove={managing ? onRemove : undefined}
+              onRetry={onRetry}
+            />
+          </div>
         )}
       </div>
 
-      <p className="mt-2 shrink-0 text-[10px] opacity-50">
-        Clears reset Thursday 00:00 UTC.
-      </p>
+      {roster.length > 0 ? (
+        <p className="mt-2 shrink-0 text-[10px] opacity-50">
+          Weekly chips show cleared/enabled bosses per character. Tap a chip to
+          open the tracker.
+        </p>
+      ) : null}
     </section>
   );
 }

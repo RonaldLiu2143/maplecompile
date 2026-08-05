@@ -1,7 +1,10 @@
 "use client";
 
 import type { RosterDragProps } from "@/components/dashboard/RosterCharacterCard";
-import { RosterListRow } from "@/components/dashboard/RosterListRow";
+import {
+  RosterListRow,
+  type RosterWeeklyBossProgress,
+} from "@/components/dashboard/RosterListRow";
 import {
   entryKey,
   isPrimary,
@@ -17,6 +20,7 @@ export function RosterReorderList({
   reorderable = true,
   managing = false,
   compact = false,
+  weeklyByKey,
   emptyTitle,
   emptyBody,
   makeDragProps,
@@ -33,6 +37,8 @@ export function RosterReorderList({
   managing?: boolean;
   /** Denser rows for dashboard embed; full /roster stays default */
   compact?: boolean;
+  /** Weekly boss clears keyed by entryKey — shown inline on each row */
+  weeklyByKey?: Record<string, RosterWeeklyBossProgress>;
   emptyTitle?: string;
   emptyBody?: string;
   makeDragProps?: (index: number) => RosterDragProps | undefined;
@@ -93,6 +99,7 @@ export function RosterReorderList({
             reorderable={reorderable}
             managing={managing}
             compact={compact}
+            weeklyBoss={weeklyByKey ? (weeklyByKey[key] ?? { cleared: 0, enabled: 0 }) : null}
             drag={makeDragProps?.(index)}
             onMoveUp={() => onMoveUp(index)}
             onMoveDown={() => onMoveDown(index)}

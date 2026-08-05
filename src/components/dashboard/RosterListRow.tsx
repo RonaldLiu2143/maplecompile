@@ -125,6 +125,58 @@ function AvatarThumb({
   );
 }
 
+export type RosterWeeklyBossProgress = {
+  cleared: number;
+  enabled: number;
+};
+
+function WeeklyBossChip({
+  progress,
+  compact,
+}: {
+  progress: RosterWeeklyBossProgress;
+  compact?: boolean;
+}) {
+  const { cleared, enabled } = progress;
+  if (enabled <= 0) {
+    return (
+      <Link
+        href="/calc/bosses"
+        className={[
+          "inline-flex shrink-0 items-center rounded-md border border-border/50 bg-surface-muted/40 font-semibold opacity-55 transition hover:border-accent/40 hover:opacity-90",
+          compact ? "px-1.5 py-0.5 text-[0.65rem]" : "px-2 py-0.5 text-[0.7rem]",
+        ].join(" ")}
+        title="Configure weekly bosses"
+        draggable={false}
+        onClick={(e) => e.stopPropagation()}
+      >
+        Bosses
+      </Link>
+    );
+  }
+  const done = cleared >= enabled;
+  const tone = done
+    ? "border-emerald-500/35 bg-emerald-500/10 text-emerald-800 dark:text-emerald-300"
+    : cleared > 0
+      ? "border-accent/40 bg-accent/10 text-accent"
+      : "border-amber-500/35 bg-amber-500/10 text-amber-900 dark:text-amber-200";
+  return (
+    <Link
+      href="/calc/bosses"
+      className={[
+        "inline-flex shrink-0 items-center rounded-md border font-semibold tabular-nums transition hover:opacity-90",
+        compact ? "px-1.5 py-0.5 text-[0.65rem]" : "px-2 py-0.5 text-[0.7rem]",
+        tone,
+      ].join(" ")}
+      title={`Weekly bosses ${cleared}/${enabled} — open tracker`}
+      draggable={false}
+      onClick={(e) => e.stopPropagation()}
+    >
+      {cleared}/{enabled}
+    </Link>
+  );
+}
+
 export function RosterListRow({
   entry,
   index,
@@ -136,6 +188,7 @@ export function RosterListRow({
   reorderable,
   managing,
   compact = false,
+  weeklyBoss,
   drag,
   onMoveUp,
   onMoveDown,
@@ -156,6 +209,8 @@ export function RosterListRow({
   managing?: boolean;
   /** Denser layout for dashboard embed */
   compact?: boolean;
+  /** Weekly boss clears for this character (dashboard combined section) */
+  weeklyBoss?: RosterWeeklyBossProgress | null;
   drag?: RosterDragProps;
   onMoveUp?: () => void;
   onMoveDown?: () => void;
@@ -266,6 +321,10 @@ export function RosterListRow({
           </button>
         ) : null}
       </div>
+
+      {weeklyBoss != null ? (
+        <WeeklyBossChip progress={weeklyBoss} compact={compact} />
+      ) : null}
 
       {managing && onRemove ? (
         <button
