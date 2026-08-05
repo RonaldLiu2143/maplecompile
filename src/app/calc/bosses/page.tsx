@@ -5,8 +5,11 @@ import { useEffect, useMemo, useState } from "react";
 import {
   ACCOUNT_WEEKLY_CRYSTAL_LIMIT,
   BOSS_CRYSTALS,
+  DEFAULT_MAX_PARTY,
   WEEKLY_CRYSTAL_LIMIT,
   bossIconUrl,
+  bossMaxParty,
+  clampPartySize,
   countEnabledWeekly,
   defaultSelections,
   formatBossLabel,
@@ -127,9 +130,14 @@ export default function BossesIncomePage() {
         }
       }
 
-      const selections = current.selections.map((s) =>
-        s.bossId === bossId ? { ...s, ...partial } : s,
-      );
+      const selections = current.selections.map((s) => {
+        if (s.bossId !== bossId) return s;
+        const next = { ...s, ...partial };
+        if (partial.partySize != null) {
+          next.partySize = clampPartySize(bossId, partial.partySize);
+        }
+        return next;
+      });
       return upsertCharacterState(prev, key, { selections });
     });
     if (!applied) {
@@ -524,13 +532,24 @@ function CharacterBossCard({
           <p className="text-xs opacity-55">
             {summary.weeklyCrystalsUsed}/{summary.weeklyCrystalLimit} weekly
           </p>
-          <button
-            type="button"
-            onClick={onReset}
-            className="mt-1 text-xs opacity-60 hover:text-accent hover:opacity-100"
-          >
-            Reset
-          </button>
+          <div className="mt-1 flex items-center gap-2">
+            {hasBosses ? (
+              <button
+                type="button"
+                onClick={onAddBosses}
+                className="cursor-pointer rounded-md border border-border/60 bg-background px-2.5 py-1 text-xs font-semibold opacity-90 shadow-sm transition-colors hover:border-accent/50 hover:bg-accent-soft hover:text-accent hover:opacity-100 active:bg-accent-soft/80"
+              >
+                Edit
+              </button>
+            ) : null}
+            <button
+              type="button"
+              onClick={onReset}
+              className="cursor-pointer rounded-md border border-border/60 bg-background px-2.5 py-1 text-xs font-semibold opacity-90 shadow-sm transition-colors hover:border-accent/50 hover:bg-accent-soft hover:text-accent hover:opacity-100 active:bg-accent-soft/80"
+            >
+              Reset
+            </button>
+          </div>
         </div>
       </div>
 
@@ -541,7 +560,7 @@ function CharacterBossCard({
             <button
               type="button"
               onClick={onAddBosses}
-              className="rounded-lg border border-border/50 px-3 py-1.5 text-sm font-semibold hover:bg-accent-soft hover:text-accent"
+              className="cursor-pointer rounded-lg border border-border/50 bg-background px-3 py-1.5 text-sm font-semibold shadow-sm transition-colors hover:border-accent/50 hover:bg-accent-soft hover:text-accent active:bg-accent-soft/80"
             >
               Add bosses
             </button>
@@ -570,6 +589,9 @@ function CharacterBossCard({
                     const boss = BOSS_CRYSTALS.find((b) => b.id === line.bossId);
                     const icon = boss ? bossIconUrl(boss) : null;
                     const showIcon = icon && !brokenIcons[line.bossId];
+                    const partyMax = boss
+                      ? bossMaxParty(boss)
+                      : DEFAULT_MAX_PARTY;
                     const label = formatBossLabel(
                       line.difficulty,
                       line.bossName,
@@ -623,14 +645,16 @@ function CharacterBossCard({
                           <input
                             type="number"
                             min={1}
-                            max={6}
+                            max={partyMax}
+                            title={`Party size (max ${partyMax})`}
+                            aria-label={`${label} party size, max ${partyMax}`}
                             className={`${inputClass} h-6 w-8 text-center text-xs`}
                             value={line.partySize}
                             onChange={(e) =>
                               onPatch(line.bossId, {
-                                partySize: Math.max(
-                                  1,
-                                  Math.min(6, Number(e.target.value) || 1),
+                                partySize: clampPartySize(
+                                  line.bossId,
+                                  Number(e.target.value) || 1,
                                 ),
                               })
                             }
@@ -667,6 +691,9 @@ function CharacterBossCard({
                   const boss = BOSS_CRYSTALS.find((b) => b.id === line.bossId);
                   const icon = boss ? bossIconUrl(boss) : null;
                   const showIcon = icon && !brokenIcons[line.bossId];
+                  const partyMax = boss
+                    ? bossMaxParty(boss)
+                    : DEFAULT_MAX_PARTY;
                   const label = formatBossLabel(
                     line.difficulty,
                     line.bossName,
@@ -709,18 +736,25 @@ function CharacterBossCard({
                       </div>
                       <div className="shrink-0 text-right text-xs">
                         <div className="flex flex-col items-end gap-1">
-                          <span className="opacity-55">Party:</span>
+                          <span className="opacity-55">
+                            Party
+                            {partyMax < DEFAULT_MAX_PARTY
+                              ? ` (max ${partyMax})`
+                              : ":"}
+                          </span>
                           <input
                             type="number"
                             min={1}
-                            max={6}
+                            max={partyMax}
+                            title={`Party size (max ${partyMax})`}
+                            aria-label={`${label} party size, max ${partyMax}`}
                             className={`${inputClass} h-6 w-8 text-center text-xs`}
                             value={line.partySize}
                             onChange={(e) =>
                               onPatch(line.bossId, {
-                                partySize: Math.max(
-                                  1,
-                                  Math.min(6, Number(e.target.value) || 1),
+                                partySize: clampPartySize(
+                                  line.bossId,
+                                  Number(e.target.value) || 1,
                                 ),
                               })
                             }
@@ -744,15 +778,6 @@ function CharacterBossCard({
                   </span>
                 </div>
               </div>
-            </div>
-            <div className="flex justify-center">
-              <button
-                type="button"
-                onClick={onAddBosses}
-                className="rounded-lg border border-border/50 px-3 py-1.5 text-sm font-semibold hover:bg-accent-soft hover:text-accent"
-              >
-                Add bosses
-              </button>
             </div>
           </div>
         )}

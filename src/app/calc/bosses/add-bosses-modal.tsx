@@ -3,8 +3,11 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   BOSS_CRYSTALS,
+  DEFAULT_MAX_PARTY,
   WEEKLY_CRYSTAL_LIMIT,
   bossIconUrl,
+  bossMaxParty,
+  clampPartySize,
   compareBossesHardestFirst,
   formatMesos,
   personalCrystal,
@@ -34,8 +37,8 @@ function defaultDifficulty(boss: BossEntry, sel?: BossClearSelection): string {
   return boss.difficulties[boss.difficulties.length - 1]?.name ?? "";
 }
 
-function defaultParty(sel?: BossClearSelection): number {
-  return sel?.enabled ? Math.max(1, Math.min(6, sel.partySize || 1)) : 1;
+function defaultParty(boss: BossEntry, sel?: BossClearSelection): number {
+  return sel?.enabled ? clampPartySize(boss.id, sel.partySize || 1) : 1;
 }
 
 export function AddBossesModal({
@@ -64,7 +67,7 @@ export function AddBossesModal({
     for (const boss of BOSS_CRYSTALS) {
       const sel = selections.find((s) => s.bossId === boss.id);
       nextDiff[boss.id] = defaultDifficulty(boss, sel);
-      nextParty[boss.id] = defaultParty(sel);
+      nextParty[boss.id] = defaultParty(boss, sel);
     }
     setDraftDiff(nextDiff);
     setDraftParty(nextParty);
@@ -94,14 +97,14 @@ export function AddBossesModal({
 
   const atWeeklyCap = weeklyCount >= WEEKLY_CRYSTAL_LIMIT;
 
-  const setParty = (bossId: string, next: number) => {
-    const partySize = Math.max(1, Math.min(6, next));
-    setDraftParty((prev) => ({ ...prev, [bossId]: partySize }));
-    const sel = selections.find((s) => s.bossId === bossId);
+  const setParty = (boss: BossEntry, next: number) => {
+    const partySize = clampPartySize(boss.id, next);
+    setDraftParty((prev) => ({ ...prev, [boss.id]: partySize }));
+    const sel = selections.find((s) => s.bossId === boss.id);
     if (sel?.enabled) {
       onAdd({
-        bossId,
-        difficulty: draftDiff[bossId] ?? sel.difficulty,
+        bossId: boss.id,
+        difficulty: draftDiff[boss.id] ?? sel.difficulty,
         partySize,
       });
     }
@@ -126,7 +129,10 @@ export function AddBossesModal({
       return;
     }
     const difficulty = draftDiff[boss.id] ?? defaultDifficulty(boss, sel);
-    const partySize = draftParty[boss.id] ?? 1;
+    const partySize = clampPartySize(
+      boss.id,
+      draftParty[boss.id] ?? 1,
+    );
     onAdd({ bossId: boss.id, difficulty, partySize });
   };
 
@@ -211,7 +217,11 @@ export function AddBossesModal({
                 const enabled = !!sel?.enabled;
                 const difficulty =
                   draftDiff[boss.id] ?? defaultDifficulty(boss, sel);
-                const partySize = draftParty[boss.id] ?? defaultParty(sel);
+                const partyMax = bossMaxParty(boss);
+                const partySize = clampPartySize(
+                  boss.id,
+                  draftParty[boss.id] ?? defaultParty(boss, sel),
+                );
                 const diff = boss.difficulties.find((d) => d.name === difficulty);
                 const est = diff
                   ? personalCrystal(diff.crystal, partySize, world)
@@ -324,12 +334,18 @@ export function AddBossesModal({
                         onClick={(e) => e.stopPropagation()}
                         onKeyDown={(e) => e.stopPropagation()}
                       >
-                        <span className="text-xs opacity-60">Party:</span>
+                        <span className="text-xs opacity-60">
+                          Party
+                          {partyMax < DEFAULT_MAX_PARTY
+                            ? ` · max ${partyMax}`
+                            : ""}
+                        </span>
                         <div className="flex items-center gap-1">
                           <button
                             type="button"
-                            className="flex h-6 w-6 items-center justify-center rounded border border-border/50 text-xs hover:bg-surface-muted"
-                            onClick={() => setParty(boss.id, partySize - 1)}
+                            className="flex h-6 w-6 items-center justify-center rounded border border-border/50 text-xs hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
+                            onClick={() => setParty(boss, partySize - 1)}
+                            disabled={partySize <= 1}
                             aria-label="Decrease party size"
                           >
                             −
@@ -339,9 +355,10 @@ export function AddBossesModal({
                           </span>
                           <button
                             type="button"
-                            className="flex h-6 w-6 items-center justify-center rounded border border-border/50 text-xs hover:bg-surface-muted"
-                            onClick={() => setParty(boss.id, partySize + 1)}
-                            aria-label="Increase party size"
+                            className="flex h-6 w-6 items-center justify-center rounded border border-border/50 text-xs hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
+                            onClick={() => setParty(boss, partySize + 1)}
+                            disabled={partySize >= partyMax}
+                            aria-label={`Increase party size (max ${partyMax})`}
                           >
                             +
                           </button>

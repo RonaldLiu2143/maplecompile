@@ -1,5 +1,6 @@
 import { entryKey, type RosterEntry } from "@/lib/dashboard/roster";
 import {
+  clampPartySize,
   defaultSelections,
   type BossClearSelection,
   type WorldType,
@@ -39,7 +40,7 @@ function normalizeSelections(raw: unknown): BossClearSelection[] {
       bossId: s.bossId,
       difficulty: typeof s.difficulty === "string" ? s.difficulty : "",
       enabled: !!s.enabled,
-      partySize: Math.max(1, Math.min(6, Number(s.partySize) || 1)),
+      partySize: clampPartySize(s.bossId, Number(s.partySize) || 1),
     });
   }
   return defaults.map((d) => {
@@ -49,7 +50,7 @@ function normalizeSelections(raw: unknown): BossClearSelection[] {
       bossId: d.bossId,
       difficulty: saved.difficulty || d.difficulty,
       enabled: saved.enabled,
-      partySize: saved.partySize,
+      partySize: clampPartySize(d.bossId, saved.partySize),
     };
   });
 }

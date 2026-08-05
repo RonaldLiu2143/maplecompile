@@ -1,7 +1,9 @@
 import {
   ACCOUNT_WEEKLY_CRYSTAL_LIMIT,
   BOSS_CRYSTALS,
+  DEFAULT_MAX_PARTY,
   WEEKLY_CRYSTAL_LIMIT,
+  bossMaxParty,
   crystalMesos,
   type BossEntry,
 } from "./crystals";
@@ -70,6 +72,14 @@ export function findBoss(bossId: string): BossEntry | undefined {
   return BOSS_CRYSTALS.find((b) => b.id === bossId);
 }
 
+/** Clamp party size to 1…boss max (default {@link DEFAULT_MAX_PARTY}). */
+export function clampPartySize(bossId: string, partySize: number): number {
+  const boss = findBoss(bossId);
+  const max = boss ? bossMaxParty(boss) : DEFAULT_MAX_PARTY;
+  const n = Math.floor(Number(partySize) || 1);
+  return Math.max(1, Math.min(max, n));
+}
+
 export function personalCrystal(
   base: number,
   partySize: number,
@@ -110,13 +120,14 @@ export function summarizeIncome(
     if (!boss) continue;
     const diff = boss.difficulties.find((d) => d.name === sel.difficulty);
     if (!diff) continue;
-    const personal = personalCrystal(diff.crystal, sel.partySize, world);
+    const partySize = clampPartySize(boss.id, sel.partySize);
+    const personal = personalCrystal(diff.crystal, partySize, world);
     const line: IncomeLine = {
       bossId: boss.id,
       bossName: boss.name,
       difficulty: sel.difficulty,
       frequency: boss.frequency,
-      partySize: Math.max(1, sel.partySize),
+      partySize,
       crystalBase: crystalMesos(diff.crystal, world),
       crystalPersonal: personal,
       sells: false,

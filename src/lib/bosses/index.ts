@@ -5,7 +5,9 @@ export {
   ACCOUNT_WEEKLY_CRYSTAL_LIMIT,
   HEROIC_CRYSTAL_MULT,
   DIFFICULTY_RANK,
+  DEFAULT_MAX_PARTY,
   bossIconUrl,
+  bossMaxParty,
   crystalMesos,
   maxBossCrystal,
   compareBossesHardestFirst,
@@ -20,6 +22,7 @@ export {
 export {
   defaultSelections,
   findBoss,
+  clampPartySize,
   personalCrystal,
   countEnabledWeekly,
   summarizeIncome,
