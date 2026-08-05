@@ -202,7 +202,7 @@ export function useRoster() {
       isDropTarget: dragOver === index && dragFrom !== index,
       onDragStart: (e: DragEvent) => {
         const target = e.target as HTMLElement;
-        if (target.closest("button, a")) {
+        if (target.closest("button")) {
           e.preventDefault();
           return;
         }

@@ -117,6 +117,7 @@ export function RosterCharacterCard({
   const profileHref = characterProfileHref(character);
   const expPct = formatExpPercent(character.expPercent);
   const showActions = Boolean(onRemove || onSetPrimary);
+  const showDragHandle = Boolean(managing || drag?.draggable);
 
   function handleRemove(e: MouseEvent) {
     stopCardNav(e);
@@ -155,7 +156,7 @@ export function RosterCharacterCard({
       />
 
       <div className="relative z-10 flex items-stretch gap-3 p-3 pointer-events-none sm:gap-4 sm:p-3.5">
-        {managing ? (
+        {showDragHandle ? (
           <div className="flex shrink-0 items-center pointer-events-auto">
             <DragHandle />
           </div>
@@ -209,7 +210,7 @@ export function RosterCharacterCard({
             <div className="flex items-center gap-1">
               {isPrimary ? (
                 <span
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-amber-400"
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-amber-400/60 bg-amber-400/15 text-amber-400"
                   title="Primary character"
                   aria-label={`${character.name} is primary`}
                 >

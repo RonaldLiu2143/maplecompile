@@ -1,10 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
 import { CharacterSearchBar } from "@/components/dashboard/CharacterSearchBar";
 import { RosterGrid } from "@/components/dashboard/RosterGrid";
-import { RosterReorderList } from "@/components/dashboard/RosterReorderList";
 import { useRoster } from "@/hooks/useRoster";
 
 export default function RosterPage() {
@@ -15,20 +13,10 @@ export default function RosterPage() {
     slots,
     handleRemove,
     handleSetPrimary,
-    handleMoveUp,
-    handleMoveDown,
     handleRetry,
     handleRosterAdded,
     makeDragProps,
-    resetDrag,
   } = useRoster();
-
-  const [managing, setManaging] = useState(false);
-
-  function setManageMode(next: boolean) {
-    setManaging(next);
-    if (!next) resetDrag();
-  }
 
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-8 py-4">
@@ -41,8 +29,8 @@ export default function RosterPage() {
             Roster
           </h1>
           <p className="mt-2 text-sm opacity-80">
-            Tap a card to open the character profile. Use the star to set
-            primary, the trash to remove, or Manage to reorder.
+            Tap a card to open the character profile, drag it to reorder. Use
+            the star to set primary and the trash to remove.
           </p>
         </div>
         <Link
@@ -65,66 +53,32 @@ export default function RosterPage() {
 
       {hydrated ? (
         <section className="space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="min-w-0 space-y-1">
-              <h2 className="font-display text-lg font-bold tracking-tight">
-                {managing ? "Reorder Characters" : "Characters"}
-                {roster.length > 0 ? (
-                  <span className="ml-2 text-sm font-semibold opacity-55">
-                    ({roster.length})
-                  </span>
-                ) : null}
-              </h2>
-              {managing ? (
-                <p className="text-sm opacity-60">
-                  Drag rows or use ↑↓ to reorder. Tap the star to set primary.
-                </p>
-              ) : roster.length > 0 ? (
-                <p className="text-xs opacity-55">
-                  Tip: star = primary, trash = remove. Open Manage to reorder.
-                </p>
+          <div className="min-w-0 space-y-1">
+            <h2 className="font-display text-lg font-bold tracking-tight">
+              Characters
+              {roster.length > 0 ? (
+                <span className="ml-2 text-sm font-semibold opacity-55">
+                  ({roster.length})
+                </span>
               ) : null}
-            </div>
-            <button
-              type="button"
-              onClick={() => setManageMode(!managing)}
-              className={[
-                "shrink-0 rounded-lg px-4 py-2 text-sm font-semibold transition",
-                managing
-                  ? "border border-border hover:bg-surface-muted"
-                  : "bg-accent text-white hover:opacity-90 dark:text-zinc-900",
-              ].join(" ")}
-            >
-              {managing ? "Done" : "Manage"}
-            </button>
+            </h2>
+            {roster.length > 0 ? (
+              <p className="text-xs opacity-55">
+                Tip: drag a card to reorder, star = primary, trash = remove.
+              </p>
+            ) : null}
           </div>
 
-          {managing ? (
-            <RosterReorderList
-              roster={roster}
-              primary={primary}
-              slots={slots}
-              reorderable
-              managing
-              makeDragProps={(index) => makeDragProps(index, true)}
-              onMoveUp={handleMoveUp}
-              onMoveDown={handleMoveDown}
-              onSetPrimary={handleSetPrimary}
-              onRemove={handleRemove}
-              onRetry={handleRetry}
-            />
-          ) : (
-            <RosterGrid
-              roster={roster}
-              primary={primary}
-              slots={slots}
-              managing={false}
-              makeDragProps={(index) => makeDragProps(index, false)}
-              onRemove={handleRemove}
-              onSetPrimary={handleSetPrimary}
-              onRetry={handleRetry}
-            />
-          )}
+          <RosterGrid
+            roster={roster}
+            primary={primary}
+            slots={slots}
+            managing={false}
+            makeDragProps={(index) => makeDragProps(index, true)}
+            onRemove={handleRemove}
+            onSetPrimary={handleSetPrimary}
+            onRetry={handleRetry}
+          />
         </section>
       ) : null}
     </div>
