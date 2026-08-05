@@ -2,8 +2,15 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState, type MouseEvent } from "react";
+import { ManageDisplayModal } from "@/components/ManageDisplayModal";
 import { useRoster } from "@/hooks/useRoster";
 import { entryKey, isPrimary } from "@/lib/dashboard/roster";
+import {
+  readLiberationDisplay,
+  resolveVisibleIds,
+  writeLiberationDisplay,
+  type DisplayPrefs,
+} from "@/lib/display-prefs";
 import {
   DESTINY_CARRYOVER_CAP,
   GENESIS_CARRYOVER_CAP,
@@ -35,6 +42,9 @@ const inputClass =
 
 const PARTY_SIZES = [1, 2, 3, 4, 5, 6] as const;
 
+/** Fixed width so Done / Not cleared never shove the difficulty select. */
+const CLEAR_CHIP_WIDTH = "w-[6.75rem]";
+
 function formatDisplayDate(iso: string | null): string {
   if (!iso) return "—";
   try {
@@ -49,16 +59,16 @@ function formatDisplayDate(iso: string | null): string {
 }
 
 function weeksLabel(weeks: number | null): string {
-  if (weeks == null) return "Select bosses";
-  if (weeks === 0) return "0 weeks (0 months)";
+  if (weeks == null) return "Pick bosses below";
+  if (weeks === 0) return "Ready now";
   const w = Math.ceil(weeks * 10) / 10;
   const months = Math.floor((weeks / 4) * 10) / 10;
-  return `${w} weeks (${months} months)`;
+  return `${w} weeks (~${months} months)`;
 }
 
 function bossCardClass(cleared: boolean, doing: boolean): string {
   const base =
-    "relative flex flex-col gap-2.5 rounded-xl border p-3 transition select-none sm:flex-row sm:items-center";
+    "relative grid grid-cols-1 gap-2.5 rounded-xl border p-3 transition select-none sm:grid-cols-[minmax(0,1fr)_6.75rem] sm:items-center";
   if (!doing) {
     return `${base} cursor-default border-border/30 bg-surface/50 opacity-75`;
   }
@@ -74,6 +84,10 @@ export default function LiberationPage() {
     readLiberationStore(),
   );
   const [brokenIcons, setBrokenIcons] = useState<Record<string, true>>({});
+  const [displayPrefs, setDisplayPrefs] = useState<DisplayPrefs>(() =>
+    readLiberationDisplay(),
+  );
+  const [manageOpen, setManageOpen] = useState(false);
 
   const eligible = useMemo(() => {
     return roster.filter((entry) => {
@@ -83,9 +97,26 @@ export default function LiberationPage() {
     });
   }, [roster, slots]);
 
+  const eligibleIds = useMemo(
+    () => eligible.map((e) => entryKey(e)),
+    [eligible],
+  );
+
+  const visibleIds = useMemo(
+    () => resolveVisibleIds(displayPrefs, eligibleIds),
+    [displayPrefs, eligibleIds],
+  );
+
+  const visibleEntries = useMemo(
+    () => eligible.filter((e) => visibleIds.includes(entryKey(e))),
+    [eligible, visibleIds],
+  );
+
   useEffect(() => {
     if (!hydrated) return;
     let next = readLiberationStore();
+    const prefs = readLiberationDisplay();
+    setDisplayPrefs(prefs);
 
     const preferred =
       primary && eligible.some((e) => entryKey(e) === entryKey(primary))
@@ -98,10 +129,18 @@ export default function LiberationPage() {
       next = ensureCharacterBundle(next, entryKey(entry));
     }
 
+    const shown = resolveVisibleIds(prefs, eligibleIds);
+
     if (next.mode === "characters") {
-      const stillValid = next.selectedCharacterIds.filter((id) =>
-        eligible.some((e) => entryKey(e) === id),
+      let stillValid = next.selectedCharacterIds.filter((id) =>
+        eligibleIds.includes(id),
       );
+      // Prefer display prefs when customized; otherwise keep / seed all shown.
+      if (prefs.customized) {
+        stillValid = shown.filter((id) => eligibleIds.includes(id));
+      } else if (stillValid.length === 0) {
+        stillValid = shown;
+      }
       next = { ...next, selectedCharacterIds: stillValid };
       if (stillValid.length === 0) {
         next = { ...next, mode: "preview", activeCharacterId: null };
@@ -111,7 +150,10 @@ export default function LiberationPage() {
       ) {
         next = {
           ...next,
-          activeCharacterId: preferred ?? stillValid[0] ?? null,
+          activeCharacterId:
+            preferred && stillValid.includes(preferred)
+              ? preferred
+              : (stillValid[0] ?? null),
         };
       }
     }
@@ -119,7 +161,7 @@ export default function LiberationPage() {
     setStore(next);
     writeLiberationStore(next);
     setReady(true);
-  }, [hydrated, eligible, primary]);
+  }, [hydrated, eligible, eligibleIds, primary]);
 
   useEffect(() => {
     if (!ready) return;
@@ -202,6 +244,34 @@ export default function LiberationPage() {
     setStore((prev) => upsertActiveInputs(prev, defaultInputs(type)));
   };
 
+  const applyDisplayIds = (ids: string[]) => {
+    const nextPrefs: DisplayPrefs = {
+      visibleIds: ids,
+      customized: true,
+    };
+    setDisplayPrefs(nextPrefs);
+    writeLiberationDisplay(nextPrefs);
+
+    const shown = resolveVisibleIds(nextPrefs, eligibleIds);
+    setStore((prev) => {
+      let s = prev;
+      for (const id of shown) s = ensureCharacterBundle(s, id);
+      const active =
+        s.activeCharacterId && shown.includes(s.activeCharacterId)
+          ? s.activeCharacterId
+          : (shown[0] ?? null);
+      if (shown.length === 0) {
+        return { ...s, mode: "preview", selectedCharacterIds: [], activeCharacterId: null };
+      }
+      return {
+        ...s,
+        mode: s.mode === "preview" ? s.mode : "characters",
+        selectedCharacterIds: shown,
+        activeCharacterId: active,
+      };
+    });
+  };
+
   const setMode = (next: LiberationMode) => {
     setStore((prev) => {
       if (next === "preview") {
@@ -213,10 +283,8 @@ export default function LiberationPage() {
       }
       let s = prev;
       const ids =
-        prev.selectedCharacterIds.length > 0
-          ? prev.selectedCharacterIds.filter((id) =>
-              eligible.some((e) => entryKey(e) === id),
-            )
+        visibleIds.length > 0
+          ? visibleIds
           : eligible.map((e) => entryKey(e));
       for (const id of ids) s = ensureCharacterBundle(s, id);
       const active =
@@ -232,35 +300,14 @@ export default function LiberationPage() {
     });
   };
 
-  const toggleCharacterVisible = (id: string) => {
-    setStore((prev) => {
-      const has = prev.selectedCharacterIds.includes(id);
-      const selectedCharacterIds = has
-        ? prev.selectedCharacterIds.filter((x) => x !== id)
-        : [...prev.selectedCharacterIds, id];
-      let s = ensureCharacterBundle(prev, id);
-      s = { ...s, selectedCharacterIds };
-      if (
-        !selectedCharacterIds.includes(s.activeCharacterId ?? "") &&
-        selectedCharacterIds.length > 0
-      ) {
-        s = { ...s, activeCharacterId: selectedCharacterIds[0]! };
-      }
-      if (selectedCharacterIds.length === 0) {
-        s = { ...s, mode: "preview", activeCharacterId: null };
-      }
-      return s;
-    });
-  };
-
   const clearedCount = inputs.bossSelections.filter((s) => s.cleared).length;
   const achieved = result.remaining <= 0;
   const pct = Math.min(100, result.completionRate);
-  const weeklyBars = [1, 2, 3, 4] as const;
-  const weekBarMax = Math.max(1, result.weeklyTraces);
 
   const currencyShort =
     type === "destiny" ? "Adversary's Determination" : "Traces of Darkness";
+  const currencyTiny =
+    type === "destiny" ? "AD" : "traces";
 
   return (
     <div className="space-y-6">
@@ -269,8 +316,8 @@ export default function LiberationPage() {
           Liberation Calculator
         </h1>
         <p className="mt-2 max-w-2xl text-sm opacity-75">
-          Track Genesis / Destiny liberation progress from weekly bosses
-          (Heroic / GMS-oriented).
+          See how many weeks until Genesis or Destiny liberation from your
+          weekly bosses.
         </p>
       </header>
 
@@ -285,7 +332,7 @@ export default function LiberationPage() {
               disabled={eligible.length === 0}
               title={
                 eligible.length === 0
-                  ? "No level 255+ roster characters available"
+                  ? "Need a level 255+ character on your roster"
                   : undefined
               }
               className={[
@@ -309,6 +356,14 @@ export default function LiberationPage() {
             >
               Preview
             </button>
+            <button
+              type="button"
+              onClick={() => setManageOpen(true)}
+              disabled={eligible.length === 0}
+              className="rounded-lg border border-border/50 px-3 py-1.5 text-xs font-semibold transition hover:bg-accent-soft hover:text-accent disabled:cursor-not-allowed disabled:opacity-45"
+            >
+              Manage display
+            </button>
             {mode === "characters" ? (
               <Link
                 href="/roster"
@@ -324,14 +379,13 @@ export default function LiberationPage() {
             )}
           </section>
 
-          {/* Character strip */}
-          {mode === "characters" && eligible.length > 0 ? (
+          {/* Character strip — only displayed characters */}
+          {mode === "characters" && visibleEntries.length > 0 ? (
             <section className="rounded-xl border border-border/40 bg-surface/80 p-3">
               <div className="overflow-x-auto">
                 <div className="flex w-max gap-2">
-                  {eligible.map((entry) => {
+                  {visibleEntries.map((entry) => {
                     const key = entryKey(entry);
-                    const selected = store.selectedCharacterIds.includes(key);
                     const active = store.activeCharacterId === key;
                     const slot = slots[key];
                     const character =
@@ -349,28 +403,20 @@ export default function LiberationPage() {
                         key={key}
                         type="button"
                         onClick={() => {
-                          if (!selected) toggleCharacterVisible(key);
                           setStore((prev) => ({
                             ...ensureCharacterBundle(prev, key),
                             mode: "characters",
                             activeCharacterId: key,
-                            selectedCharacterIds:
-                              prev.selectedCharacterIds.includes(key)
-                                ? prev.selectedCharacterIds
-                                : [...prev.selectedCharacterIds, key],
+                            selectedCharacterIds: visibleIds.includes(key)
+                              ? visibleIds
+                              : [...visibleIds, key],
                           }));
-                        }}
-                        onContextMenu={(e) => {
-                          e.preventDefault();
-                          toggleCharacterVisible(key);
                         }}
                         className={[
                           "relative flex w-[4.75rem] shrink-0 flex-col items-center gap-1 rounded-xl border px-1.5 py-2 transition",
                           active
                             ? "border-accent bg-accent-soft/45"
-                            : selected
-                              ? "border-border/50 bg-background/40 hover:border-accent/40"
-                              : "border-dashed border-border/35 opacity-50 hover:opacity-80",
+                            : "border-border/50 bg-background/40 hover:border-accent/40",
                         ].join(" ")}
                       >
                         <span
@@ -411,14 +457,14 @@ export default function LiberationPage() {
                 </div>
               </div>
               <p className="mt-2 text-[10px] opacity-55">
-                Click to select · right-click to hide
+                Tap a character to edit · Manage display to show/hide
               </p>
             </section>
           ) : null}
 
           {eligible.length === 0 && roster.length > 0 ? (
             <p className="text-xs opacity-65">
-              Need level 255+ for My Characters.{" "}
+              Characters need level 255+ for My Characters.{" "}
               <Link href="/roster" className="text-accent hover:underline">
                 Check roster
               </Link>
@@ -430,21 +476,23 @@ export default function LiberationPage() {
           <section className="space-y-4 rounded-xl border border-border/40 bg-surface/80 p-4">
             <div className="text-center">
               <p className="font-display text-2xl font-bold tabular-nums tracking-tight sm:text-3xl">
-                {achieved ? "Done" : formatDisplayDate(result.etaISO)}
+                {achieved ? "Done!" : formatDisplayDate(result.etaISO)}
               </p>
               <p className="mt-1 text-xs opacity-65">
-                {achieved ? "Liberation achieved" : "Target liberation date"}
+                {achieved
+                  ? "Liberation finished"
+                  : "When you should finish (estimate)"}
               </p>
             </div>
 
             <div className="space-y-1.5">
               <div className="flex items-center justify-between gap-2 text-xs">
                 <span className="font-semibold tabular-nums text-accent">
-                  {pct}%
+                  {pct}% done
                 </span>
                 <span className="font-mono tabular-nums opacity-70">
                   {result.progress.toLocaleString()} /{" "}
-                  {result.target.toLocaleString()} {currencyShort}
+                  {result.target.toLocaleString()} {currencyTiny}
                 </span>
               </div>
               <div className="h-2.5 overflow-hidden rounded-full bg-surface-muted">
@@ -456,23 +504,23 @@ export default function LiberationPage() {
             </div>
 
             <div className="space-y-2 border-t border-border/30 pt-3">
-              <h3 className="text-sm font-semibold">Trace Sources</h3>
+              <h3 className="text-sm font-semibold">What you earn</h3>
               <Row
                 label={
                   type === "destiny"
-                    ? "Weekly Adversary's Determination"
-                    : "Weekly traces"
+                    ? "Each week (AD)"
+                    : "Each week (traces)"
                 }
                 value={String(result.weeklyTraces)}
               />
               {type === "genesis" ? (
                 <Row
-                  label="Black Mage (monthly)"
+                  label="Black Mage (once a month)"
                   value={String(result.monthlyTraces)}
                 />
               ) : null}
               <div className="flex items-center justify-between gap-3 text-sm">
-                <span className="opacity-75">4-week total</span>
+                <span className="opacity-75">In 4 weeks</span>
                 <span className="rounded-md bg-accent/15 px-2 py-0.5 font-mono text-sm font-semibold tabular-nums text-accent">
                   {result.fourWeekTotal}
                 </span>
@@ -481,52 +529,22 @@ export default function LiberationPage() {
 
             <div className="space-y-2 rounded-lg bg-surface-muted/40 p-3">
               <p className="text-[10px] font-semibold uppercase tracking-wider opacity-55">
-                Detailed Statistics
+                Quick numbers
               </p>
               <Row
-                label={`Total acquisition ${type === "destiny" ? "AD" : "traces"}`}
-                value={`${result.weeklyTraces} /week${type === "genesis" && result.monthlyTraces > 0 ? ` + ${result.monthlyTraces} /mo` : ""}`}
-              />
-              <Row
-                label={`Acquisition / demand`}
+                label={`Have / need (${currencyTiny})`}
                 value={`${result.progress.toLocaleString()} / ${result.target.toLocaleString()}`}
               />
               <Row
-                label="Expected liberation period"
+                label="Time left"
                 value={weeksLabel(result.weeksNeeded)}
               />
             </div>
 
-            <div className="space-y-2">
-              <p className="text-xs font-semibold opacity-70">
-                Weekly accumulation
-              </p>
-              <div className="grid grid-cols-4 gap-2">
-                {weeklyBars.map((w) => (
-                  <div key={w} className="space-y-1">
-                    <div className="h-12 overflow-hidden rounded-md border border-border/30 bg-background/50">
-                      <div
-                        className="w-full bg-accent/70 transition-[height] duration-300"
-                        style={{
-                          height: `${Math.min(100, (result.weeklyTraces / weekBarMax) * 100)}%`,
-                          marginTop: `${100 - Math.min(100, (result.weeklyTraces / weekBarMax) * 100)}%`,
-                        }}
-                        title={`Week ${w}: ${result.weeklyTraces}`}
-                      />
-                    </div>
-                    <p className="text-center text-[10px] opacity-55">W{w}</p>
-                    <p className="text-center font-mono text-[10px] tabular-nums opacity-75">
-                      {result.weeklyTraces}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
             <p className="text-[11px] leading-relaxed opacity-60">
               {type === "destiny"
-                ? `Carryover tip: hold up to ${DESTINY_CARRYOVER_CAP.toLocaleString()} Adversary's Determination across steps.`
-                : `Carryover tip: hold up to ${GENESIS_CARRYOVER_CAP.toLocaleString()} traces across steps.`}
+                ? `Tip: you can keep up to ${DESTINY_CARRYOVER_CAP.toLocaleString()} ${currencyShort} when moving to the next step.`
+                : `Tip: you can keep up to ${GENESIS_CARRYOVER_CAP.toLocaleString()} ${currencyShort} when moving to the next step.`}
             </p>
           </section>
         </aside>
@@ -566,14 +584,18 @@ export default function LiberationPage() {
               </button>
             </div>
 
-            <h2 className="font-display text-lg font-semibold">
-              Configuration
-            </h2>
+            <div>
+              <h2 className="font-display text-lg font-semibold">Your setup</h2>
+              <p className="mt-0.5 text-xs opacity-65">
+                Tell us where you are in the quest and how many {currencyTiny}{" "}
+                you already have.
+              </p>
+            </div>
 
             <div className="grid gap-3 sm:grid-cols-2">
               <label className="flex flex-col gap-1 text-sm sm:col-span-2">
                 <span className="text-xs font-medium opacity-65">
-                  Current quest
+                  Current quest step
                 </span>
                 <select
                   className={inputClass}
@@ -591,8 +613,8 @@ export default function LiberationPage() {
               <label className="flex flex-col gap-1 text-sm sm:col-span-2">
                 <span className="text-xs font-medium opacity-65">
                   {type === "destiny"
-                    ? "Adversary's Determination held"
-                    : "Traces of darkness held"}
+                    ? "Adversary's Determination you have"
+                    : "Traces of Darkness you have"}
                 </span>
                 <input
                   type="number"
@@ -639,7 +661,7 @@ export default function LiberationPage() {
 
               <label className="flex flex-col gap-1 text-sm">
                 <span className="text-xs font-medium opacity-65">
-                  Start date
+                  Start counting from
                 </span>
                 <input
                   type="date"
@@ -652,7 +674,7 @@ export default function LiberationPage() {
               {type === "genesis" ? (
                 <label className="flex flex-col gap-1 text-sm">
                   <span className="text-xs font-medium opacity-65">
-                    Genesis Pass
+                    Genesis Pass?
                   </span>
                   <select
                     className={inputClass}
@@ -674,14 +696,15 @@ export default function LiberationPage() {
             <div className="flex flex-wrap items-end justify-between gap-2">
               <div>
                 <h2 className="font-display text-lg font-semibold">
-                  Boss Selection
+                  Weekly bosses
                 </h2>
                 <p className="mt-0.5 text-xs opacity-65">
-                  Click a card or the clear chip to mark this week&apos;s clears.
+                  Pick difficulty &amp; party size. Tap the card or status
+                  button when you clear that boss this week.
                 </p>
               </div>
               <span className="rounded-md border border-border/40 px-2.5 py-1 text-xs font-semibold tabular-nums opacity-80">
-                {clearedCount} / {bosses.length} cleared this week
+                {clearedCount} / {bosses.length} cleared
               </span>
             </div>
 
@@ -728,7 +751,7 @@ export default function LiberationPage() {
                     aria-pressed={doing ? sel.cleared : undefined}
                     className={bossCardClass(sel.cleared, doing)}
                   >
-                    <div className="flex min-w-0 flex-1 items-start gap-2.5">
+                    <div className="flex min-w-0 items-start gap-2.5">
                       <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-surface-muted">
                         {!broken ? (
                           // eslint-disable-next-line @next/next/no-img-element
@@ -766,11 +789,11 @@ export default function LiberationPage() {
                           </span>
                         </div>
                         <div
-                          className="grid grid-cols-[1fr_auto] gap-1.5"
+                          className="grid grid-cols-[minmax(0,1fr)_4.25rem] gap-1.5"
                           onClick={stop}
                         >
                           <select
-                            className={`${inputClass} w-full py-1 text-xs`}
+                            className={`${inputClass} min-w-0 w-full py-1 text-xs`}
                             value={sel.difficulty}
                             onChange={(e) =>
                               patchBoss(boss.name, {
@@ -791,7 +814,7 @@ export default function LiberationPage() {
                             ))}
                           </select>
                           <select
-                            className={`${inputClass} w-[4.25rem] py-1 text-xs`}
+                            className={`${inputClass} w-full py-1 text-xs`}
                             value={sel.partySize}
                             disabled={!doing}
                             onChange={(e) =>
@@ -813,16 +836,18 @@ export default function LiberationPage() {
                       </div>
                     </div>
 
-                    {doing ? (
-                      <div
-                        className="flex shrink-0 items-center justify-end sm:pl-1"
-                        onClick={stop}
-                      >
+                    {/* Fixed-width status column — always reserved so layout doesn't jump */}
+                    <div
+                      className={`flex ${CLEAR_CHIP_WIDTH} shrink-0 items-center justify-end sm:justify-center`}
+                      onClick={stop}
+                    >
+                      {doing ? (
                         <button
                           type="button"
                           onClick={() => toggleCleared(boss.name)}
                           className={[
-                            "rounded-md border px-2.5 py-1.5 text-[11px] font-semibold transition-colors",
+                            CLEAR_CHIP_WIDTH,
+                            "rounded-md border px-2 py-1.5 text-center text-[11px] font-semibold transition-colors",
                             sel.cleared
                               ? "border-accent bg-accent text-white dark:text-zinc-900"
                               : "border-border/50 bg-surface-muted/60 opacity-80 hover:border-accent/50 hover:text-accent",
@@ -830,8 +855,15 @@ export default function LiberationPage() {
                         >
                           {sel.cleared ? "Done" : "Not cleared"}
                         </button>
-                      </div>
-                    ) : null}
+                      ) : (
+                        <span
+                          className={`${CLEAR_CHIP_WIDTH} invisible select-none px-2 py-1.5 text-[11px]`}
+                          aria-hidden
+                        >
+                          Not cleared
+                        </span>
+                      )}
+                    </div>
                   </div>
                 );
               })}
@@ -839,6 +871,17 @@ export default function LiberationPage() {
           </section>
         </div>
       </div>
+
+      <ManageDisplayModal
+        open={manageOpen}
+        helper="Tap characters to show or hide them in the strip above. Highlighted = shown."
+        roster={eligible}
+        primary={primary}
+        slots={slots}
+        visibleIds={visibleIds}
+        onClose={() => setManageOpen(false)}
+        onSave={applyDisplayIds}
+      />
     </div>
   );
 }

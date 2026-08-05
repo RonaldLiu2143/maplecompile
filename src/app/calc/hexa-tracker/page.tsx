@@ -2,7 +2,16 @@
 
 import Link from "next/link";
 import { useCallback, useMemo, useState, type ReactNode } from "react";
+import { ManageDisplayModal } from "@/components/ManageDisplayModal";
 import { useMapleDataReload } from "@/hooks/useMapleDataReload";
+import { useRoster } from "@/hooks/useRoster";
+import { entryKey, isPrimary } from "@/lib/dashboard/roster";
+import {
+  readHexaDisplay,
+  resolveVisibleIds,
+  writeHexaDisplay,
+  type DisplayPrefs,
+} from "@/lib/display-prefs";
 import {
   HEXA_MAX_LEVEL,
   clearHexaScouterPairing,
@@ -275,6 +284,7 @@ function GroupHeading({ children }: { children: ReactNode }) {
 }
 
 export default function HexaTrackerPage() {
+  const { hydrated, roster, primary, slots } = useRoster();
   const [ready, setReady] = useState(false);
   const [state, setState] = useState<HexaTrackerState | null>(null);
   const [pairing, setPairing] = useState<HexaScouterPairing | null>(null);
@@ -286,8 +296,32 @@ export default function HexaTrackerPage() {
   >([]);
   const [msg, setMsg] = useState<string | null>(null);
   const [charType, setCharType] = useState("adele");
+  const [displayPrefs, setDisplayPrefs] = useState<DisplayPrefs>(() =>
+    readHexaDisplay(),
+  );
+  const [manageOpen, setManageOpen] = useState(false);
 
-  const slots = useMemo(() => getHexaSlots(charType), [charType]);
+  const slotsHexa = useMemo(() => getHexaSlots(charType), [charType]);
+
+  const allRosterIds = useMemo(
+    () => roster.map((e) => entryKey(e)),
+    [roster],
+  );
+
+  const visibleIds = useMemo(
+    () => resolveVisibleIds(displayPrefs, allRosterIds),
+    [displayPrefs, allRosterIds],
+  );
+
+  const visibleEntries = useMemo(
+    () => roster.filter((e) => visibleIds.includes(entryKey(e))),
+    [roster, visibleIds],
+  );
+
+  const filteredRosterOptions = useMemo(() => {
+    const set = new Set(visibleIds);
+    return rosterOptions.filter((o) => set.has(o.key));
+  }, [rosterOptions, visibleIds]);
 
   const refresh = useCallback(() => {
     const tracker = loadHexaTracker();
@@ -299,7 +333,17 @@ export default function HexaTrackerPage() {
     setCharType(storage.getCharType() || "adele");
     const options = listRosterOptions();
     setRosterOptions(options);
-    setRosterKey((prev) => prev || tracker.rosterKey || primaryRosterKey() || "");
+    const prefs = readHexaDisplay();
+    setDisplayPrefs(prefs);
+    const available = options.map((o) => o.key);
+    const shown = resolveVisibleIds(prefs, available);
+    setRosterKey((prev) => {
+      const preferred =
+        tracker.rosterKey || primaryRosterKey() || shown[0] || "";
+      if (prev && shown.includes(prev)) return prev;
+      if (preferred && shown.includes(preferred)) return preferred;
+      return shown[0] || preferred || "";
+    });
     setReady(true);
   }, []);
 
@@ -325,6 +369,26 @@ export default function HexaTrackerPage() {
     const levels = [...state.levels];
     levels[index] = level;
     persist({ ...state, levels });
+  };
+
+  const selectRosterCharacter = (key: string) => {
+    setRosterKey(key);
+    if (state) persist({ ...state, rosterKey: key || null });
+  };
+
+  const applyDisplayIds = (ids: string[]) => {
+    const nextPrefs: DisplayPrefs = {
+      visibleIds: ids,
+      customized: true,
+    };
+    setDisplayPrefs(nextPrefs);
+    writeHexaDisplay(nextPrefs);
+    const shown = resolveVisibleIds(nextPrefs, allRosterIds);
+    if (rosterKey && !shown.includes(rosterKey)) {
+      const next = shown[0] || "";
+      setRosterKey(next);
+      if (state) persist({ ...state, rosterKey: next || null });
+    }
   };
 
   const onPair = () => {
@@ -362,7 +426,7 @@ export default function HexaTrackerPage() {
     flash("Imported levels from Scouter");
   };
 
-  if (!ready || !state) {
+  if (!ready || !state || !hydrated) {
     return (
       <div className="space-y-2">
         <h1 className="font-display text-2xl font-bold tracking-tight">
@@ -382,15 +446,89 @@ export default function HexaTrackerPage() {
 
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="font-display text-2xl font-bold tracking-tight">
-          HEXA Tracker
-        </h1>
-        <p className="mt-1 text-sm opacity-70">
-          Track HEXA core levels and Sol Erda fragments. Pair with Scouter to
-          keep progress linked to a preset or draft.
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="font-display text-2xl font-bold tracking-tight">
+            HEXA Tracker
+          </h1>
+          <p className="mt-1 text-sm opacity-70">
+            Track HEXA core levels and Sol Erda fragments. Pair with Scouter to
+            keep progress linked to a preset or draft.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setManageOpen(true)}
+          disabled={roster.length === 0}
+          className="rounded-lg border border-border/50 px-3 py-1.5 text-xs font-semibold transition hover:bg-accent-soft hover:text-accent disabled:cursor-not-allowed disabled:opacity-45"
+        >
+          Manage display
+        </button>
       </div>
+
+      {visibleEntries.length > 0 ? (
+        <section className="rounded-xl border border-border/40 bg-surface/80 p-3">
+          <div className="overflow-x-auto">
+            <div className="flex w-max gap-2">
+              {visibleEntries.map((entry) => {
+                const key = entryKey(entry);
+                const active = rosterKey === key;
+                const slot = slots[key];
+                const character =
+                  slot?.status === "ready" ? slot.character : null;
+                const name = character?.name ?? entry.name;
+                const avatar = character?.characterImgURL;
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => selectRosterCharacter(key)}
+                    className={[
+                      "flex w-[4.75rem] shrink-0 flex-col items-center gap-1 rounded-xl border px-1.5 py-2 transition",
+                      active
+                        ? "border-accent bg-accent-soft/45"
+                        : "border-border/50 bg-background/40 hover:border-accent/40",
+                    ].join(" ")}
+                  >
+                    {avatar ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={avatar}
+                        alt=""
+                        width={48}
+                        height={48}
+                        className="h-12 w-12 object-contain"
+                      />
+                    ) : (
+                      <div className="flex h-12 w-12 items-center justify-center rounded-md bg-surface-muted text-[10px] font-bold uppercase opacity-50">
+                        {name.slice(0, 2)}
+                      </div>
+                    )}
+                    <p className="w-full truncate text-center text-[10px] font-semibold leading-tight">
+                      {name}
+                    </p>
+                    <p className="font-mono text-[10px] tabular-nums opacity-65">
+                      {character?.level != null ? `Lv.${character.level}` : "—"}
+                      {isPrimary(entry, primary) ? " ★" : ""}
+                    </p>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          <p className="mt-2 text-[10px] opacity-55">
+            Tap a character to link · Manage display to show/hide
+          </p>
+        </section>
+      ) : roster.length === 0 ? (
+        <p className="text-xs opacity-65">
+          No roster yet.{" "}
+          <Link href="/roster" className="text-accent hover:underline">
+            Add characters
+          </Link>{" "}
+          to pick who shows here.
+        </p>
+      ) : null}
 
       <PairPanel
         pairing={pairing}
@@ -399,10 +537,9 @@ export default function HexaTrackerPage() {
         onPresetChange={setSelectedPresetId}
         rosterKey={rosterKey}
         onRosterChange={(key) => {
-          setRosterKey(key);
-          persist({ ...state, rosterKey: key || null });
+          selectRosterCharacter(key);
         }}
-        rosterOptions={rosterOptions}
+        rosterOptions={filteredRosterOptions}
         msg={msg}
         onPair={onPair}
         onUnpair={onUnpair}
@@ -428,7 +565,7 @@ export default function HexaTrackerPage() {
             <GroupHeading>{group.label}</GroupHeading>
             <div className="grid gap-1.5 sm:grid-cols-2">
               {group.indices.map((i) => {
-                const slot = slots[i];
+                const slot = slotsHexa[i];
                 const unavailable = (
                   GMS_UNAVAILABLE_HEXA_INDICES as readonly number[]
                 ).includes(i);
@@ -447,6 +584,17 @@ export default function HexaTrackerPage() {
           </div>
         ))}
       </div>
+
+      <ManageDisplayModal
+        open={manageOpen}
+        helper="Tap characters to show or hide them on this page. Highlighted = shown."
+        roster={roster}
+        primary={primary}
+        slots={slots}
+        visibleIds={visibleIds}
+        onClose={() => setManageOpen(false)}
+        onSave={applyDisplayIds}
+      />
     </div>
   );
 }
