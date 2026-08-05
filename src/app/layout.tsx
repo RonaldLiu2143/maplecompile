@@ -32,6 +32,7 @@ export default function RootLayout({
       lang="en"
       className={`${outfit.variable} ${sourceSans.variable} dark h-full`}
       data-theme="compile"
+      data-backdrop="none"
       suppressHydrationWarning
     >
       <head>

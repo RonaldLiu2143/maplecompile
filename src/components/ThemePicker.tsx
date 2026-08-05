@@ -2,14 +2,22 @@
 
 import { useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
 import {
+  BACKDROP_PRESETS,
+  BLUR_MAX,
+  DEFAULT_BACKDROP_ID,
   DEFAULT_THEME_PREFS,
+  DIM_MAX,
   THEME_ACCENT_SWATCHES,
   THEME_PRESETS,
+  WALLPAPER_DEFAULT_BLUR,
+  WALLPAPER_DEFAULT_DIM,
   applyThemeToDocument,
   getThemePreset,
   readThemePrefs,
+  sanitizeBackdropUrl,
   subscribeThemePrefs,
   writeThemePrefs,
+  type BackdropId,
   type ThemeId,
   type ThemePrefs,
 } from "@/lib/theme";
@@ -44,6 +52,49 @@ function getServerThemePrefs(): ThemePrefs {
   return DEFAULT_THEME_PREFS;
 }
 
+function SliderRow({
+  label,
+  value,
+  max,
+  unit,
+  disabled,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  max: number;
+  unit: string;
+  disabled?: boolean;
+  onChange: (n: number) => void;
+}) {
+  return (
+    <label
+      className={[
+        "flex flex-col gap-1",
+        disabled ? "opacity-40" : "",
+      ].join(" ")}
+    >
+      <span className="flex items-center justify-between text-[11px] font-semibold opacity-70">
+        <span>{label}</span>
+        <span className="tabular-nums">
+          {value}
+          {unit}
+        </span>
+      </span>
+      <input
+        type="range"
+        min={0}
+        max={max}
+        step={1}
+        value={value}
+        disabled={disabled}
+        onChange={(e) => onChange(Number(e.target.value))}
+        className="h-1.5 w-full cursor-pointer accent-[var(--accent)] disabled:cursor-not-allowed"
+      />
+    </label>
+  );
+}
+
 export function ThemePicker({
   compact = false,
   placement = "above",
@@ -58,6 +109,7 @@ export function ThemePicker({
     getServerThemePrefs,
   );
   const [open, setOpen] = useState(false);
+  const [customDraft, setCustomDraft] = useState("");
   const panelId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
 
@@ -68,6 +120,7 @@ export function ThemePicker({
 
   useEffect(() => {
     if (!open) return;
+    setCustomDraft(prefs.backdropUrl ?? "");
     const onPointer = (e: MouseEvent) => {
       if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
     };
@@ -80,7 +133,7 @@ export function ThemePicker({
       document.removeEventListener("mousedown", onPointer);
       document.removeEventListener("keydown", onKey);
     };
-  }, [open]);
+  }, [open, prefs.backdropUrl]);
 
   const commit = (next: ThemePrefs) => {
     writeThemePrefs(next);
@@ -88,15 +141,65 @@ export function ThemePicker({
   };
 
   const setThemeId = (id: ThemeId) => {
-    commit({ id, accent: null });
+    commit({ ...prefs, id, accent: null });
   };
 
   const setAccent = (accent: string | null) => {
     commit({ ...prefs, accent });
   };
 
+  const setBackdrop = (backdrop: BackdropId) => {
+    if (backdrop === "none") {
+      commit({
+        ...prefs,
+        backdrop: "none",
+        backdropUrl: null,
+        dim: 0,
+        blur: 0,
+      });
+      return;
+    }
+    if (backdrop === "custom") {
+      const url = sanitizeBackdropUrl(customDraft || prefs.backdropUrl);
+      commit({
+        ...prefs,
+        backdrop: "custom",
+        backdropUrl: url,
+        dim: prefs.dim && prefs.dim > 0 ? prefs.dim : WALLPAPER_DEFAULT_DIM,
+        blur: prefs.blur && prefs.blur > 0 ? prefs.blur : WALLPAPER_DEFAULT_BLUR,
+      });
+      return;
+    }
+    const fromNone = (prefs.backdrop ?? DEFAULT_BACKDROP_ID) === "none";
+    commit({
+      ...prefs,
+      backdrop,
+      backdropUrl: null,
+      dim: fromNone ? WALLPAPER_DEFAULT_DIM : (prefs.dim ?? WALLPAPER_DEFAULT_DIM),
+      blur: fromNone
+        ? WALLPAPER_DEFAULT_BLUR
+        : (prefs.blur ?? WALLPAPER_DEFAULT_BLUR),
+    });
+  };
+
+  const applyCustomUrl = () => {
+    const url = sanitizeBackdropUrl(customDraft);
+    if (!url) return;
+    commit({
+      ...prefs,
+      backdrop: "custom",
+      backdropUrl: url,
+      dim: prefs.dim && prefs.dim > 0 ? prefs.dim : WALLPAPER_DEFAULT_DIM,
+      blur: prefs.blur && prefs.blur > 0 ? prefs.blur : WALLPAPER_DEFAULT_BLUR,
+    });
+  };
+
   const preset = getThemePreset(prefs.id);
   const activeAccent = prefs.accent ?? preset.defaultAccent;
+  const backdrop = prefs.backdrop ?? DEFAULT_BACKDROP_ID;
+  const wallpaperOn = backdrop !== "none";
+  const dim = prefs.dim ?? 0;
+  const blur = prefs.blur ?? 0;
 
   const panel = (
     <div
@@ -107,7 +210,7 @@ export function ThemePicker({
         "rounded-xl border border-border/50 bg-surface p-3 shadow-lg",
         compact
           ? [
-              "absolute z-50 w-64",
+              "absolute z-50 w-72",
               placement === "above"
                 ? "bottom-full left-0 mb-2"
                 : "top-full right-0 mt-2",
@@ -115,69 +218,163 @@ export function ThemePicker({
           : "w-full",
       ].join(" ")}
     >
-      <p className="mb-2 text-[0.7rem] font-semibold uppercase tracking-wider opacity-55">
-        Theme
-      </p>
-      <div className="flex flex-col gap-1">
-        {THEME_PRESETS.map((p) => {
-          const active = prefs.id === p.id;
-          return (
-            <button
-              key={p.id}
-              type="button"
-              onClick={() => setThemeId(p.id)}
-              className={[
-                "rounded-lg px-2.5 py-2 text-left transition-colors",
-                active
-                  ? "bg-accent text-white dark:text-zinc-900"
-                  : "hover:bg-accent-soft hover:text-accent",
-              ].join(" ")}
-            >
-              <span className="block text-sm font-semibold">{p.name}</span>
-              <span
-                className={[
-                  "mt-0.5 block text-[11px] leading-snug",
-                  active ? "opacity-80" : "opacity-55",
-                ].join(" ")}
-              >
-                {p.description}
-              </span>
-            </button>
-          );
-        })}
-      </div>
+      <div className="maple-scroll max-h-[min(70vh,28rem)] space-y-3 overflow-y-auto pr-0.5">
+        <div>
+          <p className="mb-2 text-[0.7rem] font-semibold uppercase tracking-wider opacity-55">
+            Theme
+          </p>
+          <div className="flex flex-col gap-1">
+            {THEME_PRESETS.map((p) => {
+              const active = prefs.id === p.id;
+              return (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => setThemeId(p.id)}
+                  className={[
+                    "rounded-lg px-2.5 py-2 text-left transition-colors",
+                    active
+                      ? "bg-accent text-white dark:text-zinc-900"
+                      : "hover:bg-accent-soft hover:text-accent",
+                  ].join(" ")}
+                >
+                  <span className="block text-sm font-semibold">{p.name}</span>
+                  <span
+                    className={[
+                      "mt-0.5 block text-[11px] leading-snug",
+                      active ? "opacity-80" : "opacity-55",
+                    ].join(" ")}
+                  >
+                    {p.description}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
 
-      <p className="mb-1.5 mt-3 text-[0.7rem] font-semibold uppercase tracking-wider opacity-55">
-        Accent
-      </p>
-      <div className="flex flex-wrap items-center gap-1.5">
-        {THEME_ACCENT_SWATCHES.map((hex) => {
-          const selected = activeAccent.toLowerCase() === hex.toLowerCase();
-          return (
+        <div>
+          <p className="mb-1.5 text-[0.7rem] font-semibold uppercase tracking-wider opacity-55">
+            Accent
+          </p>
+          <div className="flex flex-wrap items-center gap-1.5">
+            {THEME_ACCENT_SWATCHES.map((hex) => {
+              const selected = activeAccent.toLowerCase() === hex.toLowerCase();
+              return (
+                <button
+                  key={hex}
+                  type="button"
+                  title={hex}
+                  aria-label={`Accent ${hex}`}
+                  aria-pressed={selected}
+                  onClick={() => setAccent(hex)}
+                  className={[
+                    "size-6 rounded-md border-2 transition",
+                    selected
+                      ? "border-foreground scale-110"
+                      : "border-border/40 hover:border-border",
+                  ].join(" ")}
+                  style={{ backgroundColor: hex }}
+                />
+              );
+            })}
             <button
-              key={hex}
               type="button"
-              title={hex}
-              aria-label={`Accent ${hex}`}
-              aria-pressed={selected}
-              onClick={() => setAccent(hex)}
-              className={[
-                "size-6 rounded-md border-2 transition",
-                selected
-                  ? "border-foreground scale-110"
-                  : "border-border/40 hover:border-border",
-              ].join(" ")}
-              style={{ backgroundColor: hex }}
+              onClick={() => setAccent(null)}
+              className="rounded-md border border-border/50 px-2 py-1 text-[11px] font-semibold opacity-70 hover:bg-surface-muted hover:opacity-100"
+            >
+              Reset
+            </button>
+          </div>
+        </div>
+
+        <div className="border-t border-border/40 pt-3">
+          <p className="mb-1.5 text-[0.7rem] font-semibold uppercase tracking-wider opacity-55">
+            Backdrop
+          </p>
+          <div className="grid grid-cols-4 gap-1.5">
+            {BACKDROP_PRESETS.map((b) => {
+              const active = backdrop === b.id;
+              return (
+                <button
+                  key={b.id}
+                  type="button"
+                  title={b.name}
+                  aria-label={`Backdrop ${b.name}`}
+                  aria-pressed={active}
+                  onClick={() => setBackdrop(b.id)}
+                  className={[
+                    "flex flex-col items-center gap-1 rounded-lg p-1 transition",
+                    active
+                      ? "ring-2 ring-accent"
+                      : "hover:bg-surface-muted/60",
+                  ].join(" ")}
+                >
+                  <span
+                    className="h-8 w-full rounded-md border border-border/40"
+                    style={{ background: b.preview }}
+                  />
+                  <span className="w-full truncate text-center text-[10px] font-semibold opacity-70">
+                    {b.name}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="mt-2.5 space-y-2">
+            <SliderRow
+              label="Dim"
+              value={dim}
+              max={DIM_MAX}
+              unit="%"
+              disabled={!wallpaperOn}
+              onChange={(n) => commit({ ...prefs, dim: n })}
             />
-          );
-        })}
-        <button
-          type="button"
-          onClick={() => setAccent(null)}
-          className="rounded-md border border-border/50 px-2 py-1 text-[11px] font-semibold opacity-70 hover:bg-surface-muted hover:opacity-100"
-        >
-          Reset
-        </button>
+            <SliderRow
+              label="Blur"
+              value={blur}
+              max={BLUR_MAX}
+              unit="px"
+              disabled={!wallpaperOn}
+              onChange={(n) => commit({ ...prefs, blur: n })}
+            />
+          </div>
+
+          <div className="mt-2.5">
+            <p className="mb-1 text-[11px] font-semibold opacity-55">
+              Custom image URL
+            </p>
+            <div className="flex gap-1.5">
+              <input
+                type="url"
+                inputMode="url"
+                placeholder="https://…"
+                value={customDraft}
+                onChange={(e) => setCustomDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    applyCustomUrl();
+                  }
+                }}
+                className="min-w-0 flex-1 rounded-md border border-border/50 bg-background px-2 py-1.5 text-xs outline-none focus:border-accent"
+              />
+              <button
+                type="button"
+                onClick={applyCustomUrl}
+                className="shrink-0 rounded-md border border-border/50 px-2 py-1 text-[11px] font-semibold hover:bg-accent-soft hover:text-accent"
+              >
+                Apply
+              </button>
+            </div>
+            {backdrop === "custom" ? (
+              <p className="mt-1 text-[10px] opacity-50">
+                Using custom wallpaper
+              </p>
+            ) : null}
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -216,6 +413,7 @@ export function ThemePicker({
         </span>
         <span className="text-xs font-semibold text-accent opacity-90">
           {preset.name}
+          {wallpaperOn ? " · Wallpaper" : ""}
         </span>
       </button>
       {open ? <div className="mt-1">{panel}</div> : null}

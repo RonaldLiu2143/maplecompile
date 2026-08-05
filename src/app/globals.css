@@ -31,6 +31,16 @@
   --glow-b: #18181b99;
 }
 
+:root {
+  --mc-dim: 0;
+  --mc-blur: 0px;
+  --mc-wallpaper-image: none;
+}
+
+html {
+  isolation: isolate;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -44,13 +54,108 @@
   --font-display: var(--font-outfit);
 }
 
+/*
+  Opera-style wallpaper stack:
+  html::before = backdrop (gradient mesh / custom image)
+  html::after  = readability dim + blur
+  body falls back to solid theme canvas when backdrop is none
+*/
+html::before,
+html::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+html::before {
+  z-index: -2;
+  background-color: var(--background);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+html::after {
+  z-index: -1;
+  background: rgb(0 0 0 / var(--mc-dim));
+  -webkit-backdrop-filter: blur(var(--mc-blur));
+  backdrop-filter: blur(var(--mc-blur));
+}
+
+html[data-backdrop]:not([data-backdrop="none"])::before,
+html[data-backdrop]:not([data-backdrop="none"])::after {
+  opacity: 1;
+}
+
+html[data-backdrop="deep-night"]::before {
+  background-image:
+    radial-gradient(ellipse 70% 55% at 18% 12%, #1e3a5fcc, transparent 55%),
+    radial-gradient(ellipse 55% 45% at 88% 8%, #0f766e55, transparent 50%),
+    linear-gradient(165deg, #0b1220 0%, #121826 48%, #0a0f1a 100%);
+}
+
+html[data-backdrop="teal-aurora"]::before {
+  background-image:
+    radial-gradient(ellipse 80% 50% at 25% -5%, #14b8a6aa, transparent 55%),
+    radial-gradient(ellipse 60% 40% at 95% 15%, #38bdf866, transparent 50%),
+    radial-gradient(ellipse 50% 35% at 50% 100%, #0e749055, transparent 55%),
+    linear-gradient(180deg, #071418 0%, #0c1a1f 55%, #0a1618 100%);
+}
+
+html[data-backdrop="amber-ember"]::before {
+  background-image:
+    radial-gradient(ellipse 65% 45% at 85% 5%, #f59e0b55, transparent 50%),
+    radial-gradient(ellipse 55% 40% at 8% 85%, #b4530944, transparent 50%),
+    radial-gradient(ellipse 40% 30% at 40% 40%, #78350f33, transparent 55%),
+    linear-gradient(160deg, #1a1208 0%, #1c1410 50%, #120d08 100%);
+}
+
+html[data-backdrop="forest-mist"]::before {
+  background-image:
+    radial-gradient(ellipse 70% 50% at 50% -10%, #16653477, transparent 55%),
+    radial-gradient(ellipse 45% 35% at 10% 70%, #115e5944, transparent 50%),
+    radial-gradient(ellipse 40% 30% at 90% 60%, #14532d55, transparent 50%),
+    linear-gradient(180deg, #0a1f18 0%, #0f241c 55%, #081612 100%);
+}
+
+html[data-backdrop="horizon"]::before {
+  background-image:
+    linear-gradient(185deg, #0ea5e955 0%, transparent 42%),
+    linear-gradient(0deg, #f59e0b33 0%, transparent 38%),
+    radial-gradient(ellipse 60% 40% at 70% 30%, #0369a144, transparent 55%),
+    linear-gradient(180deg, #0c1220 0%, #0f172a 55%, #111827 100%);
+}
+
+html[data-backdrop="slate-mesh"]::before {
+  background-image:
+    radial-gradient(at 0% 0%, #33415577 0, transparent 50%),
+    radial-gradient(at 100% 0%, #1e293b88 0, transparent 45%),
+    radial-gradient(at 50% 100%, #0f766e44 0, transparent 50%),
+    radial-gradient(at 80% 60%, #47556933 0, transparent 40%),
+    linear-gradient(160deg, #0b1120, #111827 55%, #0f172a);
+}
+
+html[data-backdrop="custom"]::before {
+  background-image: var(--mc-wallpaper-image);
+  background-color: #0a0a0a;
+}
+
 body {
+  position: relative;
+  z-index: 0;
   background:
     radial-gradient(ellipse 80% 50% at 10% -10%, var(--glow-a), transparent),
     radial-gradient(ellipse 60% 40% at 100% 0%, var(--glow-b), transparent),
     var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+html[data-backdrop]:not([data-backdrop="none"]) body {
+  background: transparent;
 }
 
 .font-display {
