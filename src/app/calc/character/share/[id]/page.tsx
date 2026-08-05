@@ -346,15 +346,15 @@ export default function CharacterShareProfilePage() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-8 px-4 py-8">
-      <header className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-wide opacity-60">
+      <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+        <div className="min-w-0 flex-1">
+          <p className="text-[0.65rem] font-semibold uppercase tracking-wide opacity-60">
             Character build profile
           </p>
-          <h1 className="font-display text-3xl font-bold tracking-tight">
+          <h1 className="font-display text-xl font-bold tracking-tight sm:text-2xl">
             {record.name}
           </h1>
-          <p className="mt-1 text-sm opacity-75">
+          <p className="mt-0.5 text-xs opacity-75">
             {className}
             {input.level ? ` · Lv. ${input.level}` : ""}
             {record.character
@@ -364,23 +364,72 @@ export default function CharacterShareProfilePage() {
             {equipCount > 0 ? ` · ${equipCount} equips` : ""}
           </p>
           {record.achievement ? (
-            <p className="mt-2 max-w-xl text-sm opacity-80">
+            <p className="mt-1 max-w-xl text-xs opacity-80">
               {record.achievement}
             </p>
           ) : null}
-          <p className="mt-2 text-xs opacity-55">
+          <p className="mt-1 text-[0.7rem] opacity-55">
             {(record.views ?? 0).toLocaleString()} views
             {record.boss300HexaStat != null
               ? ` · BCS HEXA 300 ${formatStat(record.boss300HexaStat)} / 380 ${formatStat(record.boss380HexaStat)}`
               : ""}
           </p>
         </div>
-        <Link
-          href="/calc/scouter/gallery"
-          className="rounded-md border border-border/50 bg-surface px-3 py-1.5 text-sm font-semibold transition hover:bg-surface-muted"
-        >
-          Gallery
-        </Link>
+
+        <div className="flex shrink-0 flex-col items-stretch gap-1.5 sm:items-end">
+          <div className="flex flex-wrap items-center justify-end gap-1.5">
+            <select
+              value={importRegion}
+              onChange={(e) =>
+                setImportRegion(e.target.value === "eu" ? "eu" : "na")
+              }
+              aria-label="Import region"
+              className="rounded border border-border/50 bg-background px-1.5 py-1 text-[11px]"
+            >
+              <option value="na">NA</option>
+              <option value="eu">EU</option>
+            </select>
+            <input
+              value={importName}
+              onChange={(e) => setImportName(e.target.value)}
+              className="w-[7.5rem] rounded border border-border/50 bg-background px-1.5 py-1 text-[11px] sm:w-28"
+              placeholder="IGN"
+              maxLength={13}
+              aria-label="Import character name"
+            />
+            <button
+              type="button"
+              disabled={busy === "import"}
+              onClick={importToRoster}
+              className="rounded bg-accent px-2 py-1 text-[11px] font-semibold text-white transition hover:opacity-90 disabled:opacity-40"
+            >
+              {busy === "import" ? "…" : "Import"}
+            </button>
+            <Link
+              href="/calc/scouter/gallery"
+              className="rounded-md border border-border/50 bg-surface px-2 py-1 text-[11px] font-semibold transition hover:bg-surface-muted"
+            >
+              Gallery
+            </Link>
+          </div>
+          <div className="flex flex-wrap justify-end gap-1.5">
+            <button
+              type="button"
+              onClick={openInScouter}
+              className="rounded border border-border/50 bg-background px-2 py-1 text-[11px] font-semibold transition hover:bg-surface-muted"
+            >
+              Open in Scouter
+            </button>
+            <button
+              type="button"
+              onClick={openInEquipment}
+              disabled={!record.equipment || equipCount === 0}
+              className="rounded border border-border/50 bg-background px-2 py-1 text-[11px] font-semibold transition hover:bg-surface-muted disabled:opacity-40"
+            >
+              Open in Equipment
+            </button>
+          </div>
+        </div>
       </header>
 
       {msg ? (
