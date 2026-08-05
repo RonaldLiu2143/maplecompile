@@ -1,13 +1,52 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import {
   RosterCardError,
   RosterCardSkeleton,
   RosterCharacterCard,
   type RosterDragProps,
 } from "@/components/dashboard/RosterCharacterCard";
-import { entryKey, isPrimary, type RosterEntry, type RosterPrimary } from "@/lib/dashboard/roster";
+import {
+  entryKey,
+  isPrimary,
+  type RosterEntry,
+  type RosterPrimary,
+} from "@/lib/dashboard/roster";
+import {
+  readBossIncomeStore,
+  summarizeIncome,
+  WEEKLY_CRYSTAL_LIMIT,
+  worldTypeFromCharacter,
+} from "@/lib/bosses";
 import type { RosterSlotState } from "@/hooks/useRoster";
+
+function bossBadgeForKey(
+  key: string,
+  character: { isHeroic?: boolean | null } | null,
+): string | null {
+  try {
+    const store = readBossIncomeStore();
+    const state = store.byCharacter[key];
+    if (!state) return null;
+    const world = worldTypeFromCharacter(character);
+    const summary = summarizeIncome(state.selections, world);
+    if (summary.weeklyListed.length === 0) return null;
+    const cleared = state.selections.filter(
+      (s) =>
+        s.enabled &&
+        s.cleared &&
+        summary.weeklyListed.some((l) => l.bossId === s.bossId),
+    ).length;
+    const denom = Math.min(
+      summary.weeklyListed.length,
+      summary.weeklyCrystalLimit || WEEKLY_CRYSTAL_LIMIT,
+    );
+    return `${cleared}/${denom}`;
+  } catch {
+    return null;
+  }
+}
 
 export function RosterGrid({
   roster,
@@ -32,6 +71,19 @@ export function RosterGrid({
   onSetPrimary: (entry: RosterEntry) => void;
   onRetry: (entry: RosterEntry) => void;
 }) {
+  const [badges, setBadges] = useState<Record<string, string | null>>({});
+
+  useEffect(() => {
+    const next: Record<string, string | null> = {};
+    for (const entry of roster) {
+      const key = entryKey(entry);
+      const slot = slots[key];
+      const character = slot?.status === "ready" ? slot.character : null;
+      next[key] = bossBadgeForKey(key, character);
+    }
+    setBadges(next);
+  }, [roster, slots]);
+
   if (roster.length === 0) {
     return (
       <div className="rounded-2xl border border-dashed border-border/60 bg-surface/70 px-5 py-10 text-center">
@@ -47,7 +99,7 @@ export function RosterGrid({
   }
 
   return (
-    <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-2">
       {roster.map((entry, index) => {
         const key = entryKey(entry);
         const slot = slots[key];
@@ -77,6 +129,7 @@ export function RosterGrid({
             character={slot.character}
             isPrimary={isPrimary(entry, primary)}
             managing={managing}
+            badge={badges[key]}
             onRemove={() => onRemove(entry)}
             onSetPrimary={() => onSetPrimary(entry)}
             drag={drag}

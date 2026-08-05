@@ -21,12 +21,12 @@ const PRIMARY_LINKS: NavLink[] = [
 ];
 
 const ROSTER_LINKS: NavLink[] = [
-  { href: "/roster", label: "Characters", match: "exact" },
+  { href: "/roster", label: "Manager", match: "exact" },
   { href: "/calc/bosses", label: "Boss Income", match: "exact" },
   { href: "/calc/boss-schedule", label: "Boss Schedule", match: "exact" },
   { href: "/calc/liberation", label: "Liberation", match: "exact" },
-  { href: "/calc/diary", label: "Diary", match: "exact" },
   { href: "/calc/hexa-tracker", label: "HEXA Tracker", match: "exact" },
+  { href: "/calc/diary", label: "Diary", match: "exact" },
 ];
 
 const CALCULATOR_LINKS: NavLink[] = [

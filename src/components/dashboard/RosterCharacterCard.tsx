@@ -1,29 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import type { DragEvent } from "react";
+import { useEffect, useRef, useState, type DragEvent } from "react";
 import { characterProfileHref } from "@/lib/character/client";
-import { formatOptionalInt, formatRank } from "@/lib/character/format";
 import type { CharacterLookupResult } from "@/lib/character/lookup";
-
-function formatDailyExp(raw: string | null | undefined): string {
-  if (!raw || !raw.trim()) return "—";
-  const v = raw.trim();
-  return v.endsWith("/day") ? v : `${v}/day`;
-}
-
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="min-w-0">
-      <p className="text-[0.65rem] font-semibold uppercase tracking-wider opacity-55">
-        {label}
-      </p>
-      <p className="mt-0.5 font-mono text-sm font-bold tabular-nums sm:text-base">
-        {value}
-      </p>
-    </div>
-  );
-}
 
 function DragHandle() {
   return (
@@ -36,6 +16,16 @@ function DragHandle() {
       <span className="block h-0.5 w-3.5 rounded-full bg-current" />
       <span className="block h-0.5 w-3.5 rounded-full bg-current" />
     </span>
+  );
+}
+
+function EllipsisIcon({ size = 16 }: { size?: number }) {
+  return (
+    <svg viewBox="0 0 20 20" width={size} height={size} aria-hidden fill="currentColor">
+      <circle cx="10" cy="4.5" r="1.5" />
+      <circle cx="10" cy="10" r="1.5" />
+      <circle cx="10" cy="15.5" r="1.5" />
+    </svg>
   );
 }
 
@@ -80,10 +70,17 @@ function withDragAttrs(
   };
 }
 
+function formatExpPercent(pct: number | null | undefined): string | null {
+  if (pct == null || !Number.isFinite(pct)) return null;
+  const rounded = Math.round(pct * 1000) / 1000;
+  return `${rounded}%`;
+}
+
 export function RosterCharacterCard({
   character,
   isPrimary,
   managing,
+  badge,
   onRemove,
   onSetPrimary,
   drag,
@@ -91,121 +88,166 @@ export function RosterCharacterCard({
   character: CharacterLookupResult;
   isPrimary?: boolean;
   managing?: boolean;
+  /** Optional status pill (e.g. boss clears `0/14`). */
+  badge?: string | null;
   onRemove?: () => void;
   onSetPrimary?: () => void;
   drag?: RosterDragProps;
 }) {
-  const world = character.worldName;
-  const classRankInWorld = character.ranking?.jobRank;
-  const title = `${character.name} · ${character.level} (${world})`;
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
   const profileHref = characterProfileHref(character);
+  const expPct = formatExpPercent(character.expPercent);
+  const showMenu = Boolean(onRemove || onSetPrimary);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    function onDoc(e: MouseEvent) {
+      if (!menuRef.current?.contains(e.target as Node)) setMenuOpen(false);
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setMenuOpen(false);
+    }
+    document.addEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDoc);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [menuOpen]);
 
   return (
     <article
       {...withDragAttrs(drag)}
       className={dragShellClass(
         [
-          "flex flex-col overflow-hidden rounded-2xl border-2 bg-surface transition",
-          isPrimary ? "border-accent/70" : "border-border",
+          "group relative overflow-hidden rounded-xl border bg-surface transition",
+          isPrimary ? "border-accent/60" : "border-border/70",
+          managing ? "" : "hover:border-accent/45 hover:bg-surface-muted/40",
         ].join(" "),
         drag,
       )}
     >
-      <div className="flex flex-1 flex-col gap-4 p-4 sm:flex-row sm:items-start">
+      <Link
+        href={profileHref}
+        className="absolute inset-0 z-0"
+        aria-label={`Open ${character.name} profile`}
+        draggable={false}
+        onClick={(e) => {
+          if (managing) e.preventDefault();
+        }}
+      />
+
+      <div className="relative z-10 flex items-stretch gap-3 p-3 pointer-events-none sm:gap-4 sm:p-3.5">
         {managing ? (
-          <div className="flex shrink-0 items-start pt-1">
+          <div className="flex shrink-0 items-center pointer-events-auto">
             <DragHandle />
           </div>
         ) : null}
 
-        <div className="flex shrink-0 justify-center sm:justify-start">
+        <div className="flex shrink-0 items-center">
           {character.characterImgURL ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={character.characterImgURL}
-              alt={`${character.name} avatar`}
-              width={96}
-              height={96}
-              className="pointer-events-none h-24 w-24 object-contain"
+              alt=""
+              width={72}
+              height={72}
+              className="pointer-events-none h-[72px] w-[72px] rounded-lg object-contain"
               draggable={false}
             />
           ) : (
-            <div className="flex h-24 w-24 items-center justify-center rounded-lg bg-surface-muted text-xs opacity-60">
-              No image
+            <div className="flex h-[72px] w-[72px] items-center justify-center rounded-lg bg-surface-muted text-[0.65rem] font-semibold uppercase tracking-wide opacity-50">
+              {character.name.slice(0, 2)}
             </div>
           )}
         </div>
 
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-start justify-between gap-2">
-            <div className="min-w-0">
-              {isPrimary ? (
-                <p className="text-[0.65rem] font-semibold uppercase tracking-wider text-accent opacity-80">
-                  Primary
-                </p>
-              ) : null}
-              <h2 className="font-display text-xl font-bold tracking-tight">
-                {title}
-              </h2>
-              <p className="mt-0.5 text-sm opacity-70">
-                {character.jobName} · {character.region.toUpperCase()}
-                {character.isHeroic ? " · Heroic" : ""}
-              </p>
-            </div>
-            {managing ? (
-              <div
-                className="flex flex-wrap gap-1.5"
-                onPointerDown={(e) => e.stopPropagation()}
-              >
-                {!isPrimary && onSetPrimary ? (
-                  <button
-                    type="button"
-                    onClick={onSetPrimary}
-                    className="rounded-lg border border-accent/50 px-2 py-1 text-xs font-semibold text-accent transition hover:bg-accent/10"
-                    title="Set as primary"
-                  >
-                    Set primary
-                  </button>
-                ) : null}
-                <button
-                  type="button"
-                  onClick={onRemove}
-                  className="rounded-lg border border-danger/40 px-2 py-1 text-xs font-semibold text-danger transition hover:bg-danger/10"
-                >
-                  Remove
-                </button>
-              </div>
+        <div className="min-w-0 flex-1 self-center">
+          <p className="truncate text-base font-bold tracking-tight text-accent">
+            {character.name}
+          </p>
+          <p className="mt-0.5 text-sm tabular-nums opacity-85">
+            Lv. {character.level}
+            {expPct ? (
+              <span className="opacity-70"> ({expPct})</span>
             ) : null}
-          </div>
+          </p>
+          <p className="mt-0.5 truncate text-sm opacity-75">
+            {character.jobName || "—"}
+          </p>
+          <p className="mt-0.5 truncate text-sm opacity-65">
+            {character.worldName || "—"}
+            {character.isHeroic ? " · Heroic" : ""}
+          </p>
+        </div>
 
-          <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <Stat label="7d EXP" value={formatDailyExp(character.expAverages?.avg7d)} />
-            <Stat
-              label="14d EXP"
-              value={formatDailyExp(character.expAverages?.avg14d)}
-            />
-            <Stat
-              label={`Class rank (${world})`}
-              value={formatRank(classRankInWorld)}
-            />
-            <Stat
-              label="Legion"
-              value={formatOptionalInt(character.legionLevel)}
-            />
-          </div>
+        <div className="flex shrink-0 items-start gap-2 pt-0.5 pointer-events-auto">
+          {badge ? (
+            <span className="rounded-full bg-violet-600/90 px-2.5 py-0.5 text-xs font-semibold text-white tabular-nums">
+              {badge}
+            </span>
+          ) : null}
 
-          <div className="mt-3">
-            <Link
-              href={profileHref}
-              className="text-sm font-semibold text-accent underline-offset-2 hover:underline"
-              draggable={false}
-              onClick={(e) => {
-                if (managing) e.stopPropagation();
-              }}
-            >
-              Full profile →
-            </Link>
-          </div>
+          {showMenu ? (
+            <div className="relative" ref={menuRef}>
+              <button
+                type="button"
+                aria-label={`Actions for ${character.name}`}
+                aria-expanded={menuOpen}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setMenuOpen((v) => !v);
+                }}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border/70 bg-surface text-foreground/70 transition hover:bg-surface-muted hover:text-foreground"
+              >
+                <EllipsisIcon />
+              </button>
+              {menuOpen ? (
+                <div
+                  role="menu"
+                  className="absolute right-0 top-full z-20 mt-1 min-w-[9.5rem] overflow-hidden rounded-lg border border-border bg-surface shadow-lg"
+                >
+                  {!isPrimary && onSetPrimary ? (
+                    <button
+                      type="button"
+                      role="menuitem"
+                      className="block w-full px-3 py-2 text-left text-sm font-semibold transition hover:bg-surface-muted"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setMenuOpen(false);
+                        onSetPrimary();
+                      }}
+                    >
+                      Set primary
+                    </button>
+                  ) : null}
+                  {isPrimary ? (
+                    <p className="px-3 py-2 text-xs font-semibold uppercase tracking-wider text-accent opacity-80">
+                      Primary
+                    </p>
+                  ) : null}
+                  {onRemove ? (
+                    <button
+                      type="button"
+                      role="menuitem"
+                      className="block w-full px-3 py-2 text-left text-sm font-semibold text-danger transition hover:bg-danger/10"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setMenuOpen(false);
+                        onRemove();
+                      }}
+                    >
+                      Remove
+                    </button>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
         </div>
       </div>
     </article>
@@ -223,7 +265,7 @@ export function RosterCardSkeleton({
     <div
       {...withDragAttrs(drag)}
       className={dragShellClass(
-        "rounded-2xl border border-border/50 bg-surface/80 px-4 py-10 text-center text-sm opacity-70 transition",
+        "rounded-xl border border-border/50 bg-surface/80 px-4 py-8 text-center text-sm opacity-70 transition",
         drag,
       )}
     >
@@ -254,7 +296,7 @@ export function RosterCardError({
       role="alert"
       {...withDragAttrs(drag)}
       className={dragShellClass(
-        "rounded-2xl border border-danger/40 bg-danger/10 px-4 py-4 text-sm transition",
+        "rounded-xl border border-danger/40 bg-danger/10 px-4 py-4 text-sm transition",
         drag,
       )}
     >

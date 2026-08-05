@@ -23,7 +23,7 @@ export default function RosterPage() {
     resetDrag,
   } = useRoster();
 
-  const [managing, setManaging] = useState(true);
+  const [managing, setManaging] = useState(false);
 
   function setManageMode(next: boolean) {
     setManaging(next);
@@ -41,7 +41,8 @@ export default function RosterPage() {
             Roster
           </h1>
           <p className="mt-2 text-sm opacity-80">
-            Manage your characters — reorder, set primary, add or remove.
+            Tap a card to open the character profile. Use Manage to reorder, set
+            primary, or remove.
           </p>
         </div>
         <Link
@@ -94,7 +95,7 @@ export default function RosterPage() {
                   : "bg-accent text-white hover:opacity-90 dark:text-zinc-900",
               ].join(" ")}
             >
-              {managing ? "Done" : "Manage roster"}
+              {managing ? "Done" : "Manage"}
             </button>
           </div>
 
