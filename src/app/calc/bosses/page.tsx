@@ -9,6 +9,7 @@ import {
   bossIconUrl,
   countEnabledWeekly,
   defaultSelections,
+  formatBossLabel,
   formatMesos,
   getCharacterBossState,
   maybeMigrateLocalToPrimary,
@@ -446,9 +447,11 @@ function CharacterBossCard({
   const region = (character?.region ?? entry?.region)?.toUpperCase();
   const avatar = character?.characterImgURL;
   const profileHref = entry ? characterProfileHref(entry) : null;
+  // MapleHub: personal crystal value desc (already applied in summarizeIncome).
   const listed = summary.weeklyListed;
   const monthly = summary.lines.filter((l) => l.frequency === "monthly");
-  const hasBosses = listed.length > 0 || monthly.length > 0;
+  const rows = [...listed, ...monthly];
+  const hasBosses = rows.length > 0;
 
   return (
     <article className="overflow-hidden rounded-xl border border-border/40 bg-surface/80">
@@ -546,43 +549,57 @@ function CharacterBossCard({
         ) : (
           <div className="space-y-3">
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[32rem] text-left text-sm">
+              {/* Desktop: MapleHub columns Boss | Party | Value */}
+              <table className="hidden w-full min-w-[28rem] text-left text-sm sm:table">
                 <thead className="text-xs uppercase tracking-wider opacity-55">
                   <tr>
+                    <th className="w-6 pb-2 pr-1 font-semibold">
+                      <span className="sr-only">Remove</span>
+                    </th>
                     <th className="pb-2 pr-2 font-semibold">Boss</th>
-                    <th className="pb-2 pr-2 font-semibold">Difficulty</th>
-                    <th className="pb-2 pr-2 text-center font-semibold">
+                    <th className="w-10 pb-2 pr-2 text-center font-semibold md:w-14">
                       Party
                     </th>
-                    <th className="pb-2 pr-2 text-right font-semibold">
-                      Crystal
-                    </th>
-                    <th className="pb-2 w-8 font-semibold">
-                      <span className="sr-only">Remove</span>
+                    <th className="w-24 pb-2 text-right font-semibold md:w-28">
+                      Value
                     </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {[...listed, ...monthly].map((line) => {
+                  {rows.map((line) => {
                     const boss = BOSS_CRYSTALS.find((b) => b.id === line.bossId);
                     const icon = boss ? bossIconUrl(boss) : null;
                     const showIcon = icon && !brokenIcons[line.bossId];
+                    const label = formatBossLabel(
+                      line.difficulty,
+                      line.bossName,
+                    );
                     return (
                       <tr
                         key={`${line.bossId}-${line.difficulty}-${line.frequency}`}
                         className="border-t border-border/20"
                       >
-                        <td className="py-1.5 pr-2">
-                          <div className="flex items-center gap-2">
-                            <div className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded bg-surface-muted/60">
+                        <td className="py-1 pr-1">
+                          <button
+                            type="button"
+                            onClick={() => onRemove(line.bossId)}
+                            className="rounded px-1 text-xs opacity-50 hover:text-red-500 hover:opacity-100"
+                            aria-label={`Remove ${label}`}
+                          >
+                            ×
+                          </button>
+                        </td>
+                        <td className="py-1 pr-2 font-medium text-accent">
+                          <div className="flex min-w-0 items-center gap-1">
+                            <div className="flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded-md bg-surface-muted/60">
                               {showIcon ? (
                                 // eslint-disable-next-line @next/next/no-img-element
                                 <img
                                   src={icon}
                                   alt=""
-                                  width={32}
-                                  height={32}
-                                  className="h-8 w-8 object-contain"
+                                  width={24}
+                                  height={24}
+                                  className="h-6 w-6 object-contain"
                                   style={{ imageRendering: "pixelated" }}
                                   onError={() => onBrokenIcon(line.bossId)}
                                 />
@@ -592,45 +609,22 @@ function CharacterBossCard({
                                 </span>
                               )}
                             </div>
-                            <span className="font-medium">
-                              {line.bossName}
+                            <span className="truncate whitespace-nowrap text-sm">
+                              {label}
                               {line.frequency === "monthly" ? (
-                                <span className="ml-1.5 text-xs opacity-55">
+                                <span className="ml-1.5 text-xs font-normal opacity-55">
                                   monthly
                                 </span>
                               ) : null}
                             </span>
                           </div>
                         </td>
-                        <td className="py-1.5 pr-2">
-                          {boss ? (
-                            <select
-                              className={inputClass}
-                              value={line.difficulty}
-                              onChange={(e) =>
-                                onPatch(line.bossId, {
-                                  difficulty: e.target.value,
-                                })
-                              }
-                            >
-                              {boss.difficulties.map((d) => (
-                                <option key={d.name} value={d.name}>
-                                  {d.name}
-                                </option>
-                              ))}
-                            </select>
-                          ) : (
-                            <span className="text-xs font-semibold uppercase opacity-70">
-                              {line.difficulty}
-                            </span>
-                          )}
-                        </td>
-                        <td className="py-1.5 pr-2 text-center">
+                        <td className="py-1 pr-2 text-center">
                           <input
                             type="number"
                             min={1}
                             max={6}
-                            className={`${inputClass} w-14 text-center`}
+                            className={`${inputClass} h-6 w-8 text-center text-xs`}
                             value={line.partySize}
                             onChange={(e) =>
                               onPatch(line.bossId, {
@@ -642,18 +636,8 @@ function CharacterBossCard({
                             }
                           />
                         </td>
-                        <td className="py-1.5 pr-2 text-right tabular-nums">
+                        <td className="py-1 text-right font-mono text-sm tabular-nums">
                           {formatMesos(line.crystalPersonal)}
-                        </td>
-                        <td className="py-1.5 text-right">
-                          <button
-                            type="button"
-                            onClick={() => onRemove(line.bossId)}
-                            className="rounded px-1.5 text-xs opacity-50 hover:text-red-500 hover:opacity-100"
-                            aria-label={`Remove ${line.bossName}`}
-                          >
-                            ×
-                          </button>
                         </td>
                       </tr>
                     );
@@ -661,8 +645,9 @@ function CharacterBossCard({
                 </tbody>
                 <tfoot>
                   <tr className="border-t border-border/40">
+                    <td />
                     <td
-                      colSpan={3}
+                      colSpan={2}
                       className="pt-2 text-xs font-semibold uppercase tracking-wider opacity-55"
                     >
                       Character total
@@ -672,10 +657,93 @@ function CharacterBossCard({
                         summary.maxPossibleMesos + summary.monthlyMesos,
                       )}
                     </td>
-                    <td />
                   </tr>
                 </tfoot>
               </table>
+
+              {/* Mobile: MapleHub-style stacked rows */}
+              <div className="space-y-2 sm:hidden">
+                {rows.map((line) => {
+                  const boss = BOSS_CRYSTALS.find((b) => b.id === line.bossId);
+                  const icon = boss ? bossIconUrl(boss) : null;
+                  const showIcon = icon && !brokenIcons[line.bossId];
+                  const label = formatBossLabel(
+                    line.difficulty,
+                    line.bossName,
+                  );
+                  return (
+                    <div
+                      key={`m-${line.bossId}-${line.difficulty}-${line.frequency}`}
+                      className="flex items-center justify-between gap-2 rounded border border-border/30 p-2"
+                    >
+                      <div className="flex min-w-0 flex-1 items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => onRemove(line.bossId)}
+                          className="shrink-0 rounded px-1 text-xs opacity-50 hover:text-red-500 hover:opacity-100"
+                          aria-label={`Remove ${label}`}
+                        >
+                          ×
+                        </button>
+                        <div className="flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded-md bg-surface-muted/60">
+                          {showIcon ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={icon}
+                              alt=""
+                              width={24}
+                              height={24}
+                              className="h-6 w-6 object-contain"
+                              style={{ imageRendering: "pixelated" }}
+                              onError={() => onBrokenIcon(line.bossId)}
+                            />
+                          ) : (
+                            <span className="text-[9px] font-semibold opacity-50">
+                              {line.bossName.slice(0, 2)}
+                            </span>
+                          )}
+                        </div>
+                        <span className="truncate text-sm font-medium text-accent">
+                          {label}
+                        </span>
+                      </div>
+                      <div className="shrink-0 text-right text-xs">
+                        <div className="flex flex-col items-end gap-1">
+                          <span className="opacity-55">Party:</span>
+                          <input
+                            type="number"
+                            min={1}
+                            max={6}
+                            className={`${inputClass} h-6 w-8 text-center text-xs`}
+                            value={line.partySize}
+                            onChange={(e) =>
+                              onPatch(line.bossId, {
+                                partySize: Math.max(
+                                  1,
+                                  Math.min(6, Number(e.target.value) || 1),
+                                ),
+                              })
+                            }
+                          />
+                          <span className="font-mono tabular-nums">
+                            {formatMesos(line.crystalPersonal)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+                <div className="flex items-center justify-between border-t border-border/40 pt-2 text-xs">
+                  <span className="font-semibold uppercase tracking-wider opacity-55">
+                    Character total
+                  </span>
+                  <span className="font-semibold tabular-nums text-accent">
+                    {formatMesos(
+                      summary.maxPossibleMesos + summary.monthlyMesos,
+                    )}
+                  </span>
+                </div>
+              </div>
             </div>
             <div className="flex justify-center">
               <button

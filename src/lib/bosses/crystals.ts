@@ -36,7 +36,43 @@ export const WEEKLY_CRYSTAL_LIMIT = 14;
 export const ACCOUNT_WEEKLY_CRYSTAL_LIMIT = 180;
 export const HEROIC_CRYSTAL_MULT = 5;
 
-export const BOSS_CRYSTALS: BossEntry[] = [
+/** MapleHub difficulty rank (easiest → hardest) for variant sorting. */
+export const DIFFICULTY_RANK: Record<string, number> = {
+  Easy: 1,
+  Normal: 2,
+  Hard: 3,
+  Chaos: 4,
+  Extreme: 5,
+  Destiny: 6,
+  Champion: 6,
+};
+
+export function maxBossCrystal(boss: BossEntry): number {
+  return Math.max(0, ...boss.difficulties.map((d) => d.crystal));
+}
+
+/** MapleHub catalog order: highest crystal (hardest) first, then name. */
+export function compareBossesHardestFirst(a: BossEntry, b: BossEntry): number {
+  const byCrystal = maxBossCrystal(b) - maxBossCrystal(a);
+  if (byCrystal !== 0) return byCrystal;
+  return a.name.localeCompare(b.name);
+}
+
+export function sortDifficultiesAsc(
+  difficulties: BossDifficulty[],
+): BossDifficulty[] {
+  return [...difficulties].sort(
+    (a, b) =>
+      (DIFFICULTY_RANK[a.name] ?? 99) - (DIFFICULTY_RANK[b.name] ?? 99),
+  );
+}
+
+/** MapleHub list label: difficulty prefixed onto the boss name. */
+export function formatBossLabel(difficulty: string, bossName: string): string {
+  return `${difficulty} ${bossName}`;
+}
+
+const BOSS_CRYSTALS_RAW: BossEntry[] = [
   { id: "zakum", name: "Zakum", category: "pre-lomien", frequency: "weekly", difficulties: [{ name: "Chaos", crystal: 16200000 }] },
   { id: "magnus", name: "Magnus", category: "pre-lomien", frequency: "weekly", difficulties: [{ name: "Hard", crystal: 19012500 }] },
   { id: "hilla", name: "Hilla", category: "pre-lomien", frequency: "weekly", difficulties: [{ name: "Hard", crystal: 11250000 }] },
@@ -66,6 +102,12 @@ export const BOSS_CRYSTALS: BossEntry[] = [
   { id: "baldrix", name: "Baldrix", category: "grandis", frequency: "weekly", difficulties: [{ name: "Normal", crystal: 560000000 }, { name: "Hard", crystal: 840000000 }] },
   { id: "black-mage", name: "Black Mage", category: "lomien-arcane", frequency: "monthly", difficulties: [{ name: "Hard", crystal: 900000000 }, { name: "Extreme", crystal: 3600000000 }] },
 ];
+
+/** Catalog sorted hardest → easiest (max crystal), matching MapleHub. */
+export const BOSS_CRYSTALS: BossEntry[] = BOSS_CRYSTALS_RAW.map((boss) => ({
+  ...boss,
+  difficulties: sortDifficultiesAsc(boss.difficulties),
+})).sort(compareBossesHardestFirst);
 
 export function crystalMesos(
   base: number,

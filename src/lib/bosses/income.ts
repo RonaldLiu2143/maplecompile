@@ -125,7 +125,12 @@ export function summarizeIncome(
     else weeklyCandidates.push(line);
   }
 
-  weeklyCandidates.sort((a, b) => b.crystalPersonal - a.crystalPersonal);
+  // MapleHub: personal crystal value descending (hardest / highest value first).
+  weeklyCandidates.sort(
+    (a, b) =>
+      b.crystalPersonal - a.crystalPersonal ||
+      a.bossName.localeCompare(b.bossName),
+  );
   let used = 0;
   let weeklyMesos = 0;
   for (const line of weeklyCandidates) {
@@ -136,6 +141,11 @@ export function summarizeIncome(
     }
   }
 
+  monthlyLines.sort(
+    (a, b) =>
+      b.crystalPersonal - a.crystalPersonal ||
+      a.bossName.localeCompare(b.bossName),
+  );
   const monthlyMesos = monthlyLines.reduce(
     (sum, line) => sum + line.crystalPersonal,
     0,
