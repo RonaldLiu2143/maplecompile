@@ -1,18 +1,16 @@
 ---
-description: Auto commit/push after changes and include the live site link
+description: Auto commit/push after changes; no Vercel deploy
 alwaysApply: true
 ---
 
-# Auto deploy workflow
+# Git workflow (local + GitHub only)
 
 After finishing work for a user prompt that changed the repo:
 
 1. **Commit** relevant source changes (never commit secrets, `.env`, or scratch `tmp_*` research files unless asked).
 2. **Push** to `origin` on the current branch.
 3. Follow the repo’s existing git commit/push safety rules (no force push to main, no config changes, no hook skips).
-4. End the reply with the live site link (and a path link when the change is page-specific):
+4. **Do not deploy to Vercel** (no `vercel --prod`, `vercel deploy`, `vercel promote`, or redeploy) unless the user explicitly asks to deploy.
+5. Prefer verifying on **local** (`http://localhost:3000`). Do not end replies with maplecompile.vercel.app links unless the user asks about production.
 
-- Site: https://maplecompile.vercel.app
-- Scouter: https://maplecompile.vercel.app/calc/scouter
-
-Do this even when the user did not explicitly say “commit” or “push”, unless they ask not to deploy that change.
+Do this even when the user did not explicitly say “commit” or “push”, unless they ask not to commit that change.
