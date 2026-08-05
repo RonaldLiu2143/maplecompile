@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { ActiveCharacterBar } from "@/components/ActiveCharacterBar";
 import {
   ACCOUNT_WEEKLY_CRYSTAL_LIMIT,
   BOSS_CRYSTALS,
@@ -40,7 +41,14 @@ import { AddBossesModal } from "./add-bosses-modal";
 import type { RosterDragProps } from "@/components/dashboard/RosterCharacterCard";
 
 export default function BossesIncomePage() {
-  const { hydrated, roster, primary, slots, makeDragProps } = useRoster();
+  const {
+    hydrated,
+    roster,
+    primary,
+    slots,
+    makeDragProps,
+    handleSetPrimary,
+  } = useRoster();
   const [ready, setReady] = useState(false);
   const [store, setStore] = useState<BossIncomeStore>(() => ({
     version: 2,
@@ -51,6 +59,7 @@ export default function BossesIncomePage() {
   const [modalKey, setModalKey] = useState<string | null>(null);
   const [capToast, setCapToast] = useState<string | null>(null);
   const [brokenIcons, setBrokenIcons] = useState<Record<string, true>>({});
+  const activeCardRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (!hydrated) return;
@@ -72,10 +81,25 @@ export default function BossesIncomePage() {
       });
     }
 
+    if (primaryKey && next.activeKey !== primaryKey) {
+      next = { ...next, activeKey: primaryKey };
+    }
+
     setStore(next);
     writeBossIncomeStore(next);
     setReady(true);
   }, [hydrated, roster, primary]);
+
+  useEffect(() => {
+    if (!ready || !primary) return;
+    const t = window.setTimeout(() => {
+      activeCardRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest",
+      });
+    }, 80);
+    return () => window.clearTimeout(t);
+  }, [ready, primary]);
 
   useEffect(() => {
     if (!ready) return;
@@ -241,6 +265,8 @@ export default function BossesIncomePage() {
         </p>
       </header>
 
+      <ActiveCharacterBar onSelect={handleSetPrimary} />
+
       {capToast ? (
         <p
           role="status"
@@ -322,8 +348,20 @@ export default function BossesIncomePage() {
                     ?.summary ??
                   summarizeIncome(defaultSelections(), charWorld);
                 return (
-                  <CharacterBossCard
+                  <div
                     key={key}
+                    ref={
+                      primary && entryKey(primary) === key
+                        ? activeCardRef
+                        : undefined
+                    }
+                    className={
+                      primary && entryKey(primary) === key
+                        ? "rounded-xl ring-2 ring-accent/50"
+                        : undefined
+                    }
+                  >
+                  <CharacterBossCard
                     entry={entry}
                     character={character}
                     loading={slot?.status === "loading"}
@@ -350,6 +388,7 @@ export default function BossesIncomePage() {
                     }}
                     onCheckAll={(cleared) => setListedCleared(key, cleared)}
                   />
+                  </div>
                 );
               })
             : (() => {

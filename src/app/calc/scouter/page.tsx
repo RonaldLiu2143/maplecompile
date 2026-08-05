@@ -45,6 +45,7 @@ import {
   migrateGlobalsToPrimaryWorkspace,
   persistLiveToWorkspace,
 } from "@/lib/character-workspace";
+import { ActiveCharacterBar } from "@/components/ActiveCharacterBar";
 import { PairingBar } from "@/components/PairingBar";
 import { HexaEfficiencyPanel } from "./hexa-efficiency";
 import { ShareGalleryModal } from "./share-gallery-modal";
@@ -212,6 +213,8 @@ export default function ScouterPage() {
   const [draftReady, setDraftReady] = useState(false);
   const [showHexaEff, setShowHexaEff] = useState(false);
   const hexaEffRef = useRef<HTMLDivElement | null>(null);
+  /** Skip autosave while swapping active-character workspace into React state. */
+  const skipWorkspaceAutosave = useRef(false);
 
   useEffect(() => {
     if (!showHexaEff) return;
@@ -385,7 +388,7 @@ export default function ScouterPage() {
   }, [exceptionFinalDamage, draftReady]);
 
   useEffect(() => {
-    if (!draftReady) return;
+    if (!draftReady || skipWorkspaceAutosave.current) return;
     const trimmed = presetName.trim();
     storage.setScouterLast({
       input,
@@ -396,6 +399,50 @@ export default function ScouterPage() {
     });
     persistLiveToWorkspace(activeCharacterKey());
   }, [input, buffs, links, hexa, presetName, draftReady]);
+
+  const reloadDraftFromLiveStorage = () => {
+    skipWorkspaceAutosave.current = true;
+    const last = storage.getScouterLast();
+    if (last?.input) {
+      const job = last.input.jobType || DEFAULT_JOB;
+      const char = last.input.charType || DEFAULT_CHAR;
+      const merged = { ...defaultScouterInput(job, char), ...last.input };
+      const classFd = computeClassFinalDamage(merged.charType, {
+        level: merged.level,
+        reboot: merged.reboot,
+        liberation: merged.liberation,
+        passiveSkillPlus1: merged.specialInnerAbility === "passivePlus1",
+      });
+      if (Math.abs(merged.finalDamagePercent - classFd) < 0.05) {
+        merged.finalDamagePercent = combatExceptionFinalDamagePercent({
+          level: merged.level,
+          reboot: merged.reboot,
+          liberation: merged.liberation,
+        });
+      }
+      prevExceptionFd.current = combatExceptionFinalDamagePercent({
+        level: merged.level,
+        reboot: merged.reboot,
+        liberation: merged.liberation,
+      });
+      if (!supportsOneHandSword(merged.charType)) merged.oneHandSword = false;
+      setInput(merged);
+    } else {
+      setInput(defaultScouterInput(DEFAULT_JOB, DEFAULT_CHAR));
+      prevExceptionFd.current = null;
+    }
+    if (last?.buffs) setBuffs(last.buffs);
+    else setBuffs(defaultBuffState());
+    if (last?.links) setLinks(last.links);
+    else setLinks(defaultLinkState());
+    if (last?.hexa) setHexa(clampHexaForGms(last.hexa));
+    else setHexa(defaultHexaLevels().map(() => 0));
+    setPresetName(last?.name?.trim() || "");
+    setLoadedPresetId("");
+    queueMicrotask(() => {
+      skipWorkspaceAutosave.current = false;
+    });
+  };
 
   const patch = (partial: Partial<ScouterInput>) =>
     setInput((prev) => ({ ...prev, ...partial }));
@@ -880,6 +927,8 @@ export default function ScouterPage() {
           <span className="text-sm font-medium text-accent">{presetMsg}</span>
         ) : null}
       </header>
+
+      <ActiveCharacterBar onSwitched={reloadDraftFromLiveStorage} />
 
       <PairingBar
         compact

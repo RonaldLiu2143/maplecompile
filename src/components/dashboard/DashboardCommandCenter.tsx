@@ -27,6 +27,7 @@ import type { RosterSlotState } from "@/hooks/useRoster";
 const TOOL_LINKS = [
   { href: "/calc/scouter", label: "Scouter" },
   { href: "/calc/equips/setup", label: "Equipment" },
+  { href: "/calc/planner", label: "Upgrade Planner" },
   { href: "/calc/bosses", label: "Boss Income" },
   { href: "/calc/liberation", label: "Liberation" },
   { href: "/calc/scouter/gallery", label: "Gallery" },
@@ -63,7 +64,7 @@ function readBuildChips(primary: RosterPrimary | null): BuildChips {
   const setup = ws?.equipSetup ?? storage.getEquipSetup();
   const equipCount = countFilledSlots(setup);
   const hasScouter = Boolean(scouter?.input);
-  const paired = Boolean(getPairing());
+  const paired = Boolean(key ? getPairing(key) : getPairing());
 
   let bossCleared = 0;
   let bossEnabled = 0;
@@ -288,6 +289,11 @@ export function DashboardPrimaryHero({
             ) : null}
           </div>
 
+          <p className="text-[11px] opacity-55">
+            Manager ★ / Active character bar sets the same primary across
+            Scouter, Equipment, HEXA, Bosses, and Liberation.
+          </p>
+
           <div className="flex flex-wrap gap-2">
             <Link
               href="/calc/scouter"
@@ -300,6 +306,12 @@ export function DashboardPrimaryHero({
               className="rounded-md border border-border px-3 py-1.5 text-xs font-semibold transition hover:bg-surface-muted"
             >
               Equipment
+            </Link>
+            <Link
+              href="/calc/planner"
+              className="rounded-md border border-border px-3 py-1.5 text-xs font-semibold transition hover:bg-surface-muted"
+            >
+              Upgrade Planner
             </Link>
             <Link
               href="/calc/bosses"

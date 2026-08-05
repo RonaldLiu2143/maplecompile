@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { CharacterSearchBar } from "@/components/dashboard/CharacterSearchBar";
 import { DashboardPrimaryHero } from "@/components/dashboard/DashboardCommandCenter";
 import { DashboardDiarySection } from "@/components/dashboard/DashboardDiarySection";
+import { DashboardWeeklyChecklist } from "@/components/dashboard/DashboardWeeklyChecklist";
 import { RosterReorderList } from "@/components/dashboard/RosterReorderList";
 import { useRoster } from "@/hooks/useRoster";
 import { entryKey } from "@/lib/dashboard/roster";
@@ -56,7 +57,7 @@ function DashboardInner() {
         <h1 className="font-display mt-1 text-3xl font-bold tracking-tight sm:text-4xl">
           Dashboard
         </h1>
-        <p className="mt-2 text-sm opacity-80">
+          <p className="mt-2 text-sm opacity-80">
           Your command center — primary character, weekly bosses, and quick
           jumps into Scouter, gear, and income tools.
         </p>
@@ -69,6 +70,15 @@ function DashboardInner() {
           Loading…
         </div>
       )}
+
+      {hydrated ? (
+        <DashboardWeeklyChecklist
+          roster={roster}
+          slots={slots}
+          primary={primary}
+          hydrated={hydrated}
+        />
+      ) : null}
 
       {hydrated ? (
         <CharacterSearchBar roster={roster} onAdded={handleRosterAdded} />

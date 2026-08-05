@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useMemo, useState, type ReactNode } from "react";
+import { ActiveCharacterBar } from "@/components/ActiveCharacterBar";
 import {
   ManageDisplayButton,
   ManageDisplayModal,
@@ -36,6 +37,7 @@ import {
   getHexaSlots,
 } from "@/lib/scouter";
 import { storage } from "@/lib/storage";
+import type { RosterEntry } from "@/lib/dashboard/roster";
 
 const inputClass =
   "rounded border border-border bg-background px-2 py-1 text-sm outline-none focus:border-accent";
@@ -302,7 +304,7 @@ function GroupHeading({ children }: { children: ReactNode }) {
 }
 
 export default function HexaTrackerPage() {
-  const { hydrated, roster, primary, slots } = useRoster();
+  const { hydrated, roster, primary, slots, handleSetPrimary } = useRoster();
   const [ready, setReady] = useState(false);
   const [state, setState] = useState<HexaTrackerState | null>(null);
   const [pairing, setPairing] = useState<HexaScouterPairing | null>(null);
@@ -339,26 +341,26 @@ export default function HexaTrackerPage() {
   }, [rosterOptions, visibleIds]);
 
   const refresh = useCallback(() => {
-    const tracker = loadHexaTracker();
-    setState(tracker);
-    setPairing(getHexaScouterPairing());
+    const options = listRosterOptions();
+    setRosterOptions(options);
     setPresets(
       storage.listScouterPresets().map((p) => ({ id: p.id, name: p.name })),
     );
     setCharType(storage.getCharType() || "adele");
-    const options = listRosterOptions();
-    setRosterOptions(options);
     const prefs = readHexaDisplay();
     setDisplayPrefs(prefs);
     const available = options.map((o) => o.key);
     const shown = resolveVisibleIds(prefs, available);
-    setRosterKey((prev) => {
-      const preferred =
-        tracker.rosterKey || primaryRosterKey() || shown[0] || "";
-      if (prev && shown.includes(prev)) return prev;
-      if (preferred && shown.includes(preferred)) return preferred;
-      return shown[0] || preferred || "";
-    });
+    const preferred =
+      primaryRosterKey() || shown[0] || available[0] || "";
+    const key =
+      preferred && shown.includes(preferred)
+        ? preferred
+        : shown[0] || preferred || "";
+    setRosterKey(key);
+    const tracker = loadHexaTracker(key || null);
+    setState(tracker);
+    setPairing(getHexaScouterPairing(key || null));
     setReady(true);
   }, []);
 
@@ -369,8 +371,8 @@ export default function HexaTrackerPage() {
     setTimeout(() => setMsg(null), 2800);
   };
 
-  const persist = (next: HexaTrackerState) => {
-    const saved = saveHexaTracker(next);
+  const persist = (next: HexaTrackerState, key = rosterKey) => {
+    const saved = saveHexaTracker(next, key || null);
     setState(saved);
   };
 
@@ -385,8 +387,15 @@ export default function HexaTrackerPage() {
   };
 
   const selectRosterCharacter = (key: string) => {
+    const entry = roster.find((e) => entryKey(e) === key);
+    if (entry) {
+      handleSetPrimary(entry);
+    }
     setRosterKey(key);
-    if (state) persist({ ...state, rosterKey: key || null });
+    const tracker = loadHexaTracker(key || null);
+    setState(tracker);
+    setPairing(getHexaScouterPairing(key || null));
+    setCharType(storage.getCharType() || "adele");
   };
 
   const applyDisplayIds = (ids: string[]) => {
@@ -399,8 +408,11 @@ export default function HexaTrackerPage() {
     const shown = resolveVisibleIds(nextPrefs, allRosterIds);
     if (rosterKey && !shown.includes(rosterKey)) {
       const next = shown[0] || "";
-      setRosterKey(next);
-      if (state) persist({ ...state, rosterKey: next || null });
+      if (next) selectRosterCharacter(next);
+      else {
+        setRosterKey("");
+        setState(loadHexaTracker(null));
+      }
     }
   };
 
@@ -424,19 +436,28 @@ export default function HexaTrackerPage() {
   };
 
   const onUnpair = () => {
-    clearHexaScouterPairing();
+    clearHexaScouterPairing(rosterKey || null);
     setPairing(null);
     flash("Unpaired");
   };
 
   const onImport = () => {
-    const next = importLevelsFromPairedScouter();
+    const next = importLevelsFromPairedScouter(rosterKey || null);
     if (!next) {
       flash("No hexa levels found on paired scouter");
       return;
     }
     setState(next);
     flash("Imported levels from Scouter");
+  };
+
+  const onBarSelect = (entry: RosterEntry) => {
+    handleSetPrimary(entry);
+    const key = entryKey(entry);
+    setRosterKey(key);
+    setState(loadHexaTracker(key));
+    setPairing(getHexaScouterPairing(key));
+    setCharType(storage.getCharType() || "adele");
   };
 
   if (!ready || !state || !hydrated) {
@@ -468,6 +489,8 @@ export default function HexaTrackerPage() {
           keep progress linked to a preset or draft.
         </p>
       </div>
+
+      <ActiveCharacterBar onSelect={onBarSelect} />
 
       {roster.length > 0 ? (
         <section className="rounded-xl border border-border/40 bg-surface/80 p-3">

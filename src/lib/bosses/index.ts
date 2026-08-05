@@ -46,9 +46,17 @@ export {
   resolveActiveBossKey,
   upsertCharacterState,
   maybeMigrateLocalToPrimary,
+  ensureBossClearsForCurrentWeek,
   type CharacterBossState,
   type BossIncomeStore,
 } from "./persist";
+
+export {
+  currentBossWeekId,
+  currentWeeklyResetStart,
+  nextWeeklyReset,
+  formatResetCountdown,
+} from "./weekly-reset";
 
 export {
   BOSS_PRESETS_KEY,

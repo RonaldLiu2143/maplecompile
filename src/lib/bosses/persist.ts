@@ -5,6 +5,7 @@ import {
   type BossClearSelection,
   type WorldType,
 } from "./income";
+import { currentBossWeekId } from "./weekly-reset";
 
 export const BOSS_INCOME_STORAGE_KEY = "maplecompile.boss-income.v2";
 const LEGACY_STORAGE_KEY = "maplecompile.boss-income.v1";
@@ -22,6 +23,11 @@ export type BossIncomeStore = {
   /** Active character key (`region:name`) or LOCAL_BOSS_KEY. */
   activeKey: string | null;
   byCharacter: Record<string, CharacterBossState>;
+  /**
+   * ISO date (YYYY-MM-DD) of the Thursday UTC week these `cleared` flags belong to.
+   * When the week rolls, clears are reset on read.
+   */
+  clearWeekId?: string;
 };
 
 function normalizeWorld(raw: unknown): WorldType {
@@ -72,7 +78,31 @@ function emptyStore(): BossIncomeStore {
     world: "heroic",
     activeKey: null,
     byCharacter: {},
+    clearWeekId: currentBossWeekId(),
   };
+}
+
+function resetClearedFlags(store: BossIncomeStore): BossIncomeStore {
+  const byCharacter: Record<string, CharacterBossState> = {};
+  for (const [key, state] of Object.entries(store.byCharacter)) {
+    byCharacter[key] = {
+      selections: state.selections.map((s) => ({ ...s, cleared: false })),
+    };
+  }
+  return {
+    ...store,
+    byCharacter,
+    clearWeekId: currentBossWeekId(),
+  };
+}
+
+/** If stored clears are from a prior week, zero `cleared` and stamp the new week. */
+export function ensureBossClearsForCurrentWeek(
+  store: BossIncomeStore,
+): BossIncomeStore {
+  const weekId = currentBossWeekId();
+  if (store.clearWeekId === weekId) return store;
+  return resetClearedFlags(store);
 }
 
 function readLegacyV1(): BossIncomeStore | null {
@@ -118,13 +148,22 @@ export function readBossIncomeStore(): BossIncomeStore {
         byCharacter[key] = normalizeCharacterState(value);
       }
     }
-    return {
+    const store: BossIncomeStore = {
       version: 2,
       world: normalizeWorld(parsed.world),
       activeKey:
         typeof parsed.activeKey === "string" ? parsed.activeKey : null,
       byCharacter,
+      clearWeekId:
+        typeof parsed.clearWeekId === "string"
+          ? parsed.clearWeekId
+          : undefined,
     };
+    const next = ensureBossClearsForCurrentWeek(store);
+    if (next !== store) {
+      writeBossIncomeStore(next);
+    }
+    return next;
   } catch {
     return emptyStore();
   }

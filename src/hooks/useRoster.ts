@@ -15,18 +15,11 @@ import {
   readRosterState,
   removeFromRoster,
   reorderRoster,
-  setPrimary,
   type RosterEntry,
   type RosterPrimary,
   type RosterState,
 } from "@/lib/dashboard/roster";
-import {
-  activeCharacterKey,
-  applyWorkspaceToLive,
-  emptyWorkspace,
-  getWorkspace,
-  persistLiveToWorkspace,
-} from "@/lib/character-workspace";
+import { switchActiveCharacter } from "@/lib/active-character";
 
 export type RosterSlotState =
   | { status: "loading" }
@@ -180,16 +173,7 @@ export function useRoster() {
   }
 
   function handleSetPrimary(entry: RosterEntry) {
-    const prevKey = activeCharacterKey(primary);
-    const nextKey = entryKey(entry);
-    if (prevKey && prevKey !== nextKey) {
-      persistLiveToWorkspace(prevKey);
-    }
-    applyRosterState(setPrimary(entry));
-    if (prevKey !== nextKey) {
-      const ws = getWorkspace(nextKey) ?? emptyWorkspace();
-      applyWorkspaceToLive(ws);
-    }
+    applyRosterState(switchActiveCharacter(entry));
   }
 
   function handleMoveUp(index: number) {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { ActiveCharacterBar } from "@/components/ActiveCharacterBar";
 import {
   buildDesiredStatGroups,
   canPickDesiredStat,
@@ -160,6 +161,8 @@ export default function CubingCalculatorPage() {
           including tier-ups and Double Miracle Time.
         </p>
       </header>
+
+      <ActiveCharacterBar />
 
       <section className="space-y-3 rounded-xl border border-border/40 bg-surface/80 p-4">
         <h2 className="font-display text-lg font-semibold">

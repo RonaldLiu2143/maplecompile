@@ -63,8 +63,11 @@ export function subscribeMapleDataReload(onReload: () => void): () => void {
     if (
       e.key == null ||
       e.key === "maplecompile-scouter-equip-pair" ||
+      e.key === "maplecompile-scouter-equip-pair-by-char-v1" ||
       e.key === "maplecompile-hexa-scouter-pair" ||
+      e.key === "maplecompile-hexa-scouter-pair-by-char-v1" ||
       e.key === "maplecompile-hexa-tracker-v1" ||
+      e.key === "maplecompile-hexa-tracker-by-char-v1" ||
       e.key === "maplecompile-diary-v1" ||
       e.key === "equipSetup" ||
       e.key === "flameSetup" ||
@@ -73,6 +76,9 @@ export function subscribeMapleDataReload(onReload: () => void): () => void {
       e.key === "maplecompile-character-workspace-v1" ||
       e.key === "maplecompile-scouter-presets" ||
       e.key === "maplecompile-planner-overrides" ||
+      e.key === "maplecompile-roster" ||
+      e.key === "maplecompile.boss-income.v2" ||
+      e.key === "maplecompile.liberation.v2" ||
       e.key === "jobType" ||
       e.key === "charType"
     ) {

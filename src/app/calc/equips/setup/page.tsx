@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { EquipGrid, slotEquip } from "@/components/EquipGrid";
 import {
   EquipItemEditor,
@@ -35,6 +35,7 @@ import {
   slotToEquipType,
 } from "@/lib/slots";
 import { storage } from "@/lib/storage";
+import { ActiveCharacterBar } from "@/components/ActiveCharacterBar";
 import { PairingBar } from "@/components/PairingBar";
 import {
   activeCharacterKey,
@@ -140,6 +141,7 @@ export default function SetupClient() {
   const [hydrated, setHydrated] = useState(false);
   const [starterId, setStarterId] = useState("");
   const [starterMsg, setStarterMsg] = useState<string | null>(null);
+  const skipWorkspaceAutosave = useRef(false);
 
   const classValue = `${jobType}:${charType}`;
   const activeSlot = panel?.slot ?? null;
@@ -221,12 +223,33 @@ export default function SetupClient() {
   }, [loadCatalog]);
 
   useEffect(() => {
-    if (!hydrated) return;
+    if (!hydrated || skipWorkspaceAutosave.current) return;
     storage.setJobType(jobType);
     storage.setCharType(charType);
     storage.setEquipSetup(setup);
     persistLiveToWorkspace(activeCharacterKey());
   }, [jobType, charType, setup, hydrated]);
+
+  const reloadSetupFromLiveStorage = () => {
+    skipWorkspaceAutosave.current = true;
+    const savedJob = storage.getJobType();
+    const savedChar = storage.getCharType();
+    const savedSetup = storage.getEquipSetup();
+    const savedFlames = storage.getFlameSetup();
+    const job = (savedJob || DEFAULT_JOB) as JobType;
+    const char = savedChar || DEFAULT_CHAR;
+    setJobType(job);
+    setCharType(char);
+    setSetup(
+      Object.keys(savedSetup).length ? clampSetupStarForce(savedSetup) : {},
+    );
+    setFlameSetup(savedFlames);
+    setPanel(null);
+    void loadCatalog(job, char);
+    queueMicrotask(() => {
+      skipWorkspaceAutosave.current = false;
+    });
+  };
 
   const syncPlannerOverride = useCallback(
     (slotId: string, equip: Equip) => {
@@ -442,6 +465,8 @@ export default function SetupClient() {
           share the same character and gear grid.
         </p>
       </header>
+
+      <ActiveCharacterBar onSwitched={reloadSetupFromLiveStorage} />
 
       <PairingBar compact />
 

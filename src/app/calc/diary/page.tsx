@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { ActiveCharacterBar } from "@/components/ActiveCharacterBar";
 import { LogDropModal } from "@/components/diary/LogDropModal";
 import { useDiary } from "@/hooks/useDiary";
 import { useRoster } from "@/hooks/useRoster";
@@ -118,7 +119,7 @@ function DropHistoryList({
 }
 
 export default function DiaryPage() {
-  const { hydrated, roster, slots } = useRoster();
+  const { hydrated, roster, slots, handleSetPrimary } = useRoster();
   const { ready, state, persist } = useDiary();
   const [logOpen, setLogOpen] = useState(false);
 
@@ -143,6 +144,8 @@ export default function DiaryPage() {
           this browser.
         </p>
       </div>
+
+      <ActiveCharacterBar onSelect={handleSetPrimary} />
 
       <div className="grid grid-cols-2 gap-3">
         <CounterCard

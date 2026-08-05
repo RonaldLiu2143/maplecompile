@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState, type MouseEvent } from "react";
+import { ActiveCharacterBar } from "@/components/ActiveCharacterBar";
 import {
   ManageDisplayButton,
   ManageDisplayModal,
@@ -81,7 +82,7 @@ function bossCardClass(cleared: boolean, doing: boolean): string {
 }
 
 export default function LiberationPage() {
-  const { hydrated, roster, primary, slots } = useRoster();
+  const { hydrated, roster, primary, slots, handleSetPrimary } = useRoster();
   const [ready, setReady] = useState(false);
   const [store, setStore] = useState<LiberationStore>(() =>
     readLiberationStore(),
@@ -147,17 +148,15 @@ export default function LiberationPage() {
       next = { ...next, selectedCharacterIds: stillValid };
       if (stillValid.length === 0) {
         next = { ...next, mode: "preview", activeCharacterId: null };
-      } else if (
-        !next.activeCharacterId ||
-        !stillValid.includes(next.activeCharacterId)
-      ) {
-        next = {
-          ...next,
-          activeCharacterId:
-            preferred && stillValid.includes(preferred)
-              ? preferred
-              : (stillValid[0] ?? null),
-        };
+      } else {
+        // Keep Liberation focus aligned with roster primary when possible.
+        const active =
+          preferred && stillValid.includes(preferred)
+            ? preferred
+            : stillValid.includes(next.activeCharacterId ?? "")
+              ? next.activeCharacterId
+              : stillValid[0]!;
+        next = { ...next, activeCharacterId: active };
       }
     }
 
@@ -325,6 +324,8 @@ export default function LiberationPage() {
           weekly bosses.
         </p>
       </header>
+
+      <ActiveCharacterBar onSelect={handleSetPrimary} />
 
       <div className="grid gap-5 xl:grid-cols-[minmax(280px,0.95fr)_minmax(0,1.55fr)]">
         {/* ── Left column ── */}

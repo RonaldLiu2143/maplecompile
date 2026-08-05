@@ -30,6 +30,7 @@ const ROSTER_LINKS: NavLink[] = [
 ];
 
 const CALCULATOR_LINKS: NavLink[] = [
+  { href: "/calc/planner", label: "Upgrade Planner" },
   { href: "/calc/equips/flames", label: "Flame Calculator" },
   { href: "/calc/cubing", label: "Cubing Calculator" },
 ];

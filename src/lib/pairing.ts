@@ -1,3 +1,4 @@
+import { activeCharacterKey, patchWorkspace } from "./character-workspace";
 import { getCharName } from "./jobs";
 import { notifyMapleDataChanged } from "./maple-events";
 import { storage, type ScouterLastState } from "./storage";
@@ -5,8 +6,13 @@ import { countFilledSlots } from "./starter-loadouts";
 import type { EquipSetup } from "./types";
 import type { ScouterInput } from "./scouter/types";
 import { defaultScouterInput } from "./scouter/types";
+import { entryKey, readRosterState } from "./dashboard/roster";
 
+/** Legacy global pairing key (pre per-character). */
 export const PAIRING_KEY = "maplecompile-scouter-equip-pair";
+/** Per-character pairing map. */
+export const PAIRING_BY_CHAR_KEY = "maplecompile-scouter-equip-pair-by-char-v1";
+const PAIRING_MIGRATED_KEY = "maplecompile-scouter-equip-pair-migrated-v1";
 const GUIDE_DISMISSED_KEY = "maplecompile-guide-dismissed";
 
 export type PairedScouterRef =
@@ -27,6 +33,8 @@ export type ScouterEquipPairing = {
   updatedAt: number;
 };
 
+type PairingByCharacter = Record<string, ScouterEquipPairing>;
+
 function readJson<T>(key: string, fallback: T): T {
   if (typeof window === "undefined") return fallback;
   try {
@@ -43,20 +51,124 @@ function writeJson(key: string, value: unknown) {
   localStorage.setItem(key, JSON.stringify(value));
 }
 
-export function getPairing(): ScouterEquipPairing | null {
+function readLegacyPairing(): ScouterEquipPairing | null {
   const raw = readJson<ScouterEquipPairing | null>(PAIRING_KEY, null);
   if (!raw?.scouter || !raw?.equip) return null;
   return raw;
 }
 
-export function setPairing(pairing: ScouterEquipPairing) {
+function readPairingMap(): PairingByCharacter {
+  const raw = readJson<PairingByCharacter | null>(PAIRING_BY_CHAR_KEY, null);
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return {};
+  const out: PairingByCharacter = {};
+  for (const [key, value] of Object.entries(raw)) {
+    if (!key || !value?.scouter || !value?.equip) continue;
+    out[key] = value;
+  }
+  return out;
+}
+
+function writePairingMap(map: PairingByCharacter) {
+  writeJson(PAIRING_BY_CHAR_KEY, map);
+}
+
+/** One-shot: copy legacy global pairing into the primary character bucket. */
+export function migrateLegacyPairing(): void {
+  if (typeof window === "undefined") return;
+  try {
+    if (localStorage.getItem(PAIRING_MIGRATED_KEY) === "1") return;
+  } catch {
+    return;
+  }
+
+  const legacy = readLegacyPairing();
+  const map = readPairingMap();
+  const primary = readRosterState().primary;
+  const primaryKey = primary ? entryKey(primary) : null;
+
+  if (legacy && primaryKey && !map[primaryKey]) {
+    map[primaryKey] = legacy;
+    writePairingMap(map);
+  }
+
+  try {
+    localStorage.setItem(PAIRING_MIGRATED_KEY, "1");
+  } catch {
+    /* ignore */
+  }
+}
+
+function resolvePairingKey(characterKey?: string | null): string | null {
+  if (characterKey) return characterKey;
+  return activeCharacterKey();
+}
+
+export function getPairing(
+  characterKey?: string | null,
+): ScouterEquipPairing | null {
+  migrateLegacyPairing();
+  const key = resolvePairingKey(characterKey);
+  if (key) {
+    const map = readPairingMap();
+    if (map[key]) return map[key];
+  }
+  // No roster / unknown key: fall back to legacy global for local-only use.
+  if (!key) return readLegacyPairing();
+  return null;
+}
+
+export function setPairing(
+  pairing: ScouterEquipPairing,
+  characterKey?: string | null,
+) {
+  migrateLegacyPairing();
+  const key = resolvePairingKey(characterKey);
+  if (key) {
+    const map = readPairingMap();
+    map[key] = pairing;
+    writePairingMap(map);
+    patchWorkspace(key, { pairedAt: pairing.updatedAt });
+  }
+  // Keep legacy key mirrored for the active character (compat + same-tab listen).
   writeJson(PAIRING_KEY, pairing);
   notifyMapleDataChanged("pairing");
 }
 
-export function clearPairing() {
+export function clearPairing(characterKey?: string | null) {
   if (typeof window === "undefined") return;
-  localStorage.removeItem(PAIRING_KEY);
+  migrateLegacyPairing();
+  const key = resolvePairingKey(characterKey);
+  if (key) {
+    const map = readPairingMap();
+    delete map[key];
+    writePairingMap(map);
+    patchWorkspace(key, { pairedAt: undefined });
+  }
+  const active = activeCharacterKey();
+  if (!key || key === active) {
+    localStorage.removeItem(PAIRING_KEY);
+  }
+  notifyMapleDataChanged("pairing");
+}
+
+/**
+ * After switching active character, mirror that character's pairing into the
+ * live legacy key (or clear it) so PairingBar / listeners stay in sync.
+ */
+export function applyLivePairingForCharacter(characterKey: string | null) {
+  if (typeof window === "undefined") return;
+  migrateLegacyPairing();
+  if (!characterKey) {
+    localStorage.removeItem(PAIRING_KEY);
+    notifyMapleDataChanged("pairing");
+    return;
+  }
+  const pairing = getPairing(characterKey);
+  if (pairing) {
+    writeJson(PAIRING_KEY, pairing);
+  } else {
+    localStorage.removeItem(PAIRING_KEY);
+  }
   notifyMapleDataChanged("pairing");
 }
 
@@ -103,6 +215,8 @@ export type PairArgs = {
   scouterName?: string;
   /** Optional live scouter state to persist before pairing. */
   scouterState?: ScouterLastState;
+  /** Explicit character key (defaults to active/primary). */
+  characterKey?: string | null;
 };
 
 /**
@@ -158,7 +272,7 @@ export function pairScouterAndEquip(args: PairArgs = {}): ScouterEquipPairing {
     },
     updatedAt: Date.now(),
   };
-  setPairing(pairing);
+  setPairing(pairing, args.characterKey);
   return pairing;
 }
 
@@ -172,8 +286,10 @@ export type ResolvedPair = {
 };
 
 /** Resolve live scouter + equip data for a stored pairing (or null if unpaired). */
-export function resolvePairing(): ResolvedPair | null {
-  const pairing = getPairing();
+export function resolvePairing(
+  characterKey?: string | null,
+): ResolvedPair | null {
+  const pairing = getPairing(characterKey);
   if (!pairing) return null;
 
   const setup = storage.getEquipSetup();

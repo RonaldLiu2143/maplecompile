@@ -10,10 +10,16 @@ import {
   defaultHexaLevels,
 } from "./scouter/buffs";
 import { storage } from "./storage";
+import { activeCharacterKey } from "./character-workspace";
 import { entryKey, readRosterState } from "./dashboard/roster";
 
 export const HEXA_TRACKER_KEY = "maplecompile-hexa-tracker-v1";
+/** Per-character HEXA store (v2). */
+export const HEXA_TRACKER_BY_CHAR_KEY = "maplecompile-hexa-tracker-by-char-v1";
 export const HEXA_SCOUTER_PAIR_KEY = "maplecompile-hexa-scouter-pair";
+export const HEXA_SCOUTER_PAIR_BY_CHAR_KEY =
+  "maplecompile-hexa-scouter-pair-by-char-v1";
+const HEXA_MIGRATED_KEY = "maplecompile-hexa-tracker-migrated-v1";
 
 export type HexaTrackerState = {
   /** Per-slot skill levels (length HEXA_SLOT_COUNT). */
@@ -34,6 +40,9 @@ export type HexaScouterPairing = {
   rosterKey: string | null;
   updatedAt: number;
 };
+
+type HexaByCharacter = Record<string, HexaTrackerState>;
+type HexaPairByCharacter = Record<string, HexaScouterPairing>;
 
 function readJson<T>(key: string, fallback: T): T {
   if (typeof window === "undefined") return fallback;
@@ -62,55 +71,200 @@ function normalizeLevels(raw: unknown): number[] {
   return clampHexaForGms(next.slice(0, HEXA_SLOT_COUNT));
 }
 
-export function defaultHexaTrackerState(): HexaTrackerState {
+export function defaultHexaTrackerState(
+  rosterKey: string | null = null,
+): HexaTrackerState {
   return {
     levels: defaultHexaLevels().map(() => 0),
     fragments: 0,
     erda: 0,
-    rosterKey: null,
+    rosterKey,
     updatedAt: Date.now(),
   };
 }
 
-export function loadHexaTracker(): HexaTrackerState {
-  const raw = readJson<Partial<HexaTrackerState> | null>(HEXA_TRACKER_KEY, null);
-  if (!raw) return defaultHexaTrackerState();
+function normalizeTracker(
+  raw: Partial<HexaTrackerState> | null | undefined,
+  rosterKey: string | null,
+): HexaTrackerState {
+  if (!raw) return defaultHexaTrackerState(rosterKey);
   return {
     levels: normalizeLevels(raw.levels),
     fragments: Math.max(0, Math.floor(Number(raw.fragments) || 0)),
     erda: Math.max(0, Math.floor(Number(raw.erda) || 0)),
-    rosterKey: typeof raw.rosterKey === "string" ? raw.rosterKey : null,
+    rosterKey:
+      typeof raw.rosterKey === "string"
+        ? raw.rosterKey
+        : rosterKey,
     updatedAt: Number(raw.updatedAt) || Date.now(),
   };
 }
 
-export function saveHexaTracker(state: HexaTrackerState) {
+function readByCharacter(): HexaByCharacter {
+  const raw = readJson<HexaByCharacter | null>(HEXA_TRACKER_BY_CHAR_KEY, null);
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return {};
+  const out: HexaByCharacter = {};
+  for (const [key, value] of Object.entries(raw)) {
+    if (!key) continue;
+    out[key] = normalizeTracker(value, key);
+  }
+  return out;
+}
+
+function writeByCharacter(map: HexaByCharacter) {
+  writeJson(HEXA_TRACKER_BY_CHAR_KEY, map);
+}
+
+function readPairByCharacter(): HexaPairByCharacter {
+  const raw = readJson<HexaPairByCharacter | null>(
+    HEXA_SCOUTER_PAIR_BY_CHAR_KEY,
+    null,
+  );
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return {};
+  const out: HexaPairByCharacter = {};
+  for (const [key, value] of Object.entries(raw)) {
+    if (!key || !value?.scouter) continue;
+    out[key] = value;
+  }
+  return out;
+}
+
+function writePairByCharacter(map: HexaPairByCharacter) {
+  writeJson(HEXA_SCOUTER_PAIR_BY_CHAR_KEY, map);
+}
+
+/** One-shot: migrate legacy single-blob HEXA into primary (or tagged) key. */
+export function migrateLegacyHexaTracker(): void {
+  if (typeof window === "undefined") return;
+  try {
+    if (localStorage.getItem(HEXA_MIGRATED_KEY) === "1") return;
+  } catch {
+    return;
+  }
+
+  const map = readByCharacter();
+  const legacy = readJson<Partial<HexaTrackerState> | null>(
+    HEXA_TRACKER_KEY,
+    null,
+  );
+  const primaryKey = primaryRosterKey();
+  const targetKey =
+    (legacy && typeof legacy.rosterKey === "string" && legacy.rosterKey) ||
+    primaryKey;
+
+  if (legacy && targetKey && !map[targetKey]) {
+    map[targetKey] = normalizeTracker(legacy, targetKey);
+    writeByCharacter(map);
+  }
+
+  const pairMap = readPairByCharacter();
+  const legacyPair = readJson<HexaScouterPairing | null>(
+    HEXA_SCOUTER_PAIR_KEY,
+    null,
+  );
+  const pairKey =
+    (legacyPair && typeof legacyPair.rosterKey === "string"
+      ? legacyPair.rosterKey
+      : null) || primaryKey;
+  if (legacyPair?.scouter && pairKey && !pairMap[pairKey]) {
+    pairMap[pairKey] = legacyPair;
+    writePairByCharacter(pairMap);
+  }
+
+  try {
+    localStorage.setItem(HEXA_MIGRATED_KEY, "1");
+  } catch {
+    /* ignore */
+  }
+}
+
+function resolveHexaKey(characterKey?: string | null): string {
+  if (characterKey) return characterKey;
+  return (
+    activeCharacterKey() ||
+    primaryRosterKey() ||
+    "__local__"
+  );
+}
+
+export function loadHexaTracker(
+  characterKey?: string | null,
+): HexaTrackerState {
+  migrateLegacyHexaTracker();
+  const key = resolveHexaKey(characterKey);
+  const map = readByCharacter();
+  if (map[key]) return { ...map[key], rosterKey: key === "__local__" ? null : key };
+  return defaultHexaTrackerState(key === "__local__" ? null : key);
+}
+
+export function saveHexaTracker(
+  state: HexaTrackerState,
+  characterKey?: string | null,
+) {
+  migrateLegacyHexaTracker();
+  const key = resolveHexaKey(characterKey ?? state.rosterKey);
   const next: HexaTrackerState = {
     ...state,
     levels: normalizeLevels(state.levels),
     fragments: Math.max(0, Math.floor(state.fragments)),
     erda: Math.max(0, Math.floor(state.erda)),
+    rosterKey: key === "__local__" ? null : key,
     updatedAt: Date.now(),
   };
+  const map = readByCharacter();
+  map[key] = next;
+  writeByCharacter(map);
+  // Mirror legacy blob for active character (compat listeners).
   writeJson(HEXA_TRACKER_KEY, next);
   notifyMapleDataChanged("other");
   return next;
 }
 
-export function getHexaScouterPairing(): HexaScouterPairing | null {
-  const raw = readJson<HexaScouterPairing | null>(HEXA_SCOUTER_PAIR_KEY, null);
-  if (!raw?.scouter) return null;
-  return raw;
+export function getHexaScouterPairing(
+  characterKey?: string | null,
+): HexaScouterPairing | null {
+  migrateLegacyHexaTracker();
+  const key = resolveHexaKey(characterKey);
+  const map = readPairByCharacter();
+  if (map[key]) return map[key];
+  if (key === "__local__" || !activeCharacterKey()) {
+    const legacy = readJson<HexaScouterPairing | null>(
+      HEXA_SCOUTER_PAIR_KEY,
+      null,
+    );
+    if (legacy?.scouter) return legacy;
+  }
+  return null;
 }
 
-export function setHexaScouterPairing(pairing: HexaScouterPairing) {
-  writeJson(HEXA_SCOUTER_PAIR_KEY, pairing);
+export function setHexaScouterPairing(
+  pairing: HexaScouterPairing,
+  characterKey?: string | null,
+) {
+  migrateLegacyHexaTracker();
+  const key = resolveHexaKey(characterKey ?? pairing.rosterKey);
+  const next: HexaScouterPairing = {
+    ...pairing,
+    rosterKey: key === "__local__" ? pairing.rosterKey : key,
+  };
+  const map = readPairByCharacter();
+  map[key] = next;
+  writePairByCharacter(map);
+  writeJson(HEXA_SCOUTER_PAIR_KEY, next);
   notifyMapleDataChanged("pairing");
 }
 
-export function clearHexaScouterPairing() {
+export function clearHexaScouterPairing(characterKey?: string | null) {
   if (typeof window === "undefined") return;
-  localStorage.removeItem(HEXA_SCOUTER_PAIR_KEY);
+  migrateLegacyHexaTracker();
+  const key = resolveHexaKey(characterKey);
+  const map = readPairByCharacter();
+  delete map[key];
+  writePairByCharacter(map);
+  const active = resolveHexaKey();
+  if (key === active) {
+    localStorage.removeItem(HEXA_SCOUTER_PAIR_KEY);
+  }
   notifyMapleDataChanged("pairing");
 }
 
@@ -132,7 +286,11 @@ export type PairHexaArgs = {
  * Link current HEXA tracker progress with a scouter draft or saved preset.
  */
 export function pairHexaWithScouter(args: PairHexaArgs = {}): HexaScouterPairing {
-  const tracker = loadHexaTracker();
+  const rosterKey =
+    args.rosterKey !== undefined
+      ? args.rosterKey
+      : primaryRosterKey();
+  const tracker = loadHexaTracker(rosterKey);
   const last = storage.getScouterLast();
 
   if (args.syncLevelsToScouter && last?.input) {
@@ -161,11 +319,6 @@ export function pairHexaWithScouter(args: PairHexaArgs = {}): HexaScouterPairing
     };
   }
 
-  const rosterKey =
-    args.rosterKey !== undefined
-      ? args.rosterKey
-      : tracker.rosterKey ?? primaryRosterKey();
-
   const pairing: HexaScouterPairing = {
     scouter,
     hexaName: "HEXA Tracker",
@@ -174,16 +327,19 @@ export function pairHexaWithScouter(args: PairHexaArgs = {}): HexaScouterPairing
   };
 
   if (rosterKey && tracker.rosterKey !== rosterKey) {
-    saveHexaTracker({ ...tracker, rosterKey });
+    saveHexaTracker({ ...tracker, rosterKey }, rosterKey);
   }
 
-  setHexaScouterPairing(pairing);
+  setHexaScouterPairing(pairing, rosterKey);
   return pairing;
 }
 
 /** Pull hexa levels from paired scouter (last, else preset snapshot). */
-export function importLevelsFromPairedScouter(): HexaTrackerState | null {
-  const pairing = getHexaScouterPairing();
+export function importLevelsFromPairedScouter(
+  characterKey?: string | null,
+): HexaTrackerState | null {
+  const key = resolveHexaKey(characterKey);
+  const pairing = getHexaScouterPairing(key);
   if (!pairing) return null;
 
   let levels: number[] | null = null;
@@ -196,12 +352,15 @@ export function importLevelsFromPairedScouter(): HexaTrackerState | null {
   }
   if (!levels) return null;
 
-  const tracker = loadHexaTracker();
-  return saveHexaTracker({
-    ...tracker,
-    levels,
-    rosterKey: pairing.rosterKey ?? tracker.rosterKey,
-  });
+  const tracker = loadHexaTracker(key);
+  return saveHexaTracker(
+    {
+      ...tracker,
+      levels,
+      rosterKey: pairing.rosterKey ?? tracker.rosterKey,
+    },
+    key,
+  );
 }
 
 export function primaryRosterKey(): string | null {

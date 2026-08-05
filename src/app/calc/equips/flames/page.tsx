@@ -8,6 +8,7 @@ import {
   useState,
 } from "react";
 import Link from "next/link";
+import { ActiveCharacterBar } from "@/components/ActiveCharacterBar";
 import {
   buildFlameTable,
   calcFlameProbability,
@@ -381,6 +382,8 @@ export default function FlamesClient() {
           </p>
         )}
       </header>
+
+      <ActiveCharacterBar />
 
       <section className="space-y-3 rounded-xl border border-border/40 bg-surface/80 p-4">
         <h2 className="font-display text-lg font-semibold">
