@@ -1,14 +1,60 @@
 @import "tailwindcss";
 
-:root {
-  --background: #f0f7fc;
+/* Class-based dark: so theme presets (not OS preference) control contrast helpers. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Default / Compile — dark zinc + sky (also before boot script). */
+:root,
+[data-theme="compile"] {
+  --background: #18181b;
+  --foreground: #e2e8f0;
+  --surface: #27272a;
+  --surface-muted: #3f3f46;
+  --border: #52525b;
+  --accent: #38bdf8;
+  --accent-soft: #0c4a6e;
+  --danger: #f87171;
+  --glow-a: #0c4a6e66;
+  --glow-b: #27272a88;
+}
+
+[data-theme="contrast"] {
+  --background: #09090b;
+  --foreground: #fafafa;
+  --surface: #18181b;
+  --surface-muted: #27272a;
+  --border: #a1a1aa;
+  --accent: #22d3ee;
+  --accent-soft: #083344;
+  --danger: #fb7185;
+  --glow-a: #164e6366;
+  --glow-b: #18181b99;
+}
+
+[data-theme="maple"] {
+  --background: #0c1a17;
+  --foreground: #ecfdf5;
+  --surface: #143029;
+  --surface-muted: #1a3d34;
+  --border: #2d5a4c;
+  --accent: #f59e0b;
+  --accent-soft: #3d2e0a;
+  --danger: #f87171;
+  --glow-a: #134e4a55;
+  --glow-b: #78350f33;
+}
+
+[data-theme="mist"] {
+  --background: #e8f1f8;
   --foreground: #18181b;
   --surface: #ffffff;
-  --surface-muted: #e0f2fe;
-  --border: #27272a;
+  --surface-muted: #dbeaf5;
+  --border: #3f4a55;
   --accent: #0369a1;
   --accent-soft: #bae6fd;
   --danger: #b91c1c;
+  --glow-a: #bae6fd66;
+  --glow-b: #e0f2fe88;
 }
 
 @theme inline {
@@ -24,35 +70,13 @@
   --font-display: var(--font-outfit);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #18181b;
-    --foreground: #e2e8f0;
-    --surface: #27272a;
-    --surface-muted: #3f3f46;
-    --border: #52525b;
-    --accent: #38bdf8;
-    --accent-soft: #0c4a6e;
-    --danger: #f87171;
-  }
-}
-
 body {
   background:
-    radial-gradient(ellipse 80% 50% at 10% -10%, #bae6fd55, transparent),
-    radial-gradient(ellipse 60% 40% at 100% 0%, #e0f2fe88, transparent),
+    radial-gradient(ellipse 80% 50% at 10% -10%, var(--glow-a), transparent),
+    radial-gradient(ellipse 60% 40% at 100% 0%, var(--glow-b), transparent),
     var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), system-ui, sans-serif;
-}
-
-@media (prefers-color-scheme: dark) {
-  body {
-    background:
-      radial-gradient(ellipse 80% 50% at 10% -10%, #0c4a6e66, transparent),
-      radial-gradient(ellipse 60% 40% at 100% 0%, #27272a88, transparent),
-      var(--background);
-  }
 }
 
 .font-display {
@@ -98,6 +122,7 @@ input[type="number"]::-webkit-outer-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
+
 input[type="number"] {
   -moz-appearance: textfield;
   appearance: textfield;

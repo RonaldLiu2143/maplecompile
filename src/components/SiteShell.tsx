@@ -9,6 +9,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { ThemePicker } from "@/components/ThemePicker";
 import { WeeklyResetBar } from "@/components/WeeklyResetBar";
 
 const STORAGE_KEY = "maplecompile-sidebar-open";
@@ -319,26 +320,40 @@ export function SiteShell({ children }: { children: ReactNode }) {
         </div>
 
         {open ? (
-          <nav
-            id="site-sidebar-nav"
-            className="maple-scroll flex flex-1 flex-col gap-2 px-1 py-2"
-          >
-            <NavSection links={PRIMARY_LINKS.slice(0, 1)} pathname={pathname} />
-            <NavGroup title="Roster" links={ROSTER_LINKS} pathname={pathname} />
-            <NavSection links={PRIMARY_LINKS.slice(1)} pathname={pathname} />
-            <NavGroup
-              title="Calculators"
-              links={CALCULATOR_LINKS}
-              pathname={pathname}
-            />
-            <NavGroup
-              title="Equipment"
-              links={EQUIPMENT_LINKS}
-              pathname={pathname}
-            />
-            <NavSection links={[GUIDE_LINK]} pathname={pathname} />
-          </nav>
-        ) : null}
+          <>
+            <nav
+              id="site-sidebar-nav"
+              className="maple-scroll flex flex-1 flex-col gap-2 px-1 py-2"
+            >
+              <NavSection
+                links={PRIMARY_LINKS.slice(0, 1)}
+                pathname={pathname}
+              />
+              <NavGroup
+                title="Roster"
+                links={ROSTER_LINKS}
+                pathname={pathname}
+              />
+              <NavSection links={PRIMARY_LINKS.slice(1)} pathname={pathname} />
+              <NavGroup
+                title="Calculators"
+                links={CALCULATOR_LINKS}
+                pathname={pathname}
+              />
+              <NavGroup
+                title="Equipment"
+                links={EQUIPMENT_LINKS}
+                pathname={pathname}
+              />
+              <NavSection links={[GUIDE_LINK]} pathname={pathname} />
+            </nav>
+            <ThemePicker />
+          </>
+        ) : (
+          <div className="mt-auto">
+            <ThemePicker compact />
+          </div>
+        )}
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
@@ -356,10 +371,13 @@ export function SiteShell({ children }: { children: ReactNode }) {
               </button>
               <Link
                 href="/"
-                className="font-display text-xl font-bold tracking-tight text-accent"
+                className="font-display flex-1 text-xl font-bold tracking-tight text-accent"
               >
                 MapleCompile
               </Link>
+              <div className="shrink-0">
+                <ThemePicker compact placement="below" />
+              </div>
             </header>
           ) : null}
           <WeeklyResetBar />
