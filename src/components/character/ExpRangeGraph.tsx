@@ -196,7 +196,7 @@ function SparkBars({
           aria-label="Daily EXP gained"
         >
           <div className={`shrink-0 ${labelPad}`} aria-hidden />
-          <div className={`relative flex min-h-0 flex-1 items-end ${gap}`}>
+          <div className={`relative flex min-h-0 flex-1 ${gap}`}>
             {values.map((v, i) => {
               const hPct =
                 yMax > 0 ? Math.max(v > 0 ? 2 : 0, (v / yMax) * 100) : 0;
@@ -205,7 +205,7 @@ function SparkBars({
               return (
                 <div
                   key={i}
-                  className="relative flex h-full min-w-0 flex-1 flex-col items-center justify-end"
+                  className="relative min-w-0 flex-1"
                   onMouseEnter={() => setHover(i)}
                   onMouseLeave={() => setHover(null)}
                   onFocus={() => setHover(i)}
@@ -213,6 +213,15 @@ function SparkBars({
                   tabIndex={0}
                   aria-label={`${labels?.[i] ?? `Day ${i + 1}`}: ${formatCompact(v)} EXP`}
                 >
+                  {/* Absolute bars avoid % height collapsing inside nested flex. */}
+                  <div
+                    className={`absolute bottom-0 left-1/2 -translate-x-1/2 cursor-default rounded-[2px] border transition-colors ${barW} ${
+                      active
+                        ? "border-accent bg-accent/45"
+                        : "border-accent/85 bg-accent/25 hover:border-accent hover:bg-accent/40"
+                    }`}
+                    style={{ height: `${Math.max(hPct, v > 0 ? 2 : 0)}%` }}
+                  />
                   {showVal ? (
                     <span
                       className={`pointer-events-none absolute left-1/2 z-[1] -translate-x-1/2 -translate-y-full pb-0.5 font-mono tabular-nums leading-none text-foreground/60 ${labelCls}`}
@@ -221,14 +230,6 @@ function SparkBars({
                       {formatCompact(v)}
                     </span>
                   ) : null}
-                  <div
-                    className={`cursor-default rounded-[2px] border transition-colors ${barW} ${
-                      active
-                        ? "border-accent bg-accent/45"
-                        : "border-accent/85 bg-accent/25 hover:border-accent hover:bg-accent/40"
-                    }`}
-                    style={{ height: `${Math.max(hPct, v > 0 ? 2 : 0)}%` }}
-                  />
                 </div>
               );
             })}

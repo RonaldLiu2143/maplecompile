@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { CharacterProfile } from "@/components/character/CharacterProfile";
 import { CharacterSearchBar } from "@/components/dashboard/CharacterSearchBar";
@@ -7,6 +8,7 @@ import { RosterGrid } from "@/components/dashboard/RosterGrid";
 import { useRoster } from "@/hooks/useRoster";
 import {
   CHARACTER_LOOKUP_NETWORK_ERROR,
+  characterProfileHref,
   fetchCharacterLookup,
   readSessionCharacter,
 } from "@/lib/character/client";
@@ -204,7 +206,7 @@ export default function RosterPage() {
           </div>
 
           {!minimized ? (
-            <div id="roster-profile-panel" className="p-4 sm:p-5">
+            <div id="roster-profile-panel" className="p-3 sm:p-4">
               {profilePending && !profile ? (
                 <div className="rounded-xl border border-border/50 bg-surface-muted/30 px-4 py-12 text-center text-sm opacity-70">
                   Looking up {selectedLabel}…
@@ -219,7 +221,21 @@ export default function RosterPage() {
                 </div>
               ) : null}
               {profile ? (
-                <CharacterProfile character={profile} embedded />
+                <div className="[&>article]:border-0 [&>article]:bg-transparent">
+                  <CharacterProfile
+                    character={profile}
+                    embedded
+                    compact
+                    actions={
+                      <Link
+                        href={characterProfileHref(profile)}
+                        className="rounded-lg border border-border px-3 py-1.5 text-sm font-semibold transition hover:bg-surface-muted"
+                      >
+                        Full profile
+                      </Link>
+                    }
+                  />
+                </div>
               ) : null}
             </div>
           ) : (
