@@ -4,9 +4,11 @@ import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CharacterSearchBar } from "@/components/dashboard/CharacterSearchBar";
+import { DashboardPrimaryHero } from "@/components/dashboard/DashboardCommandCenter";
 import { DashboardDiarySection } from "@/components/dashboard/DashboardDiarySection";
 import { RosterReorderList } from "@/components/dashboard/RosterReorderList";
 import { useRoster } from "@/hooks/useRoster";
+import { entryKey } from "@/lib/dashboard/roster";
 
 function DashboardInner() {
   const router = useRouter();
@@ -43,6 +45,8 @@ function DashboardInner() {
     }
   }, [manageFromUrl, router]);
 
+  const primarySlot = primary ? slots[entryKey(primary)] : undefined;
+
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-6 py-4">
       <header className="max-w-2xl">
@@ -53,18 +57,22 @@ function DashboardInner() {
           Dashboard
         </h1>
         <p className="mt-2 text-sm opacity-80">
-          Search characters, skim your roster, and log diary drops without
-          leaving this page.
+          Your command center — primary character, weekly bosses, and quick
+          jumps into Scouter, gear, and income tools.
         </p>
       </header>
 
       {hydrated ? (
-        <CharacterSearchBar roster={roster} onAdded={handleRosterAdded} />
+        <DashboardPrimaryHero primary={primary} slot={primarySlot} />
       ) : (
         <div className="rounded-2xl border border-border/50 bg-surface/80 px-4 py-8 text-center text-sm opacity-70">
           Loading…
         </div>
       )}
+
+      {hydrated ? (
+        <CharacterSearchBar roster={roster} onAdded={handleRosterAdded} />
+      ) : null}
 
       {hydrated ? (
         <div className="grid gap-4 lg:grid-cols-2 lg:items-stretch">
@@ -85,7 +93,7 @@ function DashboardInner() {
                   </p>
                 ) : roster.length > 0 ? (
                   <p className="text-xs opacity-60">
-                    Scroll the list · Manage to edit
+                    Scroll the list · Manage to edit · Star sets dashboard hero
                   </p>
                 ) : null}
               </div>
