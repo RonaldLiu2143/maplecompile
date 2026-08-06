@@ -81,7 +81,7 @@ function SliderRow({
         disabled ? "opacity-40" : "",
       ].join(" ")}
     >
-      <span className="flex items-center justify-between text-[11px] font-semibold opacity-70">
+      <span className="flex items-center justify-between text-[11px] font-semibold text-muted">
         <span>{label}</span>
         <span className="tabular-nums">
           {value}
@@ -242,7 +242,7 @@ export function ThemePicker({
     >
       <div className="maple-scroll max-h-[min(70vh,28rem)] space-y-3 overflow-y-auto pr-0.5">
         <div>
-          <p className="mb-2 text-[0.7rem] font-semibold uppercase tracking-wider opacity-55">
+          <p className="mb-2 text-[0.7rem] font-semibold uppercase tracking-wider text-muted-soft">
             Theme
           </p>
           <div className="flex flex-col gap-1">
@@ -264,7 +264,7 @@ export function ThemePicker({
                   <span
                     className={[
                       "mt-0.5 block text-[11px] leading-snug",
-                      active ? "opacity-80" : "opacity-55",
+                      active ? "text-white/90 dark:text-zinc-900/85" : "text-muted",
                     ].join(" ")}
                   >
                     {p.description}
@@ -276,7 +276,7 @@ export function ThemePicker({
         </div>
 
         <div>
-          <p className="mb-1.5 text-[0.7rem] font-semibold uppercase tracking-wider opacity-55">
+          <p className="mb-1.5 text-[0.7rem] font-semibold uppercase tracking-wider text-muted-soft">
             Accent
           </p>
           <div className="flex flex-wrap items-center gap-1.5">
@@ -303,7 +303,7 @@ export function ThemePicker({
             <button
               type="button"
               onClick={() => setAccent(null)}
-              className="rounded-md border border-border/50 px-2 py-1 text-[11px] font-semibold opacity-70 hover:bg-surface-muted hover:opacity-100"
+              className="rounded-md border border-border/50 px-2 py-1 text-[11px] font-semibold text-muted hover:bg-surface-muted hover:text-foreground"
             >
               Reset
             </button>
@@ -311,7 +311,7 @@ export function ThemePicker({
         </div>
 
         <div className="border-t border-border/40 pt-3">
-          <p className="mb-1.5 text-[0.7rem] font-semibold uppercase tracking-wider opacity-55">
+          <p className="mb-1.5 text-[0.7rem] font-semibold uppercase tracking-wider text-muted-soft">
             Backdrop
           </p>
           <div className="grid grid-cols-4 gap-1.5">
@@ -336,7 +336,7 @@ export function ThemePicker({
                     className="h-8 w-full rounded-md border border-border/40"
                     style={{ background: b.preview }}
                   />
-                  <span className="w-full truncate text-center text-[10px] font-semibold opacity-70">
+                  <span className="w-full truncate text-center text-[10px] font-semibold text-muted">
                     {b.name}
                   </span>
                 </button>
@@ -356,7 +356,7 @@ export function ThemePicker({
               ].join(" ")}
             >
               <span
-                className="flex h-8 w-full items-center justify-center rounded-md border border-dashed border-border/50 bg-surface-muted/40 text-[10px] font-bold opacity-70"
+                className="flex h-8 w-full items-center justify-center rounded-md border border-dashed border-border/50 bg-surface-muted/40 text-[10px] font-bold text-muted"
                 style={
                   backdrop === "custom" && prefs.backdropUrl
                     ? {
@@ -370,7 +370,7 @@ export function ThemePicker({
               >
                 {backdrop === "custom" && prefs.backdropUrl ? "" : "URL"}
               </span>
-              <span className="w-full truncate text-center text-[10px] font-semibold opacity-70">
+              <span className="w-full truncate text-center text-[10px] font-semibold text-muted">
                 Custom
               </span>
             </button>
@@ -396,7 +396,7 @@ export function ThemePicker({
           </div>
 
           <div className="mt-2.5">
-            <p className="mb-1 text-[11px] font-semibold opacity-55">
+            <p className="mb-1 text-[11px] font-semibold text-muted-soft">
               Custom image URL
             </p>
             <div className="flex gap-1.5">
@@ -441,11 +441,11 @@ export function ThemePicker({
             {urlError ? (
               <p className="mt-1 text-[10px] text-danger">{urlError}</p>
             ) : backdrop === "custom" ? (
-              <p className="mt-1 text-[10px] opacity-50">
+              <p className="mt-1 text-[10px] text-muted">
                 Using custom wallpaper
               </p>
             ) : (
-              <p className="mt-1 text-[10px] opacity-40">
+              <p className="mt-1 text-[10px] text-muted-soft">
                 Direct image link (https). Apply or press Enter.
               </p>
             )}

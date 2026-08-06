@@ -27,7 +27,7 @@ export function WeeklyResetBar() {
 
   return (
     <div
-      className="border-b border-border/50 bg-surface-muted/90 px-4 py-1.5 backdrop-blur-md"
+      className="border-b border-border/50 bg-surface-muted/95 px-4 py-1.5 backdrop-blur-md"
       role="status"
       aria-live="polite"
       aria-label="Daily and weekly reset countdowns"
@@ -36,7 +36,7 @@ export function WeeklyResetBar() {
         <span className="tabular-nums text-accent">
           Daily {daily}
         </span>
-        <span className="opacity-35" aria-hidden>
+        <span className="text-muted-soft" aria-hidden>
           ·
         </span>
         <span className="tabular-nums text-accent">

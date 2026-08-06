@@ -70,7 +70,7 @@ function NavSection({
   return (
     <div className="flex flex-col gap-0.5">
       {title ? (
-        <p className="px-3 pb-1 pt-3 text-[0.7rem] font-semibold uppercase tracking-wider opacity-55">
+        <p className="px-3 pb-1 pt-3 text-[0.7rem] font-semibold uppercase tracking-wider text-muted-soft">
           {title}
         </p>
       ) : null}
@@ -267,7 +267,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
 
       <aside
         className={[
-          "z-40 flex shrink-0 flex-col border-r-2 border-border bg-surface-muted/95 backdrop-blur-md transition-[width,transform] duration-200 ease-out",
+          "z-40 flex shrink-0 flex-col border-r-2 border-border bg-surface-muted/98 backdrop-blur-md transition-[width,transform] duration-200 ease-out",
           isMobile
             ? [
                 "fixed inset-y-0 left-0 w-64",
@@ -359,7 +359,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
       <div className="flex min-w-0 flex-1 flex-col">
         <div className="sticky top-0 z-20">
           {isMobile ? (
-            <header className="flex items-center gap-3 border-b-2 border-border bg-surface-muted/90 px-3 py-2.5 backdrop-blur-md">
+            <header className="flex items-center gap-3 border-b-2 border-border bg-surface-muted/95 px-3 py-2.5 backdrop-blur-md">
               <button
                 type="button"
                 onClick={toggle}
@@ -386,7 +386,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
         <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6">
           {children}
         </main>
-        <footer className="border-t border-border/40 px-4 py-4 text-center text-sm opacity-70">
+        <footer className="border-t border-border/40 px-4 py-4 text-center text-sm text-muted">
           MapleCompile calculators — equipment, flames, cubing, and scouter
         </footer>
       </div>

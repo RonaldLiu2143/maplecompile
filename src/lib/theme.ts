@@ -24,7 +24,7 @@ export const THEME_PRESETS: readonly ThemePreset[] = [
   {
     id: "compile",
     name: "Compile",
-    description: "Default dark zinc + sky — the familiar MapleCompile look.",
+    description: "Default dark zinc + sky — clearer body and muted text.",
     scheme: "dark",
     defaultAccent: "#38bdf8",
   },
@@ -120,7 +120,7 @@ export const DEFAULT_BACKDROP_ID: BackdropId = "none";
 export const DEFAULT_DIM = 0;
 export const DEFAULT_BLUR = 0;
 /** Sensible readability when picking a wallpaper. */
-export const WALLPAPER_DEFAULT_DIM = 42;
+export const WALLPAPER_DEFAULT_DIM = 52;
 export const WALLPAPER_DEFAULT_BLUR = 8;
 export const DIM_MAX = 85;
 export const BLUR_MAX = 24;
