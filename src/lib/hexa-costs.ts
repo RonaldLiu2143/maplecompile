@@ -66,6 +66,10 @@ export const HEXA_ERDA_COSTS: Record<HexaSkillType, readonly number[]> = {
 export const HEXA_STAT_MAX_LEVEL = 3;
 export const HEXA_CORE_MAX_LEVEL = 30;
 
+/** MapleHub CDN icon for Hexa Stat (not on MapleScouter hexaskill paths). */
+export const HEXA_STAT_ICON_URL =
+  "https://cdn.maplehub.app/skill-images/hexa.webp";
+
 export const WEEKLY_QUEST_FRAGMENTS = 90;
 
 export const WEEKLY_DUNGEON_FRAGMENTS = {

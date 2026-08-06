@@ -34,6 +34,7 @@ import {
   summarizeHexaProgress,
   type FragmentRateSettings,
   type WeeklyDungeonId,
+  HEXA_STAT_ICON_URL,
   HEXA_STAT_MAX_LEVEL,
   HEXA_CORE_MAX_LEVEL,
 } from "@/lib/hexa-costs";
@@ -541,9 +542,11 @@ export default function HexaTrackerPage() {
       )
     : null;
   const nextUpIcon =
-    nextUp?.node.slotIndex != null
-      ? iconUrl(slotsHexa[nextUp.node.slotIndex]?.iconSuffix ?? null)
-      : "";
+    nextUp == null
+      ? ""
+      : nextUp.node.slotIndex != null
+        ? iconUrl(slotsHexa[nextUp.node.slotIndex]?.iconSuffix ?? null)
+        : HEXA_STAT_ICON_URL;
   const nextCost =
     nextUp != null
       ? costBetween(
@@ -1087,7 +1090,7 @@ export default function HexaTrackerPage() {
                               ? iconUrl(
                                   slotsHexa[run.slotIndex]?.iconSuffix ?? null,
                                 )
-                              : "";
+                              : HEXA_STAT_ICON_URL;
                           return (
                             <div
                               key={`${run.nodeId}-${run.toLevel}-${idx}`}
@@ -1289,7 +1292,7 @@ export default function HexaTrackerPage() {
                       return (
                         <SkillNodeCard
                           key={node.id}
-                          icon=""
+                          icon={HEXA_STAT_ICON_URL}
                           label={node.label}
                           current={node.current}
                           target={node.target}

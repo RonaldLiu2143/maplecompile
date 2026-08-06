@@ -5,6 +5,7 @@
 
 import {
   GMS_HEXA_SLOT_INDICES,
+  HEXA_STAT_ICON_URL,
   costBetween,
   groupConsecutiveUpgradeRuns,
   summarizeHexaProgress,
@@ -50,7 +51,7 @@ function coreKeyForStep(step: HexaUpgradePathStep): string {
 
 function iconForStep(charType: string, step: HexaUpgradePathStep): string {
   if (step.nodeId === "hexa-stat") {
-    return "/hexaskill/General/hexa_stat.png";
+    return HEXA_STAT_ICON_URL;
   }
   const slots = getHexaSlots(charType);
   const suffix =
