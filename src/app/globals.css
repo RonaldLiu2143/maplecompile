@@ -3,37 +3,43 @@
 /* Class-based dark: so theme presets (not OS preference) control contrast helpers. */
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* Default / Compile — dark zinc + sky (also before boot script). */
+/*
+  Default / Compile — dusty indigo / grape palette (also before boot script).
+  Swatches: #000505 Black · #3B3355 Space Indigo · #443E60/#4C486B Vintage Grape ·
+  #555376/#5D5D81 Dusty Grape · #767999/#8E95B1 Lavender Grey ·
+  #A6B1CD/#E8EAF2 extrapolated lighter lavenders for accent / body text.
+*/
 :root,
 [data-theme="compile"] {
-  --background: #18181b;
-  /* Brighter body text — was #e2e8f0; lifts opacity-* muted copy too. */
-  --foreground: #f4f4f5;
-  --muted: #c4c4cc;
-  --muted-soft: #a1a1aa;
-  --surface: #27272a;
-  --surface-muted: #3f3f46;
-  --border: #71717a;
-  --accent: #38bdf8;
-  --accent-soft: #0c4a6e;
+  --background: #000505;
+  /* Light lavender-grey — strong on near-black; lifts opacity-* muted copy too. */
+  --foreground: #e8eaf2;
+  --muted: #8e95b1;
+  --muted-soft: #767999;
+  --surface: #3b3355;
+  --surface-muted: #4c486b;
+  --border: #5d5d81;
+  --accent: #8e95b1;
+  --accent-soft: #2a2540;
   --danger: #f87171;
-  --glow-a: #0c4a6e66;
-  --glow-b: #27272a88;
+  --glow-a: #3b335566;
+  --glow-b: #443e6088;
 }
 
+/* Higher-contrast variant of the same indigo/grape family. */
 [data-theme="contrast"] {
-  --background: #09090b;
-  --foreground: #fafafa;
-  --muted: #d4d4d8;
-  --muted-soft: #a1a1aa;
-  --surface: #18181b;
-  --surface-muted: #27272a;
-  --border: #a1a1aa;
-  --accent: #22d3ee;
-  --accent-soft: #083344;
+  --background: #000000;
+  --foreground: #f5f6fa;
+  --muted: #c5cad8;
+  --muted-soft: #8e95b1;
+  --surface: #3b3355;
+  --surface-muted: #555376;
+  --border: #8e95b1;
+  --accent: #a6b1cd;
+  --accent-soft: #1a1628;
   --danger: #fb7185;
-  --glow-a: #164e6366;
-  --glow-b: #18181b99;
+  --glow-a: #4c486b66;
+  --glow-b: #3b335599;
 }
 
 :root {

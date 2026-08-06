@@ -24,16 +24,16 @@ export const THEME_PRESETS: readonly ThemePreset[] = [
   {
     id: "compile",
     name: "Compile",
-    description: "Default dark zinc + sky — clearer body and muted text.",
+    description: "Dusty indigo / grape — Space Indigo surfaces, lavender accents.",
     scheme: "dark",
-    defaultAccent: "#38bdf8",
+    defaultAccent: "#8e95b1",
   },
   {
     id: "contrast",
     name: "Contrast",
-    description: "Near-black canvas, bright text, crisp cyan for max clarity.",
+    description: "Same grape family, brighter text and borders for max clarity.",
     scheme: "dark",
-    defaultAccent: "#22d3ee",
+    defaultAccent: "#a6b1cd",
   },
 ] as const;
 
@@ -61,7 +61,7 @@ export const BACKDROP_PRESETS: readonly BackdropPreset[] = [
   {
     id: "none",
     name: "None",
-    preview: "linear-gradient(135deg, #18181b, #27272a)",
+    preview: "linear-gradient(135deg, #000505, #3b3355)",
   },
   {
     id: "deep-night",
@@ -167,14 +167,14 @@ export const BLUR_MAX = 24;
 export const DEFAULT_THEME_PREFS: ThemePrefs = { id: DEFAULT_THEME_ID };
 
 const ACCENT_SWATCHES = [
-  "#38bdf8",
-  "#22d3ee",
+  "#8e95b1",
+  "#a6b1cd",
+  "#767999",
+  "#5d5d81",
   "#34d399",
   "#f59e0b",
   "#fb7185",
-  "#a3e635",
-  "#0369a1",
-  "#e11d48",
+  "#38bdf8",
 ] as const;
 
 export const THEME_ACCENT_SWATCHES: readonly string[] = ACCENT_SWATCHES;
