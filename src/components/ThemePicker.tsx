@@ -366,14 +366,6 @@ export function ThemePicker({
                 />
               );
             })}
-            <button
-              type="button"
-              onClick={() => setAccent(null)}
-              title="Reset to theme default"
-              className="rounded-md border border-border/50 px-2 py-1 text-[11px] font-semibold text-muted hover:bg-surface-muted hover:text-foreground"
-            >
-              Reset
-            </button>
           </div>
           <div className="mt-2 flex items-center gap-1.5">
             <label
