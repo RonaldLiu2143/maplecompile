@@ -20,8 +20,8 @@ function tripleEmpty(t: StatTriple): boolean {
 }
 
 /**
- * Required character-window fields that must be filled before scouting.
- * Empty defaults produce silent zero / nonsense Combat Power.
+ * Required fields before running scouter: main stat(s), secondary, and
+ * ATT / MATT. Level / boss / IED / crit keep calc defaults when left empty.
  */
 export function getMissingRequiredScouterFields(
   input: ScouterInput,
@@ -29,10 +29,6 @@ export function getMissingRequiredScouterFields(
   const missing: MissingScouterField[] = [];
   const { mainKeys, secondaryKeys, isXenon, isDa } =
     resolveMainSecondary(input);
-
-  if (!input.level || input.level <= 0) {
-    missing.push({ id: "level", label: "Level" });
-  }
 
   const pushStat = (key: StatKey) => {
     if (tripleEmpty(input.stats[key])) {
@@ -58,16 +54,6 @@ export function getMissingRequiredScouterFields(
     }
   } else if (tripleEmpty(input.attack)) {
     missing.push({ id: "att", label: "Attack" });
-  }
-
-  if (!input.bossDamagePercent) {
-    missing.push({ id: "boss-damage", label: "Boss Damage" });
-  }
-  if (!input.ignoreDefensePercent) {
-    missing.push({ id: "ied", label: "Ignore Defense" });
-  }
-  if (!input.criticalDamagePercent) {
-    missing.push({ id: "crit-damage", label: "Critical Damage" });
   }
 
   return missing;

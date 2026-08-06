@@ -57,6 +57,13 @@ export {
   type MissingScouterField,
 } from "./validate";
 export {
+  parseScouterOcrText,
+  applyScouterOcrPatch,
+  SCOUTER_OCR_EXAMPLE,
+  type ScouterOcrPatch,
+  type ScouterOcrParseResult,
+} from "./ocr-parse";
+export {
   OZ_RINGS,
   OZ_CONTINUOUS_STATUS,
   INNER_ABILITY_OPTIONS,

@@ -51,6 +51,7 @@ import {
 import { ActiveCharacterBar } from "@/components/ActiveCharacterBar";
 import { PairingBar } from "@/components/PairingBar";
 import { HexaEfficiencyPanel } from "./hexa-efficiency";
+import { ScouterOcrImport } from "./ocr-import";
 import { ShareGalleryModal } from "./share-gallery-modal";
 import { countFilledSlots } from "@/lib/starter-loadouts";
 import { readRosterState } from "@/lib/dashboard/roster";
@@ -1216,6 +1217,14 @@ export default function ScouterPage() {
             ) : null}
           </div>
 
+          <ScouterOcrImport
+            input={input}
+            onApply={(next, summary) => {
+              setInput(next);
+              flashPresetMsg(summary);
+            }}
+          />
+
           <div className="grid grid-cols-2 sm:grid-cols-4">
             <div className={labelCell}>Level</div>
             <NumInput
@@ -1933,7 +1942,8 @@ export default function ScouterPage() {
                     Missing required stats
                   </h2>
                   <p className="mt-0.5 text-xs opacity-65">
-                    Fill these character-window fields before running scouter.
+                    Only main, secondary, and ATT/MATT are required. Other
+                    combat stats use defaults until you fill them.
                   </p>
                 </div>
                 <button
