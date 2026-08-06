@@ -1,5 +1,5 @@
 import { isFlammable } from "./flames";
-import { MAX_STAR_FORCE } from "./planner/starforce";
+import { defaultStarForce, MAX_STAR_FORCE } from "./planner/starforce";
 import type { Equip } from "./types";
 
 /**
@@ -124,14 +124,29 @@ function specialStarForceCap(equip: Equip): number | null {
 
   // Genesis / Destiny weapons lock at 22★ (non-weapon Genesis items e.g.
   // Genesis Badge are excluded via equipType — badge already cannot SF).
-  if (
-    equip.equipType === "weapon" &&
-    /^(Genesis|Destiny)\s/i.test(name.trim())
-  ) {
+  if (isGenesisOrDestinyWeapon(equip)) {
     return 22;
   }
 
   return null;
+}
+
+/** Genesis / Destiny primary weapons (liberation weapons; SF-capped at 22★). */
+export function isGenesisOrDestinyWeapon(equip: Equip): boolean {
+  return (
+    equip.equipType === "weapon" &&
+    /^(Genesis|Destiny)\s/i.test((equip.name ?? "").trim())
+  );
+}
+
+/**
+ * Default Star Force when a piece has none set.
+ * Genesis / Destiny weapons default to 22★ (their hard cap); Destiny is not
+ * starable in-game yet but we still default to 22★ for planning.
+ */
+export function defaultStarForceForEquip(equip: Equip): number {
+  if (isGenesisOrDestinyWeapon(equip)) return 22;
+  return defaultStarForce(equip.level);
 }
 
 /**

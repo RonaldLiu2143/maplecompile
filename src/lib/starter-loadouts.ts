@@ -48,12 +48,14 @@ const GOLLUX_ACC = [
  * Heroic progression ladders — resolved against the loaded class catalog.
  *
  * Catalog setTypes / GMS name cues:
- * - pensalir — Pensalir (8th) armor (injected; overalls live in `top`)
+ * - pensalir — Pensalir (8th) armor + Utgard weapons (injected; overalls live in `top`)
  * - faf — CRA: Highness / Eagle Eye / Trickster armor + Fafnir weapons
  * - abs — Absolabs
  * - acs — Arcane Umbra (catalog may say Arcaneshade; renamed on load)
  * - eternal — Eternal armor
- * - genesis — Genesis weapons (name match; setType is also eternal)
+ * - genesis — Genesis weapons (name match; setType is also eternal; defaults to 22★)
+ * - frozen — Frozen burning set (injected)
+ * - eventRing — Oz / Seed special skill rings (injected)
  *
  * Presets 3–6 follow Adele Heroic screenshots (class gear variants per catalog).
  */
@@ -62,9 +64,9 @@ export const STARTER_LOADOUTS: StarterLoadout[] = [
     id: "heroic-early",
     name: "Early (Pensalir / CRA)",
     description:
-      "Pensalir armor with a Fafnir (CRA) weapon when available — early Heroic.",
+      "Pensalir armor with Utgard or Fafnir weapon when available — early Heroic.",
     armorMatchers: ["pensalir"],
-    weaponMatchers: ["faf", "fafnir"],
+    weaponMatchers: ["pensalir", "utgard", "faf", "fafnir"],
     accessoryMatchers: [
       "superiorGollux",
       "dawnBossAcc",

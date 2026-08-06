@@ -8,7 +8,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import type { Equip, EquipSetup, FlameSetup } from "@/lib/types";
-import { canStarForce, clampStarForce } from "@/lib/equip-capabilities";
+import { canStarForce, clampStarForce, defaultStarForceForEquip } from "@/lib/equip-capabilities";
 import {
   APPEARANCE_CELL,
   EQUIP_WINDOW_SLOTS,
@@ -16,7 +16,6 @@ import {
   slotIndex,
   slotToEquipType,
 } from "@/lib/slots";
-import { defaultStarForce } from "@/lib/planner";
 import { EquipItemTooltip } from "@/components/EquipItemTooltip";
 
 type Props = {
@@ -73,7 +72,7 @@ function EquipSlot({
   const stars = showStars
     ? clampStarForce(
         equip,
-        equip.starForce ?? defaultStarForce(equip.level),
+        equip.starForce ?? defaultStarForceForEquip(equip),
       )
     : 0;
   const flames = equip

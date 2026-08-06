@@ -172,6 +172,8 @@ export const SET_DISPLAY_NAMES: Record<string, string> = {
   abs: "Absolabs Set",
   faf: "Chaos Root Abyss (Fafnir) Set",
   pensalir: "Pensalir Set",
+  frozen: "Frozen Set",
+  eventRing: "Event Rings (Oz / Seed)",
   bossAcc: "Boss Accessory Set",
   hardBossAcc: "Hard Boss Accessory Set",
   dawnBossAcc: "Dawn Boss Accessory Set",

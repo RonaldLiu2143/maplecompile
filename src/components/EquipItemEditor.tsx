@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import {
   clampStarForce,
+  defaultStarForceForEquip,
   equipCapabilities,
   getStarForceCap,
 } from "@/lib/equip-capabilities";
@@ -10,7 +11,7 @@ import {
   getSelectableStats,
   getWeaponAtt,
 } from "@/lib/flames";
-import { defaultPotentialTier, defaultStarForce } from "@/lib/planner";
+import { defaultPotentialTier } from "@/lib/planner";
 import {
   lineOptionKey,
   normalizePotentialLines,
@@ -52,7 +53,7 @@ export function EquipItemEditor({
   const sfCap = getStarForceCap(equip);
   const starForce = clampStarForce(
     equip,
-    equip.starForce ?? defaultStarForce(equip.level),
+    equip.starForce ?? defaultStarForceForEquip(equip),
   );
   const potentialTier =
     equip.potentialTier ?? defaultPotentialTier(equip.level);

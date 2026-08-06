@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { canStarForce, clampStarForce } from "@/lib/equip-capabilities";
+import { canStarForce, clampStarForce, defaultStarForceForEquip } from "@/lib/equip-capabilities";
 import {
   buildEquipTooltipModel,
   type TooltipStatLine,
@@ -10,7 +10,6 @@ import {
   formatPotentialLineLabel,
   POTENTIAL_TIER_LABELS,
 } from "@/lib/potential-lines";
-import { defaultStarForce } from "@/lib/planner";
 import type { Equip, FlameLine, PotentialLine } from "@/lib/types";
 
 const C_BASE = "#FFFFFF";
@@ -110,7 +109,7 @@ export function EquipItemTooltip({
   const stars = canStarForce(equip)
     ? clampStarForce(
         equip,
-        starForce ?? equip.starForce ?? defaultStarForce(equip.level),
+        starForce ?? equip.starForce ?? defaultStarForceForEquip(equip),
       )
     : 0;
 

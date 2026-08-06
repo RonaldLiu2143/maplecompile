@@ -20,11 +20,11 @@ import {
   canPotential,
   canStarForce,
   clampStarForce,
+  defaultStarForceForEquip,
 } from "@/lib/equip-capabilities";
 import { inferNormalFlame } from "@/lib/flames";
 import {
   defaultPotentialTier,
-  defaultStarForce,
   type PlannerOverrides,
 } from "@/lib/planner";
 import {
@@ -74,7 +74,7 @@ function withHeroicDefaults(equip: Equip): Equip {
   if (canStarForce(equip)) {
     next.starForce = clampStarForce(
       equip,
-      equip.starForce ?? defaultStarForce(equip.level),
+      equip.starForce ?? defaultStarForceForEquip(equip),
     );
   } else {
     delete next.starForce;
@@ -114,7 +114,7 @@ function clampSetupStarForce(setup: EquipSetup): EquipSetup {
       }
       const capped = clampStarForce(
         equip,
-        equip.starForce ?? defaultStarForce(equip.level),
+        equip.starForce ?? defaultStarForceForEquip(equip),
       );
       if (equip.starForce !== capped) {
         changed = true;
@@ -260,7 +260,7 @@ export default function SetupClient() {
           starForce: canStarForce(equip)
             ? clampStarForce(
                 equip,
-                equip.starForce ?? defaultStarForce(equip.level),
+                equip.starForce ?? defaultStarForceForEquip(equip),
               )
             : 0,
           potentialTier: canPotential(equip)

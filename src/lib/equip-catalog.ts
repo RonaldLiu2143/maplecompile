@@ -1,4 +1,7 @@
 import { getChaosVellumMedal } from "./chaos-vellum-medal";
+import { getEventRings, isEventRingEquip } from "./event-rings";
+import { getFrozenEquips } from "./frozen-equips";
+import { getLidiumHeart } from "./lidium-heart";
 import { getPensalirEquips } from "./pensalir-equips";
 import type { Equip, EquipsResponse, JobType } from "./types";
 
@@ -70,16 +73,30 @@ function injectEquip(
   const bucket = ensureBucket(equipByType, equip.equipType, equip.equipType);
   if (!bucket.equips.some((e) => e.id === equip.id || e.name === equip.name)) {
     bucket.equips.push(equip);
+  } else {
+    // Prefer injected metadata (setType / tags) when seed already has the row.
+    const idx = bucket.equips.findIndex(
+      (e) => e.id === equip.id || e.name === equip.name,
+    );
+    if (idx >= 0) {
+      bucket.equips[idx] = {
+        ...bucket.equips[idx],
+        ...equip,
+        stats: equip.stats ?? bucket.equips[idx].stats,
+        imgUrl: bucket.equips[idx].imgUrl || equip.imgUrl,
+      };
+    }
   }
 }
 
 /**
  * Normalize catalog names to GMS wording and inject missing GMS gear
- * (Pensalir armor, Chaos Vellum Crusher medal — absent from WhackyBeanz seed).
+ * (Pensalir armor/weapons, Frozen, Event Rings, Lidium Heart, Chaos Vellum medal).
  */
 export function enrichEquipsResponse(
   data: EquipsResponse,
   jobType: string,
+  charType?: string,
 ): EquipsResponse {
   const equipByType: EquipsResponse["equipByType"] = {};
   for (const [key, bucket] of Object.entries(data.equipByType ?? {})) {
@@ -96,9 +113,33 @@ export function enrichEquipsResponse(
 
   // Common across all classes — inject even when jobType is unknown/common.
   injectEquip(equipByType, getChaosVellumMedal());
+  injectEquip(equipByType, getLidiumHeart());
+
+  const eventRings = getEventRings();
+  for (const ring of eventRings) {
+    injectEquip(equipByType, ring);
+  }
+  // Retag seed Oz rings into the Event Rings set bucket.
+  const ringBucket = equipByType.ring;
+  if (ringBucket) {
+    ringBucket.equips = ringBucket.equips.map((e) =>
+      isEventRingEquip(e) || eventRings.some((r) => r.id === e.id)
+        ? { ...e, setType: "eventRing", tags: [...(e.tags ?? []), "event-ring"] }
+        : e,
+    );
+  }
+  equipBySetName.eventRing = (ringBucket?.equips ?? []).filter(
+    (e) => e.setType === "eventRing",
+  );
+
+  const frozen = getFrozenEquips(charType);
+  for (const equip of frozen) {
+    injectEquip(equipByType, equip);
+  }
+  equipBySetName.frozen = frozen;
 
   if (JOB_TYPES.has(jobType as JobType)) {
-    const pensalir = getPensalirEquips(jobType as JobType);
+    const pensalir = getPensalirEquips(jobType as JobType, charType);
     for (const equip of pensalir) {
       injectEquip(equipByType, equip);
     }
