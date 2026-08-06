@@ -629,7 +629,7 @@ export default function SetupClient() {
           <p className="text-sm text-danger">{error}</p>
         )}
 
-        <div className="flex flex-col items-start gap-4 lg:flex-row lg:items-start">
+        <div className="flex w-full flex-col items-start gap-4 lg:flex-row lg:items-start lg:justify-between">
           {status === "ready" && (
             <EquipGrid
               setup={setup}
@@ -640,8 +640,8 @@ export default function SetupClient() {
             />
           )}
 
-          {/* Presets sit with the item picker/editor column (same vertical start). */}
-          <div className="flex w-full min-w-0 flex-col items-end gap-1.5 lg:max-w-sm lg:flex-1">
+          {/* Presets + picker hug the far right; equip grid stays left. */}
+          <div className="flex w-full min-w-0 flex-col items-end gap-1.5 lg:ml-auto lg:max-w-sm lg:shrink-0">
             <div className="inline-flex max-w-full flex-wrap items-center justify-end gap-1.5">
               <select
                 value={starterId}
