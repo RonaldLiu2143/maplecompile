@@ -64,6 +64,13 @@ export {
   type ScouterOcrParseResult,
 } from "./ocr-parse";
 export {
+  recognizeScouterScreenshot,
+  preprocessScouterScreenshot,
+  SCOUTER_OCR_FAIL_MESSAGE,
+  type OcrImageResult,
+  type OcrProgress,
+} from "./ocr-image";
+export {
   OZ_RINGS,
   OZ_CONTINUOUS_STATUS,
   INNER_ABILITY_OPTIONS,

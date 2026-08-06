@@ -2,6 +2,7 @@
 
 import {
   useCallback,
+  useEffect,
   useRef,
   useState,
   type ChangeEvent,
@@ -13,6 +14,10 @@ import {
   parseScouterOcrText,
   SCOUTER_OCR_EXAMPLE,
 } from "@/lib/scouter/ocr-parse";
+import {
+  recognizeScouterScreenshot,
+  SCOUTER_OCR_FAIL_MESSAGE,
+} from "@/lib/scouter/ocr-image";
 import type { ScouterInput } from "@/lib/scouter";
 
 type Props = {
@@ -21,8 +26,8 @@ type Props = {
 };
 
 /**
- * Paste OCR / character-window text (or drop a screenshot as a reminder to
- * paste recognized text). No Tesseract dependency — text parse is the MVP.
+ * Paste character-window text, or upload/paste a screenshot for in-browser OCR
+ * (tesseract.js) then map into Scouter fields via the shared text parser.
  */
 export function ScouterOcrImport({ input, onApply }: Props) {
   const [open, setOpen] = useState(false);
@@ -30,8 +35,22 @@ export function ScouterOcrImport({ input, onApply }: Props) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [ocrBusy, setOcrBusy] = useState(false);
   const fileRef = useRef<HTMLInputElement | null>(null);
   const textRef = useRef<HTMLTextAreaElement | null>(null);
+  const inputRef = useRef(input);
+  const abortRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    inputRef.current = input;
+  }, [input]);
+
+  useEffect(() => {
+    return () => {
+      abortRef.current?.abort();
+      abortRef.current = null;
+    };
+  }, []);
 
   const clearPreview = useCallback(() => {
     setPreviewUrl((prev) => {
@@ -40,43 +59,100 @@ export function ScouterOcrImport({ input, onApply }: Props) {
     });
   }, []);
 
-  const acceptImage = useCallback(
-    (file: File | null) => {
-      if (!file || !file.type.startsWith("image/")) return;
-      clearPreview();
-      setPreviewUrl(URL.createObjectURL(file));
-      setStatus(
-        "Screenshot loaded. Paste OCR text below (Win+H / Lens / snipping text actions) — in-browser image OCR is not bundled.",
-      );
-      setError(null);
-      setOpen(true);
-      requestAnimationFrame(() => textRef.current?.focus());
-    },
-    [clearPreview],
-  );
+  const cancelOcr = useCallback(() => {
+    abortRef.current?.abort();
+    abortRef.current = null;
+    setOcrBusy(false);
+    setStatus("OCR cancelled.");
+  }, []);
 
   const runParse = useCallback(
-    (raw: string) => {
+    (raw: string, source: "paste" | "ocr" | "manual" = "manual") => {
       const trimmed = raw.trim();
       if (!trimmed) {
-        setError("Paste character-window text first.");
+        setError(
+          source === "ocr"
+            ? SCOUTER_OCR_FAIL_MESSAGE
+            : "Paste character-window text first.",
+        );
         setStatus(null);
         return;
       }
       const { patch, matched, warnings } = parseScouterOcrText(trimmed);
       if (matched.length === 0) {
-        setError(warnings[0] ?? "No stats recognized.");
+        setError(
+          source === "ocr"
+            ? SCOUTER_OCR_FAIL_MESSAGE
+            : (warnings[0] ?? "No stats recognized."),
+        );
         setStatus(null);
+        setText(trimmed);
         return;
       }
-      const next = applyScouterOcrPatch(input, patch);
+      const next = applyScouterOcrPatch(inputRef.current, patch);
       const summary = `Imported: ${matched.join(", ")}`;
       onApply(next, summary);
       setError(null);
       setStatus(summary);
       setText(trimmed);
     },
-    [input, onApply],
+    [onApply],
+  );
+
+  const runOcrOnFile = useCallback(
+    async (file: File) => {
+      abortRef.current?.abort();
+      const ac = new AbortController();
+      abortRef.current = ac;
+
+      clearPreview();
+      setPreviewUrl(URL.createObjectURL(file));
+      setOpen(true);
+      setError(null);
+      setOcrBusy(true);
+      setStatus("Preparing image…");
+
+      try {
+        const { text: ocrText, cancelled } = await recognizeScouterScreenshot(
+          file,
+          {
+            signal: ac.signal,
+            onProgress: (info) => {
+              if (!ac.signal.aborted) setStatus(info.status);
+            },
+          },
+        );
+
+        if (cancelled || ac.signal.aborted) {
+          setStatus("OCR cancelled.");
+          return;
+        }
+
+        setText(ocrText);
+        runParse(ocrText, "ocr");
+      } catch (err) {
+        if (ac.signal.aborted) {
+          setStatus("OCR cancelled.");
+          return;
+        }
+        setError(
+          err instanceof Error ? err.message : SCOUTER_OCR_FAIL_MESSAGE,
+        );
+        setStatus(null);
+      } finally {
+        if (abortRef.current === ac) abortRef.current = null;
+        setOcrBusy(false);
+      }
+    },
+    [clearPreview, runParse],
+  );
+
+  const acceptImage = useCallback(
+    (file: File | null) => {
+      if (!file || !file.type.startsWith("image/")) return;
+      void runOcrOnFile(file);
+    },
+    [runOcrOnFile],
   );
 
   const onPaste = (e: ClipboardEvent<HTMLDivElement>) => {
@@ -89,18 +165,18 @@ export function ScouterOcrImport({ input, onApply }: Props) {
         return;
       }
     }
-    // Text paste into the panel (not only the textarea) — apply if panel focused.
     const clip = e.clipboardData.getData("text/plain");
     if (clip && !(e.target instanceof HTMLTextAreaElement)) {
       e.preventDefault();
       setText(clip);
       setOpen(true);
-      runParse(clip);
+      runParse(clip, "paste");
     }
   };
 
   const onDrop = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
+    if (ocrBusy) return;
     const file = e.dataTransfer.files?.[0];
     if (file) acceptImage(file);
   };
@@ -123,8 +199,8 @@ export function ScouterOcrImport({ input, onApply }: Props) {
             OCR / paste import
           </h3>
           <p className="mt-0.5 text-[11px] opacity-60">
-            Paste character-window text, or drop a screenshot then paste OCR
-            text. Required for calc: main, sub, ATT/MATT.
+            Upload or paste a character-window screenshot for OCR, or paste
+            stats text. Required for calc: main, sub, ATT/MATT.
           </p>
         </div>
         <button
@@ -142,14 +218,16 @@ export function ScouterOcrImport({ input, onApply }: Props) {
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
-              className="rounded border border-border/50 bg-background px-2.5 py-1 text-xs font-semibold transition hover:bg-surface-muted"
+              disabled={ocrBusy}
+              className="rounded border border-border/50 bg-background px-2.5 py-1 text-xs font-semibold transition hover:bg-surface-muted disabled:opacity-50"
               onClick={() => fileRef.current?.click()}
             >
               Upload screenshot
             </button>
             <button
               type="button"
-              className="rounded border border-border/50 bg-background px-2.5 py-1 text-xs font-semibold transition hover:bg-surface-muted"
+              disabled={ocrBusy}
+              className="rounded border border-border/50 bg-background px-2.5 py-1 text-xs font-semibold transition hover:bg-surface-muted disabled:opacity-50"
               onClick={() => {
                 setText(SCOUTER_OCR_EXAMPLE);
                 setError(null);
@@ -177,10 +255,30 @@ export function ScouterOcrImport({ input, onApply }: Props) {
               />
               <button
                 type="button"
-                className="text-[11px] font-medium opacity-60 hover:opacity-100"
+                disabled={ocrBusy}
+                className="text-[11px] font-medium opacity-60 hover:opacity-100 disabled:opacity-40"
                 onClick={clearPreview}
               >
                 Clear image
+              </button>
+            </div>
+          ) : null}
+
+          {ocrBusy ? (
+            <div className="flex flex-wrap items-center gap-2 rounded border border-border/40 bg-background/80 px-2.5 py-2">
+              <span
+                className="inline-block size-3.5 animate-spin rounded-full border-2 border-accent border-t-transparent"
+                aria-hidden
+              />
+              <span className="text-[11px] font-medium text-accent">
+                {status ?? "Reading stats…"}
+              </span>
+              <button
+                type="button"
+                className="ml-auto rounded border border-border/50 bg-background px-2 py-0.5 text-[11px] font-semibold transition hover:bg-surface-muted"
+                onClick={cancelOcr}
+              >
+                Cancel
               </button>
             </div>
           ) : null}
@@ -191,22 +289,25 @@ export function ScouterOcrImport({ input, onApply }: Props) {
             onChange={(e) => setText(e.target.value)}
             rows={6}
             spellCheck={false}
+            disabled={ocrBusy}
             placeholder={`Paste OCR / character stats, one field per line…\n\n${SCOUTER_OCR_EXAMPLE}`}
-            className="w-full resize-y rounded border border-border/50 bg-background px-2.5 py-2 font-mono text-xs outline-none focus:border-accent"
+            className="w-full resize-y rounded border border-border/50 bg-background px-2.5 py-2 font-mono text-xs outline-none focus:border-accent disabled:opacity-60"
             aria-label="OCR or character stats text"
           />
 
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
-              className="rounded bg-accent px-3 py-1.5 text-xs font-semibold text-white transition hover:opacity-90"
-              onClick={() => runParse(text)}
+              disabled={ocrBusy}
+              className="rounded bg-accent px-3 py-1.5 text-xs font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
+              onClick={() => runParse(text, "manual")}
             >
               Apply to fields
             </button>
             <button
               type="button"
-              className="rounded border border-border/50 bg-background px-2.5 py-1.5 text-xs font-semibold transition hover:bg-surface-muted"
+              disabled={ocrBusy}
+              className="rounded border border-border/50 bg-background px-2.5 py-1.5 text-xs font-semibold transition hover:bg-surface-muted disabled:opacity-50"
               onClick={() => {
                 setText("");
                 setError(null);
@@ -216,7 +317,7 @@ export function ScouterOcrImport({ input, onApply }: Props) {
             >
               Clear
             </button>
-            {status ? (
+            {!ocrBusy && status ? (
               <span className="text-[11px] font-medium text-accent">{status}</span>
             ) : null}
             {error ? (
