@@ -32,6 +32,21 @@
   --danger: #fb7185;
 }
 
+/* Light — cool zinc gray + sky (not warm cream / terracotta). */
+html[data-theme="light"],
+[data-theme="light"] {
+  --background: #f4f4f5;
+  --foreground: #18181b;
+  --muted: #52525b;
+  --muted-soft: #71717a;
+  --surface: #ffffff;
+  --surface-muted: #e4e4e7;
+  --border: #a1a1aa;
+  --accent: #0ea5e9;
+  --accent-soft: #e0f2fe;
+  --danger: #dc2626;
+}
+
 :root {
   --mc-dim: 0;
   --mc-blur: 0px;
