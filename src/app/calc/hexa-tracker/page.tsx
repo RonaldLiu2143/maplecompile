@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { ActiveCharacterBar } from "@/components/ActiveCharacterBar";
 import {
   ManageDisplayButton,
@@ -21,6 +21,7 @@ import {
   WEEKLY_DUNGEON_OPTIONS,
   WEEKLY_QUEST_FRAGMENTS,
   cheapestNextUpgrade,
+  costBetween,
   dailyFragmentRate,
   estimateCompletion,
   summarizeHexaProgress,
@@ -57,12 +58,46 @@ import type { RosterEntry } from "@/lib/dashboard/roster";
 const inputClass =
   "rounded-md border border-border/50 bg-background px-2.5 py-1.5 text-sm outline-none focus:border-accent";
 
+/** MapleHub CDN item icons for Sol Erda resources. */
+const FRAGMENT_ICON =
+  "https://cdn.maplehub.app/skill-images/fragment.webp";
+const SOL_ERDA_ICON =
+  "https://cdn.maplehub.app/skill-images/sol_erda.webp";
+
 type ViewMode = "characters" | "preview";
 
 function iconUrl(suffix: string | null): string {
   if (!suffix) return "";
   if (suffix.startsWith("http")) return suffix;
   return `${SCOUTER_CDN}${suffix.startsWith("/") ? suffix : `/${suffix}`}`;
+}
+
+function ResourceCost({
+  kind,
+  amount,
+  className,
+}: {
+  kind: "fragment" | "erda";
+  amount: number;
+  className?: string;
+}) {
+  const src = kind === "fragment" ? FRAGMENT_ICON : SOL_ERDA_ICON;
+  const label = kind === "fragment" ? "Fragment" : "Sol Erda";
+  return (
+    <span
+      className={[
+        "inline-flex items-center gap-1 tabular-nums",
+        className ?? "",
+      ].join(" ")}
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={src} alt="" width={14} height={14} className="shrink-0" />
+      <span>
+        {amount.toLocaleString()} {label}
+        {kind === "fragment" && amount !== 1 ? "s" : ""}
+      </span>
+    </span>
+  );
 }
 
 function formatDate(d: Date | null): string {
@@ -114,60 +149,37 @@ function ProgressBar({
   );
 }
 
-function LevelStepper({
+function CompactLevelInput({
   value,
   max,
-  disabled,
-  onChange,
   ariaLabel,
+  onChange,
 }: {
   value: number;
   max: number;
-  disabled?: boolean;
-  onChange: (n: number) => void;
   ariaLabel: string;
+  onChange: (n: number) => void;
 }) {
   return (
-    <div className="flex items-center gap-1">
-      <button
-        type="button"
-        disabled={disabled || value <= 0}
-        aria-label={`Decrease ${ariaLabel}`}
-        onClick={() => onChange(Math.max(0, value - 1))}
-        className="rounded border border-border px-2 py-0.5 text-xs font-bold disabled:opacity-40"
-      >
-        −
-      </button>
-      <input
-        type="number"
-        min={0}
-        max={max}
-        disabled={disabled}
-        value={value === 0 ? "" : value}
-        placeholder="0"
-        aria-label={ariaLabel}
-        onChange={(e) => {
-          const raw = e.target.value.trim();
-          if (raw === "") {
-            onChange(0);
-            return;
-          }
-          const n = Number(raw);
-          if (!Number.isFinite(n)) return;
-          onChange(Math.max(0, Math.min(max, Math.floor(n))));
-        }}
-        className={`${inputClass} w-12 px-1 text-center text-xs placeholder:text-foreground/25`}
-      />
-      <button
-        type="button"
-        disabled={disabled || value >= max}
-        aria-label={`Increase ${ariaLabel}`}
-        onClick={() => onChange(Math.min(max, value + 1))}
-        className="rounded border border-border px-2 py-0.5 text-xs font-bold disabled:opacity-40"
-      >
-        +
-      </button>
-    </div>
+    <input
+      type="number"
+      min={0}
+      max={max}
+      value={value === 0 ? "" : value}
+      placeholder="0"
+      aria-label={ariaLabel}
+      onChange={(e) => {
+        const raw = e.target.value.trim();
+        if (raw === "") {
+          onChange(0);
+          return;
+        }
+        const n = Number(raw);
+        if (!Number.isFinite(n)) return;
+        onChange(Math.max(0, Math.min(max, Math.floor(n))));
+      }}
+      className={`${inputClass} h-8 w-12 px-1 text-center text-xs placeholder:text-foreground/25 sm:w-14`}
+    />
   );
 }
 
@@ -197,70 +209,54 @@ function SkillNodeCard({
   return (
     <div
       className={[
-        "rounded-xl border px-3 py-2.5 transition",
+        "rounded-lg border px-3 py-2.5 transition",
         done
           ? "border-accent/50 bg-accent-soft/30"
           : "border-border/45 bg-surface/80",
       ].join(" ")}
     >
-      <div className="flex items-start gap-2.5">
+      <div className="mb-2 h-1.5 overflow-hidden rounded-full bg-surface-muted">
+        <div
+          className="h-full rounded-full bg-accent transition-all"
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+      <div className="flex items-center gap-2.5">
         {icon ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={icon}
             alt=""
-            width={36}
-            height={36}
-            className="mt-0.5 rounded"
+            width={32}
+            height={32}
+            className="shrink-0 rounded"
           />
         ) : (
-          <div className="mt-0.5 h-9 w-9 rounded bg-surface-muted" />
+          <div className="h-8 w-8 shrink-0 rounded bg-surface-muted" />
         )}
-        <div className="min-w-0 flex-1 space-y-1.5">
-          <div className="flex items-start justify-between gap-2">
-            <p className="truncate text-sm font-semibold leading-tight">
-              {label}
-            </p>
-            <p className="shrink-0 text-[10px] font-semibold tabular-nums opacity-55">
-              {current}/{target}
-            </p>
-          </div>
-          <div className="h-1.5 overflow-hidden rounded-full bg-surface-muted">
-            <div
-              className="h-full rounded-full bg-accent transition-all"
-              style={{ width: `${pct}%` }}
-            />
-          </div>
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] tabular-nums opacity-70">
-            <span>
-              {fragmentsNeeded.toLocaleString()} frag
-              {fragmentsNeeded === 1 ? "" : "s"}
-            </span>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-xs font-semibold leading-tight">{label}</p>
+          <div className="mt-0.5 flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-[10px] opacity-70">
+            <ResourceCost kind="fragment" amount={fragmentsNeeded} />
             {solErdaNeeded > 0 ? (
-              <span>{solErdaNeeded.toLocaleString()} Sol Erda</span>
+              <ResourceCost kind="erda" amount={solErdaNeeded} />
             ) : null}
           </div>
-          <div className="flex flex-wrap items-center gap-3 pt-0.5">
-            <label className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide opacity-55">
-              Now
-              <LevelStepper
-                value={current}
-                max={maxLevel}
-                ariaLabel={`${label} current`}
-                onChange={onCurrent}
-              />
-            </label>
-            <span className="opacity-40">→</span>
-            <label className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide opacity-55">
-              Goal
-              <LevelStepper
-                value={target}
-                max={maxLevel}
-                ariaLabel={`${label} target`}
-                onChange={onTarget}
-              />
-            </label>
-          </div>
+        </div>
+        <div className="flex shrink-0 items-center gap-1.5">
+          <CompactLevelInput
+            value={current}
+            max={maxLevel}
+            ariaLabel={`${label} current`}
+            onChange={onCurrent}
+          />
+          <span className="text-xs opacity-40">→</span>
+          <CompactLevelInput
+            value={target}
+            max={maxLevel}
+            ariaLabel={`${label} target`}
+            onChange={onTarget}
+          />
         </div>
       </div>
     </div>
@@ -290,6 +286,7 @@ export default function HexaTrackerPage() {
   );
   const [manageOpen, setManageOpen] = useState(false);
   const [pairOpen, setPairOpen] = useState(false);
+  const [nextStopLevel, setNextStopLevel] = useState<number | null>(null);
 
   const activeCharType =
     viewMode === "preview" ? previewCharType : charType;
@@ -494,6 +491,36 @@ export default function HexaTrackerPage() {
     nextUp?.node.slotIndex != null
       ? iconUrl(slotsHexa[nextUp.node.slotIndex]?.iconSuffix ?? null)
       : "";
+
+  useEffect(() => {
+    if (!nextUp) {
+      setNextStopLevel(null);
+      return;
+    }
+    const min = nextUp.nextLevel;
+    const max = nextUp.node.target;
+    setNextStopLevel((prev) => {
+      if (prev == null || prev < min || prev > max) return min;
+      return prev;
+    });
+  }, [
+    nextUp?.node.id,
+    nextUp?.node.current,
+    nextUp?.node.target,
+    nextUp?.nextLevel,
+  ]);
+
+  const stopLevel =
+    nextUp && nextStopLevel != null
+      ? Math.max(
+          nextUp.nextLevel,
+          Math.min(nextUp.node.target, nextStopLevel),
+        )
+      : null;
+  const stopCost =
+    nextUp && stopLevel != null
+      ? costBetween(nextUp.node.skillType, nextUp.node.current, stopLevel)
+      : null;
 
   const groups = useMemo(() => {
     if (!progress) return [];
@@ -726,65 +753,6 @@ export default function HexaTrackerPage() {
           </section>
 
           <section className="rounded-xl border border-border/45 bg-surface/90 p-4">
-            <h2 className="text-sm font-semibold">On hand</h2>
-            <div className="mt-3 grid gap-3 sm:grid-cols-2">
-              {(
-                [
-                  ["fragments", "Sol Erda fragments", activeState.fragments],
-                  ["erda", "Sol Erda", activeState.erda],
-                ] as const
-              ).map(([key, label, value]) => (
-                <div key={key} className="space-y-1.5">
-                  <p className="text-[10px] font-semibold uppercase tracking-wide opacity-55">
-                    {label}
-                  </p>
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        persist({
-                          ...activeState,
-                          [key]: Math.max(0, value - 1),
-                        })
-                      }
-                      className="rounded-lg border border-border px-2.5 py-1 text-sm font-bold hover:bg-surface-muted"
-                    >
-                      −
-                    </button>
-                    <input
-                      type="number"
-                      min={0}
-                      value={value === 0 ? "" : value}
-                      placeholder="0"
-                      onChange={(e) => {
-                        const raw = e.target.value.trim();
-                        const n =
-                          raw === ""
-                            ? 0
-                            : Math.max(0, Math.floor(Number(raw) || 0));
-                        persist({ ...activeState, [key]: n });
-                      }}
-                      className={`${inputClass} w-full text-center font-semibold placeholder:text-foreground/25`}
-                    />
-                    <button
-                      type="button"
-                      onClick={() =>
-                        persist({ ...activeState, [key]: value + 1 })
-                      }
-                      className="rounded-lg border border-border px-2.5 py-1 text-sm font-bold hover:bg-surface-muted"
-                    >
-                      +
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <p className="mt-2 text-[10px] opacity-55">
-              Inventory reduces days-left (after remaining costs).
-            </p>
-          </section>
-
-          <section className="rounded-xl border border-border/45 bg-surface/90 p-4">
             <h2 className="text-sm font-semibold">Fragment Rate Calculator</h2>
             <div className="mt-3 grid gap-3 sm:grid-cols-2">
               <label className="space-y-1 text-xs font-semibold opacity-70">
@@ -884,7 +852,7 @@ export default function HexaTrackerPage() {
               </div>
             </div>
             <p className="mt-2 text-[10px] opacity-55">
-              Uses remaining after inventory (
+              Based on remaining fragment costs (
               {progress.fragmentsRemainingAfterInventory.toLocaleString()}{" "}
               frags).
             </p>
@@ -892,8 +860,8 @@ export default function HexaTrackerPage() {
 
           <section className="rounded-xl border border-border/45 bg-surface/90 p-4">
             <h2 className="text-sm font-semibold">Next Upgrade</h2>
-            {nextUp ? (
-              <div className="mt-2 space-y-2">
+            {nextUp && stopLevel != null && stopCost ? (
+              <div className="mt-2 space-y-3">
                 <div className="flex items-center gap-2.5">
                   {nextUpIcon ? (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -907,47 +875,74 @@ export default function HexaTrackerPage() {
                   ) : (
                     <div className="h-9 w-9 shrink-0 rounded bg-surface-muted" />
                   )}
-                  <p className="text-base font-bold">{nextUp.node.label}</p>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-base font-bold">
+                      {nextUp.node.label}
+                    </p>
+                    <p className="text-xs opacity-70">
+                      Level {nextUp.node.current} → {stopLevel}
+                    </p>
+                  </div>
                 </div>
-                <p className="text-xs opacity-70">
-                  Level {nextUp.node.current} → {nextUp.nextLevel}
-                </p>
-                <div className="flex flex-wrap gap-3 text-sm tabular-nums">
-                  <span>
-                    <span className="opacity-55">Fragments </span>
-                    <span className="font-semibold text-accent">
-                      {nextUp.fragments.toLocaleString()}
-                    </span>
-                  </span>
-                  {nextUp.solErda > 0 ? (
-                    <span>
-                      <span className="opacity-55">Sol Erda </span>
-                      <span className="font-semibold">
-                        {nextUp.solErda.toLocaleString()}
-                      </span>
-                    </span>
+
+                <label className="flex flex-col gap-1 text-xs font-semibold opacity-70">
+                  Stop at level
+                  <select
+                    value={stopLevel}
+                    onChange={(e) =>
+                      setNextStopLevel(Math.floor(Number(e.target.value) || 0))
+                    }
+                    className={inputClass}
+                  >
+                    {Array.from(
+                      {
+                        length: nextUp.node.target - nextUp.node.current,
+                      },
+                      (_, i) => nextUp.node.current + 1 + i,
+                    ).map((lv) => (
+                      <option key={lv} value={lv}>
+                        {lv}
+                        {lv === nextUp.node.target ? " (goal)" : ""}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <div className="flex flex-wrap gap-3 text-sm">
+                  <ResourceCost
+                    kind="fragment"
+                    amount={stopCost.fragments}
+                    className="font-semibold text-accent"
+                  />
+                  {stopCost.solErda > 0 ? (
+                    <ResourceCost
+                      kind="erda"
+                      amount={stopCost.solErda}
+                      className="font-semibold"
+                    />
                   ) : null}
                 </div>
                 <p className="text-[10px] opacity-55">
-                  Cheapest next level by fragment cost — not class FD priority
-                  (MapleHub’s stat-based order needs Scouter damage data we
-                  don’t mirror here).
+                  Cheapest next skill by fragment cost — pick how far to raise
+                  it, then apply. (Not class FD priority — MapleHub’s
+                  stat-based order needs Scouter damage data we don’t mirror
+                  here.)
                 </p>
                 <button
                   type="button"
                   onClick={() => {
                     if (nextUp.node.slotIndex != null) {
-                      setLevel(nextUp.node.slotIndex, nextUp.nextLevel);
+                      setLevel(nextUp.node.slotIndex, stopLevel);
                     } else {
                       persist({
                         ...activeState,
-                        hexaStatLevel: nextUp.nextLevel,
+                        hexaStatLevel: stopLevel,
                       });
                     }
                   }}
                   className="rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-white transition hover:opacity-90 dark:text-zinc-900"
                 >
-                  Apply level {nextUp.nextLevel}
+                  Next
                 </button>
               </div>
             ) : (
@@ -1084,7 +1079,7 @@ export default function HexaTrackerPage() {
               <p className="text-[0.7rem] font-semibold uppercase tracking-wider opacity-55">
                 {group.label}
               </p>
-              <div className="grid gap-2">
+              <div className="grid gap-2 sm:grid-cols-2">
                 {group.nodes.map((node) => {
                   if (node.slotIndex == null) {
                     return (
