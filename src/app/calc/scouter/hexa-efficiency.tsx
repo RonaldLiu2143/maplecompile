@@ -283,14 +283,15 @@ export function HexaEfficiencyPanel({
                 onCommitBcs((e.target as HTMLInputElement).value);
               }
             }}
-            aria-label="Boss Converted Stat / HEXA Converted score"
+            aria-label="HEXA Converted score (Boss 380% PDR HEXA)"
+            title="Defaults to Boss Converted Stat · 380% PDR · HEXA"
           />
           <button
             type="button"
             className="text-[11px] font-medium opacity-70 underline-offset-2 hover:underline"
             onClick={onResetBcs}
           >
-            Use scouter ({derivedBossConvertedStat.toLocaleString()})
+            Use HEXA 380 ({derivedBossConvertedStat.toLocaleString()})
           </button>
         </div>
       </div>

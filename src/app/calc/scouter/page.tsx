@@ -54,6 +54,11 @@ import { ActiveCharacterBar } from "@/components/ActiveCharacterBar";
 import { PairingBar } from "@/components/PairingBar";
 import { HexaEfficiencyPanel } from "./hexa-efficiency";
 import { ShareGalleryModal } from "./share-gallery-modal";
+import {
+  BossConvertedStatPanel,
+  bossConvertedFromMaple,
+  type BossConvertedStatValues,
+} from "./boss-converted-stat-panel";
 import { countFilledSlots } from "@/lib/starter-loadouts";
 import { readRosterState } from "@/lib/dashboard/roster";
 import { parseUserNumber } from "@/lib/scouter/parse-number";
@@ -63,6 +68,11 @@ import {
   clampBossConvertedStatDigits,
   normalizeBossConvertedStat,
 } from "@/lib/hexa-priority";
+import {
+  BOSS_CLEAR_FIGHT_MINUTES_DEFAULT,
+  type BossClearFightMinutes,
+} from "@/lib/scouter/boss-cuts";
+import type { MapleScouterCalculatedData } from "@/lib/scouter/to-user-stat";
 
 const cell =
   "border border-border/50 bg-background px-2 py-1.5 text-sm outline-none focus:relative focus:z-10 focus:border-accent";
@@ -346,7 +356,14 @@ export default function ScouterPage() {
   const [draftReady, setDraftReady] = useState(false);
   const [showHexaEff, setShowHexaEff] = useState(false);
   const hexaEffRef = useRef<HTMLDivElement | null>(null);
-  /** Manual BCS override shared with Hexa Efficiency; null = use scouter-derived. */
+  /** 20 min = KMS / MapleScouter default; 30 min = GMS is30min. */
+  const [bcsFightMinutes, setBcsFightMinutes] =
+    useState<BossClearFightMinutes>(BOSS_CLEAR_FIGHT_MINUTES_DEFAULT);
+  const [mapleBcs, setMapleBcs] = useState<BossConvertedStatValues | null>(
+    null,
+  );
+  const [bcsLoading, setBcsLoading] = useState(false);
+  /** Manual BCS override shared with Hexa Efficiency; null = use HEXA 380. */
   const [bcsOverride, setBcsOverride] = useState<number | null>(null);
   const [bcsDraft, setBcsDraft] = useState("");
   const [missingFields, setMissingFields] = useState<MissingScouterField[] | null>(
@@ -406,12 +423,25 @@ export default function ScouterPage() {
     [input],
   );
   const result = useMemo(() => calculateScouter(input), [input]);
-  /** Boss Converted Stat @ 380% PDR — same score Hexa Efficiency / HEXA priority use. */
+  const bcsIs30min = bcsFightMinutes === 30;
+  /** Local calc fallback (no separate HEXA DPM yet — NORMAL ≈ HEXA). */
+  const localBcs = useMemo((): BossConvertedStatValues => {
+    const s300 = Math.round(Number(result.boss300Stat) || 0);
+    const s380 = Math.round(Number(result.boss380Stat) || 0);
+    return {
+      boss300Normal: s300,
+      boss300Hexa: s300,
+      boss380Normal: s380,
+      boss380Hexa: s380,
+    };
+  }, [result.boss300Stat, result.boss380Stat]);
+  const displayBcs = mapleBcs ?? localBcs;
+  /** HEXA Converted / priority: prefer MapleScouter 380% HEXA for active duration. */
   const derivedBcs = useMemo(() => {
-    const raw = Math.round(Number(result.boss380Stat) || 0);
+    const raw = Math.round(Number(displayBcs.boss380Hexa) || 0);
     if (raw > 0) return normalizeBossConvertedStat(raw);
     return DEFAULT_BOSS_CONVERTED_STAT;
-  }, [result.boss380Stat]);
+  }, [displayBcs.boss380Hexa]);
   const bossConvertedStat = bcsOverride ?? derivedBcs;
   useEffect(() => {
     if (bcsOverride == null) setBcsDraft(String(derivedBcs));
@@ -427,6 +457,44 @@ export default function ScouterPage() {
     setBcsOverride(null);
     setBcsDraft(String(derivedBcs));
   };
+
+  /** Debounced MapleScouter CALC_DMG for NORMAL/HEXA BCS (respects is30min). */
+  useEffect(() => {
+    if (!draftReady) return;
+    let cancelled = false;
+    const timer = window.setTimeout(async () => {
+      setBcsLoading(true);
+      try {
+        const res = await fetch("/api/scouter/result", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            input,
+            buffs,
+            links,
+            hexa: clampHexaForGms(hexa),
+            is30min: bcsIs30min,
+          }),
+        });
+        const json = (await res.json()) as {
+          calculatedData?: MapleScouterCalculatedData | null;
+          error?: string;
+        };
+        if (!res.ok || !json.calculatedData) {
+          throw new Error(json.error || `Calc failed (${res.status})`);
+        }
+        if (!cancelled) setMapleBcs(bossConvertedFromMaple(json.calculatedData));
+      } catch {
+        // Keep prior MapleScouter values; UI falls back to local calc if none.
+      } finally {
+        if (!cancelled) setBcsLoading(false);
+      }
+    }, 450);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [draftReady, input, buffs, links, hexa, bcsIs30min]);
   const hexaSlots = useMemo(
     () => getHexaSlots(input.charType),
     [input.charType],
@@ -1719,32 +1787,12 @@ export default function ScouterPage() {
             >
               Hexa Efficiency
             </button>
-            <div className="overflow-hidden rounded-md border border-border/50">
-              <FieldCell label="Boss Converted Stat">
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  maxLength={6}
-                  className={`${cell} w-full min-w-0 tabular-nums`}
-                  value={bcsDraft}
-                  placeholder={String(DEFAULT_BOSS_CONVERTED_STAT)}
-                  aria-label="Boss Converted Stat"
-                  title="Boss Converted Stat (HEXA priority score @ 380% PDR)"
-                  onChange={(e) =>
-                    setBcsDraft(clampBossConvertedStatDigits(e.target.value))
-                  }
-                  onBlur={(e) => commitBossConvertedStat(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      commitBossConvertedStat(
-                        (e.target as HTMLInputElement).value,
-                      );
-                    }
-                  }}
-                />
-              </FieldCell>
-            </div>
+            <BossConvertedStatPanel
+              values={displayBcs}
+              fightMinutes={bcsFightMinutes}
+              onFightMinutesChange={setBcsFightMinutes}
+              loading={bcsLoading}
+            />
           </div>
         </section>
 
