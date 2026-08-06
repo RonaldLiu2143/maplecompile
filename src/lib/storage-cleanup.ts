@@ -15,7 +15,7 @@ import {
   CHARACTER_WORKSPACE_KEY,
   pruneWorkspacesToRosterKeys,
 } from "@/lib/character-workspace";
-import { entryKey, readRosterState } from "@/lib/dashboard/roster";
+import { entryKey, readRosterState, ROSTER_KEY } from "@/lib/dashboard/roster";
 import { migrateLegacyHexaTracker } from "@/lib/hexa-tracker";
 import {
   readLiberationStore,
@@ -25,7 +25,7 @@ import { migrateLegacyPairing } from "@/lib/pairing";
 import { storage } from "@/lib/storage";
 
 /** Bump when adding new one-shot prune steps so existing browsers re-run once. */
-export const STORAGE_CLEANUP_KEY = "maplecompile-storage-cleanup-v2";
+export const STORAGE_CLEANUP_KEY = "maplecompile-storage-cleanup-v3";
 
 /** Keys that are safe to delete once their replacements exist (or are unused). */
 const DEAD_KEYS_ALWAYS = [
@@ -93,16 +93,16 @@ export function runStorageCleanupOnce(): void {
     removeKey("maplecompile.boss-income.v1");
   }
 
-  // HEXA: migrate above copies into by-char; drop leftover single-blob mirrors.
+  // HEXA: only drop legacy after migrate placed data under by-char (incl. __local__).
   if (hasKey("maplecompile-hexa-tracker-by-char-v1")) {
-    removeKey("maplecompile-hexa-tracker-v1");
-    removeKey("maplecompile-hexa-scouter-pair");
-  } else if (
-    localStorage.getItem("maplecompile-hexa-tracker-migrated-v1") === "1"
-  ) {
-    // Migrated with nothing to copy — still safe to drop empty leftovers.
-    removeKey("maplecompile-hexa-tracker-v1");
-    removeKey("maplecompile-hexa-scouter-pair");
+    // Prefer leaving cleanup to migrateLegacyHexaTracker; only remove empty leftovers
+    // when the migrated flag is set (meaning place succeeded).
+    if (
+      localStorage.getItem("maplecompile-hexa-tracker-migrated-v1") === "1"
+    ) {
+      removeKey("maplecompile-hexa-tracker-v1");
+      removeKey("maplecompile-hexa-scouter-pair");
+    }
   }
 
   // Roster replaced the old single-pin key; pin is only for one-shot migrate.
@@ -111,11 +111,17 @@ export function runStorageCleanupOnce(): void {
   }
 
   // Drop character workspaces for characters no longer on the roster.
+  // Skip when roster is empty/uncertain so a parse miss cannot wipe everything.
   try {
-    if (hasKey(CHARACTER_WORKSPACE_KEY)) {
-      const roster = readRosterState();
-      const allowed = new Set(roster.entries.map((e) => entryKey(e)));
-      pruneWorkspacesToRosterKeys(allowed);
+    if (hasKey(CHARACTER_WORKSPACE_KEY) && hasKey(ROSTER_KEY)) {
+      const rawRoster = localStorage.getItem(ROSTER_KEY);
+      if (rawRoster) {
+        const roster = readRosterState();
+        if (roster.entries.length > 0) {
+          const allowed = new Set(roster.entries.map((e) => entryKey(e)));
+          pruneWorkspacesToRosterKeys(allowed);
+        }
+      }
     }
   } catch {
     /* ignore */
@@ -129,8 +135,9 @@ export function runStorageCleanupOnce(): void {
     /* ignore */
   }
 
-  // Drop the previous one-shot flag so we do not leave a useless key behind.
+  // Drop the previous one-shot flags so we do not leave useless keys behind.
   removeKey("maplecompile-storage-cleanup-v1");
+  removeKey("maplecompile-storage-cleanup-v2");
 
   try {
     localStorage.setItem(STORAGE_CLEANUP_KEY, "1");

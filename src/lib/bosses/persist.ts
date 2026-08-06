@@ -1,4 +1,5 @@
 import { entryKey, type RosterEntry } from "@/lib/dashboard/roster";
+import { compactAgainstDefaults } from "@/lib/storage-compact";
 import {
   clampPartySize,
   defaultSelections,
@@ -178,15 +179,16 @@ function compactSelectionsForStorage(
   selections: BossClearSelection[],
 ): BossClearSelection[] {
   const defaults = defaultSelections();
-  const byId = new Map(defaults.map((d) => [d.bossId, d]));
-  return selections.filter((s) => {
-    const d = byId.get(s.bossId);
-    if (!d) return true;
-    if (s.enabled || s.cleared) return true;
-    if (s.difficulty !== d.difficulty) return true;
-    if (s.partySize !== d.partySize) return true;
-    return false;
-  });
+  return compactAgainstDefaults(
+    selections,
+    defaults,
+    (s) => s.bossId,
+    (s, d) =>
+      !s.enabled &&
+      !s.cleared &&
+      s.difficulty === d.difficulty &&
+      s.partySize === d.partySize,
+  );
 }
 
 export function writeBossIncomeStore(store: BossIncomeStore): void {

@@ -58,10 +58,7 @@ export function emptyWorkspace(): CharacterWorkspace {
   };
 }
 
-export function getWorkspace(key: string): CharacterWorkspace | null {
-  if (!key) return null;
-  const hit = readMap()[key];
-  if (!hit || typeof hit !== "object") return null;
+function normalizeWorkspace(hit: CharacterWorkspace): CharacterWorkspace {
   return {
     scouterLast: hit.scouterLast ?? null,
     equipSetup:
@@ -73,6 +70,24 @@ export function getWorkspace(key: string): CharacterWorkspace | null {
     pairedAt: typeof hit.pairedAt === "number" ? hit.pairedAt : undefined,
     updatedAt: typeof hit.updatedAt === "number" ? hit.updatedAt : Date.now(),
   };
+}
+
+/** Full workspace map (one localStorage read). */
+export function loadWorkspaceMap(): WorkspaceMap {
+  const raw = readMap();
+  const out: WorkspaceMap = {};
+  for (const [key, hit] of Object.entries(raw)) {
+    if (!key || !hit || typeof hit !== "object") continue;
+    out[key] = normalizeWorkspace(hit);
+  }
+  return out;
+}
+
+export function getWorkspace(key: string): CharacterWorkspace | null {
+  if (!key) return null;
+  const hit = readMap()[key];
+  if (!hit || typeof hit !== "object") return null;
+  return normalizeWorkspace(hit);
 }
 
 export function setWorkspace(key: string, workspace: CharacterWorkspace) {

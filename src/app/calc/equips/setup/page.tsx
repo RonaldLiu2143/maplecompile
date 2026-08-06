@@ -259,6 +259,30 @@ export default function SetupClient() {
     return () => clearTimeout(timer);
   }, [jobType, charType, setup, hydrated]);
 
+  const equipAutosaveRef = useRef({
+    hydrated: false,
+    jobType,
+    charType,
+    setup,
+  });
+  equipAutosaveRef.current = { hydrated, jobType, charType, setup };
+
+  useEffect(() => {
+    const flush = () => {
+      const snap = equipAutosaveRef.current;
+      if (!snap.hydrated || skipWorkspaceAutosave.current) return;
+      storage.setJobType(snap.jobType);
+      storage.setCharType(snap.charType);
+      storage.setEquipSetup(snap.setup);
+      persistLiveToWorkspace(activeCharacterKey());
+    };
+    window.addEventListener("pagehide", flush);
+    return () => {
+      window.removeEventListener("pagehide", flush);
+      flush();
+    };
+  }, []);
+
   const reloadSetupFromLiveStorage = () => {
     skipWorkspaceAutosave.current = true;
     const savedJob = storage.getJobType();

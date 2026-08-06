@@ -1,14 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
 import { CharacterProfile } from "@/components/character/CharacterProfile";
-import { LiberationStatusTags } from "@/components/dashboard/LiberationStatusTags";
 import { characterProfileHref } from "@/lib/character/client";
-import { entryKey, type RosterPrimary } from "@/lib/dashboard/roster";
-import { readLiberationFlags } from "@/lib/dashboard/roster-status";
+import type { RosterPrimary } from "@/lib/dashboard/roster";
 import type { RosterSlotState } from "@/hooks/useRoster";
-import { subscribeMapleDataReload } from "@/lib/maple-events";
 
 const TOOL_LINKS = [
   { href: "/calc/scouter", label: "Scouter" },
@@ -45,22 +41,6 @@ export function DashboardPrimaryHero({
   slot: RosterSlotState | undefined;
   onRetry?: () => void;
 }) {
-  const [liberation, setLiberation] = useState<{
-    genesis: boolean;
-    destiny: boolean;
-  }>({ genesis: false, destiny: false });
-
-  useEffect(() => {
-    if (!primary) {
-      setLiberation({ genesis: false, destiny: false });
-      return;
-    }
-    const key = entryKey(primary);
-    const reload = () => setLiberation(readLiberationFlags(key));
-    reload();
-    return subscribeMapleDataReload(reload);
-  }, [primary]);
-
   if (!primary) {
     return (
       <section className="rounded-2xl border border-dashed border-border/60 bg-surface/60 px-4 py-5 sm:px-5">
@@ -84,8 +64,6 @@ export function DashboardPrimaryHero({
   const character = slot?.status === "ready" ? slot.character : null;
   const loading = slot?.status === "loading" || !slot;
   const errored = slot?.status === "error";
-  // When dense profile is showing, tags live next to the name there.
-  const showHeaderTags = !character;
 
   return (
     <section className="overflow-hidden rounded-2xl border border-border/70 bg-surface">
@@ -96,13 +74,6 @@ export function DashboardPrimaryHero({
             <span className="text-amber-400 normal-case tracking-normal">
               ★ Primary
             </span>
-            {showHeaderTags ? (
-              <LiberationStatusTags
-                genesis={liberation.genesis}
-                destiny={liberation.destiny}
-                compact
-              />
-            ) : null}
           </p>
           {!character ? (
             <p className="truncate font-display text-base font-bold tracking-tight">

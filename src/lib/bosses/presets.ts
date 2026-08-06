@@ -4,6 +4,7 @@ import {
   type BossClearSelection,
 } from "./income";
 import { BOSS_CRYSTALS, WEEKLY_CRYSTAL_LIMIT } from "./crystals";
+import { lruCapByTime } from "@/lib/lru";
 
 export const BOSS_PRESETS_KEY = "maplecompile.boss-presets.v1";
 export const BOSS_PRESETS_LIMIT = 20;
@@ -89,12 +90,11 @@ export function loadBossPresets(): BossPreset[] {
 export function saveBossPresets(presets: BossPreset[]): boolean {
   if (typeof window === "undefined") return false;
   try {
-    const capped =
-      presets.length <= BOSS_PRESETS_LIMIT
-        ? presets
-        : [...presets]
-            .sort((a, b) => b.createdAt - a.createdAt)
-            .slice(0, BOSS_PRESETS_LIMIT);
+    const capped = lruCapByTime(
+      presets,
+      BOSS_PRESETS_LIMIT,
+      (p) => p.createdAt,
+    );
     localStorage.setItem(BOSS_PRESETS_KEY, JSON.stringify(capped));
     return true;
   } catch {

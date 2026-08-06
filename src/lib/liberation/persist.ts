@@ -1,4 +1,5 @@
 import { notifyMapleDataChanged } from "@/lib/maple-events";
+import { compactAgainstDefaults } from "@/lib/storage-compact";
 import {
   clampTracesHeld,
   defaultLiberationQuest,
@@ -268,15 +269,15 @@ function compactTraceSelections(
   selections: TraceSelection[],
 ): TraceSelection[] {
   const defaults = defaultTraceSelections(type);
-  const byName = new Map(defaults.map((d) => [d.bossName, d]));
-  return selections.filter((s) => {
-    const d = byName.get(s.bossName);
-    if (!d) return true;
-    if (s.cleared) return true;
-    if (s.difficulty !== d.difficulty) return true;
-    if (s.partySize !== d.partySize) return true;
-    return false;
-  });
+  return compactAgainstDefaults(
+    selections,
+    defaults,
+    (s) => s.bossName,
+    (s, d) =>
+      !s.cleared &&
+      s.difficulty === d.difficulty &&
+      s.partySize === d.partySize,
+  );
 }
 
 function compactInputsForStorage(

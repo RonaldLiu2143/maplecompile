@@ -2,10 +2,9 @@
 
 /** Genesis / Destiny liberated chips — colors match Liberation page (G emerald / D amber). */
 
-export type LiberationTagFlags = {
-  genesis: boolean;
-  destiny: boolean;
-};
+import type { LiberationTagFlags } from "@/lib/dashboard/roster-status";
+
+export type { LiberationTagFlags };
 
 const GENESIS_CLASS =
   "border-emerald-700/40 bg-emerald-700/15 text-emerald-900 dark:border-emerald-500/40 dark:bg-emerald-500/15 dark:text-emerald-300";

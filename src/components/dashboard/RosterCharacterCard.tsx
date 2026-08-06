@@ -2,7 +2,10 @@
 
 import Link from "next/link";
 import { useRef, type DragEvent, type MouseEvent } from "react";
-import { LiberationStatusTags } from "@/components/dashboard/LiberationStatusTags";
+import type { LiberationTagFlags } from "@/lib/dashboard/roster-status";
+import {
+  LiberationStatusTags,
+} from "@/components/dashboard/LiberationStatusTags";
 import {
   isStickyActiveSwitchBlocked,
   UNLOCK_TO_CHANGE_ACTIVE_MSG,
@@ -121,7 +124,7 @@ export function RosterCharacterCard({
   /** Optional status pill (e.g. boss clears `0/14`). */
   badge?: string | null;
   /** Genesis / Destiny liberated flags from maplecompile.liberation.v2 */
-  liberation?: { genesis: boolean; destiny: boolean } | null;
+  liberation?: LiberationTagFlags | null;
   onRemove?: () => void;
   onSetPrimary?: () => void;
   /** When set, card click selects instead of navigating to the profile page. */

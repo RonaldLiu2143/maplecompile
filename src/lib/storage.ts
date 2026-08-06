@@ -3,6 +3,7 @@ import type { BuffState, LinkState } from "./scouter/buffs";
 import type { ScouterInput } from "./scouter/types";
 import type { PlannerOverrides } from "./planner/types";
 import { notifyMapleDataChanged } from "./maple-events";
+import { lruCapByUpdatedAt } from "./lru";
 
 function readJson<T>(key: string, fallback: T): T {
   if (typeof window === "undefined") return fallback;
@@ -63,24 +64,6 @@ export const SCOUTER_SHARE_TOKENS_LIMIT = 80;
 
 function newPresetId(): string {
   return `p_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
-}
-
-/** Keep newest `limit` rows by `updatedAt`; invoke `onEvict` for dropped ids. */
-function lruCapByUpdatedAt<T extends { id: string; updatedAt: number }>(
-  list: T[],
-  limit: number,
-  onEvict?: (id: string) => void,
-): T[] {
-  if (list.length <= limit) return list;
-  const sorted = [...list].sort((a, b) => b.updatedAt - a.updatedAt);
-  const kept = sorted.slice(0, limit);
-  if (onEvict) {
-    const keptIds = new Set(kept.map((p) => p.id));
-    for (const p of list) {
-      if (!keptIds.has(p.id)) onEvict(p.id);
-    }
-  }
-  return kept;
 }
 
 /**
@@ -570,9 +553,8 @@ type ShareTokenEntry = {
 };
 
 /**
- * Soft-cap share tokens. Prefer evicting `public: false` first (insertion order),
- * then public tokens if still over the limit. Also clears gallery links for
- * evicted share ids.
+ * Soft-cap share tokens. Only evict `public: false` (insertion order).
+ * Never evict public gallery tokens — soft cap may be exceeded while they remain.
  */
 function writeShareTokensCapped(map: Record<string, ShareTokenEntry>) {
   const entries = Object.entries(map);
@@ -582,17 +564,14 @@ function writeShareTokensCapped(map: Record<string, ShareTokenEntry>) {
   }
   const over = entries.length - SCOUTER_SHARE_TOKENS_LIMIT;
   const privateOnes = entries.filter(([, v]) => !v.public);
-  const publicOnes = entries.filter(([, v]) => v.public);
   const toEvict: string[] = [];
   for (const [id] of privateOnes) {
     if (toEvict.length >= over) break;
     toEvict.push(id);
   }
-  if (toEvict.length < over) {
-    for (const [id] of publicOnes) {
-      if (toEvict.length >= over) break;
-      toEvict.push(id);
-    }
+  if (toEvict.length === 0) {
+    writeJson(SCOUTER_SHARE_TOKENS_KEY, map);
+    return;
   }
   const next = { ...map };
   for (const id of toEvict) {

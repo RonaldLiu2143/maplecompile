@@ -188,20 +188,6 @@ export default function LiberationPage() {
     [type, inputs, useGenesisPass],
   );
 
-  useEffect(() => {
-    if (!ready) return;
-    const nextRate = inputs.liberated ? 100 : result.completionRate;
-    if (inputs.completionRate === nextRate) return;
-    setStore((prev) =>
-      upsertActiveInputs(prev, { completionRate: nextRate }),
-    );
-  }, [
-    ready,
-    result.completionRate,
-    inputs.completionRate,
-    inputs.liberated,
-  ]);
-
   const patch = (partial: Partial<LiberationCharacterInputs>) => {
     setStore((prev) => upsertActiveInputs(prev, partial));
   };
@@ -422,7 +408,16 @@ export default function LiberationPage() {
                       const tabInputs = bundle?.[tab];
                       const rate = tabInputs?.liberated
                         ? 100
-                        : (tabInputs?.completionRate ?? 0);
+                        : tabInputs
+                          ? Math.min(
+                              100,
+                              Math.round(
+                                (Math.max(0, tabInputs.currentTraces) /
+                                  Math.max(1, tabInputs.targetTraces || 1)) *
+                                  100,
+                              ),
+                            )
+                          : 0;
                       const isLib = !!tabInputs?.liberated;
                       return (
                         <button

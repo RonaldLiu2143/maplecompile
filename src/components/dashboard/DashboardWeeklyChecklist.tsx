@@ -17,7 +17,7 @@ import {
   readRosterStatusByKey,
   type RosterStatusSnapshot,
 } from "@/lib/dashboard/roster-status";
-import { subscribeMapleDataReload } from "@/lib/maple-events";
+import { useMapleDataReload } from "@/hooks/useMapleDataReload";
 
 function weeklyProgress(selections: BossClearSelection[]): RosterWeeklyBossProgress {
   let enabled = 0;
@@ -104,15 +104,20 @@ export function DashboardRosterWeeklySection({
     Record<string, RosterStatusSnapshot>
   >({});
 
+  const reload = () => {
+    setWeeklyByKey(readWeeklyByKey(roster));
+    setStatusByKey(readRosterStatusByKey(roster));
+  };
+
   useEffect(() => {
     if (!hydrated) return;
-    const reload = () => {
-      setWeeklyByKey(readWeeklyByKey(roster));
-      setStatusByKey(readRosterStatusByKey(roster));
-    };
     reload();
-    return subscribeMapleDataReload(reload);
   }, [hydrated, roster, slots]);
+
+  useMapleDataReload(() => {
+    if (!hydrated) return;
+    reload();
+  });
 
   const totals = useMemo(() => {
     let enabled = 0;

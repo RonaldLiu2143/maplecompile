@@ -7,28 +7,30 @@ import {
   RosterCharacterCard,
   type RosterDragProps,
 } from "@/components/dashboard/RosterCharacterCard";
+import type { LiberationTagFlags } from "@/lib/dashboard/roster-status";
+import { readLiberationFlagsByKey } from "@/lib/dashboard/roster-status";
 import {
   entryKey,
   isPrimary,
   type RosterEntry,
   type RosterPrimary,
 } from "@/lib/dashboard/roster";
-import { readLiberationFlags } from "@/lib/dashboard/roster-status";
 import {
   readBossIncomeStore,
   summarizeIncome,
   WEEKLY_CRYSTAL_LIMIT,
   worldTypeFromCharacter,
+  type BossIncomeStore,
 } from "@/lib/bosses";
 import type { RosterSlotState } from "@/hooks/useRoster";
-import { subscribeMapleDataReload } from "@/lib/maple-events";
+import { useMapleDataReload } from "@/hooks/useMapleDataReload";
 
 function bossBadgeForKey(
+  store: BossIncomeStore,
   key: string,
   character: { isHeroic?: boolean | null } | null,
 ): string | null {
   try {
-    const store = readBossIncomeStore();
     const state = store.byCharacter[key];
     if (!state) return null;
     const world = worldTypeFromCharacter(character);
@@ -79,27 +81,29 @@ export function RosterGrid({
 }) {
   const [badges, setBadges] = useState<Record<string, string | null>>({});
   const [liberationByKey, setLiberationByKey] = useState<
-    Record<string, { genesis: boolean; destiny: boolean }>
+    Record<string, LiberationTagFlags>
   >({});
 
+  const reload = () => {
+    const store = readBossIncomeStore();
+    const keys = roster.map((entry) => entryKey(entry));
+    const nextLib = readLiberationFlagsByKey(keys);
+    const nextBadges: Record<string, string | null> = {};
+    for (const entry of roster) {
+      const key = entryKey(entry);
+      const slot = slots[key];
+      const character = slot?.status === "ready" ? slot.character : null;
+      nextBadges[key] = bossBadgeForKey(store, key, character);
+    }
+    setBadges(nextBadges);
+    setLiberationByKey(nextLib);
+  };
+
   useEffect(() => {
-    const reload = () => {
-      const nextBadges: Record<string, string | null> = {};
-      const nextLib: Record<string, { genesis: boolean; destiny: boolean }> =
-        {};
-      for (const entry of roster) {
-        const key = entryKey(entry);
-        const slot = slots[key];
-        const character = slot?.status === "ready" ? slot.character : null;
-        nextBadges[key] = bossBadgeForKey(key, character);
-        nextLib[key] = readLiberationFlags(key);
-      }
-      setBadges(nextBadges);
-      setLiberationByKey(nextLib);
-    };
     reload();
-    return subscribeMapleDataReload(reload);
   }, [roster, slots]);
+
+  useMapleDataReload(reload);
 
   if (roster.length === 0) {
     return (

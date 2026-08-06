@@ -644,6 +644,49 @@ export default function ScouterPage() {
     return () => clearTimeout(timer);
   }, [input, buffs, links, hexa, presetName, draftReady]);
 
+  // Keep latest draft on a ref so unmount/pagehide can flush without re-binding every keystroke.
+  const scouterAutosaveRef = useRef({
+    draftReady: false,
+    input,
+    buffs,
+    links,
+    hexa,
+    presetName: "",
+  });
+  scouterAutosaveRef.current = {
+    draftReady,
+    input,
+    buffs,
+    links,
+    hexa,
+    presetName,
+  };
+
+  useEffect(() => {
+    const flush = () => {
+      const snap = scouterAutosaveRef.current;
+      if (!snap.draftReady || skipWorkspaceAutosave.current) return;
+      const trimmed = snap.presetName.trim();
+      storage.setJobType(
+        (snap.input.jobType || DEFAULT_JOB) as typeof DEFAULT_JOB,
+      );
+      storage.setCharType(snap.input.charType || DEFAULT_CHAR);
+      storage.setScouterLast({
+        input: snap.input,
+        buffs: snap.buffs,
+        links: snap.links,
+        hexa: clampHexaForGms(snap.hexa),
+        ...(trimmed ? { name: trimmed } : {}),
+      });
+      persistLiveToWorkspace(activeCharacterKey());
+    };
+    window.addEventListener("pagehide", flush);
+    return () => {
+      window.removeEventListener("pagehide", flush);
+      flush();
+    };
+  }, []);
+
   const reloadDraftFromLiveStorage = () => {
     skipWorkspaceAutosave.current = true;
     const last = storage.getScouterLast();

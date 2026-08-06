@@ -107,6 +107,12 @@ function resolvePairingKey(characterKey?: string | null): string | null {
   return activeCharacterKey();
 }
 
+/** Full per-character pairing map (migrates legacy once). */
+export function loadPairingMap(): PairingByCharacter {
+  migrateLegacyPairing();
+  return readPairingMap();
+}
+
 export function getPairing(
   characterKey?: string | null,
 ): ScouterEquipPairing | null {

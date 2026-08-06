@@ -67,7 +67,7 @@ export type HexaScouterPairing = {
   updatedAt: number;
 };
 
-type HexaByCharacter = Record<string, HexaTrackerState>;
+export type HexaByCharacter = Record<string, HexaTrackerState>;
 type HexaPairByCharacter = Record<string, HexaScouterPairing>;
 
 function readJson<T>(key: string, fallback: T): T {
@@ -221,6 +221,52 @@ function writePairByCharacter(map: HexaPairByCharacter) {
   writeJson(HEXA_SCOUTER_PAIR_BY_CHAR_KEY, map);
 }
 
+/**
+ * Place legacy HEXA blob under a roster key, or rematerialize to `__local__`
+ * when the preferred slot is missing/taken. Returns the destination key, or
+ * null when nothing could be placed (legacy must stay).
+ */
+function placeLegacyHexaTracker(
+  map: HexaByCharacter,
+  legacy: Partial<HexaTrackerState>,
+  primaryKey: string | null,
+): string | null {
+  const preferred =
+    (typeof legacy.rosterKey === "string" && legacy.rosterKey) ||
+    primaryKey ||
+    null;
+  if (preferred && !map[preferred]) {
+    map[preferred] = normalizeTracker(legacy, preferred);
+    return preferred;
+  }
+  if (!map["__local__"]) {
+    map["__local__"] = normalizeTracker(legacy, null);
+    return "__local__";
+  }
+  // Both preferred (if any) and __local__ are occupied — leave legacy in place.
+  return null;
+}
+
+function placeLegacyHexaPair(
+  pairMap: HexaPairByCharacter,
+  legacyPair: HexaScouterPairing,
+  primaryKey: string | null,
+): string | null {
+  const preferred =
+    (typeof legacyPair.rosterKey === "string" && legacyPair.rosterKey) ||
+    primaryKey ||
+    null;
+  if (preferred && !pairMap[preferred]) {
+    pairMap[preferred] = legacyPair;
+    return preferred;
+  }
+  if (!pairMap["__local__"]) {
+    pairMap["__local__"] = legacyPair;
+    return "__local__";
+  }
+  return null;
+}
+
 /** One-shot: migrate legacy single-blob HEXA into primary (or tagged) key. */
 export function migrateLegacyHexaTracker(): void {
   if (typeof window === "undefined") return;
@@ -236,14 +282,13 @@ export function migrateLegacyHexaTracker(): void {
     null,
   );
   const primaryKey = primaryRosterKey();
-  const targetKey =
-    (legacy && typeof legacy.rosterKey === "string" && legacy.rosterKey) ||
-    primaryKey ||
-    (legacy ? "__local__" : null);
-
-  if (legacy && targetKey && !map[targetKey]) {
-    map[targetKey] = normalizeTracker(legacy, targetKey === "__local__" ? null : targetKey);
-    writeByCharacter(map);
+  let trackerPlaced = !legacy;
+  if (legacy) {
+    const dest = placeLegacyHexaTracker(map, legacy, primaryKey);
+    if (dest) {
+      writeByCharacter(map);
+      trackerPlaced = true;
+    }
   }
 
   const pairMap = readPairByCharacter();
@@ -251,30 +296,37 @@ export function migrateLegacyHexaTracker(): void {
     HEXA_SCOUTER_PAIR_KEY,
     null,
   );
-  const pairKey =
-    (legacyPair && typeof legacyPair.rosterKey === "string"
-      ? legacyPair.rosterKey
-      : null) ||
-    primaryKey ||
-    (legacyPair?.scouter ? "__local__" : null);
-  if (legacyPair?.scouter && pairKey && !pairMap[pairKey]) {
-    pairMap[pairKey] = legacyPair;
-    writePairByCharacter(pairMap);
+  let pairPlaced = !legacyPair?.scouter;
+  if (legacyPair?.scouter) {
+    const dest = placeLegacyHexaPair(pairMap, legacyPair, primaryKey);
+    if (dest) {
+      writePairByCharacter(pairMap);
+      pairPlaced = true;
+    }
   }
 
-  // Legacy single-blob keys are superseded by the per-character maps.
+  // Only drop legacy after data is under a roster key or `__local__`.
   try {
-    localStorage.removeItem(HEXA_TRACKER_KEY);
-    localStorage.removeItem(HEXA_SCOUTER_PAIR_KEY);
+    if (trackerPlaced) localStorage.removeItem(HEXA_TRACKER_KEY);
+    if (pairPlaced) localStorage.removeItem(HEXA_SCOUTER_PAIR_KEY);
   } catch {
     /* ignore */
   }
+
+  // Retry later if either blob could not be placed safely.
+  if (!trackerPlaced || !pairPlaced) return;
 
   try {
     localStorage.setItem(HEXA_MIGRATED_KEY, "1");
   } catch {
     /* ignore */
   }
+}
+
+/** Full per-character HEXA map (migrates legacy once). */
+export function loadHexaTrackerMap(): HexaByCharacter {
+  migrateLegacyHexaTracker();
+  return readByCharacter();
 }
 
 function resolveHexaKey(characterKey?: string | null): string {
