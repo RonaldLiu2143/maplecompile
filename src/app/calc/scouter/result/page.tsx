@@ -20,6 +20,7 @@ import {
 import {
   BOSS_CLEAR_FIGHT_MINUTES_DEFAULT,
   evaluateBossClears,
+  isRelevantBossClear,
   labelPillClass,
   type BossClearFightMinutes,
   type BossClearRow,
@@ -61,6 +62,42 @@ function formatPercent(n: number): string {
   })}%`;
 }
 
+const FD_NEUTRAL_EPS = 0.005;
+const TIP_MAX_WIDTH = 340;
+const TIP_EDGE_PAD = 12;
+const TIP_GAP = 8;
+const TIP_ESTIMATED_HEIGHT = 420;
+const TIP_FLIP_MIN = 260;
+const TIP_POS_EPS = 0.5;
+
+function fdTone(fd: number): { message: string; className: string } {
+  if (Math.abs(fd) < FD_NEUTRAL_EPS) {
+    return {
+      message: "Receiving max Level / Force bonuses.",
+      className: "text-emerald-400",
+    };
+  }
+  if (fd < 0) {
+    return {
+      message: `Receiving a ${Math.abs(fd).toFixed(2)}% FD cut from Level/Force.`,
+      className: "text-rose-500",
+    };
+  }
+  return {
+    message: `Receiving a ${fd.toFixed(2)}% FD bonus from Level/Force.`,
+    className: "text-sky-400",
+  };
+}
+
+function tipStyleUnchanged(a: CSSProperties, b: CSSProperties): boolean {
+  return (
+    Math.abs(Number(a.left ?? 0) - Number(b.left ?? 0)) < TIP_POS_EPS &&
+    Math.abs(Number(a.width ?? 0) - Number(b.width ?? 0)) < TIP_POS_EPS &&
+    Math.abs(Number(a.top ?? -1) - Number(b.top ?? -1)) < TIP_POS_EPS &&
+    Math.abs(Number(a.bottom ?? -1) - Number(b.bottom ?? -1)) < TIP_POS_EPS
+  );
+}
+
 function StatBlock({
   title,
   children,
@@ -88,28 +125,46 @@ function StatBlock({
   );
 }
 
+function RateRow({
+  label,
+  boss,
+  user,
+  rate,
+}: {
+  label: string;
+  boss: ReactNode;
+  user: ReactNode;
+  rate: number;
+}) {
+  const cell = "px-1.5 py-0.5 text-center text-[11px] tabular-nums text-white";
+  return (
+    <tr>
+      <td className="px-1.5 py-0.5 text-center text-[11px] font-semibold text-white">
+        {label}
+      </td>
+      <td className={cell}>{boss}</td>
+      <td className={cell}>{user}</td>
+      <td className={cell}>{(rate * 100).toFixed(0)}%</td>
+    </tr>
+  );
+}
+
 function BossHoverTooltipBody({
   row,
   hpRegion,
+  userLevel,
+  userArcaneForce,
+  userAuthenticForce,
 }: {
   row: BossClearRow;
   hpRegion: BossHpRegion;
+  userLevel: number;
+  userArcaneForce: number;
+  userAuthenticForce: number;
 }) {
   const info = getBossHoverInfo(row.imgKey, hpRegion);
   const hpLabel = hpRegion === "kms" ? "Total HP (KMS)" : "Total HP (GMS)";
-  const fd = row.fdVsMaxPercent;
-  const fdMsg =
-    Math.abs(fd) < 0.005
-      ? "Receiving max Level / Force bonuses."
-      : fd < 0
-        ? `Receiving a ${Math.abs(fd).toFixed(2)}% FD cut from Level/Force.`
-        : `Receiving a ${fd.toFixed(2)}% FD bonus from Level/Force.`;
-  const fdClass =
-    Math.abs(fd) < 0.005
-      ? "text-emerald-400"
-      : fd < 0
-        ? "text-rose-500"
-        : "text-sky-400";
+  const { message: fdMsg, className: fdClass } = fdTone(row.fdVsMaxPercent);
 
   return (
     <div className="flex flex-col gap-2">
@@ -238,51 +293,29 @@ function BossHoverTooltipBody({
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td className="px-1.5 py-0.5 text-center text-[11px] font-semibold text-white">
-                Level
-              </td>
-              <td className="px-1.5 py-0.5 text-center text-[11px] tabular-nums text-white">
-                {row.level}
-              </td>
-              <td className="px-1.5 py-0.5 text-center text-[11px] tabular-nums text-white">
-                {row.userLevel}
-              </td>
-              <td className="px-1.5 py-0.5 text-center text-[11px] tabular-nums text-white">
-                {(row.levelRate * 100).toFixed(0)}%
-              </td>
-            </tr>
+            <RateRow
+              label="Level"
+              boss={row.level}
+              user={userLevel}
+              rate={row.levelRate}
+            />
             {row.arcaneForce > 0 ? (
-              <tr>
-                <td className="px-1.5 py-0.5 text-center text-[11px] font-semibold text-white">
-                  Arcane Force
-                </td>
-                <td className="px-1.5 py-0.5 text-center text-[11px] tabular-nums text-white">
-                  {row.arcaneForce}
-                </td>
-                <td className="px-1.5 py-0.5 text-center text-[11px] tabular-nums text-white">
-                  {row.userArcaneForce}
-                </td>
-                <td className="px-1.5 py-0.5 text-center text-[11px] tabular-nums text-white">
-                  {(row.arcaneRate * 100).toFixed(0)}%
-                </td>
-              </tr>
+              <RateRow
+                label="Arcane Force"
+                boss={row.arcaneForce}
+                user={userArcaneForce}
+                rate={row.arcaneRate}
+              />
             ) : null}
             {row.authenticForce > 0 ? (
-              <tr>
-                <td className="px-1.5 py-0.5 text-center text-[11px] font-semibold text-white">
-                  Sacred Force
-                </td>
-                <td className="px-1.5 py-0.5 text-center text-[11px] tabular-nums text-white">
-                  {row.authenticForce === 999 ? "?" : row.authenticForce}
-                </td>
-                <td className="px-1.5 py-0.5 text-center text-[11px] tabular-nums text-white">
-                  {row.userAuthenticForce}
-                </td>
-                <td className="px-1.5 py-0.5 text-center text-[11px] tabular-nums text-white">
-                  {(row.authenticRate * 100).toFixed(0)}%
-                </td>
-              </tr>
+              <RateRow
+                label="Sacred Force"
+                boss={
+                  row.authenticForce === 999 ? "?" : row.authenticForce
+                }
+                user={userAuthenticForce}
+                rate={row.authenticRate}
+              />
             ) : null}
           </tbody>
         </table>
@@ -325,65 +358,108 @@ function PortraitBadge({
   );
 }
 
+type BossUserForces = {
+  userLevel: number;
+  userArcaneForce: number;
+  userAuthenticForce: number;
+};
+
+function computeTipStyle(el: HTMLElement): CSSProperties {
+  const r = el.getBoundingClientRect();
+  const tipWidth = Math.min(TIP_MAX_WIDTH, window.innerWidth - TIP_EDGE_PAD * 2);
+  let left = r.left + r.width / 2 - tipWidth / 2;
+  left = Math.max(
+    TIP_EDGE_PAD,
+    Math.min(left, window.innerWidth - tipWidth - TIP_EDGE_PAD),
+  );
+
+  const spaceBelow = window.innerHeight - r.bottom - TIP_GAP;
+  const spaceAbove = r.top - TIP_GAP;
+  const flipUp =
+    spaceBelow < Math.min(TIP_ESTIMATED_HEIGHT, TIP_FLIP_MIN) &&
+    spaceAbove > spaceBelow;
+
+  return flipUp
+    ? {
+        position: "fixed",
+        left,
+        width: tipWidth,
+        bottom: window.innerHeight - r.top + TIP_GAP,
+        zIndex: 200,
+      }
+    : {
+        position: "fixed",
+        left,
+        width: tipWidth,
+        top: r.bottom + TIP_GAP,
+        zIndex: 200,
+      };
+}
+
 function BossClearCard({
   row,
   hpRegion,
+  userLevel,
+  userArcaneForce,
+  userAuthenticForce,
 }: {
   row: BossClearRow;
   hpRegion: BossHpRegion;
-}) {
+} & BossUserForces) {
   const cardRef = useRef<HTMLDivElement>(null);
-  const [hoverOpen, setHoverOpen] = useState(false);
-  const [tipStyle, setTipStyle] = useState<CSSProperties | null>(null);
+  const tipStyleRef = useRef<CSSProperties | null>(null);
+  const rafRef = useRef<number | null>(null);
+  const [tip, setTip] = useState<{ style: CSSProperties } | null>(null);
+
+  const applyTipStyle = (next: CSSProperties, forceOpen: boolean) => {
+    const prev = tipStyleRef.current;
+    if (!forceOpen && prev && tipStyleUnchanged(prev, next)) return;
+    tipStyleRef.current = next;
+    setTip({ style: next });
+  };
+
+  const openTip = () => {
+    const el = cardRef.current;
+    if (!el) return;
+    applyTipStyle(computeTipStyle(el), true);
+  };
+
+  const closeTip = () => {
+    tipStyleRef.current = null;
+    setTip(null);
+  };
 
   useLayoutEffect(() => {
-    if (!hoverOpen) {
-      setTipStyle(null);
-      return;
-    }
+    if (!tip) return;
 
     const place = () => {
       const el = cardRef.current;
       if (!el) return;
-      const r = el.getBoundingClientRect();
-      const tipWidth = Math.min(340, window.innerWidth - 24);
-      let left = r.left + r.width / 2 - tipWidth / 2;
-      left = Math.max(12, Math.min(left, window.innerWidth - tipWidth - 12));
+      applyTipStyle(computeTipStyle(el), false);
+    };
 
-      const estimatedHeight = 420;
-      const gap = 8;
-      const spaceBelow = window.innerHeight - r.bottom - gap;
-      const spaceAbove = r.top - gap;
-      const flipUp =
-        spaceBelow < Math.min(estimatedHeight, 260) && spaceAbove > spaceBelow;
-
-      setTipStyle(
-        flipUp
-          ? {
-              position: "fixed",
-              left,
-              width: tipWidth,
-              bottom: window.innerHeight - r.top + gap,
-              zIndex: 200,
-            }
-          : {
-              position: "fixed",
-              left,
-              width: tipWidth,
-              top: r.bottom + gap,
-              zIndex: 200,
-            },
-      );
+    const placeRaf = () => {
+      if (rafRef.current != null) return;
+      rafRef.current = requestAnimationFrame(() => {
+        rafRef.current = null;
+        place();
+      });
     };
 
     place();
-    window.addEventListener("scroll", place, true);
-    window.addEventListener("resize", place);
+    window.addEventListener("scroll", placeRaf, true);
+    window.addEventListener("resize", placeRaf);
     return () => {
-      window.removeEventListener("scroll", place, true);
-      window.removeEventListener("resize", place);
+      window.removeEventListener("scroll", placeRaf, true);
+      window.removeEventListener("resize", placeRaf);
+      if (rafRef.current != null) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
     };
-  }, [hoverOpen, hpRegion, row.imgKey]);
+    // Reposition when tip opens or boss/region content may change height.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tip != null, hpRegion, row.imgKey]);
 
   const pctColor =
     row.clearPercent >= 200
@@ -403,27 +479,33 @@ function BossClearCard({
 
   const b = row.badges;
   const showBadges =
-    b.lv || b.arcane || b.sacred || b.force || b.forceBonus;
+    b.lv || b.arcane || b.sacred || row.forceBlocked || b.forceBonus;
 
   return (
     <div
       ref={cardRef}
       tabIndex={0}
       aria-label={`${row.difficulty} ${row.nameEn}`}
-      onMouseEnter={() => setHoverOpen(true)}
-      onMouseLeave={() => setHoverOpen(false)}
-      onFocus={() => setHoverOpen(true)}
-      onBlur={() => setHoverOpen(false)}
+      onMouseEnter={openTip}
+      onMouseLeave={closeTip}
+      onFocus={openTip}
+      onBlur={closeTip}
       className={`relative z-0 flex w-full flex-col items-center gap-0.5 rounded-md border bg-surface p-1 text-center shadow-sm transition hover:z-30 hover:-translate-y-0.5 hover:shadow-md focus-within:z-30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent ${borderClass}`}
     >
-      {hoverOpen && tipStyle && typeof document !== "undefined"
+      {tip && typeof document !== "undefined"
         ? createPortal(
             <div
               className="pointer-events-none rounded-xl border border-border/60 bg-zinc-950 px-3 py-2.5 text-left text-white shadow-2xl"
-              style={tipStyle}
+              style={tip.style}
               role="tooltip"
             >
-              <BossHoverTooltipBody row={row} hpRegion={hpRegion} />
+              <BossHoverTooltipBody
+                row={row}
+                hpRegion={hpRegion}
+                userLevel={userLevel}
+                userArcaneForce={userArcaneForce}
+                userAuthenticForce={userAuthenticForce}
+              />
             </div>,
             document.body,
           )
@@ -459,7 +541,7 @@ function BossClearCard({
                 title="Below max Sacred Force damage bonus"
               />
             ) : null}
-            {b.force ? (
+            {row.forceBlocked ? (
               <PortraitBadge
                 label="F"
                 title="Force soft/hard cut — well below required ARC/AUT"
@@ -541,11 +623,14 @@ function BossCardGrid({
   rows,
   columnsClass,
   hpRegion,
+  userLevel,
+  userArcaneForce,
+  userAuthenticForce,
 }: {
   rows: BossClearRow[];
   columnsClass: string;
   hpRegion: BossHpRegion;
-}) {
+} & BossUserForces) {
   return (
     <div className={`relative z-0 grid gap-1 overflow-visible ${columnsClass}`}>
       {rows.map((row) => (
@@ -553,6 +638,9 @@ function BossCardGrid({
           key={`${row.id}-${row.difficulty}-${row.isPartyBoss ? "p" : "s"}-${row.rank}`}
           row={row}
           hpRegion={hpRegion}
+          userLevel={userLevel}
+          userArcaneForce={userArcaneForce}
+          userAuthenticForce={userAuthenticForce}
         />
       ))}
     </div>
@@ -576,21 +664,18 @@ export default function ScouterDetailedResultPage() {
   const [fightMinutes, setFightMinutes] = useState<BossClearFightMinutes>(
     BOSS_CLEAR_FIGHT_MINUTES_DEFAULT,
   );
-  /** MapleScouter simulatorData overlay — when active, BCS + clears use sim result. */
+  /** Applied Additional Spec Sim overlay; null = show live result. */
   const [simOverlay, setSimOverlay] = useState<SpecSimOverlay | null>(null);
-  const [simActive, setSimActive] = useState(false);
-  /** 20 min → KMS / MapleScouter default; 30 min → GMS is30min + GMS HP clears. */
+  /** 20 min → KMS default; 30 min → GMS is30min + GMS HP clears. */
   const is30min = fightMinutes === 30;
   const hpRegion: BossHpRegion = fightMinutes === 30 ? "gms" : "kms";
 
-  const displayData =
-    simActive && simOverlay ? simOverlay.data : data;
-  const displayLevel =
-    simActive && simOverlay ? simOverlay.level : level;
-  const displayArcane =
-    simActive && simOverlay ? simOverlay.arcaneForce : arcaneForce;
-  const displayAuthentic =
-    simActive && simOverlay ? simOverlay.authenticForce : authenticForce;
+  const displayData = simOverlay ? simOverlay.data : data;
+  const displayLevel = simOverlay ? simOverlay.level : level;
+  const displayArcane = simOverlay ? simOverlay.arcaneForce : arcaneForce;
+  const displayAuthentic = simOverlay
+    ? simOverlay.authenticForce
+    : authenticForce;
 
   useEffect(() => {
     let cancelled = false;
@@ -598,7 +683,6 @@ export default function ScouterDetailedResultPage() {
       setLoading(true);
       setError(null);
       setSimOverlay(null);
-      setSimActive(false);
       try {
         const last = storage.getScouterLast();
         const job = last?.input?.jobType || DEFAULT_JOB;
@@ -693,18 +777,12 @@ export default function ScouterDetailedResultPage() {
   );
 
   const bossRows = useMemo(() => {
-    if (!clearInput) return [];
     const base = relevantOnly
-      ? evaluateBossClears({
-          ...clearInput,
-          fightMinutes,
-          relevantOnly: true,
-        })
+      ? allBossRows.filter(isRelevantBossClear)
       : allBossRows;
-    // Always keep Destiny/Champion out of Boss Clear — Hide only collapses
-    // that section; it must not dump those cards into this list.
+    // Keep Destiny/Champion out of Boss Clear — Hide only collapses that section.
     return base.filter((row) => !isDestinyOrChampion(row));
-  }, [allBossRows, clearInput, fightMinutes, relevantOnly]);
+  }, [allBossRows, relevantOnly]);
 
   return (
     <div className="mx-auto max-w-7xl space-y-5 pb-12">
@@ -795,7 +873,7 @@ export default function ScouterDetailedResultPage() {
               }
             >
               <div className="space-y-3">
-                {simActive ? (
+                {simOverlay ? (
                   <p className="rounded-md bg-accent-soft/50 px-2 py-1 text-[11px] font-medium text-accent">
                     Showing Additional Spec Simulation
                   </p>
@@ -863,6 +941,9 @@ export default function ScouterDetailedResultPage() {
                   <BossCardGrid
                     rows={destinyChampionRows}
                     hpRegion={hpRegion}
+                    userLevel={displayLevel}
+                    userArcaneForce={displayArcane}
+                    userAuthenticForce={displayAuthentic}
                     columnsClass="grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-7 xl:grid-cols-8 2xl:grid-cols-9"
                   />
                 )
@@ -934,6 +1015,9 @@ export default function ScouterDetailedResultPage() {
                 <BossCardGrid
                   rows={bossRows}
                   hpRegion={hpRegion}
+                  userLevel={displayLevel}
+                  userArcaneForce={displayArcane}
+                  userAuthenticForce={displayAuthentic}
                   columnsClass="grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-7 xl:grid-cols-8 2xl:grid-cols-9"
                 />
               )}
@@ -951,10 +1035,7 @@ export default function ScouterDetailedResultPage() {
               key={is30min ? "30" : "20"}
               baseline={data}
               is30min={is30min}
-              onSimulationChange={(overlay, active) => {
-                setSimOverlay(overlay);
-                setSimActive(active);
-              }}
+              onSimulationChange={setSimOverlay}
             />
           </div>
         </div>
