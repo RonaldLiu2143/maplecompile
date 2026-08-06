@@ -10,19 +10,44 @@ export const revalidate = 120;
  * Reading messages still requires a Discord app token with Read Message History on
  * that channel — same GET /channels/{id}/messages flow as any text channel.
  *
+ * Three different Discord IDs — do not mix them up:
+ * - Channel id (`DISCORD_ANNOUNCEMENT_CHANNEL_ID`): which channel to read
+ *   (default `1274449819493990420`).
+ * - Bot user / application id (`DISCORD_BOT_USER_ID` or `DISCORD_APPLICATION_ID`):
+ *   public snowflake for OAuth2 invite URLs only
+ *   (default `1466224186211958907`). Not a secret; not a token.
+ * - Bot token (`DISCORD_TOKEN` / `DISCORD_BOT_TOKEN`): secret from Developer
+ *   Portal → Bot → Reset Token. Required for Authorization: Bot …. Never put
+ *   the bot user id here.
+ *
  * Env:
- * - DISCORD_TOKEN (preferred) or DISCORD_BOT_TOKEN (alias): app token
+ * - DISCORD_TOKEN (preferred) or DISCORD_BOT_TOKEN (alias): bot token (secret)
  * - DISCORD_ANNOUNCEMENT_CHANNEL_ID: announcement channel snowflake
  *   (default `1274449819493990420` — MapleStory announcement channel)
+ * - DISCORD_BOT_USER_ID or DISCORD_APPLICATION_ID: bot/application snowflake
+ *   for invite links (default `1466224186211958907`)
  * - DISCORD_GUILD_ID: optional server snowflake for message deep links
  *   (`discord.com/channels/{guild}/{channel}/{message}`). No default — do not
  *   reuse the channel id as the guild. Without a guild (env or message payload),
  *   links fall back to https://discord.gg/maplestory
  */
 const DEFAULT_CHANNEL_ID = "1274449819493990420";
+/** Public bot/application snowflake — not a token. */
+const DEFAULT_BOT_USER_ID = "1466224186211958907";
 /** Empty by default — never reuse the announcement channel id as the guild. */
 const DEFAULT_GUILD_ID = "";
 const MAPLESTORY_DISCORD_INVITE = "https://discord.gg/maplestory";
+/** Read Message History — Discord permission bit 1 << 16. */
+const PERM_READ_MESSAGE_HISTORY = 1 << 16;
+
+function botInviteUrl(clientId: string): string {
+  const params = new URLSearchParams({
+    client_id: clientId,
+    permissions: String(PERM_READ_MESSAGE_HISTORY),
+    scope: "bot",
+  });
+  return `https://discord.com/api/oauth2/authorize?${params.toString()}`;
+}
 
 type DiscordEmbed = {
   title?: string;
@@ -91,6 +116,11 @@ export async function GET() {
     "";
   const channelId =
     process.env.DISCORD_ANNOUNCEMENT_CHANNEL_ID?.trim() || DEFAULT_CHANNEL_ID;
+  const botUserId =
+    process.env.DISCORD_BOT_USER_ID?.trim() ||
+    process.env.DISCORD_APPLICATION_ID?.trim() ||
+    DEFAULT_BOT_USER_ID;
+  const inviteUrl = botInviteUrl(botUserId);
   const guildIdFromEnv =
     process.env.DISCORD_GUILD_ID?.trim() || DEFAULT_GUILD_ID;
 
@@ -100,7 +130,9 @@ export async function GET() {
         ok: false as const,
         reason: "no_token" as const,
         message: "Discord announcements unavailable",
-        hint: "Set DISCORD_TOKEN (or DISCORD_BOT_TOKEN) with Read Message History on the announcement channel.",
+        hint: "Set DISCORD_TOKEN (bot token from Developer Portal → Bot → Reset Token — not the bot user id). Invite the bot with Read Message History, then set the token in .env.local.",
+        inviteUrl,
+        botUserId,
       },
       { status: 200, headers: cacheHeaders() },
     );

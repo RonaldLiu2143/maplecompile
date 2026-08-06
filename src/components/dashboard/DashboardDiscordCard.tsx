@@ -19,6 +19,9 @@ type DiscordLatestResponse =
       reason: string;
       message: string;
       hint?: string;
+      /** OAuth2 bot invite (bot scope + Read Message History). */
+      inviteUrl?: string;
+      botUserId?: string;
     };
 
 function formatWhen(iso: string | null): string {
@@ -112,6 +115,16 @@ export function DashboardDiscordCard() {
           <p className="text-sm opacity-70">{data.message}</p>
           {data.reason === "no_token" && data.hint ? (
             <p className="text-xs opacity-55">{data.hint}</p>
+          ) : null}
+          {data.reason === "no_token" && data.inviteUrl ? (
+            <a
+              href={data.inviteUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block text-sm font-semibold text-accent hover:underline"
+            >
+              Add bot to a server
+            </a>
           ) : null}
           <a
             href="https://discord.gg/maplestory"
