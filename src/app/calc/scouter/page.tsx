@@ -58,6 +58,11 @@ import { countFilledSlots } from "@/lib/starter-loadouts";
 import { readRosterState } from "@/lib/dashboard/roster";
 import { parseUserNumber } from "@/lib/scouter/parse-number";
 import { filterDisplayText } from "@/lib/content-filter";
+import {
+  DEFAULT_BOSS_CONVERTED_STAT,
+  clampBossConvertedStatDigits,
+  normalizeBossConvertedStat,
+} from "@/lib/hexa-priority";
 
 const cell =
   "border border-border/50 bg-background px-2 py-1.5 text-sm outline-none focus:relative focus:z-10 focus:border-accent";
@@ -341,6 +346,9 @@ export default function ScouterPage() {
   const [draftReady, setDraftReady] = useState(false);
   const [showHexaEff, setShowHexaEff] = useState(false);
   const hexaEffRef = useRef<HTMLDivElement | null>(null);
+  /** Manual BCS override shared with Hexa Efficiency; null = use scouter-derived. */
+  const [bcsOverride, setBcsOverride] = useState<number | null>(null);
+  const [bcsDraft, setBcsDraft] = useState("");
   const [missingFields, setMissingFields] = useState<MissingScouterField[] | null>(
     null,
   );
@@ -398,6 +406,27 @@ export default function ScouterPage() {
     [input],
   );
   const result = useMemo(() => calculateScouter(input), [input]);
+  /** Boss Converted Stat @ 380% PDR — same score Hexa Efficiency / HEXA priority use. */
+  const derivedBcs = useMemo(() => {
+    const raw = Math.round(Number(result.boss380Stat) || 0);
+    if (raw > 0) return normalizeBossConvertedStat(raw);
+    return DEFAULT_BOSS_CONVERTED_STAT;
+  }, [result.boss380Stat]);
+  const bossConvertedStat = bcsOverride ?? derivedBcs;
+  useEffect(() => {
+    if (bcsOverride == null) setBcsDraft(String(derivedBcs));
+  }, [derivedBcs, bcsOverride]);
+  const commitBossConvertedStat = (raw: string) => {
+    const next = normalizeBossConvertedStat(
+      raw.trim() === "" ? derivedBcs : raw,
+    );
+    setBcsDraft(String(next));
+    setBcsOverride(next);
+  };
+  const resetBossConvertedStat = () => {
+    setBcsOverride(null);
+    setBcsDraft(String(derivedBcs));
+  };
   const hexaSlots = useMemo(
     () => getHexaSlots(input.charType),
     [input.charType],
@@ -1690,6 +1719,32 @@ export default function ScouterPage() {
             >
               Hexa Efficiency
             </button>
+            <div className="overflow-hidden rounded-md border border-border/50">
+              <FieldCell label="Boss Converted Stat">
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  maxLength={6}
+                  className={`${cell} w-full min-w-0 tabular-nums`}
+                  value={bcsDraft}
+                  placeholder={String(DEFAULT_BOSS_CONVERTED_STAT)}
+                  aria-label="Boss Converted Stat"
+                  title="Boss Converted Stat (HEXA priority score @ 380% PDR)"
+                  onChange={(e) =>
+                    setBcsDraft(clampBossConvertedStatDigits(e.target.value))
+                  }
+                  onBlur={(e) => commitBossConvertedStat(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      commitBossConvertedStat(
+                        (e.target as HTMLInputElement).value,
+                      );
+                    }
+                  }}
+                />
+              </FieldCell>
+            </div>
           </div>
         </section>
 
@@ -2032,6 +2087,12 @@ export default function ScouterPage() {
             buffs={buffs}
             links={links}
             hexa={hexa}
+            bossConvertedStat={bossConvertedStat}
+            derivedBossConvertedStat={derivedBcs}
+            bcsDraft={bcsDraft}
+            onBcsDraftChange={setBcsDraft}
+            onCommitBcs={commitBossConvertedStat}
+            onResetBcs={resetBossConvertedStat}
             onClose={() => setShowHexaEff(false)}
           />
         </div>

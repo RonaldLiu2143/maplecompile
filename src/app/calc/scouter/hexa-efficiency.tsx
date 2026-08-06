@@ -1,18 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import {
   SCOUTER_CDN,
   defaultHexaLevels,
   getHexaSlots,
-  calculateScouter,
 } from "@/lib/scouter";
 import type { ScouterInput } from "@/lib/scouter/types";
-import {
-  DEFAULT_BOSS_CONVERTED_STAT,
-  clampBossConvertedStatDigits,
-  normalizeBossConvertedStat,
-} from "@/lib/hexa-priority";
+import { clampBossConvertedStatDigits } from "@/lib/hexa-priority";
 import {
   buildLocalHexaEfficiencyOrder,
   type HexaOrderStep,
@@ -176,39 +171,32 @@ function ProgressBar({
   );
 }
 
-function deriveBossConvertedStat(input: ScouterInput): number {
-  try {
-    const result = calculateScouter(input);
-    const raw = Math.round(Number(result.boss380Stat) || 0);
-    if (raw > 0) return normalizeBossConvertedStat(raw);
-  } catch {
-    /* fall through */
-  }
-  return DEFAULT_BOSS_CONVERTED_STAT;
-}
-
 export function HexaEfficiencyPanel({
   input,
   hexa,
   onClose,
+  bossConvertedStat,
+  derivedBossConvertedStat,
+  bcsDraft,
+  onBcsDraftChange,
+  onCommitBcs,
+  onResetBcs,
 }: {
   input: ScouterInput;
   buffs?: unknown;
   links?: unknown;
   hexa: number[];
   onClose: () => void;
+  /** Shared with Scouter Character Stats BCS field. */
+  bossConvertedStat: number;
+  derivedBossConvertedStat: number;
+  bcsDraft: string;
+  onBcsDraftChange: (value: string) => void;
+  onCommitBcs: (raw: string) => void;
+  onResetBcs: () => void;
 }) {
   const [fromCurrent, setFromCurrent] = useState(true);
-  const [bcsDraft, setBcsDraft] = useState("");
-  const [bcsOverride, setBcsOverride] = useState<number | null>(null);
   const [filters, setFilters] = useState<CoreFilter[]>(["M", "S", "R", "G"]);
-
-  const derivedBcs = useMemo(() => deriveBossConvertedStat(input), [input]);
-  const bossConvertedStat = bcsOverride ?? derivedBcs;
-
-  useEffect(() => {
-    if (bcsOverride == null) setBcsDraft(String(derivedBcs));
-  }, [derivedBcs, bcsOverride]);
 
   const spent = useMemo(() => spentForHexa(hexa), [hexa]);
   const slots = useMemo(() => getHexaSlots(input.charType), [input.charType]);
@@ -239,14 +227,6 @@ export function HexaEfficiencyPanel({
     setFilters((prev) =>
       prev.includes(f) ? prev.filter((x) => x !== f) : [...prev, f],
     );
-  };
-
-  const commitBcs = (raw: string) => {
-    const next = normalizeBossConvertedStat(
-      raw.trim() === "" ? derivedBcs : raw,
-    );
-    setBcsDraft(String(next));
-    setBcsOverride(next);
   };
 
   return (
@@ -295,12 +275,12 @@ export function HexaEfficiencyPanel({
             className="w-28 rounded-md border border-border/50 bg-background px-2 py-1 text-xs tabular-nums outline-none focus:border-accent"
             value={bcsDraft}
             onChange={(e) =>
-              setBcsDraft(clampBossConvertedStatDigits(e.target.value))
+              onBcsDraftChange(clampBossConvertedStatDigits(e.target.value))
             }
-            onBlur={(e) => commitBcs(e.target.value)}
+            onBlur={(e) => onCommitBcs(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === "Enter") {
-                commitBcs((e.target as HTMLInputElement).value);
+                onCommitBcs((e.target as HTMLInputElement).value);
               }
             }}
             aria-label="Boss Converted Stat / HEXA Converted score"
@@ -308,12 +288,9 @@ export function HexaEfficiencyPanel({
           <button
             type="button"
             className="text-[11px] font-medium opacity-70 underline-offset-2 hover:underline"
-            onClick={() => {
-              setBcsOverride(null);
-              setBcsDraft(String(derivedBcs));
-            }}
+            onClick={onResetBcs}
           >
-            Use scouter ({derivedBcs.toLocaleString()})
+            Use scouter ({derivedBossConvertedStat.toLocaleString()})
           </button>
         </div>
       </div>
