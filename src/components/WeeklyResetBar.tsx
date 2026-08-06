@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { ThemeSchemeSwitch } from "@/components/ThemeSchemeSwitch";
 import {
   formatDailyResetCountdown,
   formatWeeklyResetCountdown,
@@ -32,16 +33,15 @@ export function WeeklyResetBar() {
       aria-live="polite"
       aria-label="Daily and weekly reset countdowns"
     >
-      <div className="mx-auto flex w-full max-w-7xl items-center justify-end gap-2 text-right text-[0.7rem] font-semibold tracking-wide sm:gap-3 sm:text-xs">
-        <span className="tabular-nums text-accent">
-          Daily {daily}
-        </span>
-        <span className="text-muted-soft" aria-hidden>
-          ·
-        </span>
-        <span className="tabular-nums text-accent">
-          Weekly {weekly}
-        </span>
+      <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-3">
+        <ThemeSchemeSwitch />
+        <div className="flex items-center justify-end gap-2 text-right text-[0.7rem] font-semibold tracking-wide sm:gap-3 sm:text-xs">
+          <span className="tabular-nums text-accent">Daily {daily}</span>
+          <span className="text-muted-soft" aria-hidden>
+            ·
+          </span>
+          <span className="tabular-nums text-accent">Weekly {weekly}</span>
+        </div>
       </div>
     </div>
   );

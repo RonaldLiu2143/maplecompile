@@ -43,20 +43,20 @@ function shouldShowAxisLabel(i: number, count: number, step: number): boolean {
   return i % step === 0 && i !== count - 1;
 }
 
-/** Clear gaps between bars; denser ranges keep a visible gap. */
+/** Gaps between bars — tighter on short windows; dense 30/90 almost flush. */
 function barGapClass(count: number, compact: boolean): string {
-  if (count <= 7) return compact ? "gap-1.5" : "gap-2.5";
-  if (count <= 14) return compact ? "gap-1" : "gap-1.5";
-  if (count <= 30) return compact ? "gap-0.5" : "gap-1";
-  return "gap-px";
+  if (count <= 7) return compact ? "gap-0.5" : "gap-1";
+  if (count <= 14) return compact ? "gap-px" : "gap-0.5";
+  if (count <= 30) return "gap-0";
+  return "gap-0";
 }
 
 /** Fraction of column width the bar occupies (rest is gap-like margin). */
 function barWidthClass(count: number): string {
-  if (count <= 7) return "w-[58%]";
-  if (count <= 14) return "w-[65%]";
-  if (count <= 30) return "w-[72%]";
-  return "w-[80%]";
+  if (count <= 7) return "w-[82%]";
+  if (count <= 14) return "w-[88%]";
+  if (count <= 30) return "w-[96%]";
+  return "w-full";
 }
 
 function niceStep(rough: number): number {
@@ -343,12 +343,16 @@ export function ExpRangeGraph({
         </p>
       ) : null}
 
-      <div className="mt-2">
+      <div
+        className={`mt-2 rounded-xl border border-border/55 bg-surface-muted/25 ${
+          compact ? "px-2 py-2.5 sm:px-2.5" : "px-3 py-3 sm:px-4 sm:py-3.5"
+        }`}
+      >
         {hasBars ? (
           <SparkBars values={slice} labels={labelSlice} compact={compact} />
         ) : (
           <p
-            className={`flex items-center justify-center rounded-lg border border-dashed border-border/50 bg-surface-muted/30 text-xs opacity-55 ${
+            className={`flex items-center justify-center text-xs opacity-55 ${
               compact ? "h-28" : "h-44"
             }`}
           >

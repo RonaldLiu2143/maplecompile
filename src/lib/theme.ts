@@ -233,6 +233,45 @@ export function getThemePreset(id: ThemeId): ThemePreset {
   return THEME_PRESETS.find((p) => p.id === id) ?? THEME_PRESETS[0]!;
 }
 
+/** Remembers last dark preset so Light ↔ Dark can restore Contrast. */
+let lastDarkThemeId: ThemeId = "compile";
+
+export function isLightThemeId(id: ThemeId): boolean {
+  return getThemePreset(id).scheme === "light";
+}
+
+/** Dark side of the Light/Dark switch: Contrast if that was last, else Compile. */
+export function preferredDarkThemeId(): ThemeId {
+  return lastDarkThemeId === "contrast" ? "contrast" : "compile";
+}
+
+export function rememberDarkThemeId(id: ThemeId): void {
+  if (!isLightThemeId(id)) lastDarkThemeId = id;
+}
+
+/**
+ * Flip between Light and a dark preset (Compile, or Contrast if that was active).
+ * Preserves accent / font / backdrop prefs.
+ */
+export function setThemeScheme(scheme: ThemeScheme): void {
+  const prefs = readThemePrefs();
+  if (scheme === "light") {
+    if (!isLightThemeId(prefs.id)) rememberDarkThemeId(prefs.id);
+    if (prefs.id === "light") {
+      applyThemeToDocument(prefs);
+      return;
+    }
+    writeThemePrefs({ ...prefs, id: "light" });
+    return;
+  }
+  const darkId = preferredDarkThemeId();
+  if (prefs.id === darkId) {
+    applyThemeToDocument(prefs);
+    return;
+  }
+  writeThemePrefs({ ...prefs, id: darkId });
+}
+
 export function getFontPreset(id: FontId): FontPreset {
   return FONT_PRESETS.find((p) => p.id === id) ?? FONT_PRESETS[0]!;
 }
