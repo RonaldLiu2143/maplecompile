@@ -337,9 +337,12 @@ function sumSlice(values: number[], days: number): number | null {
 function CompactCharacterProfile({
   character,
   actions,
+  dense = false,
 }: {
   character: CharacterLookupResult;
   actions?: ReactNode;
+  /** Dashboard-tight: smaller chrome, no EXP spark chart (keeps bar + ranks). */
+  dense?: boolean;
 }) {
   const world = character.worldName;
   const job = character.jobName;
@@ -347,27 +350,44 @@ function CompactCharacterProfile({
   const ranking = character.ranking;
   const pct = character.expPercent;
   const need = character.expToNext;
+  const avg7 = character.expAverages?.avg7d ?? null;
 
   const classInWorld = formatRank(ranking?.jobRank);
   const worldRank = formatRank(ranking?.worldRank);
   const gmsOverall = formatRank(ranking?.globalRank ?? character.overallRank);
   const legion = formatOptionalInt(character.legionLevel);
 
+  const avatarPx = dense ? 64 : 88;
+
   return (
-    <article className="overflow-hidden rounded-2xl border-2 border-border bg-surface">
-      <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-start">
+    <article
+      className={
+        dense
+          ? "overflow-hidden rounded-xl border border-border/50 bg-surface"
+          : "overflow-hidden rounded-2xl border-2 border-border bg-surface"
+      }
+    >
+      <div
+        className={`flex flex-col sm:flex-row sm:items-start ${
+          dense ? "gap-3 p-2.5 sm:p-3" : "gap-4 p-4"
+        }`}
+      >
         <div className="flex shrink-0 justify-center sm:justify-start">
           {character.characterImgURL ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={character.characterImgURL}
               alt={`${character.name} avatar`}
-              width={88}
-              height={88}
-              className="h-[88px] w-[88px] object-contain"
+              width={avatarPx}
+              height={avatarPx}
+              className="object-contain"
+              style={{ width: avatarPx, height: avatarPx }}
             />
           ) : (
-            <div className="flex h-[88px] w-[88px] items-center justify-center rounded-lg bg-surface-muted text-[0.65rem] opacity-60">
+            <div
+              className="flex items-center justify-center rounded-lg bg-surface-muted text-[0.65rem] opacity-60"
+              style={{ width: avatarPx, height: avatarPx }}
+            >
               No img
             </div>
           )}
@@ -377,7 +397,11 @@ function CompactCharacterProfile({
           <div className="flex flex-wrap items-start justify-between gap-2">
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
-                <h2 className="font-display text-xl font-bold tracking-tight">
+                <h2
+                  className={`font-display font-bold tracking-tight ${
+                    dense ? "text-lg" : "text-xl"
+                  }`}
+                >
                   {character.name}
                 </h2>
                 {character.isHeroic ? (
@@ -391,7 +415,11 @@ function CompactCharacterProfile({
                   </span>
                 ) : null}
               </div>
-              <p className="mt-0.5 font-display text-base font-semibold">
+              <p
+                className={`mt-0.5 font-display font-semibold ${
+                  dense ? "text-sm" : "text-base"
+                }`}
+              >
                 Lv. {character.level}
                 {pct != null ? (
                   <span className="ml-1.5 text-sm font-medium opacity-70">
@@ -399,7 +427,7 @@ function CompactCharacterProfile({
                   </span>
                 ) : null}
               </p>
-              <p className="mt-0.5 text-sm opacity-70">
+              <p className={`mt-0.5 opacity-70 ${dense ? "text-xs" : "text-sm"}`}>
                 {job}
                 {world ? ` in ${world}` : ""}
                 {` · ${region}`}
@@ -411,14 +439,18 @@ function CompactCharacterProfile({
             ) : null}
           </div>
 
-          <div className="mt-3 max-w-sm">
+          <div className={`max-w-sm ${dense ? "mt-2" : "mt-3"}`}>
             <div className="mb-1 flex justify-between gap-3 font-mono text-[0.65rem] tabular-nums text-foreground/60">
               <span>{formatCompact(character.exp)}</span>
               <span>
                 {need != null ? formatCompact(need) : "Max level"}
               </span>
             </div>
-            <div className="h-1.5 overflow-hidden rounded-full bg-surface-muted">
+            <div
+              className={`overflow-hidden rounded-full bg-surface-muted ${
+                dense ? "h-1" : "h-1.5"
+              }`}
+            >
               <div
                 className="h-full rounded-full bg-accent transition-[width]"
                 style={{ width: `${pct ?? 0}%` }}
@@ -426,7 +458,11 @@ function CompactCharacterProfile({
             </div>
           </div>
 
-          <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-4">
+          <div
+            className={`grid grid-cols-2 sm:grid-cols-4 ${
+              dense ? "mt-2 gap-x-3 gap-y-1.5" : "mt-3 gap-x-4 gap-y-2"
+            }`}
+          >
             <MiniStat
               label={world ? `${job} (${world})` : `${job} rank`}
               value={classInWorld}
@@ -439,11 +475,23 @@ function CompactCharacterProfile({
             <MiniStat label="Legion" value={legion} />
           </div>
 
-          <ExpRangeGraph
-            graph={character.graph}
-            averages={character.expAverages}
-            compact
-          />
+          {dense ? (
+            avg7 ? (
+              <p className="mt-2 font-mono text-xs tabular-nums text-foreground/65">
+                <span className="mr-1.5 text-[0.65rem] font-semibold uppercase tracking-wider opacity-55">
+                  7d avg
+                </span>
+                {avg7.replace(/\/day$/i, "")}
+                <span className="opacity-55">/day</span>
+              </p>
+            ) : null
+          ) : (
+            <ExpRangeGraph
+              graph={character.graph}
+              averages={character.expAverages}
+              compact
+            />
+          )}
         </div>
       </div>
     </article>
@@ -759,6 +807,7 @@ export function CharacterProfile({
   character,
   embedded,
   compact = false,
+  dense = false,
   actions,
 }: {
   character: CharacterLookupResult;
@@ -769,12 +818,21 @@ export function CharacterProfile({
    * spark. Full MapleRanks layout remains the default for dedicated pages.
    */
   compact?: boolean;
+  /**
+   * Tighter than compact (dashboard Primary): smaller avatar/padding, ranks +
+   * EXP bar, optional 7d avg line — no spark chart.
+   */
+  dense?: boolean;
   /** Optional action buttons (e.g. Add to roster) for compact search results. */
   actions?: ReactNode;
 }) {
-  if (compact) {
+  if (compact || dense) {
     return (
-      <CompactCharacterProfile character={character} actions={actions} />
+      <CompactCharacterProfile
+        character={character}
+        actions={actions}
+        dense={dense}
+      />
     );
   }
   return <FullCharacterProfile character={character} embedded={embedded} />;

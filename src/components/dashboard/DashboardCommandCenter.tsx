@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState, type ReactNode } from "react";
 import { CharacterProfile } from "@/components/character/CharacterProfile";
+import { characterProfileHref } from "@/lib/character/client";
 import {
   activeCharacterKey,
   getWorkspace,
@@ -146,7 +147,7 @@ function PrimaryBuildStrip({ chips }: { chips: BuildChips }) {
           : "warn";
 
   return (
-    <div className="space-y-2.5">
+    <div className="space-y-2">
       <div className="flex flex-wrap gap-1.5">
         <Chip tone={chips.hasScouter ? "good" : "warn"}>
           {chips.hasScouter ? "Scouter ready" : "No scouter yet"}
@@ -173,40 +174,40 @@ function PrimaryBuildStrip({ chips }: { chips: BuildChips }) {
           </Chip>
         ) : null}
       </div>
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-1.5">
         <Link
           href="/calc/scouter"
-          className="rounded-md bg-accent px-3 py-1.5 text-xs font-semibold text-white transition hover:opacity-90 dark:text-zinc-900"
+          className="rounded-md bg-accent px-2.5 py-1 text-xs font-semibold text-white transition hover:opacity-90 dark:text-zinc-900"
         >
           Open Scouter
         </Link>
         <Link
           href="/calc/equips/setup"
-          className="rounded-md border border-border px-3 py-1.5 text-xs font-semibold transition hover:bg-surface-muted"
+          className="rounded-md border border-border px-2.5 py-1 text-xs font-semibold transition hover:bg-surface-muted"
         >
           Equipment
         </Link>
         <Link
           href="/calc/planner"
-          className="rounded-md border border-border px-3 py-1.5 text-xs font-semibold transition hover:bg-surface-muted"
+          className="rounded-md border border-border px-2.5 py-1 text-xs font-semibold transition hover:bg-surface-muted"
         >
           Upgrade Planner
         </Link>
         <Link
           href="/calc/bosses"
-          className="rounded-md border border-border px-3 py-1.5 text-xs font-semibold transition hover:bg-surface-muted"
+          className="rounded-md border border-border px-2.5 py-1 text-xs font-semibold transition hover:bg-surface-muted"
         >
           Boss Income
         </Link>
         <Link
           href="/calc/liberation"
-          className="rounded-md border border-border px-3 py-1.5 text-xs font-semibold transition hover:bg-surface-muted"
+          className="rounded-md border border-border px-2.5 py-1 text-xs font-semibold transition hover:bg-surface-muted"
         >
           Liberation
         </Link>
         <Link
           href="/roster"
-          className="rounded-md border border-border px-3 py-1.5 text-xs font-semibold transition hover:bg-surface-muted"
+          className="rounded-md border border-border px-2.5 py-1 text-xs font-semibold transition hover:bg-surface-muted"
         >
           Manager
         </Link>
@@ -274,25 +275,37 @@ export function DashboardPrimaryHero({
 
   return (
     <section className="overflow-hidden rounded-2xl border border-border/70 bg-surface">
-      <div className="flex flex-wrap items-start justify-between gap-2 border-b border-border/50 px-4 py-2.5 sm:px-5">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/50 px-4 py-2 sm:px-5">
         <div className="min-w-0">
           <p className="text-[0.65rem] font-semibold uppercase tracking-wider text-accent opacity-80">
             Primary character
-          </p>
-          <p className="truncate font-display text-lg font-bold tracking-tight">
-            {character?.name ?? primary.name}
-            <span className="ml-2 text-xs font-semibold text-amber-400">
+            <span className="ml-2 text-amber-400 normal-case tracking-normal">
               ★ Primary
             </span>
           </p>
+          {!character ? (
+            <p className="truncate font-display text-base font-bold tracking-tight">
+              {primary.name}
+            </p>
+          ) : null}
         </div>
+        {character ? (
+          <Link
+            href={characterProfileHref(character)}
+            className="rounded-md border border-border px-2.5 py-1 text-xs font-semibold transition hover:bg-surface-muted"
+          >
+            Full profile
+          </Link>
+        ) : null}
       </div>
 
-      <div className="space-y-4 p-3 sm:p-4">
+      <div className="space-y-3 p-3 sm:p-3.5">
         {character ? (
-          <CharacterProfile character={character} embedded />
+          <div className="[&>article]:border-0 [&>article]:bg-transparent">
+            <CharacterProfile character={character} dense />
+          </div>
         ) : loading ? (
-          <div className="rounded-xl border border-border/50 bg-surface-muted/30 px-4 py-12 text-center text-sm opacity-70">
+          <div className="rounded-xl border border-border/50 bg-surface-muted/30 px-4 py-8 text-center text-sm opacity-70">
             Looking up {primary.name}…
           </div>
         ) : errored && slot?.status === "error" ? (
@@ -313,19 +326,19 @@ export function DashboardPrimaryHero({
           </div>
         ) : null}
 
-        <div className="rounded-xl border border-border/45 bg-surface-muted/25 px-3 py-3 sm:px-4">
-          <p className="mb-2 text-[0.65rem] font-semibold uppercase tracking-wider text-foreground/55">
+        <div className="rounded-xl border border-border/45 bg-surface-muted/25 px-3 py-2.5 sm:px-3.5">
+          <p className="mb-1.5 text-[0.65rem] font-semibold uppercase tracking-wider text-foreground/55">
             Build & tools
           </p>
           <PrimaryBuildStrip chips={chips} />
-          <p className="mt-2.5 text-[11px] opacity-55">
+          <p className="mt-2 text-[11px] opacity-55">
             Manager ★ / Active character bar sets the same primary across
             Scouter, Equipment, HEXA / Fragments, Bosses, and Liberation.
           </p>
         </div>
       </div>
 
-      <div className="border-t border-border/40 bg-surface-muted/25 px-4 py-2.5 sm:px-5">
+      <div className="border-t border-border/40 bg-surface-muted/25 px-4 py-2 sm:px-5">
         <DashboardToolShortcuts />
       </div>
     </section>
