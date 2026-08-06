@@ -13,14 +13,16 @@ export const revalidate = 120;
  * Env:
  * - DISCORD_TOKEN (preferred) or DISCORD_BOT_TOKEN (alias): app token
  * - DISCORD_ANNOUNCEMENT_CHANNEL_ID: announcement channel snowflake
- * - DISCORD_GUILD_ID: server snowflake for deep links (defaults to official MapleStory)
- *
- * Note: `309809230095843328` is the official MapleStory guild id
- * (discord.com/servers/maplestory-309809230095843328). If used as the channel id
- * by mistake, set DISCORD_ANNOUNCEMENT_CHANNEL_ID to the real #announcements channel.
+ *   (default `309809230095843328` — MapleStory announcement channel)
+ * - DISCORD_GUILD_ID: optional server snowflake for message deep links
+ *   (`discord.com/channels/{guild}/{channel}/{message}`). No default — do not
+ *   reuse the channel id as the guild. Without a guild (env or message payload),
+ *   links fall back to https://discord.gg/maplestory
  */
 const DEFAULT_CHANNEL_ID = "309809230095843328";
-const DEFAULT_GUILD_ID = "309809230095843328";
+/** Empty by default — never reuse the announcement channel id as the guild. */
+const DEFAULT_GUILD_ID = "";
+const MAPLESTORY_DISCORD_INVITE = "https://discord.gg/maplestory";
 
 type DiscordEmbed = {
   title?: string;
@@ -89,7 +91,7 @@ export async function GET() {
     "";
   const channelId =
     process.env.DISCORD_ANNOUNCEMENT_CHANNEL_ID?.trim() || DEFAULT_CHANNEL_ID;
-  const guildId =
+  const guildIdFromEnv =
     process.env.DISCORD_GUILD_ID?.trim() || DEFAULT_GUILD_ID;
 
   if (!token) {
@@ -148,8 +150,12 @@ export async function GET() {
       msg.author?.username?.trim() ||
       "MapleStory Discord";
     const { title, body } = deriveAnnouncement(msg);
-    const resolvedGuild = msg.guild_id?.trim() || guildId;
-    const url = `https://discord.com/channels/${resolvedGuild}/${channelId}/${msg.id}`;
+    // Message deep links need guild+channel+message. Prefer API guild_id, then env.
+    // Never invent a guild from the channel id; fall back to the public invite.
+    const resolvedGuild = msg.guild_id?.trim() || guildIdFromEnv;
+    const url = resolvedGuild
+      ? `https://discord.com/channels/${resolvedGuild}/${channelId}/${msg.id}`
+      : MAPLESTORY_DISCORD_INVITE;
 
     return NextResponse.json(
       {
@@ -163,7 +169,7 @@ export async function GET() {
           timestamp: msg.timestamp ?? null,
           url,
           channelId,
-          guildId: resolvedGuild,
+          guildId: resolvedGuild || null,
         },
       },
       { headers: cacheHeaders() },
