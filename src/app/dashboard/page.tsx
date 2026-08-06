@@ -73,7 +73,20 @@ function DashboardInner() {
       ) : null}
 
       {hydrated ? (
-        <DashboardPrimaryHero primary={primary} slot={primarySlot} />
+        <DashboardPrimaryHero
+          primary={primary}
+          slot={primarySlot}
+          onRetry={
+            primary
+              ? () => {
+                  const entry = roster.find(
+                    (e) => entryKey(e) === entryKey(primary),
+                  );
+                  if (entry) handleRetry(entry);
+                }
+              : undefined
+          }
+        />
       ) : (
         <div className="rounded-2xl border border-border/50 bg-surface/80 px-4 py-8 text-center text-sm opacity-70">
           Loading…
