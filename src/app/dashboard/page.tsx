@@ -86,8 +86,6 @@ function DashboardInner() {
         </div>
       ) : null}
 
-      {hydrated ? <DashboardPatchNotesCard /> : null}
-
       {hydrated ? (
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)] lg:items-stretch">
           <div className="flex min-h-0 flex-col gap-4">
@@ -115,6 +113,8 @@ function DashboardInner() {
           />
         </div>
       ) : null}
+
+      {hydrated ? <DashboardPatchNotesCard /> : null}
     </div>
   );
 }

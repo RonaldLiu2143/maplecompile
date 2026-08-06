@@ -638,20 +638,56 @@ export default function SetupClient() {
           <p className="text-sm text-danger">{error}</p>
         )}
 
-        <div className="flex w-full flex-col items-start gap-4 lg:flex-row lg:items-start lg:gap-4">
-          {status === "ready" && (
-            <EquipGrid
-              setup={setup}
-              flameSetup={flameSetup}
-              onSlotClick={onSlotClick}
-              charLabel={getCharName(jobType, charType)}
-              activeSlot={activeSlot}
-            />
-          )}
+        <div className="flex w-full flex-col items-start gap-4 lg:flex-row lg:items-start lg:justify-between lg:gap-6">
+          <div className="flex w-full min-w-0 flex-col items-start gap-4 lg:w-auto lg:flex-row lg:items-start lg:gap-4">
+            {status === "ready" && (
+              <EquipGrid
+                setup={setup}
+                flameSetup={flameSetup}
+                onSlotClick={onSlotClick}
+                charLabel={getCharName(jobType, charType)}
+                activeSlot={activeSlot}
+              />
+            )}
 
-          {/* Presets + editor sit immediately beside the equip grid. */}
-          <div className="flex w-full min-w-0 flex-col items-stretch gap-1.5 lg:max-w-sm lg:shrink-0">
-            <div className="inline-flex max-w-full flex-wrap items-center justify-start gap-1.5">
+            {/* Item editor / picker — tight beside the equip grid. */}
+            <div className="flex w-full min-w-0 flex-col items-stretch gap-1.5 lg:max-w-sm lg:shrink-0">
+              {status === "ready" &&
+                (panel?.kind === "picker" && pickerType ? (
+                  <EquipPicker
+                    key={pickerSlot!}
+                    label={SLOT_LABELS[pickerSlot!] ?? pickerType}
+                    equips={pickerEquips}
+                    selectedIds={selectedForType}
+                    onToggle={toggleEquip}
+                    onClose={() => setPanel(null)}
+                  />
+                ) : panel?.kind === "editor" && editingEquip && editorSlot ? (
+                  <EquipItemEditor
+                    key={`${editorSlot}-${editingEquip.id}`}
+                    slotLabel={SLOT_LABELS[editorSlot] ?? editorSlot}
+                    equip={editingEquip}
+                    flames={editingFlames}
+                    onChange={(patch) => patchEquipped(editorSlot, patch)}
+                    onChangeItem={() =>
+                      setPanel({ kind: "picker", slot: editorSlot })
+                    }
+                    onUnequip={() => unequipSlot(editorSlot)}
+                    onClose={() => setPanel(null)}
+                  />
+                ) : (
+                  <p className="max-w-sm text-sm opacity-70">
+                    Click an empty slot to choose equipment, or a filled slot to
+                    edit Star Force, flames, and potential. Rings fill from the
+                    top slot; pendants fill pendant-1 then pendant-2.
+                  </p>
+                ))}
+            </div>
+          </div>
+
+          {/* Tier + My Presets hug the far right. */}
+          <div className="flex w-full min-w-0 flex-col items-end gap-1.5 lg:ml-auto lg:max-w-sm lg:shrink-0">
+            <div className="inline-flex max-w-full flex-wrap items-center justify-end gap-1.5">
               <select
                 value={starterId}
                 onChange={(e) => setStarterId(e.target.value)}
@@ -698,7 +734,7 @@ export default function SetupClient() {
               </button>
             </div>
 
-            <div className="inline-flex max-w-full flex-wrap items-center justify-start gap-1 rounded-md border border-border/50 bg-surface/50 px-1.5 py-1">
+            <div className="inline-flex max-w-full flex-wrap items-center justify-end gap-1 rounded-md border border-border/50 bg-surface/50 px-1.5 py-1">
               <span className="px-0.5 text-[9px] font-bold uppercase tracking-wide opacity-55">
                 My presets
               </span>
@@ -773,37 +809,6 @@ export default function SetupClient() {
                 Delete
               </button>
             </div>
-
-            {status === "ready" &&
-              (panel?.kind === "picker" && pickerType ? (
-                <EquipPicker
-                  key={pickerSlot!}
-                  label={SLOT_LABELS[pickerSlot!] ?? pickerType}
-                  equips={pickerEquips}
-                  selectedIds={selectedForType}
-                  onToggle={toggleEquip}
-                  onClose={() => setPanel(null)}
-                />
-              ) : panel?.kind === "editor" && editingEquip && editorSlot ? (
-                <EquipItemEditor
-                  key={`${editorSlot}-${editingEquip.id}`}
-                  slotLabel={SLOT_LABELS[editorSlot] ?? editorSlot}
-                  equip={editingEquip}
-                  flames={editingFlames}
-                  onChange={(patch) => patchEquipped(editorSlot, patch)}
-                  onChangeItem={() =>
-                    setPanel({ kind: "picker", slot: editorSlot })
-                  }
-                  onUnequip={() => unequipSlot(editorSlot)}
-                  onClose={() => setPanel(null)}
-                />
-              ) : (
-                <p className="max-w-sm text-sm opacity-70">
-                  Click an empty slot to choose equipment, or a filled slot to
-                  edit Star Force, flames, and potential. Rings fill from the
-                  top slot; pendants fill pendant-1 then pendant-2.
-                </p>
-              ))}
           </div>
         </div>
       </section>

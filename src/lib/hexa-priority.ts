@@ -16,7 +16,6 @@
 
 import bandsData from "./data/hexa-priority-bands.json";
 import {
-  costBetween,
   nextLevelCost,
   type HexaProgressNode,
   type HexaUpgradePathStep,
@@ -167,8 +166,9 @@ function orderForClass(
 
 export type HexaScoreUpgrade = {
   node: HexaProgressNode;
-  /** Level after applying this priority step. */
+  /** Level after applying this priority step (+1 only). */
   nextLevel: number;
+  /** Cost for the single +1 level (not the full band stop). */
   fragments: number;
   solErda: number;
   /**
@@ -186,11 +186,12 @@ function scoreNodeAgainstOrder(
 ): HexaScoreUpgrade | null {
   if (node.current >= node.target) return null;
 
+  const nextLevel = node.current + 1;
   const single = nextLevelCost(node.skillType, node.current);
   if (!order) {
     return {
       node,
-      nextLevel: node.current + 1,
+      nextLevel,
       fragments: single.fragments,
       solErda: single.solErda,
       score: 0,
@@ -207,12 +208,14 @@ function scoreNodeAgainstOrder(
     }))
     .filter((s) => s.nodeId === node.id);
 
+  // Rank by the unfinished FD band step, but always advance only +1 level
+  // and price that single upgrade (e.g. 22→23), never jump to the band stop.
   const next = steps.find((s) => s.targetLevel > node.current);
   if (!next) {
     // Past published order — still incomplete vs user target; lowest priority.
     return {
       node,
-      nextLevel: node.current + 1,
+      nextLevel,
       fragments: single.fragments,
       solErda: single.solErda,
       score: 0,
@@ -220,14 +223,11 @@ function scoreNodeAgainstOrder(
     };
   }
 
-  const nextLevel = Math.min(next.targetLevel, node.target);
-  if (nextLevel <= node.current) return null;
-  const cost = costBetween(node.skillType, node.current, nextLevel);
   return {
     node,
     nextLevel,
-    fragments: cost.fragments,
-    solErda: cost.solErda,
+    fragments: single.fragments,
+    solErda: single.solErda,
     score: 1000 - next.index,
     orderIndex: next.index,
   };
@@ -263,9 +263,9 @@ export function bestScoreNextUpgrade(
 }
 
 /**
- * Simulate repeatedly taking the highest-score next step until all targets
- * are met. Each entry is one priority step (may skip levels when the band
- * order jumps, e.g. Boost to Lv.3).
+ * Simulate repeatedly taking the highest-score next +1 until all targets
+ * are met. Each entry is one level; consecutive levels on the same node can
+ * be grouped in the UI via groupConsecutiveUpgradeRuns.
  */
 export function buildScoreUpgradePath(
   nodes: HexaProgressNode[],

@@ -27,7 +27,6 @@ import {
   GMS_HEXA_SLOT_INDICES,
   WEEKLY_DUNGEON_OPTIONS,
   WEEKLY_QUEST_FRAGMENTS,
-  costBetween,
   groupConsecutiveUpgradeRuns,
   dailyFragmentRate,
   estimateCompletion,
@@ -549,11 +548,10 @@ export default function HexaTrackerPage() {
         : HEXA_STAT_ICON_URL;
   const nextCost =
     nextUp != null
-      ? costBetween(
-          nextUp.node.skillType,
-          nextUp.node.current,
-          nextUp.nextLevel,
-        )
+      ? {
+          fragments: nextUp.fragments,
+          solErda: nextUp.solErda,
+        }
       : null;
 
   const upgradePathRuns = useMemo(() => {
@@ -996,8 +994,8 @@ export default function HexaTrackerPage() {
                 {DEFAULT_BOSS_CONVERTED_STAT.toLocaleString()}
                 ). Rank is by highest path score (
                 <span className="font-semibold">1000 − order index</span>
-                ); fragment cost is the tiebreaker. Next applies one priority
-                step.
+                ); fragment cost is the tiebreaker. Next raises the recommended
+                skill by one level and shows that single upgrade's cost.
               </p>
             ) : null}
             {nextUp && nextCost ? (
