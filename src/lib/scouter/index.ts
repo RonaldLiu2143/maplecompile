@@ -64,30 +64,10 @@ export {
   type ScouterCappedField,
 } from "./field-caps";
 export {
-  parseScouterOcrText,
-  applyScouterOcrPatch,
-  SCOUTER_OCR_EXAMPLE,
-  type ScouterOcrPatch,
-  type ScouterOcrParseResult,
-} from "./ocr-parse";
-export {
   normalizeLeadingDotDecimal,
   parseUserNumber,
   USER_NUMBER_RE,
 } from "./parse-number";
-export {
-  recognizeScouterScreenshot,
-  preprocessScouterScreenshot,
-  SCOUTER_OCR_FAIL_MESSAGE,
-  type OcrImageResult,
-  type OcrProgress,
-} from "./ocr-image";
-export {
-  detectStatPanelCrop,
-  scaleStatCrop,
-  type OcrWordBox,
-  type StatCropRect,
-} from "./ocr-stat-crop";
 export {
   OZ_RINGS,
   OZ_CONTINUOUS_STATUS,

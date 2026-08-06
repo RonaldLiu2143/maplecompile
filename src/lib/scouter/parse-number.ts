@@ -7,7 +7,7 @@ export function normalizeLeadingDotDecimal(raw: string): string {
 }
 
 /**
- * Parse a user-typed or OCR number token.
+ * Parse a user-typed number token.
  * Accepts leading-dot decimals (`.5`) and comma thousands (`1,234.5`).
  * Returns null for empty / incomplete intermediates (`.`, `-`, `-.`).
  */

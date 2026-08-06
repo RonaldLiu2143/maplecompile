@@ -53,7 +53,6 @@ import {
 import { ActiveCharacterBar } from "@/components/ActiveCharacterBar";
 import { PairingBar } from "@/components/PairingBar";
 import { HexaEfficiencyPanel } from "./hexa-efficiency";
-import { ScouterOcrImport } from "./ocr-import";
 import { ShareGalleryModal } from "./share-gallery-modal";
 import { countFilledSlots } from "@/lib/starter-loadouts";
 import { readRosterState } from "@/lib/dashboard/roster";
@@ -1374,14 +1373,6 @@ export default function ScouterPage() {
               </div>
             ) : null}
           </div>
-
-          <ScouterOcrImport
-            input={input}
-            onApply={(next, summary) => {
-              setInput(next);
-              flashPresetMsg(summary);
-            }}
-          />
 
           <div className="grid grid-cols-2 sm:grid-cols-4">
             <div className={labelCell}>Level</div>
