@@ -82,6 +82,36 @@ export function setWorkspace(key: string, workspace: CharacterWorkspace) {
   writeMap(map);
 }
 
+/** Drop one character's workspace blob (e.g. after roster remove). */
+export function removeWorkspace(key: string): void {
+  if (!key) return;
+  const map = readMap();
+  if (!(key in map)) return;
+  delete map[key];
+  writeMap(map);
+}
+
+/**
+ * Drop workspace keys that are no longer on the roster.
+ * Safe to call repeatedly; only writes when something was removed.
+ */
+export function pruneWorkspacesToRosterKeys(
+  allowedKeys: Iterable<string>,
+): void {
+  const allowed = allowedKeys instanceof Set
+    ? allowedKeys
+    : new Set(allowedKeys);
+  const map = readMap();
+  let changed = false;
+  for (const key of Object.keys(map)) {
+    if (!allowed.has(key)) {
+      delete map[key];
+      changed = true;
+    }
+  }
+  if (changed) writeMap(map);
+}
+
 export function patchWorkspace(
   key: string,
   patch: Partial<CharacterWorkspace>,

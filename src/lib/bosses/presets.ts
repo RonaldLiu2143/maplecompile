@@ -6,6 +6,7 @@ import {
 import { BOSS_CRYSTALS, WEEKLY_CRYSTAL_LIMIT } from "./crystals";
 
 export const BOSS_PRESETS_KEY = "maplecompile.boss-presets.v1";
+export const BOSS_PRESETS_LIMIT = 20;
 
 export type BossPresetEntry = {
   bossId: string;
@@ -84,11 +85,17 @@ export function loadBossPresets(): BossPreset[] {
   }
 }
 
-/** Persist presets. Returns false when storage write fails. */
+/** Persist presets (LRU-capped by createdAt). Returns false when storage write fails. */
 export function saveBossPresets(presets: BossPreset[]): boolean {
   if (typeof window === "undefined") return false;
   try {
-    localStorage.setItem(BOSS_PRESETS_KEY, JSON.stringify(presets));
+    const capped =
+      presets.length <= BOSS_PRESETS_LIMIT
+        ? presets
+        : [...presets]
+            .sort((a, b) => b.createdAt - a.createdAt)
+            .slice(0, BOSS_PRESETS_LIMIT);
+    localStorage.setItem(BOSS_PRESETS_KEY, JSON.stringify(capped));
     return true;
   } catch {
     return false;

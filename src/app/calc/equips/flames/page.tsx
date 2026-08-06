@@ -182,7 +182,6 @@ export default function FlamesClient() {
         if (gen !== calcGen.current) return;
         setProbs(next);
         setProbsReady(true);
-        storage.setFlameProbabilities(next);
       });
     };
 
@@ -214,11 +213,7 @@ export default function FlamesClient() {
         statEquiv,
       );
       startTransition(() => {
-        setProbs((p) => {
-          const merged = { ...p, [id]: result };
-          storage.setFlameProbabilities(merged);
-          return merged;
-        });
+        setProbs((p) => ({ ...p, [id]: result }));
       });
     }, 0);
     return () => clearTimeout(timer);

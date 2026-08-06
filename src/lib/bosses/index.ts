@@ -65,6 +65,7 @@ export {
 
 export {
   BOSS_PRESETS_KEY,
+  BOSS_PRESETS_LIMIT,
   loadBossPresets,
   saveBossPresets,
   presetFromSelections,

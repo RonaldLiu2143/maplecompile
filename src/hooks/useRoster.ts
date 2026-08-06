@@ -26,6 +26,7 @@ import {
   switchActiveCharacter,
   UNLOCK_TO_CHANGE_ACTIVE_MSG,
 } from "@/lib/active-character";
+import { removeWorkspace } from "@/lib/character-workspace";
 
 const BATCH_CHUNK = 30;
 
@@ -214,6 +215,7 @@ export function useRoster() {
     loadedKeys.current.delete(key);
     clearActiveCharacterLockIfKey(key);
     applyRosterState(removeFromRoster(entry));
+    removeWorkspace(key);
   }
 
   function handleSetPrimary(entry: RosterEntry): boolean {

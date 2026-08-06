@@ -249,10 +249,14 @@ export default function SetupClient() {
 
   useEffect(() => {
     if (!hydrated || skipWorkspaceAutosave.current) return;
-    storage.setJobType(jobType);
-    storage.setCharType(charType);
-    storage.setEquipSetup(setup);
-    persistLiveToWorkspace(activeCharacterKey());
+    const timer = setTimeout(() => {
+      if (skipWorkspaceAutosave.current) return;
+      storage.setJobType(jobType);
+      storage.setCharType(charType);
+      storage.setEquipSetup(setup);
+      persistLiveToWorkspace(activeCharacterKey());
+    }, 250);
+    return () => clearTimeout(timer);
   }, [jobType, charType, setup, hydrated]);
 
   const reloadSetupFromLiveStorage = () => {

@@ -54,9 +54,33 @@ const SCOUTER_PRESETS_KEY = "maplecompile-scouter-presets";
 const SCOUTER_PRESET_KEY_LEGACY_SINGLE = "maplecompile-scouter-preset";
 const SCOUTER_PRESET_KEY_LEGACY_HUB = "maplehub-scouter-preset";
 const EQUIP_PRESETS_KEY = "maplecompile-equip-presets";
+const SCOUTER_SHARE_TOKENS_KEY = "maplecompile-scouter-share-tokens";
+
+/** Soft limits to keep localStorage bounded. */
+export const SCOUTER_PRESETS_LIMIT = 40;
+export const EQUIP_PRESETS_LIMIT = 25;
+export const SCOUTER_SHARE_TOKENS_LIMIT = 80;
 
 function newPresetId(): string {
   return `p_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+/** Keep newest `limit` rows by `updatedAt`; invoke `onEvict` for dropped ids. */
+function lruCapByUpdatedAt<T extends { id: string; updatedAt: number }>(
+  list: T[],
+  limit: number,
+  onEvict?: (id: string) => void,
+): T[] {
+  if (list.length <= limit) return list;
+  const sorted = [...list].sort((a, b) => b.updatedAt - a.updatedAt);
+  const kept = sorted.slice(0, limit);
+  if (onEvict) {
+    const keptIds = new Set(kept.map((p) => p.id));
+    for (const p of list) {
+      if (!keptIds.has(p.id)) onEvict(p.id);
+    }
+  }
+  return kept;
 }
 
 /**
@@ -96,7 +120,10 @@ function readEquipPresets(): EquipSetupPreset[] {
 }
 
 function writeEquipPresets(list: EquipSetupPreset[]) {
-  writeJson(EQUIP_PRESETS_KEY, list);
+  writeJson(
+    EQUIP_PRESETS_KEY,
+    lruCapByUpdatedAt(list, EQUIP_PRESETS_LIMIT),
+  );
 }
 
 function removeStorageKey(key: string) {
@@ -139,7 +166,12 @@ function readPresets(): ScouterPreset[] {
 }
 
 function writePresets(list: ScouterPreset[]) {
-  writeJson(SCOUTER_PRESETS_KEY, list);
+  writeJson(
+    SCOUTER_PRESETS_KEY,
+    lruCapByUpdatedAt(list, SCOUTER_PRESETS_LIMIT, (id) => {
+      clearGalleryLinkForPresetId(id);
+    }),
+  );
 }
 
 function readJsonMigrating<T>(key: string, legacyKey: string, fallback: T): T {
@@ -186,19 +218,10 @@ export const storage = {
   getStatEquiv: () => readJson<Partial<StatEquiv>>("statEquiv", {}),
   setStatEquiv: (v: StatEquiv) => writeJson("statEquiv", v),
 
-  getFlameProbabilities: () =>
-    readJson<Record<string, { flameType: string; chance: number }[]>>(
-      "flameProbabilities",
-      {},
-    ),
-  setFlameProbabilities: (
-    v: Record<string, { flameType: string; chance: number }[]>,
-  ) => writeJson("flameProbabilities", v),
-
   clearSetup: () => {
     writeJson("equipSetup", {});
     writeJson("flameSetup", {});
-    writeJson("flameProbabilities", {});
+    removeStorageKey("flameProbabilities");
     notifyMapleDataChanged("equipSetup");
   },
 
@@ -265,6 +288,7 @@ export const storage = {
 
   deleteScouterPreset: (id: string): void => {
     writePresets(readPresets().filter((p) => p.id !== id));
+    clearGalleryLinkForPresetId(id);
     notifyMapleDataChanged("scouterPresets");
   },
 
@@ -352,8 +376,7 @@ export const storage = {
   getScouterShareTokens: (): Record<
     string,
     { deleteToken: string; name: string; public: boolean }
-  > =>
-    readJson("maplecompile-scouter-share-tokens", {}),
+  > => readJson(SCOUTER_SHARE_TOKENS_KEY, {}),
 
   saveScouterShareToken: (args: {
     id: string;
@@ -363,22 +386,22 @@ export const storage = {
   }) => {
     const map = readJson<
       Record<string, { deleteToken: string; name: string; public: boolean }>
-    >("maplecompile-scouter-share-tokens", {});
+    >(SCOUTER_SHARE_TOKENS_KEY, {});
     map[args.id] = {
       deleteToken: args.deleteToken,
       name: args.name,
       public: args.public,
     };
-    writeJson("maplecompile-scouter-share-tokens", map);
+    writeShareTokensCapped(map);
   },
 
   clearScouterShareToken: (id: string) => {
     const map = readJson<
       Record<string, { deleteToken: string; name: string; public: boolean }>
-    >("maplecompile-scouter-share-tokens", {});
+    >(SCOUTER_SHARE_TOKENS_KEY, {});
     if (id in map) {
       delete map[id];
-      writeJson("maplecompile-scouter-share-tokens", map);
+      writeJson(SCOUTER_SHARE_TOKENS_KEY, map);
     }
     clearGalleryLinkForShareId(id);
   },
@@ -442,6 +465,16 @@ export const storage = {
       SCOUTER_RECENT_VIEWS_KEY,
       next.slice(0, SCOUTER_RECENT_VIEWS_LIMIT),
     );
+  },
+
+  /**
+   * Re-apply preset / share-token soft caps (e.g. one-shot storage cleanup).
+   * Safe to call repeatedly.
+   */
+  enforceStorageCaps: () => {
+    writePresets(readPresets());
+    writeEquipPresets(readEquipPresets());
+    writeShareTokensCapped(storage.getScouterShareTokens());
   },
 };
 
@@ -521,4 +554,52 @@ function clearGalleryLinkForShareId(shareId: string) {
     }
   }
   if (changed) writeGalleryLinks(links);
+}
+
+function clearGalleryLinkForPresetId(presetId: string) {
+  const links = readGalleryLinks();
+  if (!(presetId in links.byPresetId)) return;
+  delete links.byPresetId[presetId];
+  writeGalleryLinks(links);
+}
+
+type ShareTokenEntry = {
+  deleteToken: string;
+  name: string;
+  public: boolean;
+};
+
+/**
+ * Soft-cap share tokens. Prefer evicting `public: false` first (insertion order),
+ * then public tokens if still over the limit. Also clears gallery links for
+ * evicted share ids.
+ */
+function writeShareTokensCapped(map: Record<string, ShareTokenEntry>) {
+  const entries = Object.entries(map);
+  if (entries.length <= SCOUTER_SHARE_TOKENS_LIMIT) {
+    writeJson(SCOUTER_SHARE_TOKENS_KEY, map);
+    return;
+  }
+  const over = entries.length - SCOUTER_SHARE_TOKENS_LIMIT;
+  const privateOnes = entries.filter(([, v]) => !v.public);
+  const publicOnes = entries.filter(([, v]) => v.public);
+  const toEvict: string[] = [];
+  for (const [id] of privateOnes) {
+    if (toEvict.length >= over) break;
+    toEvict.push(id);
+  }
+  if (toEvict.length < over) {
+    for (const [id] of publicOnes) {
+      if (toEvict.length >= over) break;
+      toEvict.push(id);
+    }
+  }
+  const next = { ...map };
+  for (const id of toEvict) {
+    delete next[id];
+  }
+  writeJson(SCOUTER_SHARE_TOKENS_KEY, next);
+  for (const id of toEvict) {
+    clearGalleryLinkForShareId(id);
+  }
 }

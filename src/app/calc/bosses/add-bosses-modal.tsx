@@ -193,7 +193,7 @@ export function AddBossesModal({
       setToast("Could not save preset — browser storage may be full.");
       return;
     }
-    setPresets(next);
+    setPresets(loadBossPresets());
     setPresetId(preset.id);
     setToast(`Saved preset “${preset.name}” (${preset.bosses.length} bosses).`);
   };
