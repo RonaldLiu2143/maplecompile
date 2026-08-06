@@ -244,11 +244,24 @@ function BossClearCard({
           className="aspect-square w-full object-cover"
           loading="lazy"
         />
-        {row.cantEnter ? (
+        {row.cantEnter || row.forceBlocked ? (
           <div className="absolute left-0.5 top-0.5 flex gap-0.5">
-            <span className="rounded-full bg-rose-600 px-1 text-[8px] font-bold leading-3 text-white shadow">
-              {row.level > 0 ? "LV" : "F"}
-            </span>
+            {row.cantEnter ? (
+              <span
+                className="rounded-full bg-rose-600 px-1 text-[8px] font-bold leading-3 text-white shadow"
+                title={`Entry Lv.${row.entryLevel}`}
+              >
+                LV
+              </span>
+            ) : null}
+            {row.forceBlocked ? (
+              <span
+                className="rounded-full bg-rose-600 px-1 text-[8px] font-bold leading-3 text-white shadow"
+                title="Force soft/hard cut"
+              >
+                F
+              </span>
+            ) : null}
           </div>
         ) : null}
       </div>

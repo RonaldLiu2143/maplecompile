@@ -28,12 +28,48 @@ export type BossCutEntry = {
   easyRate: number;
   newbieCut: number;
   guard: number;
+  /** Boss monster / combat level (level-gap damage multiplier). */
   level: number;
   partyLimit: number;
   arcaneForce: number;
   authenticForce: number;
   imgKey: string;
 };
+
+/**
+ * GMS boss entrance level (character must be ≥ this to enter).
+ * Distinct from combat `level` used for level-gap damage.
+ * Kai Hard is 280; all other listed difficulties share one entry level.
+ */
+const BOSS_ENTRY_LEVEL: Record<string, number> = {
+  lotus: 190,
+  damien: 190,
+  slime: 210,
+  lucid: 220,
+  will: 235,
+  gloom: 245,
+  verusHilla: 250,
+  darknell: 255,
+  blackMage: 255,
+  seren: 260,
+  kalos: 265,
+  adversary: 270,
+  kai: 270,
+  kaling: 275,
+  maleficStar: 280,
+  limbo: 285,
+  bardrix: 290,
+  jupiter: 295,
+};
+
+/** Required character level to enter a boss difficulty. */
+export function bossEntryLevel(
+  id: string,
+  difficulty: BossCutDifficulty | string,
+): number {
+  if (id === "kai" && difficulty === "Hard") return 280;
+  return BOSS_ENTRY_LEVEL[id] ?? 0;
+}
 
 export const BOSS_ICON_CDN = "https://maplescouter.com/bossIcon";
 
@@ -1162,7 +1198,8 @@ const LABEL_EN: Record<string, BossClearLabel> = {
   "솔플 최소컷": "Solo Min",
   "파티격 가능": "Party-able",
   "파티 최소컷": "Party Min",
-  "불가능": "Can't Enter",
+  // Clear-rate too low (can still enter) — not the entry-level gate.
+  "불가능": "Impossible",
   "2인 최소컷": "2p Min Cut",
   "3인 최소컷": "3p Min Cut",
   "4인 최소컷": "4p Min Cut",
@@ -1252,7 +1289,7 @@ export function bossClearLabelEn(
     newbieMode,
     newbieCut,
   );
-  return LABEL_EN[ko] ?? "Can't Enter";
+  return LABEL_EN[ko] ?? "Impossible";
 }
 
 export type BossClearRow = BossCutEntry & {
@@ -1263,7 +1300,12 @@ export type BossClearRow = BossCutEntry & {
   clearPercent: number;
   label: BossClearLabel;
   imgUrl: string;
+  /** Character level below boss entrance level. */
   cantEnter: boolean;
+  /** Soft/hard force cut: well below required ARC/AUT. */
+  forceBlocked: boolean;
+  /** Required entrance level for this boss/difficulty. */
+  entryLevel: number;
   /** Index in MapleScouter GMS difficulty order. */
   rank: number;
 };
@@ -1394,19 +1436,22 @@ export function evaluateBossClears(args: BossClearCalcInput): BossClearRow[] {
       userStat = fallbackStat;
     }
 
+    // Soft/hard force cut (MapleScouter-style): far below required ARC/AUT.
     const forceBlocked =
       (entry.arcaneForce > 0 && arcaneForce + 50 < entry.arcaneForce) ||
       (entry.authenticForce > 0 && authenticForce + 20 < entry.authenticForce);
-    const levelBlocked = entry.level > 0 && level + 5 < entry.level;
-    const cantEnter = forceBlocked || levelBlocked;
+    const entryLevel = bossEntryLevel(entry.id, entry.difficulty);
+    // Can't Enter = character level vs entrance requirement (not combat level).
+    const cantEnter = entryLevel > 0 && level < entryLevel;
 
-    const label = bossClearLabelEn(
+    let label = bossClearLabelEn(
       clearRate,
       isPartyBoss,
       entry.partyLimit,
       newbieMode,
       entry.newbieCut,
     );
+    if (cantEnter) label = "Can't Enter";
 
     return {
       ...entry,
@@ -1418,6 +1463,8 @@ export function evaluateBossClears(args: BossClearCalcInput): BossClearRow[] {
       label,
       imgUrl: `${BOSS_ICON_CDN}/${entry.imgKey}.png`,
       cantEnter,
+      forceBlocked,
+      entryLevel,
       rank,
     };
   });
