@@ -19,7 +19,11 @@ import {
   type RosterPrimary,
   type RosterState,
 } from "@/lib/dashboard/roster";
-import { switchActiveCharacter } from "@/lib/active-character";
+import {
+  clearActiveCharacterLockIfKey,
+  restoreLockedActiveCharacter,
+  switchActiveCharacter,
+} from "@/lib/active-character";
 
 export type RosterSlotState =
   | { status: "loading" }
@@ -42,6 +46,8 @@ export function useRoster() {
   }
 
   useEffect(() => {
+    // Restore sticky locked default on first hydrate (tool pages / dashboard).
+    restoreLockedActiveCharacter();
     applyRosterState(readRosterState());
     setHydrated(true);
   }, []);
@@ -169,6 +175,7 @@ export function useRoster() {
   function handleRemove(entry: RosterEntry) {
     const key = entryKey(entry);
     loadedKeys.current.delete(key);
+    clearActiveCharacterLockIfKey(key);
     applyRosterState(removeFromRoster(entry));
   }
 

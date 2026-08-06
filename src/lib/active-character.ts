@@ -1,6 +1,19 @@
 /**
  * Shared active-character switch: roster primary + workspace + tool focus.
  * Dashboard Manager star and ActiveCharacterBar both use this path.
+ *
+ * ## Active Character lock
+ * - Default: unlocked (new users).
+ * - Locking stores a sticky default (`lockedCharacterKey`) for the current
+ *   primary. That character remains the default active across tool pages.
+ * - Explicit switches (ActiveCharacterBar dropdown, Manager ★, etc.) still
+ *   work — lock does not block viewing or temporarily activating others.
+ * - Temporary primary lasts for the current page session. On the next tool
+ *   page load (`restoreLockedActiveCharacter` via ActiveCharacterBar /
+ *   useRoster hydrate), the locked character is restored as primary.
+ * - Share import does not overwrite primary while a lock is set (unless the
+ *   import target is already the locked character).
+ * - Removing the locked character from the roster clears the lock.
  */
 
 import { readSessionCharacter } from "@/lib/character/client";
@@ -15,6 +28,7 @@ import {
   readRosterState,
   setPrimary,
   type RosterEntry,
+  type RosterPrimary,
   type RosterState,
 } from "@/lib/dashboard/roster";
 import { classFromJobName } from "@/lib/jobs";
@@ -31,6 +45,133 @@ import { notifyMapleDataChanged } from "@/lib/maple-events";
 import { applyLivePairingForCharacter } from "@/lib/pairing";
 import { storage } from "@/lib/storage";
 import type { JobType } from "@/lib/types";
+
+/** Persisted sticky default while Active Character lock is on. */
+export const ACTIVE_CHARACTER_LOCK_KEY = "maplecompile-active-character-lock";
+
+function normalizeLock(
+  raw: Partial<RosterPrimary> | null | undefined,
+): RosterPrimary | null {
+  if (!raw || typeof raw !== "object") return null;
+  const name = typeof raw.name === "string" ? raw.name.trim() : "";
+  const region =
+    raw.region === "eu" || raw.region === "na" ? raw.region : null;
+  if (!name || !region) return null;
+  return { name, region };
+}
+
+/** Locked sticky default, or null when unlocked. */
+export function readActiveCharacterLock(): RosterPrimary | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(ACTIVE_CHARACTER_LOCK_KEY);
+    if (!raw) return null;
+    return normalizeLock(JSON.parse(raw) as Partial<RosterPrimary>);
+  } catch {
+    return null;
+  }
+}
+
+export function writeActiveCharacterLock(
+  target: Pick<RosterEntry, "name" | "region"> | null,
+): void {
+  if (typeof window === "undefined") return;
+  try {
+    if (!target) {
+      localStorage.removeItem(ACTIVE_CHARACTER_LOCK_KEY);
+    } else {
+      const lock: RosterPrimary = {
+        name: target.name.trim(),
+        region: target.region,
+      };
+      localStorage.setItem(ACTIVE_CHARACTER_LOCK_KEY, JSON.stringify(lock));
+    }
+    notifyMapleDataChanged("other");
+  } catch {
+    /* ignore */
+  }
+}
+
+export function isActiveCharacterLocked(): boolean {
+  return readActiveCharacterLock() != null;
+}
+
+/** True when `target` is the locked sticky default. */
+export function isLockedActiveCharacter(
+  target: Pick<RosterEntry, "name" | "region">,
+): boolean {
+  const lock = readActiveCharacterLock();
+  if (!lock) return false;
+  return entryKey(lock) === entryKey(target);
+}
+
+/**
+ * Lock the current (or given) character as sticky default.
+ * Ensures they are also the live primary.
+ */
+export function lockActiveCharacter(
+  entry: Pick<RosterEntry, "name" | "region">,
+): RosterState {
+  const state = switchActiveCharacter(entry as RosterEntry);
+  writeActiveCharacterLock(entry);
+  return state;
+}
+
+export function unlockActiveCharacter(): void {
+  writeActiveCharacterLock(null);
+}
+
+/**
+ * Toggle lock for the given character (usually current primary).
+ * - Unlocked → lock this character (and set as primary).
+ * - Locked to this character → unlock (primary unchanged).
+ * - Locked to someone else → re-lock to this character.
+ * Returns whether lock is now on.
+ */
+export function toggleActiveCharacterLock(
+  primary: Pick<RosterEntry, "name" | "region"> | null,
+): boolean {
+  if (!primary) return false;
+  if (isLockedActiveCharacter(primary)) {
+    unlockActiveCharacter();
+    return false;
+  }
+  lockActiveCharacter(primary);
+  return true;
+}
+
+/** Clear lock when the locked roster entry is removed. */
+export function clearActiveCharacterLockIfKey(characterKey: string): void {
+  const lock = readActiveCharacterLock();
+  if (!lock) return;
+  if (entryKey(lock) === characterKey) {
+    writeActiveCharacterLock(null);
+  }
+}
+
+/**
+ * If a lock is set and still on the roster, restore that character as primary.
+ * No-op when unlocked, lock missing from roster, or already primary.
+ * Returns the roster state when a restore switch ran; otherwise null.
+ */
+export function restoreLockedActiveCharacter(): RosterState | null {
+  const lock = readActiveCharacterLock();
+  if (!lock) return null;
+
+  const { entries, primary } = readRosterState();
+  const match = entries.find((e) => entryKey(e) === entryKey(lock));
+  if (!match) {
+    // Locked character left the roster — drop stale lock.
+    writeActiveCharacterLock(null);
+    return null;
+  }
+
+  if (primary && entryKey(primary) === entryKey(match)) {
+    return null;
+  }
+
+  return switchActiveCharacter(match);
+}
 
 /** Sync Boss Income focus to the active roster key. */
 export function syncBossActiveKey(characterKey: string): void {
@@ -69,6 +210,10 @@ export function syncLiberationActive(characterKey: string): void {
 /**
  * Persist the previous primary's live Scouter/Equip, set the new primary,
  * load that character's workspace, and sync Boss/Liberation/pairing focus.
+ *
+ * When a lock is set, this is still allowed — temporary switch for the
+ * current page. Call `restoreLockedActiveCharacter` on the next tool-page
+ * load to bring the sticky default back.
  */
 export function switchActiveCharacter(entry: RosterEntry): RosterState {
   const prev = readRosterState();

@@ -2,7 +2,13 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { switchActiveCharacter } from "@/lib/active-character";
+import {
+  ACTIVE_CHARACTER_LOCK_KEY,
+  readActiveCharacterLock,
+  restoreLockedActiveCharacter,
+  switchActiveCharacter,
+  toggleActiveCharacterLock,
+} from "@/lib/active-character";
 import { readSessionCharacter } from "@/lib/character/client";
 import {
   entryKey,
@@ -27,23 +33,61 @@ type Props = {
 type BarState = {
   roster: RosterEntry[];
   primary: RosterPrimary | null;
+  lock: RosterPrimary | null;
 };
 
 function readBarState(): BarState {
   const state = readRosterState();
-  return { roster: state.entries, primary: state.primary };
+  return {
+    roster: state.entries,
+    primary: state.primary,
+    lock: readActiveCharacterLock(),
+  };
+}
+
+function LockIcon({ filled, size = 14 }: { filled: boolean; size?: number }) {
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} aria-hidden>
+      <path
+        fill={filled ? "currentColor" : "none"}
+        stroke="currentColor"
+        strokeWidth="1.75"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M7 11V8a5 5 0 0 1 10 0v3"
+      />
+      <rect
+        x="5"
+        y="11"
+        width="14"
+        height="10"
+        rx="2"
+        fill={filled ? "currentColor" : "none"}
+        stroke="currentColor"
+        strokeWidth="1.75"
+      />
+    </svg>
+  );
 }
 
 /**
  * Compact active-character context for tool pages.
  * Switching here sets roster primary and runs the shared workspace/tool sync path.
+ *
+ * Lock: sticky default for the locked character. Explicit switches still work
+ * for the current page; the locked character is restored on the next tool-page
+ * load (this bar's mount).
  */
 export function ActiveCharacterBar({
   onSelect,
   onSwitched,
   className,
 }: Props) {
-  const [state, setState] = useState<BarState>({ roster: [], primary: null });
+  const [state, setState] = useState<BarState>({
+    roster: [],
+    primary: null,
+    lock: null,
+  });
   const [ready, setReady] = useState(false);
 
   const refresh = useCallback(() => {
@@ -52,12 +96,20 @@ export function ActiveCharacterBar({
   }, []);
 
   useEffect(() => {
+    // Sticky default: restore locked character when entering a tool page.
+    restoreLockedActiveCharacter();
     return subscribeMapleDataReload(refresh);
   }, [refresh]);
 
   useEffect(() => {
     const onStorage = (e: StorageEvent) => {
-      if (e.key == null || e.key === ROSTER_KEY) refresh();
+      if (
+        e.key == null ||
+        e.key === ROSTER_KEY ||
+        e.key === ACTIVE_CHARACTER_LOCK_KEY
+      ) {
+        refresh();
+      }
     };
     window.addEventListener("storage", onStorage);
     return () => window.removeEventListener("storage", onStorage);
@@ -65,18 +117,22 @@ export function ActiveCharacterBar({
 
   if (!ready) return null;
 
-  const { roster, primary } = state;
+  const { roster, primary, lock } = state;
   const primaryKey = primary ? entryKey(primary) : "";
+  const lockKey = lock ? entryKey(lock) : "";
+  const locked = lock != null;
+  const viewingTemporary =
+    locked && primary != null && lockKey !== "" && primaryKey !== lockKey;
   const session = primary
     ? readSessionCharacter(primary.name, primary.region)
     : null;
   const avatar = session?.characterImgURL;
   const displayName = session?.name ?? primary?.name ?? "No primary";
+  const lockedLabel = lock
+    ? (readSessionCharacter(lock.name, lock.region)?.name ?? lock.name)
+    : "";
 
-  const handleSelect = (key: string) => {
-    const entry = roster.find((e) => entryKey(e) === key);
-    if (!entry) return;
-    if (primary && entryKey(primary) === key) return;
+  const applySelect = (entry: RosterEntry) => {
     if (onSelect) {
       onSelect(entry);
     } else {
@@ -84,6 +140,26 @@ export function ActiveCharacterBar({
     }
     setState(readBarState());
     onSwitched?.(entry);
+  };
+
+  const handleSelect = (key: string) => {
+    const entry = roster.find((e) => entryKey(e) === key);
+    if (!entry) return;
+    if (primary && entryKey(primary) === key) return;
+    applySelect(entry);
+  };
+
+  const handleToggleLock = () => {
+    if (!primary) return;
+    toggleActiveCharacterLock(primary);
+    setState(readBarState());
+  };
+
+  const handleSwitchBack = () => {
+    if (!lock) return;
+    const entry = roster.find((e) => entryKey(e) === entryKey(lock));
+    if (!entry) return;
+    applySelect(entry);
   };
 
   if (roster.length === 0) {
@@ -106,6 +182,12 @@ export function ActiveCharacterBar({
       </div>
     );
   }
+
+  const lockTitle = locked
+    ? viewingTemporary
+      ? `Default locked to ${lockedLabel}. You can still use other characters; this page will restore the locked default next visit.`
+      : `Locked as default active character. You can still open others — unlock to stop restoring on tool-page load.`
+    : "Lock as default active character. You can still switch to others temporarily.";
 
   return (
     <div
@@ -132,10 +214,50 @@ export function ActiveCharacterBar({
         <div className="min-w-0">
           <p className="text-[0.65rem] font-semibold uppercase tracking-wider text-accent opacity-80">
             Active character
+            {locked ? (
+              <span className="ml-1.5 inline-flex items-center gap-0.5 normal-case tracking-normal text-amber-500 opacity-90">
+                <LockIcon filled size={10} />
+                Locked
+              </span>
+            ) : null}
           </p>
           <p className="truncate text-sm font-semibold">{displayName}</p>
+          {viewingTemporary ? (
+            <p className="truncate text-[0.65rem] opacity-65">
+              Default: {lockedLabel}
+            </p>
+          ) : null}
         </div>
       </div>
+
+      <button
+        type="button"
+        onClick={handleToggleLock}
+        disabled={!primary}
+        title={lockTitle}
+        aria-label={locked ? "Unlock active character" : "Lock active character"}
+        aria-pressed={locked}
+        className={[
+          "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border transition",
+          locked
+            ? "border-amber-400/55 bg-amber-400/15 text-amber-500 hover:bg-amber-400/25"
+            : "border-border bg-background text-foreground/45 hover:bg-surface-muted hover:text-foreground/80",
+          !primary ? "cursor-not-allowed opacity-40" : "",
+        ].join(" ")}
+      >
+        <LockIcon filled={locked} />
+      </button>
+
+      {viewingTemporary ? (
+        <button
+          type="button"
+          onClick={handleSwitchBack}
+          title={`Switch back to locked default (${lockedLabel})`}
+          className="rounded-md border border-amber-400/45 bg-amber-400/10 px-2.5 py-1.5 text-xs font-semibold text-amber-600 transition hover:bg-amber-400/20"
+        >
+          Switch back
+        </button>
+      ) : null}
 
       <label className="flex items-center gap-1.5 text-xs">
         <span className="sr-only">Switch active character</span>
@@ -148,9 +270,11 @@ export function ActiveCharacterBar({
             const key = entryKey(entry);
             const cached = readSessionCharacter(entry.name, entry.region);
             const label = cached?.name ?? entry.name;
+            const isLockedOpt = lockKey === key;
             return (
               <option key={key} value={key}>
                 {label} ({entry.region.toUpperCase()})
+                {isLockedOpt ? " · locked" : ""}
               </option>
             );
           })}

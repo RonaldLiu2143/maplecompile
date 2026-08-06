@@ -18,6 +18,10 @@ import {
   CHARACTER_NAME_REGEX,
   type NexonRegion,
 } from "@/lib/character/lookup";
+import {
+  isActiveCharacterLocked,
+  isLockedActiveCharacter,
+} from "@/lib/active-character";
 import { addToRoster, setPrimary } from "@/lib/dashboard/roster";
 import { getCharName } from "@/lib/jobs";
 import { pairScouterAndEquip } from "@/lib/pairing";
@@ -200,7 +204,15 @@ export default function CharacterShareProfilePage() {
     setBusy("import");
     try {
       addToRoster({ name, region: importRegion });
-      setPrimary({ name, region: importRegion });
+      // Locked active character is sticky — don't overwrite primary when
+      // browsing/importing shares (unless the import target is the lock).
+      const importTarget = { name, region: importRegion };
+      if (
+        !isActiveCharacterLocked() ||
+        isLockedActiveCharacter(importTarget)
+      ) {
+        setPrimary(importTarget);
+      }
       importBuildToCharacter({
         region: importRegion,
         name,

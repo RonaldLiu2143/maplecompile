@@ -78,6 +78,7 @@ export function subscribeMapleDataReload(onReload: () => void): () => void {
       e.key === "maplecompile-scouter-presets" ||
       e.key === "maplecompile-planner-overrides" ||
       e.key === "maplecompile-roster" ||
+      e.key === "maplecompile-active-character-lock" ||
       e.key === "maplecompile.boss-income.v2" ||
       e.key === "maplecompile.liberation.v2" ||
       e.key === "jobType" ||
