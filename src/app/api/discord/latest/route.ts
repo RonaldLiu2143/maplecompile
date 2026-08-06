@@ -13,13 +13,13 @@ export const revalidate = 120;
  * Env:
  * - DISCORD_TOKEN (preferred) or DISCORD_BOT_TOKEN (alias): app token
  * - DISCORD_ANNOUNCEMENT_CHANNEL_ID: announcement channel snowflake
- *   (default `309809230095843328` — MapleStory announcement channel)
+ *   (default `1274449819493990420` — MapleStory announcement channel)
  * - DISCORD_GUILD_ID: optional server snowflake for message deep links
  *   (`discord.com/channels/{guild}/{channel}/{message}`). No default — do not
  *   reuse the channel id as the guild. Without a guild (env or message payload),
  *   links fall back to https://discord.gg/maplestory
  */
-const DEFAULT_CHANNEL_ID = "309809230095843328";
+const DEFAULT_CHANNEL_ID = "1274449819493990420";
 /** Empty by default — never reuse the announcement channel id as the guild. */
 const DEFAULT_GUILD_ID = "";
 const MAPLESTORY_DISCORD_INVITE = "https://discord.gg/maplestory";
