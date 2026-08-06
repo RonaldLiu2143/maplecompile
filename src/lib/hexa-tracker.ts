@@ -47,8 +47,9 @@ export type HexaTrackerState = {
   /** Hexa Stat target (0–3). */
   hexaStatTarget: number;
   /**
-   * Boss Converted Stat / HEXA score used for upgrade priority banding.
-   * Default 85000 (MapleHub base band).
+   * HEXA Converted score (raw entered value) used for upgrade priority banding.
+   * Default 85000 (MapleHub base band). Nearest band is chosen only when
+   * ranking upgrades — this field is never snapped on save.
    */
   bossConvertedStat: number;
   /** Fragment farming rate assumptions. */

@@ -1,10 +1,12 @@
 /**
  * HEXA upgrade priority from MapleHub Fragment Calculator.
  *
- * MapleHub stores per-class leveling `order` bands keyed by Boss Converted Stat
- * (HEXA / boss380), default band target **85000**. Each order entry is
+ * MapleHub stores per-class leveling `order` bands keyed by HEXA Converted
+ * score (boss380), default band target **85000**. Each order entry is
  * `[skillPosition, targetLevel]`. Priority "score" for a skill is
  * `1000 - index` of its next unfinished step (higher = sooner in the FD path).
+ * The stored/entered score stays as-entered; nearest-band matching is only
+ * used when resolving which `order` band to rank against.
  *
  * Skill positions (MapleHub) → our tracker nodes:
  *   1 Origin (slot 8), 2–Mastery1 (0), 3–6 Boost (4–7), 7–9 Mastery2–4 (1–3),
@@ -127,7 +129,11 @@ export function availableBossStatTargets(charType: string): number[] {
   return row.bands.map((b) => b.target);
 }
 
-/** Snap entered BCS to the nearest published band target for the class. */
+/**
+ * Nearest published MapleHub band target for a class.
+ * For priority ranking only — do not write this back into the HEXA Converted
+ * input / stored score.
+ */
 export function snapBossConvertedStat(
   charType: string,
   raw: number,
@@ -165,7 +171,7 @@ export type HexaScoreUpgrade = {
   solErda: number;
   /**
    * MapleHub priority score (`1000 - orderIndex`). Higher = earlier in the
-   * class FD leveling path for the selected Boss Converted Stat band.
+   * class FD leveling path for the nearest HEXA Converted band.
    */
   score: number;
   /** 0-based index of this step in the class order (when score > 0). */

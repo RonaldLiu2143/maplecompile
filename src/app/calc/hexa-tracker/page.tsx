@@ -34,7 +34,7 @@ import {
   DEFAULT_BOSS_CONVERTED_STAT,
   bestScoreNextUpgrade,
   buildScoreUpgradePath,
-  snapBossConvertedStat,
+  normalizeBossConvertedStat,
 } from "@/lib/hexa-priority";
 import { hexaSlotLabels } from "@/lib/hexa-skill-labels";
 import {
@@ -535,14 +535,14 @@ export default function HexaTrackerPage() {
 
   const commitBossConvertedStat = (raw: string) => {
     if (!activeState) return;
-    const parsed = Number(raw);
-    const snapped = snapBossConvertedStat(
-      activeCharType,
-      Number.isFinite(parsed) ? parsed : DEFAULT_BOSS_CONVERTED_STAT,
+    // Persist the exact entered score; nearest FD band is chosen only inside
+    // priority ranking (orderForClass), never written back into the input.
+    const next = normalizeBossConvertedStat(
+      raw.trim() === "" ? DEFAULT_BOSS_CONVERTED_STAT : raw,
     );
-    setBcsDraft(String(snapped));
-    if (snapped === activeState.bossConvertedStat) return;
-    persist({ ...activeState, bossConvertedStat: snapped });
+    setBcsDraft(String(next));
+    if (next === activeState.bossConvertedStat) return;
+    persist({ ...activeState, bossConvertedStat: next });
   };
 
   const groups = useMemo(() => {
@@ -882,9 +882,9 @@ export default function HexaTrackerPage() {
           </section>
 
           <section className="rounded-xl border border-border/45 bg-surface/90 p-4">
-            <h2 className="text-sm font-semibold">Boss Converted Stat</h2>
+            <h2 className="text-sm font-semibold">HEXA Converted</h2>
             <label className="mt-3 block space-y-1 text-xs font-semibold opacity-70">
-              HEXA / boss-converted score
+              HEXA Converted score
               <input
                 type="number"
                 min={0}
@@ -892,6 +892,8 @@ export default function HexaTrackerPage() {
                 inputMode="numeric"
                 value={bcsDraft}
                 placeholder={String(DEFAULT_BOSS_CONVERTED_STAT)}
+                aria-label="HEXA Converted"
+                title="HEXA Converted"
                 onChange={(e) => setBcsDraft(e.target.value)}
                 onBlur={(e) => commitBossConvertedStat(e.target.value)}
                 onKeyDown={(e) => {
@@ -905,8 +907,9 @@ export default function HexaTrackerPage() {
               />
             </label>
             <p className="mt-2 text-[10px] opacity-55">
-              Base {DEFAULT_BOSS_CONVERTED_STAT.toLocaleString()}. Snaps to the
-              nearest class band; priority updates with this score.
+              Base {DEFAULT_BOSS_CONVERTED_STAT.toLocaleString()}. Priority uses
+              the nearest class FD band for this score without changing the
+              value you entered.
             </p>
           </section>
 
@@ -940,8 +943,8 @@ export default function HexaTrackerPage() {
             </div>
             {infoOpen ? (
               <p className="mt-2 rounded-lg bg-background/50 px-2.5 py-2 text-[11px] leading-relaxed opacity-70">
-                Priorities follow MapleHub class FD leveling bands for your Boss
-                Converted Stat (base{" "}
+                Priorities follow MapleHub class FD leveling bands for your HEXA
+                Converted score (base{" "}
                 {DEFAULT_BOSS_CONVERTED_STAT.toLocaleString()}
                 ). Rank is by highest path score (
                 <span className="font-semibold">1000 − order index</span>
