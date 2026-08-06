@@ -87,6 +87,58 @@ function normalizeLabel(line: string): string {
     .trim();
 }
 
+/**
+ * Reject lines from Hyper Stats, Ability, char card, ATT tooltip, etc.
+ * STAT window values never use "Lv. N" next to the label.
+ */
+function isNoiseLine(norm: string): boolean {
+  // Hyper Stats: "STR Lv. 2", "Boss Damage Lv. 12"
+  if (/\blv\.?\s*\d+/.test(norm)) return true;
+  // Char card / social
+  if (
+    /\blegion\b/.test(norm) ||
+    /\bfame\b/.test(norm) ||
+    /\bguild\b/.test(norm) ||
+    /\bmu\s*lung\b/.test(norm) ||
+    /\bdojo\b/.test(norm) ||
+    /\branking\b/.test(norm)
+  ) {
+    return true;
+  }
+  // Attack Power detail popup
+  if (/\bbase\s*value\b/.test(norm) || /\b%\s*value\b/.test(norm)) return true;
+  // Ability panel chrome / unrelated growth lines we do not import
+  if (
+    /\blegendary\s*ability\b/.test(norm) ||
+    /\bunique\s*ability\b/.test(norm) ||
+    /\bepic\s*ability\b/.test(norm) ||
+    /\brare\s*ability\b/.test(norm)
+  ) {
+    return true;
+  }
+  // STAT chrome / other panels — not scouter fields
+  if (
+    /\bcombat\s*power\b/.test(norm) ||
+    /\bdamage\s*range\b/.test(norm) ||
+    /\bnormal\s*enemy\b/.test(norm) ||
+    /\bmesos?\s*obtained\b/.test(norm) ||
+    /\bitem\s*drop\b/.test(norm) ||
+    /\badditional\s*exp\b/.test(norm) ||
+    /\bstar\s*force\b/.test(norm) ||
+    /\bhyper\s*stats?\b/.test(norm) ||
+    /^ability\b/.test(norm) ||
+    /\bcooldown\b/.test(norm) ||
+    /\bbuff\s*duration\b/.test(norm) ||
+    /\bsummons?\s*duration\b/.test(norm) ||
+    /\bignore\s*elemental\b/.test(norm) ||
+    /\badditional\s*status\b/.test(norm) ||
+    /\bstatus\s*resistance\b/.test(norm)
+  ) {
+    return true;
+  }
+  return false;
+}
+
 const STAT_RULES: { key: StatKey; label: string; patterns: RegExp[] }[] = [
   { key: "str", label: "STR", patterns: [/^str\b/, /\bstrength\b/] },
   { key: "dex", label: "DEX", patterns: [/^dex\b/, /\bdexterity\b/] },
@@ -101,11 +153,13 @@ const STAT_RULES: { key: StatKey; label: string; patterns: RegExp[] }[] = [
 
 const LINE_RULES: LineRule[] = [
   {
+    // Character level is on the char card, not the STAT window — only accept
+    // explicit "Level N" / "Lv N" lines (not Hyper Stats "STR Lv. 2").
     label: "Level",
-    test: (n) => /^(lv|lvl|level)\b/.test(n) || /\blevel\b/.test(n),
+    test: (n) => /^(lv|lvl|level)\b/.test(n) && !/\b(str|dex|int|luk|hp|mp|boss|crit|att)\b/.test(n),
     apply: (line, patch, matched) => {
       const n = firstNumber(line);
-      if (n != null && n > 0 && n < 400) {
+      if (n != null && n >= 10 && n < 400) {
         setScalar(patch, "level", Math.floor(n), matched, "Level");
       }
     },
@@ -118,11 +172,11 @@ const LINE_RULES: LineRule[] = [
       n === "att" ||
       n.startsWith("att "),
     apply: (line, patch, matched) => {
-      // Avoid matching "Attack Power %" style false positives on Magic ATT lines.
       const norm = normalizeLabel(line);
       if (/\bmagic\b|\bm\.?\s*att|\bmatt\b|\b마력\b/.test(norm)) return;
       const t = tripleFromLine(line);
-      if (t) {
+      // STAT window ATT is a total; reject tiny Hyper-stat leftovers.
+      if (t && t.base > 15 && t.base < 1_000_000) {
         patch.attack = t;
         matched.push("Attack");
       }
@@ -135,7 +189,7 @@ const LINE_RULES: LineRule[] = [
       /\bmagic\s*(att|attack)\b/.test(n),
     apply: (line, patch, matched) => {
       const t = tripleFromLine(line);
-      if (t) {
+      if (t && t.base >= 0 && t.base < 1_000_000) {
         patch.magicAttack = t;
         matched.push("Magic Att");
       }
@@ -148,7 +202,8 @@ const LINE_RULES: LineRule[] = [
       (/\bdamage\b/.test(n) || /\bdmg\b/.test(n) || n.includes("보스")),
     apply: (line, patch, matched) => {
       const n = firstNumber(line);
-      if (n != null) {
+      // STAT window boss% is typically tens–low hundreds, not Hyper Lv.
+      if (n != null && n >= 0 && n <= 1000) {
         setScalar(patch, "bossDamagePercent", n, matched, "Boss Damage");
       }
     },
@@ -162,7 +217,7 @@ const LINE_RULES: LineRule[] = [
       n.includes("방어율 무시"),
     apply: (line, patch, matched) => {
       const n = firstNumber(line);
-      if (n != null) {
+      if (n != null && n >= 0 && n <= 100) {
         setScalar(patch, "ignoreDefensePercent", n, matched, "Ignore Defense");
       }
     },
@@ -174,7 +229,7 @@ const LINE_RULES: LineRule[] = [
       (/\bdamage\b/.test(n) || /\bdmg\b/.test(n) || n.includes("데미지")),
     apply: (line, patch, matched) => {
       const n = firstNumber(line);
-      if (n != null) {
+      if (n != null && n >= 0 && n <= 1000) {
         setScalar(
           patch,
           "criticalDamagePercent",
@@ -192,7 +247,7 @@ const LINE_RULES: LineRule[] = [
       (/\brate\b/.test(n) || /\bchance\b/.test(n)),
     apply: (line, patch, matched) => {
       const n = firstNumber(line);
-      if (n != null) {
+      if (n != null && n >= 0 && n <= 200) {
         setScalar(patch, "criticalRatePercent", n, matched, "Critical Rate");
       }
     },
@@ -204,10 +259,14 @@ const LINE_RULES: LineRule[] = [
       !/\bboss\b/.test(n) &&
       !/\bfinal\b/.test(n) &&
       !/\bcrit/.test(n) &&
-      !/\bnormal\b/.test(n),
+      !/\bnormal\b/.test(n) &&
+      !/\brange\b/.test(n) &&
+      !/\bstatus\b/.test(n) &&
+      !/\benemy\b/.test(n),
     apply: (line, patch, matched) => {
       const n = firstNumber(line);
-      if (n != null) {
+      // Plain Damage on STAT is a percent (e.g. 121.00%), not Damage Range.
+      if (n != null && n >= 0 && n <= 1000) {
         setScalar(patch, "damagePercent", n, matched, "Damage");
       }
     },
@@ -217,17 +276,18 @@ const LINE_RULES: LineRule[] = [
     test: (n) => /\bfinal\b/.test(n) && (/\bdamage\b/.test(n) || /\bdmg\b/.test(n)),
     apply: (line, patch, matched) => {
       const n = firstNumber(line);
-      if (n != null) {
+      if (n != null && n >= 0 && n <= 2000) {
         setScalar(patch, "finalDamagePercent", n, matched, "Final Damage");
       }
     },
   },
   {
     label: "Arcane Force",
-    test: (n) => /\barcane\b/.test(n) && /\bforce\b/.test(n),
+    test: (n) =>
+      /\barcane\b/.test(n) && (/\bforce\b/.test(n) || /\bpower\b/.test(n)),
     apply: (line, patch, matched) => {
       const n = firstNumber(line);
-      if (n != null) {
+      if (n != null && n >= 0 && n <= 2000) {
         setScalar(patch, "arcaneForce", Math.floor(n), matched, "Arcane Force");
       }
     },
@@ -235,10 +295,11 @@ const LINE_RULES: LineRule[] = [
   {
     label: "Sacred Force",
     test: (n) =>
-      (/\bsacred\b/.test(n) || /\bauthentic\b/.test(n)) && /\bforce\b/.test(n),
+      (/\bsacred\b/.test(n) || /\bauthentic\b/.test(n)) &&
+      (/\bforce\b/.test(n) || /\bpower\b/.test(n)),
     apply: (line, patch, matched) => {
       const n = firstNumber(line);
-      if (n != null) {
+      if (n != null && n >= 0 && n <= 2000) {
         setScalar(patch, "sacredForce", Math.floor(n), matched, "Sacred Force");
       }
     },
@@ -248,9 +309,12 @@ const LINE_RULES: LineRule[] = [
 /**
  * Parse pasted character-window / OCR text into a scouter field patch.
  *
+ * Only maps STAT-window fields (HP/STR/DEX/INT/LUK, ATT/MATT, Damage,
+ * Final/Boss Damage, IED, Crit Rate/Damage, Arcane/Sacred). Ignores Hyper
+ * Stats levels, Ability lines, Legion/Fame/Guild/Mu Lung, ATT tooltips, etc.
+ *
  * Supported shapes (per line):
  * - `STR 12345` or `STR: 12,345`
- * - `STR 10000 200 500` → base / % / flat
  * - `Boss Damage 350%`, `IED 92`, `Attack Power 5000`
  * - Compact block: `ATT 5000` / `MATT 5000`
  */
@@ -272,12 +336,14 @@ export function parseScouterOcrText(text: string): ScouterOcrParseResult {
 
   for (const line of lines) {
     const norm = normalizeLabel(line);
+    if (isNoiseLine(norm)) continue;
 
     let hitStat = false;
     for (const rule of STAT_RULES) {
       if (rule.patterns.some((p) => p.test(norm))) {
         const t = tripleFromLine(line);
-        if (t) {
+        // Hyper Stats levels are 1–15; STAT totals are always larger.
+        if (t && t.base > 15) {
           setStat(patch, rule.key, t, matched, rule.label);
           hitStat = true;
         }

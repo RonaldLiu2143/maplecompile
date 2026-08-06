@@ -71,6 +71,12 @@ export {
   type OcrProgress,
 } from "./ocr-image";
 export {
+  detectStatPanelCrop,
+  scaleStatCrop,
+  type OcrWordBox,
+  type StatCropRect,
+} from "./ocr-stat-crop";
+export {
   OZ_RINGS,
   OZ_CONTINUOUS_STATUS,
   INNER_ABILITY_OPTIONS,
