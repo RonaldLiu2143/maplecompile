@@ -17,6 +17,10 @@ import {
   clampHexaForGms,
   defaultHexaLevels,
 } from "./scouter/buffs";
+import {
+  DEFAULT_BOSS_CONVERTED_STAT,
+  normalizeBossConvertedStat,
+} from "./hexa-priority";
 import { storage } from "./storage";
 import { activeCharacterKey } from "./character-workspace";
 import { entryKey, readRosterState } from "./dashboard/roster";
@@ -42,6 +46,11 @@ export type HexaTrackerState = {
   hexaStatLevel: number;
   /** Hexa Stat target (0–3). */
   hexaStatTarget: number;
+  /**
+   * Boss Converted Stat / HEXA score used for upgrade priority banding.
+   * Default 85000 (MapleHub base band).
+   */
+  bossConvertedStat: number;
   /** Fragment farming rate assumptions. */
   rate: FragmentRateSettings;
   /** Roster character key when linked (`region:name`). */
@@ -132,6 +141,7 @@ export function defaultHexaTrackerState(
     erda: 0,
     hexaStatLevel: 0,
     hexaStatTarget: HEXA_STAT_MAX_LEVEL,
+    bossConvertedStat: DEFAULT_BOSS_CONVERTED_STAT,
     rate: { ...DEFAULT_FRAGMENT_RATE },
     rosterKey,
     updatedAt: Date.now(),
@@ -164,6 +174,9 @@ function normalizeTracker(
           Number(raw.hexaStatTarget) || HEXA_STAT_MAX_LEVEL,
         ),
       ),
+    ),
+    bossConvertedStat: normalizeBossConvertedStat(
+      raw.bossConvertedStat ?? DEFAULT_BOSS_CONVERTED_STAT,
     ),
     rate: normalizeRate(raw.rate),
     rosterKey:
@@ -293,6 +306,9 @@ export function saveHexaTracker(
         HEXA_STAT_MAX_LEVEL,
         Math.floor(state.hexaStatTarget ?? HEXA_STAT_MAX_LEVEL),
       ),
+    ),
+    bossConvertedStat: normalizeBossConvertedStat(
+      state.bossConvertedStat ?? DEFAULT_BOSS_CONVERTED_STAT,
     ),
     rate: normalizeRate(state.rate),
     rosterKey: key === "__local__" ? null : key,

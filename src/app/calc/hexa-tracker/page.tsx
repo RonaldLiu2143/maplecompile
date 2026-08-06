@@ -20,9 +20,7 @@ import {
   GMS_HEXA_SLOT_INDICES,
   WEEKLY_DUNGEON_OPTIONS,
   WEEKLY_QUEST_FRAGMENTS,
-  cheapestNextUpgrade,
   costBetween,
-  buildCheapestUpgradePath,
   groupConsecutiveUpgradeRuns,
   dailyFragmentRate,
   estimateCompletion,
@@ -32,6 +30,12 @@ import {
   HEXA_STAT_MAX_LEVEL,
   HEXA_CORE_MAX_LEVEL,
 } from "@/lib/hexa-costs";
+import {
+  DEFAULT_BOSS_CONVERTED_STAT,
+  bestScoreNextUpgrade,
+  buildScoreUpgradePath,
+  snapBossConvertedStat,
+} from "@/lib/hexa-priority";
 import { hexaSlotLabels } from "@/lib/hexa-skill-labels";
 import {
   HEXA_MAX_LEVEL,
@@ -288,9 +292,9 @@ export default function HexaTrackerPage() {
   );
   const [manageOpen, setManageOpen] = useState(false);
   const [pairOpen, setPairOpen] = useState(false);
-  const [nextStopLevel, setNextStopLevel] = useState<number | null>(null);
   const [showUpgradePath, setShowUpgradePath] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
+  const [bcsDraft, setBcsDraft] = useState(String(DEFAULT_BOSS_CONVERTED_STAT));
 
   const activeCharType =
     viewMode === "preview" ? previewCharType : charType;
@@ -490,48 +494,56 @@ export default function HexaTrackerPage() {
         dailyRate,
       })
     : null;
-  const nextUp = progress ? cheapestNextUpgrade(progress.nodes) : null;
+  const bossConvertedStat =
+    activeState?.bossConvertedStat ?? DEFAULT_BOSS_CONVERTED_STAT;
+
+  useEffect(() => {
+    if (!activeState) return;
+    setBcsDraft(String(activeState.bossConvertedStat));
+  }, [activeState?.bossConvertedStat, rosterKey, viewMode, activeCharType]);
+
+  const nextUp = progress
+    ? bestScoreNextUpgrade(
+        progress.nodes,
+        activeCharType,
+        bossConvertedStat,
+      )
+    : null;
   const nextUpIcon =
     nextUp?.node.slotIndex != null
       ? iconUrl(slotsHexa[nextUp.node.slotIndex]?.iconSuffix ?? null)
       : "";
+  const nextCost =
+    nextUp != null
+      ? costBetween(
+          nextUp.node.skillType,
+          nextUp.node.current,
+          nextUp.nextLevel,
+        )
+      : null;
 
   const upgradePathRuns = useMemo(() => {
     if (!progress) return [];
     return groupConsecutiveUpgradeRuns(
-      buildCheapestUpgradePath(progress.nodes),
+      buildScoreUpgradePath(
+        progress.nodes,
+        activeCharType,
+        bossConvertedStat,
+      ),
     );
-  }, [progress]);
+  }, [progress, activeCharType, bossConvertedStat]);
 
-  useEffect(() => {
-    if (!nextUp) {
-      setNextStopLevel(null);
-      return;
-    }
-    const min = nextUp.nextLevel;
-    const max = nextUp.node.target;
-    setNextStopLevel((prev) => {
-      if (prev == null || prev < min || prev > max) return min;
-      return prev;
-    });
-  }, [
-    nextUp?.node.id,
-    nextUp?.node.current,
-    nextUp?.node.target,
-    nextUp?.nextLevel,
-  ]);
-
-  const stopLevel =
-    nextUp && nextStopLevel != null
-      ? Math.max(
-          nextUp.nextLevel,
-          Math.min(nextUp.node.target, nextStopLevel),
-        )
-      : null;
-  const stopCost =
-    nextUp && stopLevel != null
-      ? costBetween(nextUp.node.skillType, nextUp.node.current, stopLevel)
-      : null;
+  const commitBossConvertedStat = (raw: string) => {
+    if (!activeState) return;
+    const parsed = Number(raw);
+    const snapped = snapBossConvertedStat(
+      activeCharType,
+      Number.isFinite(parsed) ? parsed : DEFAULT_BOSS_CONVERTED_STAT,
+    );
+    setBcsDraft(String(snapped));
+    if (snapped === activeState.bossConvertedStat) return;
+    persist({ ...activeState, bossConvertedStat: snapped });
+  };
 
   const groups = useMemo(() => {
     if (!progress) return [];
@@ -870,6 +882,35 @@ export default function HexaTrackerPage() {
           </section>
 
           <section className="rounded-xl border border-border/45 bg-surface/90 p-4">
+            <h2 className="text-sm font-semibold">Boss Converted Stat</h2>
+            <label className="mt-3 block space-y-1 text-xs font-semibold opacity-70">
+              HEXA / boss-converted score
+              <input
+                type="number"
+                min={0}
+                step={1}
+                inputMode="numeric"
+                value={bcsDraft}
+                placeholder={String(DEFAULT_BOSS_CONVERTED_STAT)}
+                onChange={(e) => setBcsDraft(e.target.value)}
+                onBlur={(e) => commitBossConvertedStat(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    commitBossConvertedStat(
+                      (e.target as HTMLInputElement).value,
+                    );
+                  }
+                }}
+                className={inputClass}
+              />
+            </label>
+            <p className="mt-2 text-[10px] opacity-55">
+              Base {DEFAULT_BOSS_CONVERTED_STAT.toLocaleString()}. Snaps to the
+              nearest class band; priority updates with this score.
+            </p>
+          </section>
+
+          <section className="rounded-xl border border-border/45 bg-surface/90 p-4">
             <div className="relative flex items-center justify-between gap-2 pr-8">
               <h2 className="flex items-center gap-1.5 text-sm font-semibold">
                 <svg
@@ -899,13 +940,16 @@ export default function HexaTrackerPage() {
             </div>
             {infoOpen ? (
               <p className="mt-2 rounded-lg bg-background/50 px-2.5 py-2 text-[11px] leading-relaxed opacity-70">
-                Priorities pick the cheapest next fragment cost among skills
-                still below their goal — not class FD order. Use{" "}
-                <span className="font-semibold">Stop at level</span> to raise a
-                skill several levels at once without listing every step.
+                Priorities follow MapleHub class FD leveling bands for your Boss
+                Converted Stat (base{" "}
+                {DEFAULT_BOSS_CONVERTED_STAT.toLocaleString()}
+                ). Rank is by highest path score (
+                <span className="font-semibold">1000 − order index</span>
+                ); fragment cost is the tiebreaker. Next applies one priority
+                step.
               </p>
             ) : null}
-            {nextUp && stopLevel != null && stopCost ? (
+            {nextUp && nextCost ? (
               <div className="mt-3 space-y-3">
                 <div className="flex items-start gap-3">
                   <div className="relative shrink-0">
@@ -932,44 +976,28 @@ export default function HexaTrackerPage() {
                           {nextUp.node.label}
                         </p>
                         <p className="text-xs opacity-60">
-                          Level {nextUp.node.current} → {stopLevel}
+                          Level {nextUp.node.current} → {nextUp.nextLevel}
                         </p>
                       </div>
-                      <label className="flex shrink-0 items-center gap-1.5 text-[10px] font-semibold opacity-70">
-                        Stop at
-                        <select
-                          value={stopLevel}
-                          onChange={(e) =>
-                            setNextStopLevel(
-                              Math.floor(Number(e.target.value) || 0),
-                            )
-                          }
-                          className={`${inputClass} h-7 py-0 text-xs`}
+                      {nextUp.score > 0 ? (
+                        <span
+                          className="shrink-0 rounded-md bg-accent-soft/50 px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-accent"
+                          title="MapleHub path priority score (1000 − order index)"
                         >
-                          {Array.from(
-                            {
-                              length: nextUp.node.target - nextUp.node.current,
-                            },
-                            (_, i) => nextUp.node.current + 1 + i,
-                          ).map((lv) => (
-                            <option key={lv} value={lv}>
-                              {lv}
-                              {lv === nextUp.node.target ? " (goal)" : ""}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
+                          +{nextUp.score}
+                        </span>
+                      ) : null}
                     </div>
                     <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 text-xs">
                       <ResourceCost
                         kind="fragment"
-                        amount={stopCost.fragments}
+                        amount={nextCost.fragments}
                         className="font-semibold text-accent"
                       />
-                      {stopCost.solErda > 0 ? (
+                      {nextCost.solErda > 0 ? (
                         <ResourceCost
                           kind="erda"
-                          amount={stopCost.solErda}
+                          amount={nextCost.solErda}
                           className="font-semibold"
                         />
                       ) : null}
@@ -1059,11 +1087,11 @@ export default function HexaTrackerPage() {
                   type="button"
                   onClick={() => {
                     if (nextUp.node.slotIndex != null) {
-                      setLevel(nextUp.node.slotIndex, stopLevel);
+                      setLevel(nextUp.node.slotIndex, nextUp.nextLevel);
                     } else {
                       persist({
                         ...activeState,
-                        hexaStatLevel: stopLevel,
+                        hexaStatLevel: nextUp.nextLevel,
                       });
                     }
                   }}
