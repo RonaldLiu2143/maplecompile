@@ -2,8 +2,12 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { BrandMark } from "@/components/BrandMark";
 import { CharacterSearchBar } from "@/components/dashboard/CharacterSearchBar";
-import { DashboardPrimaryHero } from "@/components/dashboard/DashboardCommandCenter";
+import {
+  DashboardPrimaryHero,
+  DashboardToolShortcuts,
+} from "@/components/dashboard/DashboardCommandCenter";
 import { DashboardDailiesSection } from "@/components/dashboard/DashboardDailiesSection";
 import { DashboardDiarySection } from "@/components/dashboard/DashboardDiarySection";
 import { DashboardOnboardingWizard } from "@/components/dashboard/DashboardOnboardingWizard";
@@ -48,20 +52,31 @@ function DashboardInner() {
   }, [manageFromUrl, router]);
 
   const primarySlot = primary ? slots[entryKey(primary)] : undefined;
+  const hasRoster = roster.length > 0;
 
   return (
-    <div className="mx-auto flex max-w-5xl flex-col gap-6 py-4">
-      <header className="max-w-2xl">
-        <p className="text-sm font-semibold uppercase tracking-wider text-accent opacity-80">
-          MapleCompile
-        </p>
-        <h1 className="font-display mt-1 text-3xl font-bold tracking-tight sm:text-4xl">
-          Dashboard
-        </h1>
-        <p className="mt-2 text-sm opacity-80">
-          Your command center — primary character, dailies, weekly bosses, and
-          quick jumps into Scouter, gear, and income tools.
-        </p>
+    <div className="mx-auto flex max-w-5xl flex-col gap-5 py-4">
+      <header className="flex flex-wrap items-end justify-between gap-3">
+        <div className="min-w-0">
+          <p className="flex items-center gap-1.5 text-sm font-semibold uppercase tracking-wider text-accent opacity-90">
+            <BrandMark size={16} />
+            MapleCompile
+          </p>
+          <h1 className="font-display mt-0.5 text-3xl font-bold tracking-tight sm:text-4xl">
+            Dashboard
+          </h1>
+          {!hasRoster ? (
+            <p className="mt-1.5 max-w-xl text-sm opacity-75">
+              Search a character, set a primary, then track dailies and weekly
+              bosses.
+            </p>
+          ) : null}
+        </div>
+        {hydrated && hasRoster ? (
+          <div className="hidden sm:block">
+            <DashboardToolShortcuts quiet />
+          </div>
+        ) : null}
       </header>
 
       {hydrated ? (
@@ -72,36 +87,45 @@ function DashboardInner() {
         />
       ) : null}
 
+      {/* Character-first: search + primary as first viewport center */}
       {hydrated ? (
-        <DashboardPrimaryHero
-          primary={primary}
-          slot={primarySlot}
-          onRetry={
-            primary
-              ? () => {
-                  const entry = roster.find(
-                    (e) => entryKey(e) === entryKey(primary),
-                  );
-                  if (entry) handleRetry(entry);
-                }
-              : undefined
-          }
-        />
+        <div id="character-search" className="space-y-3">
+          <CharacterSearchBar roster={roster} onAdded={handleRosterAdded} />
+          <DashboardPrimaryHero
+            primary={primary}
+            slot={primarySlot}
+            onRetry={
+              primary
+                ? () => {
+                    const entry = roster.find(
+                      (e) => entryKey(e) === entryKey(primary),
+                    );
+                    if (entry) handleRetry(entry);
+                  }
+                : undefined
+            }
+          />
+        </div>
       ) : (
-        <div className="rounded-2xl border border-border/50 bg-surface/80 px-4 py-8 text-center text-sm opacity-70">
+        <div className="rounded-xl border border-border/50 bg-surface/80 px-4 py-8 text-center text-sm opacity-70">
           Loading…
         </div>
       )}
 
-      {hydrated ? (
-        <div id="character-search">
-          <CharacterSearchBar roster={roster} onAdded={handleRosterAdded} />
+      {hydrated && hasRoster ? (
+        <div className="sm:hidden">
+          <DashboardToolShortcuts quiet />
         </div>
       ) : null}
 
       {hydrated ? (
-        <div className="grid gap-4 lg:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)] lg:items-stretch">
-          <div className="flex min-h-0 flex-col gap-4">
+        <div
+          className={[
+            "grid gap-3 lg:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)] lg:items-stretch",
+            hasRoster ? "gap-3" : "gap-4",
+          ].join(" ")}
+        >
+          <div className="flex min-h-0 flex-col gap-3">
             <DashboardRosterWeeklySection
               roster={roster}
               slots={slots}

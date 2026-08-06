@@ -611,7 +611,7 @@ export default function SetupClient() {
 
   return (
     <div className="space-y-8">
-      <header>
+      <header className="border-l-[3px] border-accent pl-3">
         <h1 className="font-display text-3xl font-bold tracking-tight">
           Equipment Setup & Set Effects
         </h1>
@@ -627,7 +627,7 @@ export default function SetupClient() {
       <PairingBar compact />
 
       <section className="space-y-2">
-        <h2 className="text-sm font-bold uppercase tracking-wide opacity-70">
+        <h2 className="border-l-2 border-accent pl-2 text-sm font-bold uppercase tracking-wide text-accent/90">
           1) Select your class
         </h2>
         <label className="block max-w-sm">
@@ -647,7 +647,7 @@ export default function SetupClient() {
       </section>
 
       <section className="space-y-3">
-        <h2 className="text-sm font-bold uppercase tracking-wide opacity-70">
+        <h2 className="border-l-2 border-accent pl-2 text-sm font-bold uppercase tracking-wide text-accent/90">
           2) Your gear
         </h2>
 

@@ -48,8 +48,9 @@ html[data-theme="light"],
 }
 
 :root {
-  --mc-dim: 0;
-  --mc-blur: 0px;
+  /* Match DEFAULT_THEME_PREFS (Deep Night) before boot script runs. */
+  --mc-dim: 0.52;
+  --mc-blur: 8px;
   --mc-wallpaper-image: none;
 }
 

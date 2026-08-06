@@ -317,7 +317,7 @@ export default function LiberationPage() {
 
   return (
     <div className="space-y-6">
-      <header>
+      <header className="border-l-[3px] border-accent pl-3">
         <h1 className="font-display text-3xl font-bold tracking-tight">
           Liberation Calculator
         </h1>
@@ -333,7 +333,7 @@ export default function LiberationPage() {
         {/* ── Left column ── */}
         <aside className="space-y-4">
           {/* Mode */}
-          <section className="flex flex-wrap items-center gap-2 rounded-xl border border-border/40 bg-surface/80 p-3">
+          <section className="flex flex-wrap items-center gap-2 rounded-xl border border-border/40 border-l-[3px] border-l-accent bg-surface/80 p-3">
             <button
               type="button"
               onClick={() => setMode("characters")}
@@ -580,7 +580,11 @@ export default function LiberationPage() {
         <div className="space-y-4">
           <section className="space-y-4 rounded-xl border border-border/40 bg-surface/80 p-4 sm:p-5">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="flex flex-wrap gap-1.5">
+              <div
+                role="tablist"
+                aria-label="Liberation type"
+                className="inline-flex rounded-lg border border-border/50 bg-surface-muted/40 p-0.5"
+              >
                 {(
                   [
                     ["genesis", "GENESIS"],
@@ -590,12 +594,14 @@ export default function LiberationPage() {
                   <button
                     key={id}
                     type="button"
+                    role="tab"
+                    aria-selected={type === id}
                     onClick={() => setType(id)}
                     className={[
-                      "rounded-lg px-4 py-2 text-xs font-bold tracking-wide transition-colors",
+                      "rounded-md px-4 py-2 text-xs font-bold tracking-wide transition-colors",
                       type === id
-                        ? "bg-accent text-white dark:text-zinc-900"
-                        : "border border-border/50 hover:bg-accent-soft hover:text-accent",
+                        ? "bg-accent text-white shadow-sm dark:text-zinc-900"
+                        : "text-muted hover:bg-accent-soft/50 hover:text-accent",
                     ].join(" ")}
                   >
                     {label}

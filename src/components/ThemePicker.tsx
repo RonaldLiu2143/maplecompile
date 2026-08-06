@@ -15,6 +15,7 @@ import {
   DEFAULT_THEME_PREFS,
   DIM_MAX,
   FONT_PRESETS,
+  THEME_ACCENT_PRESETS,
   THEME_ACCENT_SWATCHES,
   THEME_PRESETS,
   WALLPAPER_DEFAULT_BLUR,
@@ -338,27 +339,45 @@ export function ThemePicker({
             Accent
           </p>
           <div className="flex flex-wrap items-center gap-1.5">
-            {THEME_ACCENT_SWATCHES.map((hex) => {
+            {THEME_ACCENT_PRESETS.map(({ hex, name }) => {
               const selected = activeAccent.toLowerCase() === hex.toLowerCase();
               return (
                 <button
                   key={hex}
                   type="button"
-                  title={hex}
-                  aria-label={`Accent ${hex}`}
+                  title={`${name} (${hex})`}
+                  aria-label={`Accent ${name}`}
                   aria-pressed={selected}
                   onClick={() => setAccent(hex)}
                   className={[
-                    "size-6 rounded-md border-2 transition",
-                    selected
-                      ? "border-foreground scale-110"
-                      : "border-border/40 hover:border-border",
+                    "flex flex-col items-center gap-0.5 rounded-md p-0.5 transition",
+                    selected ? "scale-105" : "opacity-90 hover:opacity-100",
                   ].join(" ")}
-                  style={{ backgroundColor: hex }}
-                />
+                >
+                  <span
+                    className={[
+                      "size-6 rounded-md border-2",
+                      selected
+                        ? "border-foreground"
+                        : "border-border/40",
+                    ].join(" ")}
+                    style={{ backgroundColor: hex }}
+                  />
+                  <span
+                    className={[
+                      "text-[9px] font-semibold leading-none",
+                      selected ? "text-accent" : "text-muted-soft",
+                    ].join(" ")}
+                  >
+                    {name}
+                  </span>
+                </button>
               );
             })}
           </div>
+          <p className="mt-1 text-[10px] text-muted-soft">
+            Sky is Compile default · Maple is the warm orange option
+          </p>
           <div className="mt-2 flex items-center gap-1.5">
             <label
               className={[

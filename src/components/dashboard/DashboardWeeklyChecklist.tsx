@@ -147,10 +147,24 @@ export function DashboardRosterWeeklySection({
           : "warn";
 
   return (
-    <section className="flex min-h-0 flex-col rounded-lg border border-border/40 bg-surface/70 p-3 sm:p-3.5">
+    <section
+      className={[
+        "flex min-h-0 flex-col border border-border/40 bg-surface/80",
+        roster.length > 0
+          ? "rounded-lg p-2 sm:p-2.5"
+          : "rounded-lg p-3 sm:p-3.5",
+      ].join(" ")}
+    >
       <div className="flex shrink-0 flex-wrap items-center justify-between gap-2">
         <div className="min-w-0">
-          <h2 className="font-display text-base font-bold tracking-tight sm:text-lg">
+          <h2
+            className={[
+              "font-display font-bold tracking-tight",
+              roster.length > 0
+                ? "border-l-2 border-accent pl-2 text-sm sm:text-base"
+                : "text-base sm:text-lg",
+            ].join(" ")}
+          >
             Roster
             {roster.length > 0 ? (
               <span className="ml-1.5 text-xs font-semibold opacity-55">
@@ -191,7 +205,7 @@ export function DashboardRosterWeeklySection({
         </div>
       </div>
 
-      <div className="mt-2 min-h-0 flex-1">
+      <div className={roster.length > 0 ? "mt-1.5 min-h-0 flex-1" : "mt-2 min-h-0 flex-1"}>
         {roster.length === 0 ? (
           <p className="text-[0.7rem] opacity-70">
             No characters yet. Search a GMS character above, then tap Add to
@@ -212,7 +226,7 @@ export function DashboardRosterWeeklySection({
             .
           </p>
         ) : (
-          <div className="maple-scroll max-h-[14rem] rounded-md border border-border/30 bg-surface-muted/20 p-1 lg:max-h-[16rem]">
+          <div className="maple-scroll max-h-[15rem] rounded-md bg-surface-muted/15 p-0.5 lg:max-h-[18rem]">
             <RosterReorderList
               roster={roster}
               primary={primary}

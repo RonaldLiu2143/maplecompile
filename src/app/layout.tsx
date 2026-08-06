@@ -43,7 +43,7 @@ export default function RootLayout({
       className={`${ibmPlexSans.variable} ${sourceSerif.variable} ${jetbrainsMono.variable} dark h-full`}
       data-theme="compile"
       data-font="sans"
-      data-backdrop="none"
+      data-backdrop="deep-night"
       suppressHydrationWarning
     >
       <head>

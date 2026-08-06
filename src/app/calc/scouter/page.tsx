@@ -1273,7 +1273,7 @@ export default function ScouterPage() {
 
   return (
     <div className="space-y-5">
-      <header className="flex flex-wrap items-end justify-between gap-3">
+      <header className="flex flex-wrap items-end justify-between gap-3 border-l-[3px] border-accent pl-3">
         <div>
           <h1 className="font-display text-3xl font-bold tracking-tight">
             Scouter
@@ -1310,11 +1310,13 @@ export default function ScouterPage() {
 
       <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.95fr)]">
         {/* —— Left: Enter Directly —— */}
-        <section className="overflow-hidden rounded-lg border border-border/60 bg-surface/90">
+        <section className="overflow-hidden rounded-lg border border-border/60 border-t-2 border-t-accent bg-surface/90">
           <div className="flex flex-col gap-2.5 border-b border-border/40 px-3 py-2.5">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
               <div>
-                <h2 className="text-sm font-semibold">Character Stats</h2>
+                <h2 className="text-sm font-semibold text-accent">
+                  Character Stats
+                </h2>
                 <p className="mt-0.5 text-xs opacity-60">
                   Enter values from your character window. Save presets locally,
                   or share a link.

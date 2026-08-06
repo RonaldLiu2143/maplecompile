@@ -9,6 +9,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { BrandMark, BrandWordmark } from "@/components/BrandMark";
 import { ThemePicker } from "@/components/ThemePicker";
 import { WeeklyResetBar } from "@/components/WeeklyResetBar";
 import { useApplyThemeToDocument } from "@/hooks/useApplyThemeToDocument";
@@ -300,20 +301,21 @@ export function SiteShell({ children }: { children: ReactNode }) {
           {open ? (
             <Link
               href="/"
-              className="font-display text-xl font-bold tracking-tight text-accent"
+              className="min-w-0"
               onClick={() => {
                 if (isMobile) setOpen(false);
               }}
             >
-              MapleCompile
+              <BrandWordmark markSize={24} textClassName="text-xl" />
             </Link>
           ) : (
             <Link
               href="/"
               title="MapleCompile"
-              className="font-display text-lg font-bold text-accent"
+              className="flex items-center justify-center text-accent"
             >
-              M
+              <BrandMark size={22} />
+              <span className="sr-only">MapleCompile</span>
             </Link>
           )}
           <button
@@ -381,11 +383,8 @@ export function SiteShell({ children }: { children: ReactNode }) {
                 <MenuIcon open={false} />
                 <span className="sr-only">Open navigation</span>
               </button>
-              <Link
-                href="/"
-                className="font-display flex-1 text-xl font-bold tracking-tight text-accent"
-              >
-                MapleCompile
+              <Link href="/" className="min-w-0 flex-1">
+                <BrandWordmark markSize={22} textClassName="text-xl" />
               </Link>
               <div className="shrink-0">
                 <ThemePicker compact placement="below" />

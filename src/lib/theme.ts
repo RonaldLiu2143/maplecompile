@@ -149,7 +149,7 @@ export type ThemePrefs = {
   font?: FontId;
   /** Optional accent override (hex). Null/undefined = use preset default. */
   accent?: string | null;
-  /** Wallpaper preset. Default / omitted = none. */
+  /** Wallpaper preset. Default / omitted = Deep Night atmosphere. */
   backdrop?: BackdropId;
   /** Custom image URL when backdrop === "custom" (http/https only). */
   backdropUrl?: string | null;
@@ -161,7 +161,8 @@ export type ThemePrefs = {
 
 export const DEFAULT_THEME_ID: ThemeId = "compile";
 export const DEFAULT_FONT_ID: FontId = "sans";
-export const DEFAULT_BACKDROP_ID: BackdropId = "none";
+/** Subtle atmosphere for new / unset prefs — ThemePicker can still pick None. */
+export const DEFAULT_BACKDROP_ID: BackdropId = "deep-night";
 export const DEFAULT_DIM = 0;
 export const DEFAULT_BLUR = 0;
 /** Sensible readability when picking a wallpaper. */
@@ -170,20 +171,38 @@ export const WALLPAPER_DEFAULT_BLUR = 8;
 export const DIM_MAX = 85;
 export const BLUR_MAX = 24;
 
-/** Stable default for SSR / empty storage — useSyncExternalStore requires referential equality. */
-export const DEFAULT_THEME_PREFS: ThemePrefs = { id: DEFAULT_THEME_ID };
+function defaultDimForBackdrop(backdrop: BackdropId): number {
+  return backdrop === "none" ? DEFAULT_DIM : WALLPAPER_DEFAULT_DIM;
+}
 
-/** Preset accent picks — sky, cyan, amber, rose, emerald, lavender/grape. */
-const ACCENT_SWATCHES = [
-  "#38bdf8",
-  "#22d3ee",
-  "#f59e0b",
-  "#fb7185",
-  "#34d399",
-  "#a78bfa",
+function defaultBlurForBackdrop(backdrop: BackdropId): number {
+  return backdrop === "none" ? DEFAULT_BLUR : WALLPAPER_DEFAULT_BLUR;
+}
+
+/** Stable default for SSR / empty storage — useSyncExternalStore requires referential equality. */
+export const DEFAULT_THEME_PREFS: ThemePrefs = {
+  id: DEFAULT_THEME_ID,
+  backdrop: DEFAULT_BACKDROP_ID,
+  dim: WALLPAPER_DEFAULT_DIM,
+  blur: WALLPAPER_DEFAULT_BLUR,
+};
+
+/**
+ * Named accent picks — sky stays Compile default; Maple is the warm orange option.
+ * Hex list kept for ThemePicker swatches + parse checks.
+ */
+export const THEME_ACCENT_PRESETS = [
+  { hex: "#38bdf8", name: "Sky" },
+  { hex: "#22d3ee", name: "Cyan" },
+  { hex: "#ea580c", name: "Maple" },
+  { hex: "#f59e0b", name: "Amber" },
+  { hex: "#fb7185", name: "Rose" },
+  { hex: "#34d399", name: "Emerald" },
+  { hex: "#a78bfa", name: "Grape" },
 ] as const;
 
-export const THEME_ACCENT_SWATCHES: readonly string[] = ACCENT_SWATCHES;
+export const THEME_ACCENT_SWATCHES: readonly string[] =
+  THEME_ACCENT_PRESETS.map((p) => p.hex);
 
 /**
  * Normalize a user/custom accent to `#rrggbb` (lowercase), or null if invalid.
@@ -326,26 +345,33 @@ export function wallpaperImageCssValue(url: string): string {
 }
 
 function prefsEqual(a: ThemePrefs, b: ThemePrefs): boolean {
+  const aBack = a.backdrop ?? DEFAULT_BACKDROP_ID;
+  const bBack = b.backdrop ?? DEFAULT_BACKDROP_ID;
   return (
     a.id === b.id &&
     (a.font ?? DEFAULT_FONT_ID) === (b.font ?? DEFAULT_FONT_ID) &&
     (a.accent ?? null) === (b.accent ?? null) &&
-    (a.backdrop ?? DEFAULT_BACKDROP_ID) === (b.backdrop ?? DEFAULT_BACKDROP_ID) &&
+    aBack === bBack &&
     (a.backdropUrl ?? null) === (b.backdropUrl ?? null) &&
-    clampDim(a.dim ?? DEFAULT_DIM) === clampDim(b.dim ?? DEFAULT_DIM) &&
-    clampBlur(a.blur ?? DEFAULT_BLUR) === clampBlur(b.blur ?? DEFAULT_BLUR)
+    clampDim(a.dim ?? defaultDimForBackdrop(aBack)) ===
+      clampDim(b.dim ?? defaultDimForBackdrop(bBack)) &&
+    clampBlur(a.blur ?? defaultBlurForBackdrop(aBack)) ===
+      clampBlur(b.blur ?? defaultBlurForBackdrop(bBack))
   );
 }
 
 function isDefaultPrefs(prefs: ThemePrefs): boolean {
+  const backdrop = prefs.backdrop ?? DEFAULT_BACKDROP_ID;
   return (
     prefs.id === DEFAULT_THEME_ID &&
     (prefs.font ?? DEFAULT_FONT_ID) === DEFAULT_FONT_ID &&
     (prefs.accent ?? null) == null &&
-    (prefs.backdrop ?? DEFAULT_BACKDROP_ID) === DEFAULT_BACKDROP_ID &&
+    backdrop === DEFAULT_BACKDROP_ID &&
     (prefs.backdropUrl ?? null) == null &&
-    clampDim(prefs.dim ?? DEFAULT_DIM) === DEFAULT_DIM &&
-    clampBlur(prefs.blur ?? DEFAULT_BLUR) === DEFAULT_BLUR
+    clampDim(prefs.dim ?? defaultDimForBackdrop(backdrop)) ===
+      WALLPAPER_DEFAULT_DIM &&
+    clampBlur(prefs.blur ?? defaultBlurForBackdrop(backdrop)) ===
+      WALLPAPER_DEFAULT_BLUR
   );
 }
 
@@ -369,8 +395,8 @@ function canonicalize(prefs: ThemePrefs): ThemePrefs {
     accent,
     backdrop,
     backdropUrl,
-    dim: clampDim(prefs.dim ?? DEFAULT_DIM),
-    blur: clampBlur(prefs.blur ?? DEFAULT_BLUR),
+    dim: clampDim(prefs.dim ?? defaultDimForBackdrop(backdrop)),
+    blur: clampBlur(prefs.blur ?? defaultBlurForBackdrop(backdrop)),
   };
   if (isDefaultPrefs(next)) return DEFAULT_THEME_PREFS;
   return next;
@@ -393,11 +419,16 @@ export function normalizeThemePrefs(raw: unknown): ThemePrefs {
   if (backdrop === "custom" && !backdropUrl) {
     backdrop = DEFAULT_BACKDROP_ID;
   }
+  // Explicit backdrop:none keeps flat canvas; missing dim/blur follow backdrop.
   const dim = clampDim(
-    typeof obj.dim === "number" ? obj.dim : DEFAULT_DIM,
+    typeof obj.dim === "number"
+      ? obj.dim
+      : defaultDimForBackdrop(backdrop),
   );
   const blur = clampBlur(
-    typeof obj.blur === "number" ? obj.blur : DEFAULT_BLUR,
+    typeof obj.blur === "number"
+      ? obj.blur
+      : defaultBlurForBackdrop(backdrop),
   );
   return canonicalize({
     id,
@@ -422,8 +453,12 @@ function serializePrefs(prefs: ThemePrefs): string {
     accent: c.accent ?? null,
     backdrop: c.backdrop ?? DEFAULT_BACKDROP_ID,
     backdropUrl: c.backdropUrl ?? null,
-    dim: clampDim(c.dim ?? DEFAULT_DIM),
-    blur: clampBlur(c.blur ?? DEFAULT_BLUR),
+    dim: clampDim(
+      c.dim ?? defaultDimForBackdrop(c.backdrop ?? DEFAULT_BACKDROP_ID),
+    ),
+    blur: clampBlur(
+      c.blur ?? defaultBlurForBackdrop(c.backdrop ?? DEFAULT_BACKDROP_ID),
+    ),
   });
 }
 
@@ -525,8 +560,8 @@ export function applyThemeToDocument(prefs: ThemePrefs): void {
   const root = document.documentElement;
   const font = prefs.font ?? DEFAULT_FONT_ID;
   const backdrop = prefs.backdrop ?? DEFAULT_BACKDROP_ID;
-  const dim = clampDim(prefs.dim ?? DEFAULT_DIM);
-  const blur = clampBlur(prefs.blur ?? DEFAULT_BLUR);
+  const dim = clampDim(prefs.dim ?? defaultDimForBackdrop(backdrop));
+  const blur = clampBlur(prefs.blur ?? defaultBlurForBackdrop(backdrop));
   const url =
     backdrop === "custom" ? sanitizeBackdropUrl(prefs.backdropUrl) : null;
   const activeBackdrop: BackdropId =
@@ -576,5 +611,9 @@ export function themeBootScript(): string {
   // Legacy maple/mist/night-grape ids fall through to compile (not in `ids`).
   // Missing / legacy font → sans (Plex). Backdrop / dim / blur before React.
   // URL sanitize mirrors sanitizeBackdropUrl (quotes / missing scheme).
-  return `(function(){try{var k=${JSON.stringify(THEME_STORAGE_KEY)};var ids=${JSON.stringify([...THEME_IDS])};var fonts=${JSON.stringify([...FONT_IDS])};var backs=${JSON.stringify([...BACKDROP_IDS])};var schemes={compile:"dark",contrast:"dark",light:"light"};var raw=localStorage.getItem(k);var prefs=raw?JSON.parse(raw):{};var id=ids.indexOf(prefs.id)>=0?prefs.id:"compile";var font=fonts.indexOf(prefs.font)>=0?prefs.font:"sans";var accent=typeof prefs.accent==="string"&&/^#[0-9a-fA-F]{6}$/.test(prefs.accent)?prefs.accent:null;var backdrop=backs.indexOf(prefs.backdrop)>=0?prefs.backdrop:"none";var url=null;if(typeof prefs.backdropUrl==="string"){var t=prefs.backdropUrl.trim();if((t.charAt(0)==='"'&&t.charAt(t.length-1)==='"')||(t.charAt(0)==="'"&&t.charAt(t.length-1)==="'")||(t.charAt(0)==="<"&&t.charAt(t.length-1)===">"))t=t.slice(1,-1).trim();if(t.indexOf("//")===0)t="https:"+t;else if(!/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(t))t="https://"+t;if(t&&t.length<=2048){try{var u=new URL(t);if((u.protocol==="http:"||u.protocol==="https:")&&u.hostname)url=u.href}catch(e){}}}if(backdrop==="custom"&&!url)backdrop="none";var dim=typeof prefs.dim==="number"&&isFinite(prefs.dim)?Math.max(0,Math.min(${DIM_MAX},Math.round(prefs.dim))):0;var blur=typeof prefs.blur==="number"&&isFinite(prefs.blur)?Math.max(0,Math.min(${BLUR_MAX},Math.round(prefs.blur))):0;var scheme=schemes[id]||"dark";var r=document.documentElement;r.setAttribute("data-theme",id);r.setAttribute("data-font",font);r.setAttribute("data-backdrop",backdrop);r.style.colorScheme=scheme;if(scheme==="dark")r.classList.add("dark");else r.classList.remove("dark");if(accent){r.style.setProperty("--accent",accent);var hr=parseInt(accent.slice(1,3),16),hg=parseInt(accent.slice(3,5),16),hb=parseInt(accent.slice(5,7),16);var soft=scheme==="dark"?"rgb("+Math.round(hr*0.22)+" "+Math.round(hg*0.22)+" "+Math.round(hb*0.28)+")":"rgb("+Math.min(255,Math.round(hr+(255-hr)*0.72))+" "+Math.min(255,Math.round(hg+(255-hg)*0.72))+" "+Math.min(255,Math.round(hb+(255-hb)*0.65))+")";r.style.setProperty("--accent-soft",soft)}if(backdrop==="none"){r.style.setProperty("--mc-dim","0");r.style.setProperty("--mc-blur","0px");r.style.removeProperty("--mc-wallpaper-image")}else{r.style.setProperty("--mc-dim",String(dim/100));r.style.setProperty("--mc-blur",blur+"px");if(backdrop==="custom"&&url)r.style.setProperty("--mc-wallpaper-image","url("+JSON.stringify(url)+")");else r.style.removeProperty("--mc-wallpaper-image")}}catch(e){var d=document.documentElement;d.setAttribute("data-theme","compile");d.setAttribute("data-font","sans");d.setAttribute("data-backdrop","none");d.classList.add("dark");d.style.colorScheme="dark"}})();`;
+  // Unset backdrop → Deep Night (+ wallpaper dim/blur); explicit "none" stays flat.
+  const defBack = DEFAULT_BACKDROP_ID;
+  const wDim = WALLPAPER_DEFAULT_DIM;
+  const wBlur = WALLPAPER_DEFAULT_BLUR;
+  return `(function(){try{var k=${JSON.stringify(THEME_STORAGE_KEY)};var ids=${JSON.stringify([...THEME_IDS])};var fonts=${JSON.stringify([...FONT_IDS])};var backs=${JSON.stringify([...BACKDROP_IDS])};var schemes={compile:"dark",contrast:"dark",light:"light"};var raw=localStorage.getItem(k);var prefs=raw?JSON.parse(raw):{};var id=ids.indexOf(prefs.id)>=0?prefs.id:"compile";var font=fonts.indexOf(prefs.font)>=0?prefs.font:"sans";var accent=typeof prefs.accent==="string"&&/^#[0-9a-fA-F]{6}$/.test(prefs.accent)?prefs.accent:null;var backdrop=backs.indexOf(prefs.backdrop)>=0?prefs.backdrop:${JSON.stringify(defBack)};var url=null;if(typeof prefs.backdropUrl==="string"){var t=prefs.backdropUrl.trim();if((t.charAt(0)==='"'&&t.charAt(t.length-1)==='"')||(t.charAt(0)==="'"&&t.charAt(t.length-1)==="'")||(t.charAt(0)==="<"&&t.charAt(t.length-1)===">"))t=t.slice(1,-1).trim();if(t.indexOf("//")===0)t="https:"+t;else if(!/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(t))t="https://"+t;if(t&&t.length<=2048){try{var u=new URL(t);if((u.protocol==="http:"||u.protocol==="https:")&&u.hostname)url=u.href}catch(e){}}}if(backdrop==="custom"&&!url)backdrop=${JSON.stringify(defBack)};var dimDef=backdrop==="none"?0:${wDim};var blurDef=backdrop==="none"?0:${wBlur};var dim=typeof prefs.dim==="number"&&isFinite(prefs.dim)?Math.max(0,Math.min(${DIM_MAX},Math.round(prefs.dim))):dimDef;var blur=typeof prefs.blur==="number"&&isFinite(prefs.blur)?Math.max(0,Math.min(${BLUR_MAX},Math.round(prefs.blur))):blurDef;var scheme=schemes[id]||"dark";var r=document.documentElement;r.setAttribute("data-theme",id);r.setAttribute("data-font",font);r.setAttribute("data-backdrop",backdrop);r.style.colorScheme=scheme;if(scheme==="dark")r.classList.add("dark");else r.classList.remove("dark");if(accent){r.style.setProperty("--accent",accent);var hr=parseInt(accent.slice(1,3),16),hg=parseInt(accent.slice(3,5),16),hb=parseInt(accent.slice(5,7),16);var soft=scheme==="dark"?"rgb("+Math.round(hr*0.22)+" "+Math.round(hg*0.22)+" "+Math.round(hb*0.28)+")":"rgb("+Math.min(255,Math.round(hr+(255-hr)*0.72))+" "+Math.min(255,Math.round(hg+(255-hg)*0.72))+" "+Math.min(255,Math.round(hb+(255-hb)*0.65))+")";r.style.setProperty("--accent-soft",soft)}if(backdrop==="none"){r.style.setProperty("--mc-dim","0");r.style.setProperty("--mc-blur","0px");r.style.removeProperty("--mc-wallpaper-image")}else{r.style.setProperty("--mc-dim",String(dim/100));r.style.setProperty("--mc-blur",blur+"px");if(backdrop==="custom"&&url)r.style.setProperty("--mc-wallpaper-image","url("+JSON.stringify(url)+")");else r.style.removeProperty("--mc-wallpaper-image")}}catch(e){var d=document.documentElement;d.setAttribute("data-theme","compile");d.setAttribute("data-font","sans");d.setAttribute("data-backdrop",${JSON.stringify(defBack)});d.classList.add("dark");d.style.colorScheme="dark";d.style.setProperty("--mc-dim",String(${wDim}/100));d.style.setProperty("--mc-blur","${wBlur}px")}})();`;
 }

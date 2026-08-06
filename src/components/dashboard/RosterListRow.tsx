@@ -436,7 +436,7 @@ export function RosterListRow({
       className={[
         "flex items-center rounded-xl border border-border/50 bg-surface transition",
         compact
-          ? "gap-2 rounded-lg px-2.5 py-2 sm:gap-2.5 sm:px-3"
+          ? "gap-1.5 rounded-md px-2 py-1.5 sm:gap-2 sm:px-2.5"
           : "gap-3 px-3 py-2.5 sm:gap-4 sm:px-4",
         canDrag ? "cursor-grab active:cursor-grabbing" : "",
         drag?.isDragging ? "opacity-40 scale-[0.98]" : "",
