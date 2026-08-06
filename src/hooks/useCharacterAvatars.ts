@@ -55,17 +55,10 @@ export function useCharacterAvatars(
     [requestKey],
   );
 
-  const [avatars, setAvatars] = useState<Record<string, string | null>>(() => {
-    const initial: Record<string, string | null> = {};
-    for (const ref of uniqueRefs) {
-      const cached = readSessionCharacter(ref.name, ref.region);
-      if (cached) {
-        initial[characterAvatarKey(ref.region, ref.name)] =
-          cached.characterImgURL || null;
-      }
-    }
-    return initial;
-  });
+  // Always start empty so SSR HTML matches the client's first paint.
+  // Seeding from sessionStorage in useState() causes Recoverable hydration
+  // errors (server has no session → no <img>; client cache → <img>).
+  const [avatars, setAvatars] = useState<Record<string, string | null>>({});
 
   useEffect(() => {
     let cancelled = false;

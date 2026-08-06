@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { CharacterSprite } from "@/components/character/CharacterSprite";
 import {
   characterAvatarKey,
@@ -14,9 +14,14 @@ import {
 } from "@/lib/scouter/share";
 import { storage } from "@/lib/storage";
 
-function formatSharedAt(ts: number): string {
+/** Relative time; pass a client `now` so SSR stays stable. */
+function formatSharedAt(ts: number, now: number | null): string {
   if (!ts) return "—";
-  const diff = Date.now() - ts;
+  if (now == null) {
+    // Stable SSR / first paint — avoid Date.now() / locale mismatches.
+    return new Date(ts).toISOString().slice(0, 10);
+  }
+  const diff = now - ts;
   const mins = Math.floor(diff / 60_000);
   if (mins < 1) return "just now";
   if (mins < 60) return `${mins}m ago`;
@@ -101,9 +106,18 @@ export function GalleryClient({
   const [query, setQuery] = useState("");
   const [mode, setMode] = useState<GalleryMode>("recent");
   const [items, setItems] = useState(initialItems);
-  const [owned, setOwned] = useState(() => storage.getScouterShareTokens());
+  // Defer localStorage until after mount — sync init mismatches SSR.
+  const [owned, setOwned] = useState<
+    Record<string, { deleteToken: string; name: string; public: boolean }>
+  >({});
+  const [now, setNow] = useState<number | null>(null);
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setOwned(storage.getScouterShareTokens());
+    setNow(Date.now());
+  }, []);
 
   const avatarRefs = useMemo(
     () =>
@@ -389,7 +403,7 @@ export function GalleryClient({
                       )}
                     </td>
                     <td className="px-3 py-2.5 text-xs opacity-70">
-                      {formatSharedAt(item.createdAt)}
+                      {formatSharedAt(item.createdAt, now)}
                     </td>
                     <td className="px-3 py-2.5 text-right">
                       <div className="inline-flex flex-wrap items-center justify-end gap-1.5">
