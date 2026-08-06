@@ -28,6 +28,8 @@ export type RosterStatusSnapshot = {
     hasData: boolean;
     pct: number;
     tab: "genesis" | "destiny";
+    genesisLiberated: boolean;
+    destinyLiberated: boolean;
   };
   gear: {
     equipCount: number;
@@ -45,12 +47,25 @@ function liberationPct(bundle: CharacterLiberationBundle): {
 } {
   const tab = bundle.currentTab;
   const inputs = bundle[tab];
+  if (inputs.liberated) return { pct: 100, tab };
   const target = Math.max(1, inputs.targetTraces || 1);
   const pct = Math.min(
     100,
     Math.round((Math.max(0, inputs.currentTraces) / target) * 100),
   );
   return { pct, tab };
+}
+
+/** Per-character Genesis / Destiny liberated flags from liberation.v2. */
+export function readLiberationFlags(key: string): {
+  genesis: boolean;
+  destiny: boolean;
+} {
+  const bundle = readLiberationStore().characterData[key];
+  return {
+    genesis: !!bundle?.genesis.liberated,
+    destiny: !!bundle?.destiny.liberated,
+  };
 }
 
 export function readRosterStatus(key: string): RosterStatusSnapshot {
@@ -67,16 +82,28 @@ export function readRosterStatus(key: string): RosterStatusSnapshot {
     hasData: false,
     pct: 0,
     tab: "genesis",
+    genesisLiberated: false,
+    destinyLiberated: false,
   };
   if (bundle) {
     const { pct, tab } = liberationPct(bundle);
+    const genesisLiberated = !!bundle.genesis.liberated;
+    const destinyLiberated = !!bundle.destiny.liberated;
     const touched =
       libStore.selectedCharacterIds.includes(key) ||
+      genesisLiberated ||
+      destinyLiberated ||
       bundle.genesis.currentTraces > 0 ||
       bundle.destiny.currentTraces > 0 ||
       bundle.genesis.completionRate > 0 ||
       bundle.destiny.completionRate > 0;
-    liberation = { hasData: touched, pct, tab };
+    liberation = {
+      hasData: touched,
+      pct,
+      tab,
+      genesisLiberated,
+      destinyLiberated,
+    };
   }
 
   const ws = getWorkspace(key);

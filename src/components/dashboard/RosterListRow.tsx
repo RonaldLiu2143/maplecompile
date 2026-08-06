@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { RosterDragProps } from "@/components/dashboard/RosterCharacterCard";
+import { LiberationStatusTags } from "@/components/dashboard/LiberationStatusTags";
 import {
   isStickyActiveSwitchBlocked,
   switchActiveCharacter,
@@ -244,13 +245,17 @@ function RosterStatusChips({
         ? "accent"
         : "warn"
     : "neutral";
-  const libTone = status.liberation.hasData
-    ? status.liberation.pct >= 100
-      ? "good"
-      : status.liberation.pct > 0
-        ? "accent"
-        : "warn"
-    : "neutral";
+  const anyLiberated =
+    status.liberation.genesisLiberated || status.liberation.destinyLiberated;
+  const libTone = anyLiberated
+    ? "good"
+    : status.liberation.hasData
+      ? status.liberation.pct >= 100
+        ? "good"
+        : status.liberation.pct > 0
+          ? "accent"
+          : "warn"
+      : "neutral";
   const gearTone =
     status.gear.equipCount > 0
       ? status.gear.paired
@@ -262,6 +267,27 @@ function RosterStatusChips({
       ? "good"
       : "accent"
     : "neutral";
+
+  const libLabel = anyLiberated
+    ? [
+        status.liberation.genesisLiberated ? "G" : null,
+        status.liberation.destinyLiberated ? "D" : null,
+      ]
+        .filter(Boolean)
+        .join("+")
+    : status.liberation.hasData
+      ? `Lib ${status.liberation.pct}%`
+      : "Lib";
+  const libTitle = anyLiberated
+    ? [
+        status.liberation.genesisLiberated ? "Genesis liberated" : null,
+        status.liberation.destinyLiberated ? "Destiny liberated" : null,
+      ]
+        .filter(Boolean)
+        .join(" · ")
+    : status.liberation.hasData
+      ? `Liberation ${status.liberation.tab} ${status.liberation.pct}%`
+      : "No liberation data — open calculator";
 
   return (
     <>
@@ -280,16 +306,8 @@ function RosterStatusChips({
       />
       <StatusLinkChip
         href="/calc/liberation"
-        label={
-          status.liberation.hasData
-            ? `Lib ${status.liberation.pct}%`
-            : "Lib"
-        }
-        title={
-          status.liberation.hasData
-            ? `Liberation ${status.liberation.tab} ${status.liberation.pct}%`
-            : "No liberation data — open calculator"
-        }
+        label={libLabel}
+        title={libTitle}
         tone={libTone}
         compact={compact}
         priority="sm"
@@ -469,6 +487,13 @@ export function RosterListRow({
             >
               <StarIcon size={iconSize} />
             </button>
+          ) : null}
+          {status ? (
+            <LiberationStatusTags
+              genesis={status.liberation.genesisLiberated}
+              destiny={status.liberation.destinyLiberated}
+              compact
+            />
           ) : null}
         </div>
         <p

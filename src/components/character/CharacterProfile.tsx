@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { ExpRangeGraph } from "@/components/character/ExpRangeGraph";
+import { LiberationStatusTags } from "@/components/dashboard/LiberationStatusTags";
 import { characterProfileHref } from "@/lib/character/client";
 import {
   daysToLevel,
@@ -12,6 +13,9 @@ import {
 } from "@/lib/character/exp";
 import { formatOptionalInt, formatRank } from "@/lib/character/format";
 import type { CharacterLookupResult } from "@/lib/character/lookup";
+import { entryKey } from "@/lib/dashboard/roster";
+import { readLiberationFlags } from "@/lib/dashboard/roster-status";
+import { subscribeMapleDataReload } from "@/lib/maple-events";
 
 function Chip({ children }: { children: ReactNode }) {
   return (
@@ -292,6 +296,19 @@ function CompactCharacterProfile({
 
   const avatarPx = dense ? 64 : 88;
 
+  const [liberation, setLiberation] = useState<{
+    genesis: boolean;
+    destiny: boolean;
+  }>({ genesis: false, destiny: false });
+
+  useEffect(() => {
+    if (!dense) return;
+    const key = entryKey(character);
+    const reload = () => setLiberation(readLiberationFlags(key));
+    reload();
+    return subscribeMapleDataReload(reload);
+  }, [dense, character.name, character.region]);
+
   return (
     <article
       className={
@@ -346,6 +363,13 @@ function CompactCharacterProfile({
                   <span className="rounded-md border border-border px-1.5 py-0.5 text-[0.65rem] font-semibold opacity-70">
                     World main
                   </span>
+                ) : null}
+                {dense ? (
+                  <LiberationStatusTags
+                    genesis={liberation.genesis}
+                    destiny={liberation.destiny}
+                    compact
+                  />
                 ) : null}
               </div>
               <p

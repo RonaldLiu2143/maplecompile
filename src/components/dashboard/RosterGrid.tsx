@@ -13,6 +13,7 @@ import {
   type RosterEntry,
   type RosterPrimary,
 } from "@/lib/dashboard/roster";
+import { readLiberationFlags } from "@/lib/dashboard/roster-status";
 import {
   readBossIncomeStore,
   summarizeIncome,
@@ -20,6 +21,7 @@ import {
   worldTypeFromCharacter,
 } from "@/lib/bosses";
 import type { RosterSlotState } from "@/hooks/useRoster";
+import { subscribeMapleDataReload } from "@/lib/maple-events";
 
 function bossBadgeForKey(
   key: string,
@@ -76,16 +78,27 @@ export function RosterGrid({
   onRetry: (entry: RosterEntry) => void;
 }) {
   const [badges, setBadges] = useState<Record<string, string | null>>({});
+  const [liberationByKey, setLiberationByKey] = useState<
+    Record<string, { genesis: boolean; destiny: boolean }>
+  >({});
 
   useEffect(() => {
-    const next: Record<string, string | null> = {};
-    for (const entry of roster) {
-      const key = entryKey(entry);
-      const slot = slots[key];
-      const character = slot?.status === "ready" ? slot.character : null;
-      next[key] = bossBadgeForKey(key, character);
-    }
-    setBadges(next);
+    const reload = () => {
+      const nextBadges: Record<string, string | null> = {};
+      const nextLib: Record<string, { genesis: boolean; destiny: boolean }> =
+        {};
+      for (const entry of roster) {
+        const key = entryKey(entry);
+        const slot = slots[key];
+        const character = slot?.status === "ready" ? slot.character : null;
+        nextBadges[key] = bossBadgeForKey(key, character);
+        nextLib[key] = readLiberationFlags(key);
+      }
+      setBadges(nextBadges);
+      setLiberationByKey(nextLib);
+    };
+    reload();
+    return subscribeMapleDataReload(reload);
   }, [roster, slots]);
 
   if (roster.length === 0) {
@@ -135,6 +148,7 @@ export function RosterGrid({
             managing={managing}
             selected={selectedKey === key}
             badge={badges[key]}
+            liberation={liberationByKey[key] ?? null}
             onRemove={() => onRemove(entry)}
             onSetPrimary={() => onSetPrimary(entry)}
             onSelect={onSelect ? () => onSelect(entry) : undefined}

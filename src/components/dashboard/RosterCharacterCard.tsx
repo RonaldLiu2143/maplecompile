@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRef, type DragEvent, type MouseEvent } from "react";
+import { LiberationStatusTags } from "@/components/dashboard/LiberationStatusTags";
 import {
   isStickyActiveSwitchBlocked,
   UNLOCK_TO_CHANGE_ACTIVE_MSG,
@@ -106,6 +107,7 @@ export function RosterCharacterCard({
   managing,
   selected,
   badge,
+  liberation,
   onRemove,
   onSetPrimary,
   onSelect,
@@ -118,6 +120,8 @@ export function RosterCharacterCard({
   selected?: boolean;
   /** Optional status pill (e.g. boss clears `0/14`). */
   badge?: string | null;
+  /** Genesis / Destiny liberated flags from maplecompile.liberation.v2 */
+  liberation?: { genesis: boolean; destiny: boolean } | null;
   onRemove?: () => void;
   onSetPrimary?: () => void;
   /** When set, card click selects instead of navigating to the profile page. */
@@ -229,9 +233,18 @@ export function RosterCharacterCard({
         </div>
 
         <div className="min-w-0 flex-1 self-center">
-          <p className="truncate text-base font-bold tracking-tight text-accent">
-            {character.name}
-          </p>
+          <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+            <p className="truncate text-base font-bold tracking-tight text-accent">
+              {character.name}
+            </p>
+            {liberation ? (
+              <LiberationStatusTags
+                genesis={liberation.genesis}
+                destiny={liberation.destiny}
+                compact
+              />
+            ) : null}
+          </div>
           <p className="mt-0.5 text-sm tabular-nums opacity-85">
             Lv. {character.level}
             {expPct ? (

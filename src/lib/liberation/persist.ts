@@ -1,3 +1,4 @@
+import { notifyMapleDataChanged } from "@/lib/maple-events";
 import {
   clampTracesHeld,
   defaultLiberationQuest,
@@ -308,6 +309,8 @@ export function writeLiberationStore(store: LiberationStore): void {
       LIBERATION_STORAGE_KEY,
       JSON.stringify(compactStoreForStorage(store)),
     );
+    // Same-tab dashboard / roster listeners (storage events are cross-tab only).
+    notifyMapleDataChanged("other");
   } catch {
     /* ignore quota */
   }
