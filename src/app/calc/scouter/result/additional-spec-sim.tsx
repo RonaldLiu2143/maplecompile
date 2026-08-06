@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { resolveMainSecondary } from "@/lib/scouter/calc";
 import {
   BUFF_DEFS,
@@ -19,6 +19,10 @@ import {
   type OzContinuousStatus,
   type OzRingField,
 } from "@/lib/scouter";
+import {
+  splineDamage,
+  type Spline,
+} from "@/lib/scouter/boss-cuts";
 import { storage } from "@/lib/storage";
 import type { MapleScouterCalculatedData } from "@/lib/scouter/to-user-stat";
 import type { ScouterInput, StatKey } from "@/lib/scouter/types";
@@ -202,6 +206,44 @@ function formatFdPercent(n: number): string {
   })}%`;
 }
 
+/** MapleScouter FD%: splineDamage(simSpline, simStat) / splineDamage(simSpline, baseStat) − 1. */
+function fdFromSpline(
+  baseStat: number,
+  simStat: number,
+  spline: Spline | null | undefined,
+  fallbackBaseDmg: number,
+  fallbackSimDmg: number,
+): number {
+  if (
+    spline &&
+    Array.isArray(spline.x) &&
+    spline.x.length > 0 &&
+    Number.isFinite(baseStat) &&
+    Number.isFinite(simStat)
+  ) {
+    const baseDmg = splineDamage(spline, baseStat);
+    const simDmg = splineDamage(spline, simStat);
+    if (baseDmg > 0) return (simDmg / baseDmg - 1) * 100;
+  }
+  if (fallbackBaseDmg > 0) {
+    return (fallbackSimDmg / fallbackBaseDmg - 1) * 100;
+  }
+  return 0;
+}
+
+function preferStat(hexa: number, normal: number): number {
+  // MapleScouter uses non-hexa when hexaStat === -3 (sentinel).
+  if (hexa === -3) return normal;
+  return hexa || normal;
+}
+
+export type SpecSimOverlay = {
+  data: MapleScouterCalculatedData;
+  level: number;
+  arcaneForce: number;
+  authenticForce: number;
+};
+
 function CdnIcon({
   src,
   alt,
@@ -327,11 +369,20 @@ type Props = {
   baseline: MapleScouterCalculatedData;
   /** Match Result page 20/30 toggle (MapleScouter special.is30min). Default 20/KMS. */
   is30min?: boolean;
+  /**
+   * MapleScouter: applied simulatorData drives BCS + Boss Clear when Show is on.
+   * `active` is true only when Show simulation is checked and a result exists.
+   */
+  onSimulationChange?: (
+    overlay: SpecSimOverlay | null,
+    active: boolean,
+  ) => void;
 };
 
 export function AdditionalSpecSimulation({
   baseline,
   is30min = false,
+  onSimulationChange,
 }: Props) {
   const draftMeta = useMemo(() => loadDraftMeta(), []);
   const hexaSlots = useMemo(
@@ -351,6 +402,41 @@ export function AdditionalSpecSimulation({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<MapleScouterCalculatedData | null>(null);
+
+  const notifyParent = (
+    nextResult: MapleScouterCalculatedData | null,
+    enabled: boolean,
+    inputForMeta?: ScouterInput,
+  ) => {
+    if (!onSimulationChange) return;
+    if (!nextResult || !enabled) {
+      onSimulationChange(null, false);
+      return;
+    }
+    const src =
+      inputForMeta ??
+      ({
+        ...applySpecSimToInput(draftMeta.input, sim),
+        ...simOz,
+      } as ScouterInput);
+    onSimulationChange(
+      {
+        data: nextResult,
+        level: src.level,
+        arcaneForce: src.arcaneForce,
+        authenticForce: src.sacredForce,
+      },
+      true,
+    );
+  };
+
+  useEffect(() => {
+    return () => {
+      onSimulationChange?.(null, false);
+    };
+    // Only clear parent overlay on unmount / remount (20↔30 toggle).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const setField = (key: keyof SpecSimFields, value: string) => {
     setSim((prev) => ({ ...prev, [key]: value }));
@@ -414,8 +500,6 @@ export function AdditionalSpecSimulation({
     const dmg380Base = Number(base.calculatedHexaDamage_380 ?? 0);
     const dmg300 = Number(cur.calculatedHexaDamage_300 ?? 0);
     const dmg380 = Number(cur.calculatedHexaDamage_380 ?? 0);
-    const fd300 = dmg300Base > 0 ? (dmg300 / dmg300Base - 1) * 100 : 0;
-    const fd380 = dmg380Base > 0 ? (dmg380 / dmg380Base - 1) * 100 : 0;
 
     const item300 = Number(cur.boss300_stat ?? 0);
     const hexa300 = Number(cur.boss300_hexaStat ?? 0);
@@ -425,6 +509,30 @@ export function AdditionalSpecSimulation({
     const hexa300Base = Number(base.boss300_hexaStat ?? 0);
     const item380Base = Number(base.boss380_stat ?? 0);
     const hexa380Base = Number(base.boss380_hexaStat ?? 0);
+
+    const base300 = preferStat(hexa300Base, item300Base);
+    const sim300 = preferStat(hexa300, item300);
+    const base380 = preferStat(hexa380Base, item380Base);
+    const sim380 = preferStat(hexa380, item380);
+
+    const fd300 = applied
+      ? fdFromSpline(
+          base300,
+          sim300,
+          cur.spline_300 ?? base.spline_300,
+          dmg300Base,
+          dmg300,
+        )
+      : 0;
+    const fd380 = applied
+      ? fdFromSpline(
+          base380,
+          sim380,
+          cur.spline_380 ?? base.spline_380,
+          dmg380Base,
+          dmg380,
+        )
+      : 0;
 
     return {
       fd300,
@@ -457,6 +565,12 @@ export function AdditionalSpecSimulation({
         ...applySpecSimToInput(draftMeta.input, sim),
         ...simOz,
       };
+      // MapleScouter caps additional Final Damage % at 75.
+      if (num(sim.finalDmg) > 75) {
+        setSim((prev) => ({ ...prev, finalDmg: "75" }));
+        input.finalDamagePercent =
+          draftMeta.input.finalDamagePercent + 75;
+      }
       const res = await fetch("/api/scouter/result", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -477,6 +591,7 @@ export function AdditionalSpecSimulation({
       }
       setResult(json.calculatedData);
       setSimEnabled(true);
+      notifyParent(json.calculatedData, true, input);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Simulation failed");
     } finally {
@@ -491,6 +606,7 @@ export function AdditionalSpecSimulation({
     setSimOz(ozFromInput(draftMeta.input));
     setResult(null);
     setError(null);
+    notifyParent(null, false);
   };
 
   return (
@@ -510,7 +626,11 @@ export function AdditionalSpecSimulation({
             type="checkbox"
             className="size-3.5 accent-[var(--accent,#c2410c)]"
             checked={simEnabled}
-            onChange={(e) => setSimEnabled(e.target.checked)}
+            onChange={(e) => {
+              const on = e.target.checked;
+              setSimEnabled(on);
+              notifyParent(result, on);
+            }}
           />
           Show simulation
         </label>
@@ -615,8 +735,8 @@ export function AdditionalSpecSimulation({
       </div>
 
       <p className="mb-3 text-xs text-sky-700 dark:text-sky-300">
-        ※ Turn on Show simulation and press Apply to reflect buffs,
-        fundamentals, and input changes in the cards above.
+        ※ Turn on Show simulation and press Apply to update Boss Converted
+        Stat, Boss Clear, and the FD cards above.
       </p>
 
       <div className="space-y-2">

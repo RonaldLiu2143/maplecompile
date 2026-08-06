@@ -1,7 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
+import { createPortal } from "react-dom";
 import {
   defaultBuffState,
   defaultHexaLevels,
@@ -30,7 +39,10 @@ import {
 import { storage } from "@/lib/storage";
 import { PairingBar } from "@/components/PairingBar";
 import type { MapleScouterCalculatedData } from "@/lib/scouter/to-user-stat";
-import { AdditionalSpecSimulation } from "./additional-spec-sim";
+import {
+  AdditionalSpecSimulation,
+  type SpecSimOverlay,
+} from "./additional-spec-sim";
 
 function formatNum(n: number, digits = 0): string {
   if (!Number.isFinite(n)) return "—";
@@ -76,7 +88,7 @@ function StatBlock({
   );
 }
 
-function BossHoverPanel({
+function BossHoverTooltipBody({
   row,
   hpRegion,
 }: {
@@ -84,15 +96,24 @@ function BossHoverPanel({
   hpRegion: BossHpRegion;
 }) {
   const info = getBossHoverInfo(row.imgKey, hpRegion);
-  if (!info) return null;
   const hpLabel = hpRegion === "kms" ? "Total HP (KMS)" : "Total HP (GMS)";
+  const fd = row.fdVsMaxPercent;
+  const fdMsg =
+    Math.abs(fd) < 0.005
+      ? "Receiving max Level / Force bonuses."
+      : fd < 0
+        ? `Receiving a ${Math.abs(fd).toFixed(2)}% FD cut from Level/Force.`
+        : `Receiving a ${fd.toFixed(2)}% FD bonus from Level/Force.`;
+  const fdClass =
+    Math.abs(fd) < 0.005
+      ? "text-emerald-400"
+      : fd < 0
+        ? "text-rose-500"
+        : "text-sky-400";
 
   return (
-    <div
-      className="pointer-events-none absolute left-1/2 top-[calc(100%+8px)] z-40 w-[min(20rem,calc(100vw-1.5rem))] -translate-x-1/2 rounded-xl border border-border/60 bg-zinc-950 px-3 py-2.5 text-left text-white opacity-0 shadow-2xl transition duration-150 group-hover:opacity-100 group-focus-within:opacity-100"
-      role="tooltip"
-    >
-      <div className="mb-2 flex items-start justify-between gap-2">
+    <div className="flex flex-col gap-2">
+      <div className="flex items-start justify-between gap-2">
         <div>
           <p className="text-[11px] font-extrabold uppercase tracking-wide text-amber-300">
             {row.difficulty}
@@ -104,7 +125,7 @@ function BossHoverPanel({
         </p>
       </div>
 
-      {info.hp ? (
+      {info?.hp ? (
         <div className="space-y-1.5">
           <div className="flex items-center justify-between gap-2 px-0.5">
             <span className="text-xs font-semibold">{hpLabel}</span>
@@ -148,8 +169,8 @@ function BossHoverPanel({
         </div>
       ) : null}
 
-      {info.crystalMeso > 0 ? (
-        <div className="mt-2 flex items-center justify-center gap-2 border-t border-white/10 pt-2">
+      {info && info.crystalMeso > 0 ? (
+        <div className="flex items-center justify-center gap-2 border-t border-white/10 pt-2">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={BOSS_CRYSTAL_ICON}
@@ -164,8 +185,8 @@ function BossHoverPanel({
         </div>
       ) : null}
 
-      {info.drops.length > 0 ? (
-        <div className="mt-2 flex flex-wrap justify-center gap-2 border-t border-white/10 pt-2">
+      {info && info.drops.length > 0 ? (
+        <div className="flex flex-wrap justify-center gap-2 border-t border-white/10 pt-2">
           {info.drops.map((drop) => (
             <div
               key={`${drop.name}-${drop.amount}-${drop.personal}`}
@@ -199,7 +220,108 @@ function BossHoverPanel({
           ))}
         </div>
       ) : null}
+
+      <div className="border-t border-white/10 pt-2">
+        <table className="w-full">
+          <thead>
+            <tr>
+              <th className="px-1.5 py-0.5 text-center text-[10px] font-medium text-white/80" />
+              <th className="px-1.5 py-0.5 text-center text-[10px] font-medium text-white/80">
+                Boss
+              </th>
+              <th className="px-1.5 py-0.5 text-center text-[10px] font-medium text-white/80">
+                User
+              </th>
+              <th className="px-1.5 py-0.5 text-center text-[10px] font-medium text-white/80">
+                Rate
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td className="px-1.5 py-0.5 text-center text-[11px] font-semibold text-white">
+                Level
+              </td>
+              <td className="px-1.5 py-0.5 text-center text-[11px] tabular-nums text-white">
+                {row.level}
+              </td>
+              <td className="px-1.5 py-0.5 text-center text-[11px] tabular-nums text-white">
+                {row.userLevel}
+              </td>
+              <td className="px-1.5 py-0.5 text-center text-[11px] tabular-nums text-white">
+                {(row.levelRate * 100).toFixed(0)}%
+              </td>
+            </tr>
+            {row.arcaneForce > 0 ? (
+              <tr>
+                <td className="px-1.5 py-0.5 text-center text-[11px] font-semibold text-white">
+                  Arcane Force
+                </td>
+                <td className="px-1.5 py-0.5 text-center text-[11px] tabular-nums text-white">
+                  {row.arcaneForce}
+                </td>
+                <td className="px-1.5 py-0.5 text-center text-[11px] tabular-nums text-white">
+                  {row.userArcaneForce}
+                </td>
+                <td className="px-1.5 py-0.5 text-center text-[11px] tabular-nums text-white">
+                  {(row.arcaneRate * 100).toFixed(0)}%
+                </td>
+              </tr>
+            ) : null}
+            {row.authenticForce > 0 ? (
+              <tr>
+                <td className="px-1.5 py-0.5 text-center text-[11px] font-semibold text-white">
+                  Sacred Force
+                </td>
+                <td className="px-1.5 py-0.5 text-center text-[11px] tabular-nums text-white">
+                  {row.authenticForce === 999 ? "?" : row.authenticForce}
+                </td>
+                <td className="px-1.5 py-0.5 text-center text-[11px] tabular-nums text-white">
+                  {row.userAuthenticForce}
+                </td>
+                <td className="px-1.5 py-0.5 text-center text-[11px] tabular-nums text-white">
+                  {(row.authenticRate * 100).toFixed(0)}%
+                </td>
+              </tr>
+            ) : null}
+          </tbody>
+        </table>
+
+        <p className={`mt-1.5 text-center text-[11px] font-medium ${fdClass}`}>
+          {fdMsg}
+        </p>
+
+        <div className="mt-1.5 flex w-full items-center justify-between border-t border-white/10 px-1 pt-1.5">
+          <span className="text-[11px] font-semibold text-white">
+            Ascent coefficient
+          </span>
+          <span className="text-[11px] font-medium tabular-nums text-white">
+            {row.ascentDisplay.toFixed(2)}
+          </span>
+        </div>
+      </div>
     </div>
+  );
+}
+
+function PortraitBadge({
+  label,
+  title,
+  tone = "red",
+}: {
+  label: string;
+  title: string;
+  tone?: "red" | "green";
+}) {
+  return (
+    <span
+      title={title}
+      className={`inline-flex h-4 min-w-4 items-center justify-center rounded-full border border-white px-0.5 text-[9px] font-bold leading-none text-white shadow ${
+        tone === "green" ? "bg-emerald-500" : "bg-rose-500"
+      }`}
+    >
+      {label}
+    </span>
   );
 }
 
@@ -210,6 +332,59 @@ function BossClearCard({
   row: BossClearRow;
   hpRegion: BossHpRegion;
 }) {
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [hoverOpen, setHoverOpen] = useState(false);
+  const [tipStyle, setTipStyle] = useState<CSSProperties | null>(null);
+
+  useLayoutEffect(() => {
+    if (!hoverOpen) {
+      setTipStyle(null);
+      return;
+    }
+
+    const place = () => {
+      const el = cardRef.current;
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      const tipWidth = Math.min(340, window.innerWidth - 24);
+      let left = r.left + r.width / 2 - tipWidth / 2;
+      left = Math.max(12, Math.min(left, window.innerWidth - tipWidth - 12));
+
+      const estimatedHeight = 420;
+      const gap = 8;
+      const spaceBelow = window.innerHeight - r.bottom - gap;
+      const spaceAbove = r.top - gap;
+      const flipUp =
+        spaceBelow < Math.min(estimatedHeight, 260) && spaceAbove > spaceBelow;
+
+      setTipStyle(
+        flipUp
+          ? {
+              position: "fixed",
+              left,
+              width: tipWidth,
+              bottom: window.innerHeight - r.top + gap,
+              zIndex: 200,
+            }
+          : {
+              position: "fixed",
+              left,
+              width: tipWidth,
+              top: r.bottom + gap,
+              zIndex: 200,
+            },
+      );
+    };
+
+    place();
+    window.addEventListener("scroll", place, true);
+    window.addEventListener("resize", place);
+    return () => {
+      window.removeEventListener("scroll", place, true);
+      window.removeEventListener("resize", place);
+    };
+  }, [hoverOpen, hpRegion, row.imgKey]);
+
   const pctColor =
     row.clearPercent >= 200
       ? "text-sky-700 dark:text-sky-300"
@@ -226,13 +401,33 @@ function BossClearCard({
         ? "border-orange-400/80"
         : "border-border/40";
 
+  const b = row.badges;
+  const showBadges =
+    b.lv || b.arcane || b.sacred || b.force || b.forceBonus;
+
   return (
     <div
+      ref={cardRef}
       tabIndex={0}
-      title={`${row.difficulty} ${row.nameEn}`}
-      className={`group relative z-0 flex w-full flex-col items-center gap-0.5 rounded-md border bg-surface p-1 text-center shadow-sm transition hover:z-30 hover:-translate-y-0.5 hover:shadow-md focus-within:z-30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent ${borderClass}`}
+      aria-label={`${row.difficulty} ${row.nameEn}`}
+      onMouseEnter={() => setHoverOpen(true)}
+      onMouseLeave={() => setHoverOpen(false)}
+      onFocus={() => setHoverOpen(true)}
+      onBlur={() => setHoverOpen(false)}
+      className={`relative z-0 flex w-full flex-col items-center gap-0.5 rounded-md border bg-surface p-1 text-center shadow-sm transition hover:z-30 hover:-translate-y-0.5 hover:shadow-md focus-within:z-30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent ${borderClass}`}
     >
-      <BossHoverPanel row={row} hpRegion={hpRegion} />
+      {hoverOpen && tipStyle && typeof document !== "undefined"
+        ? createPortal(
+            <div
+              className="pointer-events-none rounded-xl border border-border/60 bg-zinc-950 px-3 py-2.5 text-left text-white shadow-2xl"
+              style={tipStyle}
+              role="tooltip"
+            >
+              <BossHoverTooltipBody row={row} hpRegion={hpRegion} />
+            </div>,
+            document.body,
+          )
+        : null}
 
       <div className="relative w-full overflow-hidden rounded bg-surface-muted">
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -244,23 +439,38 @@ function BossClearCard({
           className="aspect-square w-full object-cover"
           loading="lazy"
         />
-        {row.cantEnter || row.forceBlocked ? (
-          <div className="absolute left-0.5 top-0.5 flex gap-0.5">
-            {row.cantEnter ? (
-              <span
-                className="rounded-full bg-rose-600 px-1 text-[8px] font-bold leading-3 text-white shadow"
-                title={`Entry Lv.${row.entryLevel}`}
-              >
-                LV
-              </span>
+        {showBadges ? (
+          <div className="absolute left-0.5 top-0.5 flex flex-col items-start gap-0.5">
+            {b.lv ? (
+              <PortraitBadge
+                label="LV"
+                title="Below max Level damage bonus (120%)"
+              />
             ) : null}
-            {row.forceBlocked ? (
-              <span
-                className="rounded-full bg-rose-600 px-1 text-[8px] font-bold leading-3 text-white shadow"
-                title="Force soft/hard cut"
-              >
-                F
-              </span>
+            {b.arcane ? (
+              <PortraitBadge
+                label="A"
+                title="Below max Arcane Force damage bonus"
+              />
+            ) : null}
+            {b.sacred ? (
+              <PortraitBadge
+                label="S"
+                title="Below max Sacred Force damage bonus"
+              />
+            ) : null}
+            {b.force ? (
+              <PortraitBadge
+                label="F"
+                title="Force soft/hard cut — well below required ARC/AUT"
+              />
+            ) : null}
+            {b.forceBonus ? (
+              <PortraitBadge
+                label="F"
+                tone="green"
+                title="Above soft Arcane Force max for this boss"
+              />
             ) : null}
           </div>
         ) : null}
@@ -366,15 +576,29 @@ export default function ScouterDetailedResultPage() {
   const [fightMinutes, setFightMinutes] = useState<BossClearFightMinutes>(
     BOSS_CLEAR_FIGHT_MINUTES_DEFAULT,
   );
+  /** MapleScouter simulatorData overlay — when active, BCS + clears use sim result. */
+  const [simOverlay, setSimOverlay] = useState<SpecSimOverlay | null>(null);
+  const [simActive, setSimActive] = useState(false);
   /** 20 min → KMS / MapleScouter default; 30 min → GMS is30min + GMS HP clears. */
   const is30min = fightMinutes === 30;
   const hpRegion: BossHpRegion = fightMinutes === 30 ? "gms" : "kms";
+
+  const displayData =
+    simActive && simOverlay ? simOverlay.data : data;
+  const displayLevel =
+    simActive && simOverlay ? simOverlay.level : level;
+  const displayArcane =
+    simActive && simOverlay ? simOverlay.arcaneForce : arcaneForce;
+  const displayAuthentic =
+    simActive && simOverlay ? simOverlay.authenticForce : authenticForce;
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       setLoading(true);
       setError(null);
+      setSimOverlay(null);
+      setSimActive(false);
       try {
         const last = storage.getScouterLast();
         const job = last?.input?.jobType || DEFAULT_JOB;
@@ -428,25 +652,31 @@ export default function ScouterDetailedResultPage() {
   }, [is30min]);
 
   const clearInput = useMemo(() => {
-    if (!data) return null;
-    const damage380 = Number(data.calculatedHexaDamage_380 ?? 0);
+    if (!displayData) return null;
+    const damage380 = Number(displayData.calculatedHexaDamage_380 ?? 0);
     return {
-      boss300Stat: Number(data.boss300_hexaStat ?? data.boss300_stat ?? 0),
-      boss380Stat: Number(data.boss380_hexaStat ?? data.boss380_stat ?? 0),
-      damage300: Number(data.calculatedHexaDamage_300 ?? 0),
+      boss300Stat: Number(
+        displayData.boss300_hexaStat ?? displayData.boss300_stat ?? 0,
+      ),
+      boss380Stat: Number(
+        displayData.boss380_hexaStat ?? displayData.boss380_stat ?? 0,
+      ),
+      damage300: Number(displayData.calculatedHexaDamage_300 ?? 0),
       damage380,
       damageKaling: Number(
-        data.calculatedHexaDamage_kaling ?? damage380,
+        displayData.calculatedHexaDamage_kaling ?? damage380,
       ),
-      damage380NonHexa: Number(data.calculatedDamage_380 ?? damage380),
-      level,
-      arcaneForce,
-      authenticForce,
-      spline300: data.spline_300 ?? null,
-      spline380: data.spline_380 ?? null,
-      ascentConst: Number(data.ascent_const ?? 0),
+      damage380NonHexa: Number(
+        displayData.calculatedDamage_380 ?? damage380,
+      ),
+      level: displayLevel,
+      arcaneForce: displayArcane,
+      authenticForce: displayAuthentic,
+      spline300: displayData.spline_300 ?? null,
+      spline380: displayData.spline_380 ?? null,
+      ascentConst: Number(displayData.ascent_const ?? 0),
     };
-  }, [data, level, arcaneForce, authenticForce]);
+  }, [displayArcane, displayAuthentic, displayData, displayLevel]);
 
   const allBossRows = useMemo(() => {
     if (!clearInput) return [];
@@ -529,7 +759,7 @@ export default function ScouterDetailedResultPage() {
         </p>
       ) : null}
 
-      {!loading && !error && data ? (
+      {!loading && !error && data && displayData ? (
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
           <aside className="w-full shrink-0 lg:w-64 xl:w-72">
             <StatBlock
@@ -565,6 +795,11 @@ export default function ScouterDetailedResultPage() {
               }
             >
               <div className="space-y-3">
+                {simActive ? (
+                  <p className="rounded-md bg-accent-soft/50 px-2 py-1 text-[11px] font-medium text-accent">
+                    Showing Additional Spec Simulation
+                  </p>
+                ) : null}
                 <div className="space-y-1.5">
                   <p className="text-xs font-semibold opacity-80">
                     Boss 300% PDR
@@ -573,12 +808,12 @@ export default function ScouterDetailedResultPage() {
                     <ConvertedStatCell
                       compact
                       label="Normal"
-                      value={Number(data.boss300_stat ?? 0)}
+                      value={Number(displayData.boss300_stat ?? 0)}
                     />
                     <ConvertedStatCell
                       compact
                       label="HEXA"
-                      value={Number(data.boss300_hexaStat ?? 0)}
+                      value={Number(displayData.boss300_hexaStat ?? 0)}
                       emphasize
                     />
                   </div>
@@ -591,12 +826,12 @@ export default function ScouterDetailedResultPage() {
                     <ConvertedStatCell
                       compact
                       label="Normal"
-                      value={Number(data.boss380_stat ?? 0)}
+                      value={Number(displayData.boss380_stat ?? 0)}
                     />
                     <ConvertedStatCell
                       compact
                       label="HEXA"
-                      value={Number(data.boss380_hexaStat ?? 0)}
+                      value={Number(displayData.boss380_hexaStat ?? 0)}
                       emphasize
                     />
                   </div>
@@ -712,7 +947,15 @@ export default function ScouterDetailedResultPage() {
               </p>
             </StatBlock>
 
-            <AdditionalSpecSimulation baseline={data} is30min={is30min} />
+            <AdditionalSpecSimulation
+              key={is30min ? "30" : "20"}
+              baseline={data}
+              is30min={is30min}
+              onSimulationChange={(overlay, active) => {
+                setSimOverlay(overlay);
+                setSimActive(active);
+              }}
+            />
           </div>
         </div>
       ) : null}

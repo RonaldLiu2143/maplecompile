@@ -1096,7 +1096,8 @@ const LEVEL_GAP: Record<string, number> = {
   "-40": 0,
 };
 
-function arcaneGapMult(bossArcane: number, userArcane: number): number {
+/** MapleScouter arcane force damage rate (multiplier). Max 1.5, or 1.1 for AF 1320 bosses. */
+export function arcaneGapMult(bossArcane: number, userArcane: number): number {
   if (bossArcane <= 0) return 1;
   const pct = (userArcane / bossArcane) * 100;
   const raw =
@@ -1120,7 +1121,8 @@ function arcaneGapMult(bossArcane: number, userArcane: number): number {
   return raw / 100;
 }
 
-function authenticGapMult(bossAuth: number, userAuth: number): number {
+/** MapleScouter sacred/authentic force damage rate (multiplier). Max 1.25. */
+export function authenticGapMult(bossAuth: number, userAuth: number): number {
   if (bossAuth <= 0) return 1;
   const d = userAuth - bossAuth;
   const raw =
@@ -1158,12 +1160,51 @@ function authenticGapMult(bossAuth: number, userAuth: number): number {
   return raw / 100;
 }
 
-function levelGapMult(userLevel: number, bossLevel: number): number {
+/** MapleScouter level damage rate (multiplier). Max 1.2 (+5 levels). */
+export function levelGapMult(userLevel: number, bossLevel: number): number {
   if (!bossLevel) return 1;
   let diff = Math.floor(userLevel) - bossLevel;
   if (diff > 5) diff = 5;
   if (diff < -40) diff = -40;
   return (LEVEL_GAP[String(diff)] ?? 100) / 100;
+}
+
+/** Max arcane damage rate for badge/tooltip (Black Mage / AF 1320 → 1.1). */
+export function maxArcaneRate(bossArcane: number, bossId?: string): number {
+  if (bossArcane <= 0) return 1;
+  if (bossArcane === 1320 || bossId === "blackMage") return 1.1;
+  return 1.5;
+}
+
+/**
+ * FD% vs max level/force bonuses (MapleScouter hover `A`).
+ * 0 = at max; negative = receiving cut; positive = above-max bonus.
+ */
+export function fdVsMaxBonusPercent(
+  levelRate: number,
+  arcaneRate: number,
+  authenticRate: number,
+  bossArcane: number,
+  bossAuthentic: number,
+  bossId?: string,
+): number {
+  const maxA = maxArcaneRate(bossArcane, bossId);
+  const levelPart = levelRate / 1.2;
+  const arcanePart = bossArcane > 0 ? arcaneRate / maxA : 1;
+  const authPart = bossAuthentic > 0 ? authenticRate / 1.25 : 1;
+  return levelPart * arcanePart * authPart * 100 - 100;
+}
+
+/** Destiny-specific ascent display scale (MapleScouter tooltip). */
+export function ascentDisplayMult(
+  difficulty: string,
+  bossId: string,
+): number {
+  if (difficulty !== "Destiny") return 1;
+  if (bossId === "kalos") return 0.2;
+  if (bossId === "kaling") return 1.2;
+  if (bossId === "seren") return 0.8;
+  return 1;
 }
 
 function forceDenom(entry: BossCutEntry): number {
@@ -1292,6 +1333,19 @@ export function bossClearLabelEn(
   return LABEL_EN[ko] ?? "Impossible";
 }
 
+export type BossPortraitBadges = {
+  /** Level damage rate below max 120%. */
+  lv: boolean;
+  /** Arcane Force damage rate below max (A). */
+  arcane: boolean;
+  /** Sacred Force damage rate below max (S). */
+  sacred: boolean;
+  /** Soft/hard force cut — well below required ARC/AUT (F). */
+  force: boolean;
+  /** Green F: AF 1320 boss with arcane rate above soft max. */
+  forceBonus: boolean;
+};
+
 export type BossClearRow = BossCutEntry & {
   cut: number;
   isPartyBoss: boolean;
@@ -1308,6 +1362,20 @@ export type BossClearRow = BossCutEntry & {
   entryLevel: number;
   /** Index in MapleScouter GMS difficulty order. */
   rank: number;
+  /** User stats used for this clear (for hover table). */
+  userLevel: number;
+  userArcaneForce: number;
+  userAuthenticForce: number;
+  /** Damage rates (multipliers) for hover Rate column. */
+  levelRate: number;
+  arcaneRate: number;
+  authenticRate: number;
+  /** FD% vs max level/force bonuses (negative = cut). */
+  fdVsMaxPercent: number;
+  /** Portrait corner badges (LV / A / S / F). */
+  badges: BossPortraitBadges;
+  /** Ascent coefficient shown in hover footer. */
+  ascentDisplay: number;
 };
 
 export type BossClearCalcInput = {
@@ -1444,6 +1512,16 @@ export function evaluateBossClears(args: BossClearCalcInput): BossClearRow[] {
     // Can't Enter = character level vs entrance requirement (not combat level).
     const cantEnter = entryLevel > 0 && level < entryLevel;
 
+    const maxA = maxArcaneRate(entry.arcaneForce, entry.id);
+    const badges: BossPortraitBadges = {
+      lv: lGap < 1.2,
+      arcane: entry.arcaneForce > 0 && aGap < maxA,
+      sacred: entry.authenticForce > 0 && sGap < 1.25,
+      force: forceBlocked,
+      forceBonus:
+        entry.arcaneForce === 1320 && aGap > 1.1 && !forceBlocked,
+    };
+
     let label = bossClearLabelEn(
       clearRate,
       isPartyBoss,
@@ -1466,6 +1544,23 @@ export function evaluateBossClears(args: BossClearCalcInput): BossClearRow[] {
       forceBlocked,
       entryLevel,
       rank,
+      userLevel: level,
+      userArcaneForce: arcaneForce,
+      userAuthenticForce: authenticForce,
+      levelRate: lGap,
+      arcaneRate: aGap,
+      authenticRate: sGap,
+      fdVsMaxPercent: fdVsMaxBonusPercent(
+        lGap,
+        aGap,
+        sGap,
+        entry.arcaneForce,
+        entry.authenticForce,
+        entry.id,
+      ),
+      badges,
+      ascentDisplay:
+        (R || 0) * ascentDisplayMult(entry.difficulty, entry.id),
     };
   });
 
