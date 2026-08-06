@@ -6,7 +6,6 @@ import { CharacterSearchBar } from "@/components/dashboard/CharacterSearchBar";
 import { DashboardPrimaryHero } from "@/components/dashboard/DashboardCommandCenter";
 import { DashboardDailiesSection } from "@/components/dashboard/DashboardDailiesSection";
 import { DashboardDiarySection } from "@/components/dashboard/DashboardDiarySection";
-import { DashboardDiscordCard } from "@/components/dashboard/DashboardDiscordCard";
 import { DashboardOnboardingWizard } from "@/components/dashboard/DashboardOnboardingWizard";
 import { DashboardPatchNotesCard } from "@/components/dashboard/DashboardPatchNotesCard";
 import { DashboardRosterWeeklySection } from "@/components/dashboard/DashboardWeeklyChecklist";
@@ -87,12 +86,7 @@ function DashboardInner() {
         </div>
       ) : null}
 
-      {hydrated ? (
-        <div className="grid gap-4 lg:grid-cols-2">
-          <DashboardDiscordCard />
-          <DashboardPatchNotesCard />
-        </div>
-      ) : null}
+      {hydrated ? <DashboardPatchNotesCard /> : null}
 
       {hydrated ? (
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)] lg:items-stretch">

@@ -45,14 +45,14 @@ export function setCachedCharacter(
   cache.set(key, { value, expiresAt: Date.now() + TTL_MS });
 }
 
-/** Drop heavy EXP history fields for roster/card surfaces. */
+/**
+ * Card/roster payload. Keep EXP graph + averages so Daily EXP stays visible
+ * on compact roster cards (and after Full profile → back navigation).
+ */
 export function toCardCharacter(
   character: CharacterLookupResult,
 ): CharacterLookupResult {
-  if (character.graph == null && character.expAverages == null) {
-    return character;
-  }
-  return { ...character, graph: null, expAverages: null };
+  return character;
 }
 
 /**

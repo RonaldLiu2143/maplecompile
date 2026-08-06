@@ -27,9 +27,11 @@ import {
   getClassSpecificRequirements,
   getMissingRequiredScouterFields,
   focusScouterField,
+  clampScouterField,
   type BuffState,
   type LinkState,
   type MissingScouterField,
+  type ScouterCappedField,
   type ScouterInput,
   type StatKey,
   type StatTriple,
@@ -56,6 +58,7 @@ import { ShareGalleryModal } from "./share-gallery-modal";
 import { countFilledSlots } from "@/lib/starter-loadouts";
 import { readRosterState } from "@/lib/dashboard/roster";
 import { parseUserNumber } from "@/lib/scouter/parse-number";
+import { filterDisplayText } from "@/lib/content-filter";
 
 const cell =
   "border border-border/50 bg-background px-2 py-1.5 text-sm outline-none focus:relative focus:z-10 focus:border-accent";
@@ -86,6 +89,9 @@ function NumInput({
   placeholder = "0",
   readOnly,
   fieldId,
+  capField,
+  max,
+  decimals,
 }: {
   value: number;
   onChange?: (n: number) => void;
@@ -94,11 +100,32 @@ function NumInput({
   readOnly?: boolean;
   /** Focus target for missing-field modal (`data-scouter-field`). */
   fieldId?: string;
+  /** Apply shared scouter combat caps (hundredths or integer). */
+  capField?: ScouterCappedField;
+  max?: number;
+  decimals?: number;
 }) {
   const n = Number.isFinite(value) ? value : 0;
   // Draft while focused so typing `.` then `5` works with empty/zero placeholder.
   const [draft, setDraft] = useState<string | null>(null);
   const display = draft !== null ? draft : n === 0 ? "" : String(n);
+
+  const commit = (raw: number) => {
+    if (!onChange) return;
+    let next = Number.isFinite(raw) ? raw : 0;
+    if (capField) next = clampScouterField(capField, next);
+    else {
+      if (typeof max === "number") next = Math.min(Math.max(0, next), max);
+      if (typeof decimals === "number") {
+        if (decimals <= 0) next = Math.round(next);
+        else {
+          const f = 10 ** decimals;
+          next = Math.round(next * f) / f;
+        }
+      }
+    }
+    onChange(next);
+  };
 
   return (
     <input
@@ -119,8 +146,8 @@ function NumInput({
       onBlur={
         !readOnly
           ? () => {
-              if (draft !== null && onChange) {
-                onChange(parseUserNumber(draft) ?? 0);
+              if (draft !== null) {
+                commit(parseUserNumber(draft) ?? 0);
               }
               setDraft(null);
             }
@@ -133,15 +160,68 @@ function NumInput({
               if (raw !== "" && !NUM_DRAFT_RE.test(raw.trim())) return;
               setDraft(raw);
               if (raw.trim() === "") {
-                onChange(0);
+                commit(0);
                 return;
               }
               const next = parseUserNumber(raw);
               // Keep draft for intermediates like `.` / `-.` without wiping.
-              if (next != null) onChange(next);
+              if (next != null) commit(next);
             }
           : undefined
       }
+    />
+  );
+}
+
+/** Small numeric control — empty/gray placeholder when 0 (buffs / links / oz). */
+function LevelInput({
+  value,
+  onChange,
+  min = 0,
+  max,
+  title,
+  className = "",
+}: {
+  value: number;
+  onChange: (n: number) => void;
+  min?: number;
+  max: number;
+  title?: string;
+  className?: string;
+}) {
+  const n = Number.isFinite(value) ? value : 0;
+  const [draft, setDraft] = useState<string | null>(null);
+  const display = draft !== null ? draft : n === 0 ? "" : String(n);
+
+  return (
+    <input
+      type="text"
+      inputMode="numeric"
+      title={title}
+      placeholder="0"
+      className={`w-full rounded border border-border/40 bg-background px-0 py-0 text-center text-[10px] tabular-nums outline-none placeholder:text-foreground/30 focus:border-accent ${className}`}
+      value={display}
+      onFocus={() => setDraft(n === 0 ? "" : String(n))}
+      onBlur={() => {
+        if (draft !== null) {
+          const raw = Number(draft) || 0;
+          onChange(Math.min(Math.max(min, raw), max));
+        }
+        setDraft(null);
+      }}
+      onChange={(e) => {
+        const raw = e.target.value;
+        if (raw !== "" && !/^\d*$/.test(raw.trim())) return;
+        setDraft(raw);
+        if (raw.trim() === "") {
+          onChange(0);
+          return;
+        }
+        const parsed = Number(raw);
+        if (Number.isFinite(parsed)) {
+          onChange(Math.min(Math.max(min, parsed), max));
+        }
+      }}
     />
   );
 }
@@ -559,7 +639,20 @@ export default function ScouterPage() {
   const setBuffChecked = (id: string, on: boolean) => {
     setBuffs((prev) => {
       const def = BUFF_DEFS.find((b) => b.id === id);
-      const next = { ...prev, [id]: { ...(prev[id] ?? { level: 0 }), on } };
+      const max = def?.maxLevel ?? def?.defaultLevel ?? 1;
+      let nextEntry = { ...(prev[id] ?? { level: 0 }), on };
+      // Numeric buffs: off → 0, on → max for that buff.
+      if (def && def.control !== "check") {
+        nextEntry = {
+          on,
+          level: on ? (def.defaultLevel && def.defaultLevel > 0 ? def.defaultLevel : max) : 0,
+        };
+        // Champion defaults are 0 — toggling on should still go to max.
+        if (on && (def.defaultLevel ?? 0) <= 0) {
+          nextEntry.level = max;
+        }
+      }
+      const next = { ...prev, [id]: nextEntry };
       if (on && def?.mutexGroup) {
         for (const other of BUFF_DEFS) {
           if (
@@ -567,12 +660,22 @@ export default function ScouterPage() {
             other.mutexGroup === def.mutexGroup &&
             next[other.id]
           ) {
-            next[other.id] = { ...next[other.id], on: false };
+            next[other.id] = {
+              ...next[other.id],
+              on: false,
+              ...(other.control !== "check" ? { level: 0 } : {}),
+            };
           }
         }
       }
       return next;
     });
+  };
+
+  const toggleLevelBuff = (id: string) => {
+    const st = buffs[id] ?? { on: false, level: 0 };
+    const currentlyOn = st.level > 0;
+    setBuffChecked(id, !currentlyOn);
   };
 
   const flashPresetMsg = (msg: string) => {
@@ -659,6 +762,14 @@ export default function ScouterPage() {
         presetName.trim() ||
         presets.find((p) => p.id === selectedPresetId)?.name ||
         "Untitled";
+      const nameCheck = filterDisplayText(requested, {
+        fieldLabel: "Preset name",
+        maxLength: 40,
+      });
+      if (!nameCheck.ok) {
+        flashPresetMsg(nameCheck.error);
+        return;
+      }
       // Never overwrite a preset that isn't what's on screen (e.g. dropdown
       // changed but Load wasn't used) — that was leaking Attack/Magic Att.
       const overwriteId = asNew
@@ -666,7 +777,7 @@ export default function ScouterPage() {
         : loadedPresetId || undefined;
       const saved = storage.saveScouterPreset({
         id: overwriteId,
-        name: requested,
+        name: nameCheck.value,
         state: {
           input: structuredClone(input),
           buffs: structuredClone(buffs),
@@ -678,7 +789,7 @@ export default function ScouterPage() {
       setSelectedPresetId(saved.id);
       setLoadedPresetId(saved.id);
       setPresetName(saved.name);
-      const renamed = saved.name !== requested.trim() && requested.trim() !== "";
+      const renamed = saved.name !== nameCheck.value && nameCheck.value !== "";
       if (asNew || !overwriteId) {
         flashPresetMsg(
           renamed
@@ -884,6 +995,7 @@ export default function ScouterPage() {
           identity: args.asPublic ? identity : undefined,
           public: args.asPublic,
           achievement: args.asPublic ? achievement : undefined,
+          website: "",
           boss300HexaStat:
             args.asPublic && args.boss300HexaStat != null
               ? args.boss300HexaStat
@@ -1402,6 +1514,7 @@ export default function ScouterPage() {
                 <NumInput
                   value={input.damagePercent}
                   fieldId="damage"
+                  capField="damagePercent"
                   onChange={(damagePercent) => patch({ damagePercent })}
                 />
               </FieldCell>
@@ -1412,6 +1525,7 @@ export default function ScouterPage() {
                 <NumInput
                   value={input.bossDamagePercent}
                   fieldId="boss-damage"
+                  capField="bossDamagePercent"
                   onChange={(bossDamagePercent) =>
                     patch({ bossDamagePercent })
                   }
@@ -1421,6 +1535,7 @@ export default function ScouterPage() {
                 <NumInput
                   value={input.ignoreDefensePercent}
                   fieldId="ied"
+                  capField="ignoreDefensePercent"
                   onChange={(ignoreDefensePercent) =>
                     patch({ ignoreDefensePercent })
                   }
@@ -1442,6 +1557,7 @@ export default function ScouterPage() {
                 <NumInput
                   value={input.criticalRatePercent}
                   fieldId="crit-rate"
+                  capField="criticalRatePercent"
                   onChange={(criticalRatePercent) =>
                     patch({ criticalRatePercent })
                   }
@@ -1454,6 +1570,7 @@ export default function ScouterPage() {
                 <NumInput
                   value={input.criticalDamagePercent}
                   fieldId="crit-damage"
+                  capField="criticalDamagePercent"
                   onChange={(criticalDamagePercent) =>
                     patch({ criticalDamagePercent })
                   }
@@ -1463,6 +1580,7 @@ export default function ScouterPage() {
                 <div className="flex min-w-0">
                   <NumInput
                     value={input.cooldownReductionSeconds}
+                    capField="cooldownReductionSeconds"
                     onChange={(cooldownReductionSeconds) =>
                       patch({ cooldownReductionSeconds })
                     }
@@ -1489,6 +1607,7 @@ export default function ScouterPage() {
               <FieldCell label="Buff Duration">
                 <NumInput
                   value={input.buffDurationPercent}
+                  capField="buffDurationPercent"
                   onChange={(buffDurationPercent) =>
                     patch({ buffDurationPercent })
                   }
@@ -1497,6 +1616,7 @@ export default function ScouterPage() {
               <FieldCell label="Cooldown Not Applied">
                 <NumInput
                   value={input.cooldownSkipPercent}
+                  capField="cooldownSkipPercent"
                   onChange={(cooldownSkipPercent) =>
                     patch({ cooldownSkipPercent })
                   }
@@ -1505,6 +1625,7 @@ export default function ScouterPage() {
               <FieldCell label="Ignore Elemental Resistance">
                 <NumInput
                   value={input.ignoreElementalResistancePercent}
+                  capField="ignoreElementalResistancePercent"
                   onChange={(ignoreElementalResistancePercent) =>
                     patch({ ignoreElementalResistancePercent })
                   }
@@ -1513,6 +1634,7 @@ export default function ScouterPage() {
               <FieldCell label="Additional Status Damage">
                 <NumInput
                   value={input.additionalStatusDamagePercent}
+                  capField="additionalStatusDamagePercent"
                   onChange={(additionalStatusDamagePercent) =>
                     patch({ additionalStatusDamagePercent })
                   }
@@ -1521,6 +1643,7 @@ export default function ScouterPage() {
               <FieldCell label="Summons Duration Increase">
                 <NumInput
                   value={input.summonDurationPercent}
+                  capField="summonDurationPercent"
                   onChange={(summonDurationPercent) =>
                     patch({ summonDurationPercent })
                   }
@@ -1535,12 +1658,14 @@ export default function ScouterPage() {
               <FieldCell label="Arcane Force">
                 <NumInput
                   value={input.arcaneForce}
+                  capField="arcaneForce"
                   onChange={(arcaneForce) => patch({ arcaneForce })}
                 />
               </FieldCell>
               <FieldCell label="Sacred Force">
                 <NumInput
                   value={input.sacredForce}
+                  capField="sacredForce"
                   onChange={(sacredForce) => patch({ sacredForce })}
                 />
               </FieldCell>
@@ -1620,24 +1745,26 @@ export default function ScouterPage() {
                     </label>
                   );
                 }
+                const max = b.maxLevel ?? 99;
                 return (
                   <div key={b.id} title={tip} className={cardClass}>
-                    <CdnIcon src={b.icon} alt={b.label} size={24} />
-                    <input
-                      type="number"
-                      min={0}
-                      max={b.maxLevel ?? 99}
-                      className="w-full rounded border border-border/40 bg-background px-0 py-0 text-center text-[10px] tabular-nums outline-none focus:border-accent"
+                    <button
+                      type="button"
+                      className="cursor-pointer"
+                      aria-pressed={active}
+                      aria-label={`${b.label}: ${active ? "on" : "off"}`}
+                      onClick={() => toggleLevelBuff(b.id)}
+                    >
+                      <CdnIcon src={b.icon} alt={b.label} size={24} />
+                    </button>
+                    <LevelInput
                       value={st.level}
-                      onChange={(e) => {
-                        const raw = Number(e.target.value) || 0;
-                        const capped = Math.min(
-                          Math.max(0, raw),
-                          b.maxLevel ?? 99,
-                        );
+                      max={max}
+                      title={tip}
+                      onChange={(level) => {
                         setBuffs((prev) => ({
                           ...prev,
-                          [b.id]: { on: true, level: capped },
+                          [b.id]: { on: level > 0, level },
                         }));
                       }}
                     />
@@ -1667,16 +1794,11 @@ export default function ScouterPage() {
                         size={24}
                       />
                     </span>
-                    <input
-                      type="number"
-                      title={tip}
-                      min={0}
-                      max={l.maxLevel}
-                      className="w-full rounded border border-border/40 bg-background px-0 py-0 text-center text-[10px] tabular-nums outline-none focus:border-accent"
+                    <LevelInput
                       value={links[l.id] ?? 0}
-                      onChange={(e) => {
-                        const raw = Number(e.target.value) || 0;
-                        const capped = Math.min(Math.max(0, raw), l.maxLevel);
+                      max={l.maxLevel}
+                      title={tip}
+                      onChange={(capped) => {
                         setLinks((prev) => ({ ...prev, [l.id]: capped }));
                       }}
                     />
@@ -1815,11 +1937,23 @@ export default function ScouterPage() {
                 <select
                   className={`${cell} w-full !py-1 text-xs`}
                   value={input.ozContinuousStatus}
-                  onChange={(e) =>
-                    patch({
-                      ozContinuousStatus: e.target.value as "noUse" | "use",
-                    })
-                  }
+                  onChange={(e) => {
+                    const ozContinuousStatus = e.target.value as "noUse" | "use";
+                    // Clear rings that don't apply to the new Continuous Use mode.
+                    if (ozContinuousStatus === "use") {
+                      patch({
+                        ozContinuousStatus,
+                        ozRestraintLevel: 0,
+                        ozWeaponJumpLevel: 0,
+                        ozRingOfSumLevel: 0,
+                      });
+                    } else {
+                      patch({
+                        ozContinuousStatus,
+                        ozContinuousLevel: 0,
+                      });
+                    }
+                  }}
                 >
                   {OZ_CONTINUOUS_STATUS.map((o) => (
                     <option key={o.id} value={o.id}>
@@ -1829,7 +1963,13 @@ export default function ScouterPage() {
                 </select>
               </label>
 
-              <div className="grid grid-cols-3 gap-1">
+              <div
+                className={`grid gap-1 ${
+                  input.ozContinuousStatus === "use"
+                    ? "grid-cols-1 max-w-[5.5rem]"
+                    : "grid-cols-3"
+                }`}
+              >
                 {getVisibleOzRings(input.ozContinuousStatus).map((ring) => (
                   <div
                     key={ring.id}
@@ -1837,16 +1977,11 @@ export default function ScouterPage() {
                     className="flex flex-col items-center gap-0.5 rounded border border-border/40 bg-background p-1"
                   >
                     <CdnIcon src={ring.icon} alt={ring.label} size={24} />
-                    <input
-                      type="number"
-                      title={ring.label}
-                      min={0}
-                      max={OZ_RING_MAX}
-                      className="w-full rounded border border-border/40 bg-background px-0 py-0 text-center text-[10px] tabular-nums outline-none focus:border-accent"
+                    <LevelInput
                       value={input[ring.field]}
-                      onChange={(e) => {
-                        const raw = Number(e.target.value) || 0;
-                        const capped = Math.min(Math.max(0, raw), OZ_RING_MAX);
+                      max={OZ_RING_MAX}
+                      title={ring.label}
+                      onChange={(capped) => {
                         patch({ [ring.field]: capped });
                       }}
                     />

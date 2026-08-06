@@ -107,11 +107,11 @@ function AvatarThumb({
       <img
         src={src}
         alt=""
-        width={compact ? 32 : 48}
-        height={compact ? 32 : 48}
+        width={compact ? 40 : 48}
+        height={compact ? 40 : 48}
         className={[
           "pointer-events-none shrink-0 object-contain",
-          compact ? "h-8 w-8" : "h-12 w-12",
+          compact ? "h-10 w-10" : "h-12 w-12",
         ].join(" ")}
         draggable={false}
       />
@@ -122,7 +122,7 @@ function AvatarThumb({
       className={[
         "flex shrink-0 items-center justify-center rounded-md bg-surface-muted font-semibold uppercase tracking-wide opacity-50",
         compact
-          ? "h-8 w-8 text-[0.5rem]"
+          ? "h-10 w-10 text-[0.55rem]"
           : "h-12 w-12 text-[0.6rem]",
       ].join(" ")}
       aria-hidden
@@ -175,7 +175,7 @@ function StatusLinkChip({
       href={href}
       className={[
         "inline-flex shrink-0 items-center rounded-md border font-semibold tabular-nums transition hover:opacity-90",
-        compact ? "px-1.5 py-0.5 text-[0.65rem]" : "px-2 py-0.5 text-[0.7rem]",
+        compact ? "px-2 py-0.5 text-xs" : "px-2 py-0.5 text-[0.75rem]",
         statusToneClass(tone),
         priority === "sm" ? "hidden sm:inline-flex" : "",
       ].join(" ")}
@@ -418,7 +418,7 @@ export function RosterListRow({
       className={[
         "flex items-center rounded-xl border border-border/50 bg-surface transition",
         compact
-          ? "gap-2 rounded-lg px-2 py-1.5 sm:gap-2.5 sm:px-2.5"
+          ? "gap-2 rounded-lg px-2.5 py-2 sm:gap-2.5 sm:px-3"
           : "gap-3 px-3 py-2.5 sm:gap-4 sm:px-4",
         canDrag ? "cursor-grab active:cursor-grabbing" : "",
         drag?.isDragging ? "opacity-40 scale-[0.98]" : "",
@@ -440,7 +440,7 @@ export function RosterListRow({
             href={profileHref}
             className={[
               "truncate font-semibold tracking-tight text-foreground hover:text-accent",
-              compact ? "text-sm" : "",
+              compact ? "text-base" : "",
             ].join(" ")}
             title={`${name} (${entry.region.toUpperCase()})`}
             draggable={false}
@@ -474,7 +474,7 @@ export function RosterListRow({
         <p
           className={[
             "truncate",
-            compact ? "text-xs" : "text-sm",
+            compact ? "text-sm" : "text-sm",
             error ? "text-danger" : "opacity-55",
           ].join(" ")}
         >

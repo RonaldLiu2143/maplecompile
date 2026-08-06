@@ -695,12 +695,25 @@ export function AdditionalSpecSimulation({
                 <select
                   className="h-8 rounded-md border border-border/50 bg-surface px-2 text-sm outline-none focus:border-accent"
                   value={simOz.ozContinuousStatus}
-                  onChange={(e) =>
-                    setSimOz((prev) => ({
-                      ...prev,
-                      ozContinuousStatus: e.target.value as OzContinuousStatus,
-                    }))
-                  }
+                  onChange={(e) => {
+                    const ozContinuousStatus = e.target
+                      .value as OzContinuousStatus;
+                    setSimOz((prev) =>
+                      ozContinuousStatus === "use"
+                        ? {
+                            ...prev,
+                            ozContinuousStatus,
+                            ozRestraintLevel: 0,
+                            ozWeaponJumpLevel: 0,
+                            ozRingOfSumLevel: 0,
+                          }
+                        : {
+                            ...prev,
+                            ozContinuousStatus,
+                            ozContinuousLevel: 0,
+                          },
+                    );
+                  }}
                 >
                   {OZ_CONTINUOUS_STATUS.map((o) => (
                     <option key={o.id} value={o.id}>
@@ -709,7 +722,13 @@ export function AdditionalSpecSimulation({
                   ))}
                 </select>
               </label>
-              <div className="grid grid-cols-3 gap-1 sm:max-w-xs">
+              <div
+                className={`grid gap-1 sm:max-w-xs ${
+                  simOz.ozContinuousStatus === "use"
+                    ? "grid-cols-1 max-w-[5.5rem]"
+                    : "grid-cols-3"
+                }`}
+              >
                 {getVisibleOzRings(simOz.ozContinuousStatus).map((ring) => (
                   <div
                     key={ring.id}

@@ -14,6 +14,7 @@ import {
   type ShareIdentity,
 } from "@/lib/scouter/share";
 import type { MapleScouterCalculatedData } from "@/lib/scouter/to-user-stat";
+import { filterDisplayText } from "@/lib/content-filter";
 
 function formatStat(n: number): string {
   if (!Number.isFinite(n)) return "—";
@@ -81,6 +82,9 @@ export function ShareGalleryModal({
   const [bcsError, setBcsError] = useState<string | null>(null);
   const [boss300, setBoss300] = useState<number | null>(null);
   const [boss380, setBoss380] = useState<number | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
+  /** Honeypot — leave empty; bots that autofill are rejected server-side. */
+  const [website, setWebsite] = useState("");
 
   const isReplace = Boolean(existingPost);
 
@@ -90,6 +94,8 @@ export function ShareGalleryModal({
     setName(initialName);
     setAchievement(initialAchievement);
     setAnonSample(randomAnonSuffix());
+    setFormError(null);
+    setWebsite("");
   }, [open, initialName, initialAchievement]);
 
   useEffect(() => {
@@ -153,6 +159,30 @@ export function ShareGalleryModal({
     !submitting && (identity === "anonymous" || ignOk);
 
   const submit = () => {
+    if (website.trim()) {
+      setFormError("Share rejected.");
+      return;
+    }
+    if (identity === "ign") {
+      const nameCheck = filterDisplayText(name, {
+        fieldLabel: "IGN",
+        maxLength: 20,
+      });
+      if (!nameCheck.ok) {
+        setFormError(nameCheck.error);
+        return;
+      }
+    }
+    const noteCheck = filterDisplayText(achievement, {
+      fieldLabel: "Note",
+      maxLength: 120,
+      allowEmpty: true,
+    });
+    if (!noteCheck.ok) {
+      setFormError(noteCheck.error);
+      return;
+    }
+    setFormError(null);
     if (isReplace && existingPost) {
       const ok = window.confirm(
         `Replace your previous gallery post “${existingPost.name}”?\n\nThe old post will be deleted permanently (new link, views reset to 0).`,
@@ -162,7 +192,7 @@ export function ShareGalleryModal({
     onConfirm({
       identity,
       name: identity === "ign" ? name.trim() : anonPreview,
-      achievement: achievement.trim(),
+      achievement: noteCheck.value,
       boss300HexaStat: boss300,
       boss380HexaStat: boss380,
       replaceExisting: isReplace,
@@ -179,7 +209,7 @@ export function ShareGalleryModal({
         if (e.target === e.currentTarget && !submitting) onClose();
       }}
     >
-      <div className="maple-scroll max-h-[90vh] w-full max-w-lg rounded-xl border border-border/60 bg-surface p-5 shadow-xl">
+      <div className="maple-scroll relative max-h-[90vh] w-full max-w-lg rounded-xl border border-border/60 bg-surface p-5 shadow-xl">
         <h2
           id="share-gallery-title"
           className="font-display text-xl font-bold tracking-tight"
@@ -323,6 +353,29 @@ export function ShareGalleryModal({
               {achievement.trim().length}/120
             </span>
           </label>
+
+          {/* Honeypot for bots — visually hidden, not display:none so autofill still hits it. */}
+          <label
+            className="absolute -left-[9999px] h-px w-px overflow-hidden opacity-0"
+            aria-hidden
+            tabIndex={-1}
+          >
+            Website
+            <input
+              type="text"
+              name="website"
+              autoComplete="off"
+              tabIndex={-1}
+              value={website}
+              onChange={(e) => setWebsite(e.target.value)}
+            />
+          </label>
+
+          {formError ? (
+            <p className="rounded border border-danger/40 bg-surface/80 px-3 py-2 text-xs text-red-600">
+              {formError}
+            </p>
+          ) : null}
         </div>
 
         <div className="mt-5 flex flex-wrap justify-end gap-2">

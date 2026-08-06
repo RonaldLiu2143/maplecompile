@@ -1,4 +1,5 @@
 import { Redis } from "@upstash/redis";
+import { assertCleanDisplayText } from "@/lib/content-filter";
 import { getCharName } from "@/lib/jobs";
 import type { EquipSetup } from "@/lib/types";
 import { clampHexaForGms } from "./buffs";
@@ -8,6 +9,7 @@ import {
   normalizeBossConvertedHexaStat,
 } from "./maple-dmg";
 import type { ScouterInput } from "./types";
+import { getMissingRequiredScouterFields } from "./validate";
 
 /** Max JSON body size for share payloads (equipment snapshots need headroom). */
 export const SHARE_MAX_BYTES = 256 * 1024;
@@ -261,11 +263,25 @@ export async function createShare(args: {
   }
 
   const isPublic = args.public === true;
-  const achievement = normalizeAchievement(args.achievement);
+  const achievement = assertCleanDisplayText(
+    normalizeAchievement(args.achievement),
+    { fieldLabel: "Achievement", maxLength: SHARE_ACHIEVEMENT_MAX, allowEmpty: true },
+  );
   const state = normalizeShareState(args.state);
   const character = normalizeShareCharacter(args.character);
   const equipment = normalizeShareEquipment(args.equipment);
   const hasEquipment = Boolean(equipment);
+
+  if (isPublic) {
+    const missing = getMissingRequiredScouterFields(state.input, "full");
+    if (missing.length > 0) {
+      throw new Error(
+        `Public shares need complete scouter stats (missing: ${missing
+          .map((m) => m.label)
+          .join(", ")}).`,
+      );
+    }
+  }
 
   let boss300HexaStat = normalizeBossConvertedHexaStat(args.boss300HexaStat);
   let boss380HexaStat = normalizeBossConvertedHexaStat(args.boss380HexaStat);
@@ -298,7 +314,10 @@ export async function createShare(args: {
     // Name assigned after id is reserved — placeholder until then.
     name = "Anonymous";
   } else if (isPublic && identity === "ign") {
-    ign = normalizeIgn(args.ign ?? args.name ?? "");
+    ign = assertCleanDisplayText(normalizeIgn(args.ign ?? args.name ?? ""), {
+      fieldLabel: "IGN",
+      maxLength: SHARE_IGN_MAX,
+    });
     if (!ign || ign.toLowerCase() === "untitled") {
       throw new Error("Enter your IGN before sharing to the gallery");
     }
@@ -475,8 +494,27 @@ export async function updateShare(args: {
 
   const achievement =
     args.achievement !== undefined
-      ? normalizeAchievement(args.achievement)
-      : normalizeAchievement(raw.achievement);
+      ? assertCleanDisplayText(normalizeAchievement(args.achievement), {
+          fieldLabel: "Achievement",
+          maxLength: SHARE_ACHIEVEMENT_MAX,
+          allowEmpty: true,
+        })
+      : assertCleanDisplayText(normalizeAchievement(raw.achievement), {
+          fieldLabel: "Achievement",
+          maxLength: SHARE_ACHIEVEMENT_MAX,
+          allowEmpty: true,
+        });
+
+  if (isPublic) {
+    const missing = getMissingRequiredScouterFields(nextState.input, "full");
+    if (missing.length > 0) {
+      throw new Error(
+        `Public shares need complete scouter stats (missing: ${missing
+          .map((m) => m.label)
+          .join(", ")}).`,
+      );
+    }
+  }
 
   let character: ShareCharacterRef | undefined;
   if (args.character === null) {
@@ -534,7 +572,10 @@ export async function updateShare(args: {
     });
     ign = undefined;
   } else if (isPublic && identity === "ign") {
-    const nextIgn = normalizeIgn(args.ign ?? args.name ?? raw.ign ?? raw.name ?? "");
+    const nextIgn = assertCleanDisplayText(
+      normalizeIgn(args.ign ?? args.name ?? raw.ign ?? raw.name ?? ""),
+      { fieldLabel: "IGN", maxLength: SHARE_IGN_MAX },
+    );
     if (!nextIgn || nextIgn.toLowerCase() === "untitled") {
       throw new Error("Enter your IGN before sharing to the gallery");
     }

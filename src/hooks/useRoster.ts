@@ -89,10 +89,20 @@ export function useRoster() {
       if (cancelled) return;
       writeSessionCharacter(character);
       loadedKeys.current.add(key);
-      setSlots((prev) => ({
-        ...prev,
-        [key]: { status: "ready", character },
-      }));
+      setSlots((prev) => {
+        const prevSlot = prev[key];
+        const prevChar =
+          prevSlot?.status === "ready" ? prevSlot.character : null;
+        const merged: CharacterLookupResult = {
+          ...character,
+          graph: character.graph ?? prevChar?.graph ?? null,
+          expAverages: character.expAverages ?? prevChar?.expAverages ?? null,
+        };
+        return {
+          ...prev,
+          [key]: { status: "ready", character: merged },
+        };
+      });
     }
 
     function applyError(key: string, error: string) {

@@ -39,7 +39,8 @@ export const OZ_RINGS: OzRingDef[] = [
     label: "Ring of Sum",
     icon: "/seedring/ringofsum.png",
     field: "ozRingOfSumLevel",
-    visibleIn: ["noUse", "use"],
+    /** Only when Continuous Use is off — Continuous Use shows Continuous alone. */
+    visibleIn: ["noUse"],
   },
   {
     id: "continuous",

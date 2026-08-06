@@ -104,7 +104,7 @@ export function GalleryClient({
   error?: string | null;
 }) {
   const [query, setQuery] = useState("");
-  const [mode, setMode] = useState<GalleryMode>("recent");
+  const [mode, setMode] = useState<GalleryMode>("leaderboard");
   const [items, setItems] = useState(initialItems);
   // Defer localStorage until after mount — sync init mismatches SSR.
   const [owned, setOwned] = useState<
@@ -134,6 +134,12 @@ export function GalleryClient({
     [items],
   );
   const avatars = useCharacterAvatars(avatarRefs);
+
+  const yourPosts = useMemo(() => {
+    return items
+      .filter((item) => Boolean(owned[item.id]?.deleteToken))
+      .sort((a, b) => b.createdAt - a.createdAt);
+  }, [items, owned]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -203,6 +209,113 @@ export function GalleryClient({
     }
   };
 
+  const renderRow = (
+    item: ScouterGalleryItem,
+    index: number,
+    opts: { showRank: boolean },
+  ) => {
+    const className = getCharName(item.jobType, item.charType);
+    const canRemove = Boolean(owned[item.id]?.deleteToken);
+    const paired =
+      item.characterName && item.characterRegion
+        ? {
+            name: item.characterName,
+            region: item.characterRegion,
+          }
+        : null;
+    const avatarUrl = paired
+      ? avatars[characterAvatarKey(paired.region, paired.name)]
+      : undefined;
+    return (
+      <tr
+        key={item.id}
+        className="border-b border-border/30 last:border-0 hover:bg-surface-muted/40"
+      >
+        {opts.showRank ? (
+          <td className="px-3 py-2.5 tabular-nums font-semibold opacity-70">
+            {index + 1}
+          </td>
+        ) : null}
+        <td className="px-3 py-2.5 font-medium">
+          <span className="inline-flex flex-wrap items-center gap-2">
+            {paired ? (
+              <CharacterSprite
+                src={avatarUrl}
+                alt=""
+                size={40}
+                reserveSpace
+                className="rounded-lg"
+              />
+            ) : null}
+            <span className="inline-flex min-w-0 flex-wrap items-center">
+              {item.name}
+              <IdentityBadge identity={item.identity} />
+              {item.hasEquipment ? (
+                <span
+                  className="ml-1.5 inline-block rounded border border-emerald-500/40 bg-emerald-500/10 px-1 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-400"
+                  title={
+                    item.equipCount
+                      ? `${item.equipCount} equipped pieces`
+                      : "Includes equipment"
+                  }
+                >
+                  Gear
+                  {item.equipCount > 0 ? ` ${item.equipCount}` : ""}
+                </span>
+              ) : null}
+            </span>
+          </span>
+        </td>
+        <td className="px-3 py-2.5">{className}</td>
+        <td className="px-3 py-2.5 tabular-nums">{item.level || "—"}</td>
+        <td className="px-3 py-2.5 text-xs">
+          {item.hasEquipment ? (
+            <span className="font-semibold text-emerald-700 dark:text-emerald-400">
+              {item.equipCount > 0 ? `${item.equipCount} pcs` : "Yes"}
+            </span>
+          ) : (
+            <span className="opacity-45">—</span>
+          )}
+        </td>
+        <td className="px-3 py-2.5 tabular-nums">
+          {(item.views ?? 0).toLocaleString()}
+        </td>
+        <td className="px-3 py-2.5">
+          <GalleryBcsHexa
+            boss300HexaStat={item.boss300HexaStat}
+            boss380HexaStat={item.boss380HexaStat}
+          />
+        </td>
+        <td className="max-w-[14rem] px-3 py-2.5 text-xs leading-snug opacity-80">
+          {item.achievement || <span className="opacity-50">—</span>}
+        </td>
+        <td className="px-3 py-2.5 text-xs opacity-70">
+          {formatSharedAt(item.createdAt, now)}
+        </td>
+        <td className="px-3 py-2.5 text-right">
+          <div className="inline-flex flex-wrap items-center justify-end gap-1.5">
+            <Link
+              href={`/calc/character/share/${item.id}`}
+              className="inline-block rounded bg-accent px-2.5 py-1 text-xs font-semibold text-white transition hover:opacity-90"
+            >
+              Open
+            </Link>
+            {canRemove ? (
+              <button
+                type="button"
+                disabled={removingId === item.id}
+                onClick={() => void removeFromGallery(item)}
+                className="rounded border border-border/50 bg-background px-2.5 py-1 text-xs font-semibold text-red-700 transition hover:bg-surface-muted disabled:opacity-40 dark:text-red-400"
+              >
+                {removingId === item.id ? "Removing…" : "Remove"}
+              </button>
+            ) : null}
+          </div>
+        </td>
+      </tr>
+    );
+  };
+
   return (
     <div className="space-y-6">
       <header className="flex flex-wrap items-end justify-between gap-3">
@@ -224,25 +337,60 @@ export function GalleryClient({
         </Link>
       </header>
 
+      {yourPosts.length > 0 ? (
+        <section className="space-y-2">
+          <div className="flex flex-wrap items-end justify-between gap-2">
+            <div>
+              <h2 className="font-display text-lg font-bold tracking-tight">
+                Your posts
+              </h2>
+              <p className="text-xs opacity-60">
+                Loadouts you shared from this browser (edit tokens). They also
+                appear in the gallery below.
+              </p>
+            </div>
+            <span className="text-xs opacity-60">
+              {yourPosts.length} post{yourPosts.length === 1 ? "" : "s"}
+            </span>
+          </div>
+          <div className="overflow-x-auto rounded-lg border border-accent/30 bg-accent/5">
+            <table className="w-full min-w-[48rem] text-left text-sm">
+              <thead className="border-b border-border/40 bg-surface-muted/50 text-xs uppercase tracking-wide opacity-70">
+                <tr>
+                  <th className="px-3 py-2.5 font-semibold">Name</th>
+                  <th className="px-3 py-2.5 font-semibold">Class</th>
+                  <th className="px-3 py-2.5 font-semibold">Level</th>
+                  <th className="px-3 py-2.5 font-semibold">Gear</th>
+                  <th className="px-3 py-2.5 font-semibold">Views</th>
+                  <th
+                    className="px-3 py-2.5 font-semibold"
+                    title="Boss Converted Stat HEXA · 20 min / KMS"
+                  >
+                    BCS HEXA
+                  </th>
+                  <th className="px-3 py-2.5 font-semibold">Achievement</th>
+                  <th className="px-3 py-2.5 font-semibold">Shared</th>
+                  <th className="px-3 py-2.5 font-semibold">
+                    <span className="sr-only">Actions</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {yourPosts.map((item, index) =>
+                  renderRow(item, index, { showRank: false }),
+                )}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      ) : null}
+
       <div className="flex flex-wrap items-center gap-2">
         <div
           className="inline-flex rounded border border-border/50 bg-background p-0.5"
           role="tablist"
           aria-label="Gallery view"
         >
-          <button
-            type="button"
-            role="tab"
-            aria-selected={mode === "recent"}
-            onClick={() => setMode("recent")}
-            className={`rounded px-3 py-1.5 text-sm font-semibold transition ${
-              mode === "recent"
-                ? "bg-accent text-white"
-                : "opacity-70 hover:bg-surface-muted hover:opacity-100"
-            }`}
-          >
-            Recent
-          </button>
           <button
             type="button"
             role="tab"
@@ -255,6 +403,19 @@ export function GalleryClient({
             }`}
           >
             Leaderboard
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={mode === "recent"}
+            onClick={() => setMode("recent")}
+            className={`rounded px-3 py-1.5 text-sm font-semibold transition ${
+              mode === "recent"
+                ? "bg-accent text-white"
+                : "opacity-70 hover:bg-surface-muted hover:opacity-100"
+            }`}
+          >
+            Recent
           </button>
         </div>
         <input
@@ -305,7 +466,10 @@ export function GalleryClient({
                 <th className="px-3 py-2.5 font-semibold">Level</th>
                 <th className="px-3 py-2.5 font-semibold">Gear</th>
                 <th className="px-3 py-2.5 font-semibold">Views</th>
-                <th className="px-3 py-2.5 font-semibold" title="Boss Converted Stat HEXA · 20 min / KMS">
+                <th
+                  className="px-3 py-2.5 font-semibold"
+                  title="Boss Converted Stat HEXA · 20 min / KMS"
+                >
                   BCS HEXA
                 </th>
                 <th className="px-3 py-2.5 font-semibold">Achievement</th>
@@ -316,118 +480,11 @@ export function GalleryClient({
               </tr>
             </thead>
             <tbody>
-              {filtered.map((item, index) => {
-                const className = getCharName(item.jobType, item.charType);
-                const canRemove = Boolean(owned[item.id]?.deleteToken);
-                const paired =
-                  item.characterName && item.characterRegion
-                    ? {
-                        name: item.characterName,
-                        region: item.characterRegion,
-                      }
-                    : null;
-                const avatarUrl = paired
-                  ? avatars[
-                      characterAvatarKey(paired.region, paired.name)
-                    ]
-                  : undefined;
-                return (
-                  <tr
-                    key={item.id}
-                    className="border-b border-border/30 last:border-0 hover:bg-surface-muted/40"
-                  >
-                    {mode === "leaderboard" ? (
-                      <td className="px-3 py-2.5 tabular-nums font-semibold opacity-70">
-                        {index + 1}
-                      </td>
-                    ) : null}
-                    <td className="px-3 py-2.5 font-medium">
-                      <span className="inline-flex flex-wrap items-center gap-2">
-                        {paired ? (
-                          <CharacterSprite
-                            src={avatarUrl}
-                            alt=""
-                            size={40}
-                            reserveSpace
-                            className="rounded-lg"
-                          />
-                        ) : null}
-                        <span className="inline-flex min-w-0 flex-wrap items-center">
-                          {item.name}
-                          <IdentityBadge identity={item.identity} />
-                          {item.hasEquipment ? (
-                            <span
-                              className="ml-1.5 inline-block rounded border border-emerald-500/40 bg-emerald-500/10 px-1 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-400"
-                              title={
-                                item.equipCount
-                                  ? `${item.equipCount} equipped pieces`
-                                  : "Includes equipment"
-                              }
-                            >
-                              Gear
-                              {item.equipCount > 0
-                                ? ` ${item.equipCount}`
-                                : ""}
-                            </span>
-                          ) : null}
-                        </span>
-                      </span>
-                    </td>
-                    <td className="px-3 py-2.5">{className}</td>
-                    <td className="px-3 py-2.5 tabular-nums">
-                      {item.level || "—"}
-                    </td>
-                    <td className="px-3 py-2.5 text-xs">
-                      {item.hasEquipment ? (
-                        <span className="font-semibold text-emerald-700 dark:text-emerald-400">
-                          {item.equipCount > 0
-                            ? `${item.equipCount} pcs`
-                            : "Yes"}
-                        </span>
-                      ) : (
-                        <span className="opacity-45">—</span>
-                      )}
-                    </td>
-                    <td className="px-3 py-2.5 tabular-nums">
-                      {(item.views ?? 0).toLocaleString()}
-                    </td>
-                    <td className="px-3 py-2.5">
-                      <GalleryBcsHexa
-                        boss300HexaStat={item.boss300HexaStat}
-                        boss380HexaStat={item.boss380HexaStat}
-                      />
-                    </td>
-                    <td className="max-w-[14rem] px-3 py-2.5 text-xs leading-snug opacity-80">
-                      {item.achievement || (
-                        <span className="opacity-50">—</span>
-                      )}
-                    </td>
-                    <td className="px-3 py-2.5 text-xs opacity-70">
-                      {formatSharedAt(item.createdAt, now)}
-                    </td>
-                    <td className="px-3 py-2.5 text-right">
-                      <div className="inline-flex flex-wrap items-center justify-end gap-1.5">
-                        <Link
-                          href={`/calc/character/share/${item.id}`}
-                          className="inline-block rounded bg-accent px-2.5 py-1 text-xs font-semibold text-white transition hover:opacity-90"
-                        >
-                          Open
-                        </Link>
-                        {canRemove ? (
-                          <button
-                            type="button"
-                            disabled={removingId === item.id}
-                            onClick={() => void removeFromGallery(item)}
-                            className="rounded border border-border/50 bg-background px-2.5 py-1 text-xs font-semibold text-red-700 transition hover:bg-surface-muted disabled:opacity-40 dark:text-red-400"
-                          >
-                            {removingId === item.id ? "Removing…" : "Remove"}
-                          </button>
-                        ) : null}
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
+              {filtered.map((item, index) =>
+                renderRow(item, index, {
+                  showRank: mode === "leaderboard",
+                }),
+              )}
             </tbody>
           </table>
         </div>

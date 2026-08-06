@@ -58,6 +58,12 @@ export {
   type ScouterRequiredMode,
 } from "./validate";
 export {
+  SCOUTER_FIELD_CAPS,
+  clampScouterField,
+  scouterFieldMax,
+  type ScouterCappedField,
+} from "./field-caps";
+export {
   parseScouterOcrText,
   applyScouterOcrPatch,
   SCOUTER_OCR_EXAMPLE,

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import {
   createShare,
+  getRedis,
   isRedisConfigured,
   listPublicShares,
   SHARE_MAX_BYTES,
@@ -9,6 +10,10 @@ import {
   type ShareEquipmentPayload,
   type ShareIdentity,
 } from "@/lib/scouter/share";
+import {
+  assertShareNotAbusive,
+  clientIpFromRequest,
+} from "@/lib/scouter/share-abuse";
 
 export async function GET() {
   try {
@@ -62,6 +67,8 @@ export async function POST(req: Request) {
       boss380HexaStat?: number;
       character?: ShareCharacterRef;
       equipment?: ShareEquipmentPayload;
+      /** Honeypot — must remain empty (bots that autofill are rejected). */
+      website?: string;
     };
 
     if (!body?.state?.input) {
@@ -78,11 +85,30 @@ export async function POST(req: Request) {
 
     const identity: ShareIdentity =
       body.identity === "anonymous" ? "anonymous" : "ign";
+    const isPublic = body.public === true;
+
+    const abuse = await assertShareNotAbusive({
+      redis: getRedis(),
+      ip: clientIpFromRequest(req),
+      isPublic,
+      state: body.state,
+      name: body.name,
+      ign: body.ign ?? body.name,
+      achievement: body.achievement,
+      identity,
+      honeypot: body.website,
+    });
+    if (!abuse.ok) {
+      return NextResponse.json(
+        { error: abuse.error },
+        { status: abuse.status },
+      );
+    }
 
     const created = await createShare({
       name: body.name ?? body.ign ?? "Untitled",
       state: body.state,
-      public: body.public === true,
+      public: isPublic,
       achievement: body.achievement,
       identity,
       ign: body.ign ?? body.name,
@@ -110,9 +136,16 @@ export async function POST(req: Request) {
     const message = err instanceof Error ? err.message : "Unknown error";
     const status = message.includes("too large")
       ? 413
-      : message.includes("already exists")
+      : message.includes("already exists") || message.includes("identical")
         ? 409
-        : message.includes("Enter your IGN") || message.includes("unique name")
+        : message.includes("Enter your IGN") ||
+            message.includes("unique name") ||
+            message.includes("not allowed") ||
+            message.includes("complete scouter") ||
+            message.includes("Achievement") ||
+            message.includes("IGN") ||
+            message.includes("spammy") ||
+            message.includes("language")
           ? 400
           : 500;
     return NextResponse.json({ error: message }, { status });

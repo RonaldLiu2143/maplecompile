@@ -62,7 +62,7 @@ function Chip({
           : "border-border/50 bg-surface-muted/40 opacity-90";
   return (
     <span
-      className={`inline-flex items-center rounded-md border px-1.5 py-0.5 text-[0.65rem] font-semibold ${toneClass}`}
+        className={`inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-semibold ${toneClass}`}
     >
       {children}
     </span>
@@ -142,28 +142,28 @@ export function DashboardRosterWeeklySection({
           : "warn";
 
   return (
-    <section className="flex min-h-0 flex-col rounded-lg border border-border/40 bg-surface/70 p-2.5 sm:p-3">
-      <div className="flex shrink-0 flex-wrap items-center justify-between gap-1.5">
+    <section className="flex min-h-0 flex-col rounded-lg border border-border/40 bg-surface/70 p-3 sm:p-3.5">
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-2">
         <div className="min-w-0">
-          <h2 className="font-display text-sm font-bold tracking-tight sm:text-base">
+          <h2 className="font-display text-base font-bold tracking-tight sm:text-lg">
             Roster
             {roster.length > 0 ? (
-              <span className="ml-1.5 text-[0.65rem] font-semibold opacity-55">
+              <span className="ml-1.5 text-xs font-semibold opacity-55">
                 ({roster.length})
               </span>
             ) : null}
           </h2>
           {managing ? (
-            <p className="mt-0.5 text-[0.65rem] opacity-60">
+            <p className="mt-0.5 text-xs opacity-60">
               Drag rows or use ↑↓ to reorder. Tap the star to set primary.
             </p>
           ) : roster.length === 0 ? (
-            <p className="mt-0.5 text-[0.65rem] opacity-60">
+            <p className="mt-0.5 text-xs opacity-60">
               Add characters, then track weekly clears in Boss Income.
             </p>
           ) : null}
         </div>
-        <div className="flex shrink-0 flex-wrap items-center gap-1">
+        <div className="flex shrink-0 flex-wrap items-center gap-1.5">
           {roster.length > 0 ? (
             <Chip tone={overallTone}>
               {totals.enabled > 0
@@ -171,23 +171,11 @@ export function DashboardRosterWeeklySection({
                 : "No bosses"}
             </Chip>
           ) : null}
-          <Link
-            href="/calc/bosses"
-            className="rounded-md border border-border px-2 py-1 text-[0.65rem] font-semibold transition hover:bg-surface-muted"
-          >
-            Bosses
-          </Link>
-          <Link
-            href="/roster"
-            className="rounded-md border border-border px-2 py-1 text-[0.65rem] font-semibold transition hover:bg-surface-muted"
-          >
-            Open roster
-          </Link>
           <button
             type="button"
             onClick={onManageToggle}
             className={[
-              "rounded-md px-2.5 py-1 text-[0.65rem] font-semibold transition",
+              "rounded-md px-3 py-1.5 text-xs font-semibold transition",
               managing
                 ? "border border-border hover:bg-surface-muted"
                 : "bg-accent text-white hover:opacity-90 dark:text-zinc-900",

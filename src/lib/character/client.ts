@@ -72,9 +72,17 @@ export function readSessionCharacter(
 export function writeSessionCharacter(character: CharacterLookupResult): void {
   if (typeof window === "undefined") return;
   try {
+    // Prefer freshest payload, but never drop EXP history if a lean response
+    // omits it (keeps Daily EXP graphs after Full profile → back).
+    const prev = readSessionCharacter(character.name, character.region);
+    const merged: CharacterLookupResult = {
+      ...character,
+      graph: character.graph ?? prev?.graph ?? null,
+      expAverages: character.expAverages ?? prev?.expAverages ?? null,
+    };
     sessionStorage.setItem(
       sessionStorageKey(character.region, character.name),
-      JSON.stringify(character),
+      JSON.stringify(merged),
     );
   } catch {
     /* quota / private mode — ignore */

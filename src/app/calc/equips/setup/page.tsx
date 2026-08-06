@@ -35,6 +35,7 @@ import {
   slotToEquipType,
 } from "@/lib/slots";
 import { storage, type EquipSetupPreset } from "@/lib/storage";
+import { filterDisplayText } from "@/lib/content-filter";
 import { ActiveCharacterBar } from "@/components/ActiveCharacterBar";
 import { PairingBar } from "@/components/PairingBar";
 import {
@@ -527,11 +528,19 @@ export default function SetupClient() {
       customPresets.find((p) => p.id === customPresetId)?.name ||
       classDisplayName ||
       "Untitled";
+    const nameCheck = filterDisplayText(requested, {
+      fieldLabel: "Preset name",
+      maxLength: 40,
+    });
+    if (!nameCheck.ok) {
+      flashStarterMsg(nameCheck.error);
+      return;
+    }
     try {
       const overwriteId = asNew ? undefined : loadedCustomPresetId || undefined;
       const saved = storage.saveEquipPreset({
         id: overwriteId,
-        name: requested,
+        name: nameCheck.value,
         setup,
         flameSetup,
         characterKey: activeCharacterKey(),
