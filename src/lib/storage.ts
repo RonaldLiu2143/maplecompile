@@ -45,6 +45,25 @@ function newPresetId(): string {
   return `p_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
+/**
+ * File-style unique names: "Foo" → "Foo (1)" → "Foo (2)" …
+ * When `excludeId` is set (overwrite), that preset's current name is allowed.
+ */
+export function uniqueScouterPresetName(
+  desired: string,
+  existing: { id: string; name: string }[],
+  excludeId?: string,
+): string {
+  const base = desired.trim() || "Untitled";
+  const taken = new Set(
+    existing.filter((p) => p.id !== excludeId).map((p) => p.name),
+  );
+  if (!taken.has(base)) return base;
+  let n = 1;
+  while (taken.has(`${base} (${n})`)) n += 1;
+  return `${base} (${n})`;
+}
+
 function migrateLegacySinglePreset(): ScouterPreset[] {
   for (const key of [
     SCOUTER_PRESET_KEY_LEGACY_SINGLE,
@@ -162,13 +181,13 @@ export const storage = {
     state: ScouterLastState;
   }): ScouterPreset => {
     const list = readPresets();
-    const name = args.name.trim() || "Untitled";
     const now = Date.now();
     if (args.id) {
       const idx = list.findIndex((p) => p.id === args.id);
       if (idx < 0) {
         throw new Error(`Preset not found: ${args.id}`);
       }
+      const name = uniqueScouterPresetName(args.name, list, args.id);
       const updated: ScouterPreset = {
         ...list[idx]!,
         name,
@@ -180,6 +199,7 @@ export const storage = {
       notifyMapleDataChanged("scouterPresets");
       return updated;
     }
+    const name = uniqueScouterPresetName(args.name, list);
     const created: ScouterPreset = {
       id: newPresetId(),
       name,

@@ -25,8 +25,11 @@ import {
   supportsOneHandSword,
   clampHexaForGms,
   getClassSpecificRequirements,
+  getMissingRequiredScouterFields,
+  focusScouterField,
   type BuffState,
   type LinkState,
+  type MissingScouterField,
   type ScouterInput,
   type StatKey,
   type StatTriple,
@@ -77,18 +80,22 @@ function NumInput({
   className = "",
   placeholder,
   readOnly,
+  fieldId,
 }: {
   value: number;
   onChange?: (n: number) => void;
   className?: string;
   placeholder?: string;
   readOnly?: boolean;
+  /** Focus target for missing-field modal (`data-scouter-field`). */
+  fieldId?: string;
 }) {
   return (
     <input
       type="number"
       readOnly={readOnly}
       placeholder={placeholder}
+      data-scouter-field={fieldId}
       className={`${cell} w-full min-w-0 text-right tabular-nums ${
         readOnly ? "bg-surface-muted/40 text-foreground/70" : ""
       } ${className}`}
@@ -106,16 +113,19 @@ function TripleRow({
   label,
   value,
   onChange,
+  fieldId,
 }: {
   label: string;
   value: StatTriple;
   onChange: (next: StatTriple) => void;
+  fieldId?: string;
 }) {
   return (
     <div className="grid grid-cols-4">
       <div className={labelCell}>{label}</div>
       <NumInput
         value={value.base}
+        fieldId={fieldId}
         onChange={(base) => onChange({ ...value, base })}
       />
       <NumInput
@@ -213,8 +223,20 @@ export default function ScouterPage() {
   const [draftReady, setDraftReady] = useState(false);
   const [showHexaEff, setShowHexaEff] = useState(false);
   const hexaEffRef = useRef<HTMLDivElement | null>(null);
+  const [missingFields, setMissingFields] = useState<MissingScouterField[] | null>(
+    null,
+  );
   /** Skip autosave while swapping active-character workspace into React state. */
   const skipWorkspaceAutosave = useRef(false);
+
+  useEffect(() => {
+    if (!missingFields) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMissingFields(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [missingFields]);
 
   useEffect(() => {
     if (!showHexaEff) return;
@@ -596,7 +618,7 @@ export default function ScouterPage() {
 
   const savePreset = (asNew: boolean) => {
     try {
-      const name =
+      const requested =
         presetName.trim() ||
         presets.find((p) => p.id === selectedPresetId)?.name ||
         "Untitled";
@@ -607,7 +629,7 @@ export default function ScouterPage() {
         : loadedPresetId || undefined;
       const saved = storage.saveScouterPreset({
         id: overwriteId,
-        name,
+        name: requested,
         state: {
           input: structuredClone(input),
           buffs: structuredClone(buffs),
@@ -619,12 +641,44 @@ export default function ScouterPage() {
       setSelectedPresetId(saved.id);
       setLoadedPresetId(saved.id);
       setPresetName(saved.name);
-      flashPresetMsg(
-        asNew || !overwriteId ? "Preset saved" : "Preset updated",
-      );
+      const renamed = saved.name !== requested.trim() && requested.trim() !== "";
+      if (asNew || !overwriteId) {
+        flashPresetMsg(
+          renamed
+            ? `Saved as “${saved.name}” (name already used)`
+            : "Preset saved",
+        );
+      } else {
+        flashPresetMsg(
+          renamed
+            ? `Updated as “${saved.name}” (name already used)`
+            : "Preset updated",
+        );
+      }
     } catch {
       flashPresetMsg("Could not save");
     }
+  };
+
+  const persistScouterDraft = () => {
+    const trimmed = presetName.trim();
+    storage.setScouterLast({
+      input,
+      buffs,
+      links,
+      hexa: clampHexaForGms(hexa),
+      ...(trimmed ? { name: trimmed } : {}),
+    });
+  };
+
+  /** Block calc actions until required character-window stats are filled. */
+  const runIfStatsReady = (action: () => void) => {
+    const missing = getMissingRequiredScouterFields(input);
+    if (missing.length > 0) {
+      setMissingFields(missing);
+      return;
+    }
+    action();
   };
 
   const deletePreset = () => {
@@ -1166,6 +1220,7 @@ export default function ScouterPage() {
             <div className={labelCell}>Level</div>
             <NumInput
               value={input.level}
+              fieldId="level"
               onChange={(level) => patch({ level })}
             />
             <div className={labelCell}>Class</div>
@@ -1253,6 +1308,7 @@ export default function ScouterPage() {
                   <TripleRow
                     key={row.key}
                     label={row.label}
+                    fieldId={`stat-${row.key}`}
                     value={input.stats[row.key]}
                     onChange={(t) => setStat(row.key!, t)}
                   />
@@ -1263,6 +1319,7 @@ export default function ScouterPage() {
                   <TripleRow
                     key="matt"
                     label={row.label}
+                    fieldId="matt"
                     value={input.magicAttack}
                     onChange={(magicAttack) => patch({ magicAttack })}
                   />
@@ -1272,6 +1329,7 @@ export default function ScouterPage() {
                 <TripleRow
                   key="att"
                   label={row.label}
+                  fieldId="att"
                   value={input.attack}
                   onChange={(attack) => patch({ attack })}
                 />
@@ -1297,6 +1355,7 @@ export default function ScouterPage() {
               <FieldCell label="Boss Damage">
                 <NumInput
                   value={input.bossDamagePercent}
+                  fieldId="boss-damage"
                   onChange={(bossDamagePercent) =>
                     patch({ bossDamagePercent })
                   }
@@ -1305,6 +1364,7 @@ export default function ScouterPage() {
               <FieldCell label="Ignore Defense">
                 <NumInput
                   value={input.ignoreDefensePercent}
+                  fieldId="ied"
                   onChange={(ignoreDefensePercent) =>
                     patch({ ignoreDefensePercent })
                   }
@@ -1336,6 +1396,7 @@ export default function ScouterPage() {
               <FieldCell label="Critical Damage">
                 <NumInput
                   value={input.criticalDamagePercent}
+                  fieldId="crit-damage"
                   onChange={(criticalDamagePercent) =>
                     patch({ criticalDamagePercent })
                   }
@@ -1433,34 +1494,24 @@ export default function ScouterPage() {
             <button
               type="button"
               className="w-full rounded-md bg-accent px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90"
-              onClick={() => {
-                const trimmed = presetName.trim();
-                storage.setScouterLast({
-                  input,
-                  buffs,
-                  links,
-                  hexa: clampHexaForGms(hexa),
-                  ...(trimmed ? { name: trimmed } : {}),
-                });
-                setShowHexaEff(true);
-              }}
+              onClick={() =>
+                runIfStatsReady(() => {
+                  persistScouterDraft();
+                  setShowHexaEff(true);
+                })
+              }
             >
               Hexa Efficiency
             </button>
             <button
               type="button"
               className="w-full rounded-md border-2 border-border bg-surface px-4 py-2.5 text-sm font-semibold transition hover:bg-surface-muted"
-              onClick={() => {
-                const trimmed = presetName.trim();
-                storage.setScouterLast({
-                  input,
-                  buffs,
-                  links,
-                  hexa: clampHexaForGms(hexa),
-                  ...(trimmed ? { name: trimmed } : {}),
-                });
-                router.push("/calc/scouter/result");
-              }}
+              onClick={() =>
+                runIfStatsReady(() => {
+                  persistScouterDraft();
+                  router.push("/calc/scouter/result");
+                })
+              }
             >
               Detailed Information
             </button>
@@ -1859,6 +1910,78 @@ export default function ScouterPage() {
         buffs={buffs}
         links={links}
       />
+
+      {missingFields ? (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/45 p-3 sm:items-center"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="scouter-missing-title"
+          onClick={() => setMissingFields(null)}
+        >
+          <div
+            className="flex w-full max-w-md flex-col overflow-hidden rounded-2xl border border-border/50 bg-surface shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <header className="shrink-0 border-b border-border/40 px-4 py-3">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h2
+                    id="scouter-missing-title"
+                    className="font-display text-lg font-bold tracking-tight"
+                  >
+                    Missing required stats
+                  </h2>
+                  <p className="mt-0.5 text-xs opacity-65">
+                    Fill these character-window fields before running scouter.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setMissingFields(null)}
+                  className="rounded-lg border border-border/50 px-2 py-1 text-xs font-semibold opacity-70 hover:bg-surface-muted hover:opacity-100"
+                  aria-label="Close"
+                >
+                  Esc
+                </button>
+              </div>
+            </header>
+            <ul className="max-h-[min(50vh,20rem)] space-y-1 overflow-y-auto px-4 py-3">
+              {missingFields.map((f) => (
+                <li
+                  key={f.id}
+                  className="rounded-lg border border-border/40 bg-background/60 px-3 py-2 text-sm font-medium"
+                >
+                  {f.label}
+                </li>
+              ))}
+            </ul>
+            <footer className="flex flex-wrap justify-end gap-2 border-t border-border/40 px-4 py-3">
+              <button
+                type="button"
+                className="rounded-lg border border-border/50 bg-background px-3 py-1.5 text-sm font-semibold transition hover:bg-surface-muted"
+                onClick={() => setMissingFields(null)}
+              >
+                Dismiss
+              </button>
+              <button
+                type="button"
+                className="rounded-lg bg-accent px-3 py-1.5 text-sm font-semibold text-white transition hover:opacity-90"
+                onClick={() => {
+                  const first = missingFields[0];
+                  setMissingFields(null);
+                  if (first) {
+                    // Let the dialog unmount before focusing.
+                    requestAnimationFrame(() => focusScouterField(first.id));
+                  }
+                }}
+              >
+                Jump to first
+              </button>
+            </footer>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

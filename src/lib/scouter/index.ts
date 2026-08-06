@@ -52,6 +52,11 @@ export {
   getClassSpecificRequirements,
 } from "./class-requirements";
 export {
+  getMissingRequiredScouterFields,
+  focusScouterField,
+  type MissingScouterField,
+} from "./validate";
+export {
   OZ_RINGS,
   OZ_CONTINUOUS_STATUS,
   INNER_ABILITY_OPTIONS,

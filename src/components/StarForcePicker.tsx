@@ -162,6 +162,12 @@ export function StarForcePicker({
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
+        <span
+          className="text-sm font-bold tabular-nums text-amber-300"
+          aria-live="polite"
+        >
+          {stars}★
+        </span>
         <label className="flex items-center gap-1.5 text-sm text-zinc-200">
           <span className="opacity-70" aria-hidden>
             ★

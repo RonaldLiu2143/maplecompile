@@ -19,6 +19,7 @@ const C_FLAME = "#66FFFF";
 const C_POT = "#CCFF00";
 const C_MUTED = "#A0A0A0";
 const C_ORANGE = "#FFAA44";
+const GROUP_SIZE = 5;
 
 type Props = {
   equip: Equip;
@@ -65,18 +66,31 @@ function Breakdown({ line }: { line: TooltipStatLine }) {
   );
 }
 
+/** Maple-style stars: groups of 5 with a small gap between sets. */
 function StarRow({ count, max = 15 }: { count: number; max?: number }) {
   const filled = Math.min(count, max);
+  const groups: number[][] = [];
+  for (let start = 0; start < max; start += GROUP_SIZE) {
+    const len = Math.min(GROUP_SIZE, max - start);
+    groups.push(Array.from({ length: len }, (_, i) => start + i));
+  }
   return (
-    <div className="flex flex-wrap justify-center gap-px" aria-hidden>
-      {Array.from({ length: max }, (_, i) => (
-        <span
-          key={i}
-          className="inline-block text-[9px] leading-none"
-          style={{ color: i < filled ? C_SF : "#3a3a3a" }}
-        >
-          ★
-        </span>
+    <div
+      className="flex flex-wrap items-center justify-center gap-1.5"
+      aria-hidden
+    >
+      {groups.map((group, gIdx) => (
+        <div key={gIdx} className="flex items-center gap-px">
+          {group.map((i) => (
+            <span
+              key={i}
+              className="inline-block text-[9px] leading-none"
+              style={{ color: i < filled ? C_SF : "#3a3a3a" }}
+            >
+              ★
+            </span>
+          ))}
+        </div>
       ))}
     </div>
   );
@@ -117,14 +131,22 @@ export function EquipItemTooltip({
         compact ? "w-[220px] p-2" : "w-full max-w-[280px] p-2.5"
       } ${className}`}
       role="img"
-      aria-label={`${equip.name} item stats`}
+      aria-label={`${equip.name} item stats${stars > 0 ? `, ${stars} stars` : ""}`}
     >
       {stars > 0 && (
-        <div className="mb-1 space-y-0.5">
-          <StarRow count={Math.min(stars, 15)} max={15} />
-          {stars > 15 && (
-            <StarRow count={stars - 15} max={Math.min(15, stars - 15)} />
-          )}
+        <div className="mb-1 flex flex-col items-center gap-0.5">
+          <div className="space-y-0.5">
+            <StarRow count={Math.min(stars, 15)} max={15} />
+            {stars > 15 && (
+              <StarRow count={stars - 15} max={Math.min(15, stars - 15)} />
+            )}
+          </div>
+          <span
+            className="text-[10px] font-bold tabular-nums leading-none"
+            style={{ color: C_SF }}
+          >
+            {stars}★
+          </span>
         </div>
       )}
 
