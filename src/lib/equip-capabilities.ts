@@ -1,4 +1,5 @@
 import { isFlammable } from "./flames";
+import { isNoPotentialEventRing } from "./event-rings";
 import { defaultStarForce, MAX_STAR_FORCE } from "./planner/starforce";
 import type { Equip } from "./types";
 
@@ -84,6 +85,8 @@ export function canStarForce(equip: Equip): boolean {
     return false;
   }
   if (isSpecialRing(equip)) return false;
+  // GMS Oz + event gear rings (Awake, Eternal Flame, …) cannot take Star Force.
+  if (equip.setType === "eventRing") return false;
   if (isPrincessNoSecondary(equip)) return false;
   return true;
 }
@@ -189,6 +192,7 @@ export function canPotential(equip: Equip): boolean {
     return false;
   }
   if (isSpecialRing(equip)) return false;
+  if (isNoPotentialEventRing(equip)) return false;
   return true;
 }
 

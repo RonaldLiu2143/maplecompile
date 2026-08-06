@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 import { useMapleDataReload } from "@/hooks/useMapleDataReload";
 import {
@@ -23,6 +24,7 @@ type Props = {
 };
 
 export function PairingBar({ pairArgs, onChange, compact }: Props) {
+  const router = useRouter();
   const [pairing, setPairingState] = useState<ScouterEquipPairing | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
@@ -42,14 +44,21 @@ export function PairingBar({ pairArgs, onChange, compact }: Props) {
   };
 
   const onPair = () => {
-    if (!hasScouterStats() && !pairArgs?.scouterState) {
+    const scouterFilled = hasScouterStats() || !!pairArgs?.scouterState;
+    const equipFilled = hasEquipSetup();
+
+    // Redirect to whichever side is still empty; pair only when both are ready.
+    if (!scouterFilled) {
       flash("Enter scouter stats first");
+      router.push("/calc/scouter");
       return;
     }
-    if (!hasEquipSetup()) {
+    if (!equipFilled) {
       flash("Build an equipment setup first");
+      router.push("/calc/equips/setup");
       return;
     }
+
     const next = pairScouterAndEquip(pairArgs);
     setPairingState(next);
     onChange?.(next);

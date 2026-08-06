@@ -140,7 +140,7 @@ export const STARTER_LOADOUTS: StarterLoadout[] = [
     id: "heroic-mid",
     name: "Mid-game",
     description:
-      "Arcane weapon + gloves/shoes/cape/shoulder, CRA top/bottom, Arcane or Highness hat, Dawn/Gollux line.",
+      "Arcane weapon + gloves/shoes/cape/shoulder, CRA top/bottom, Highness hat, Dawn/Gollux line.",
     armorMatchers: ["acs", "faf"],
     weaponMatchers: ["acs", "arcane umbra", "arcaneshade"],
     accessoryMatchers: [
@@ -152,7 +152,7 @@ export const STARTER_LOADOUTS: StarterLoadout[] = [
       "eventRing",
     ],
     typeMatchers: {
-      hat: ["acs", "arcane umbra", "arcaneshade", ...CRA_HAT],
+      hat: CRA_HAT,
       top: CRA_TOP,
       bottom: CRA_BOTTOM,
       shoulder: ["acs", "arcane umbra", "arcaneshade"],
@@ -234,7 +234,7 @@ export const STARTER_LOADOUTS: StarterLoadout[] = [
     id: "heroic-pitched",
     name: "Endgame (Pitched)",
     description:
-      "Eternal + Arcane mix, Genesis weapon, pitched accessories, Astra secondary, Total Control.",
+      "Full Eternal armor, Genesis weapon, pitched accessories, Astra secondary, Total Control.",
     armorMatchers: ["eternal", "acs"],
     weaponMatchers: ["genesis"],
     accessoryMatchers: [
@@ -248,9 +248,9 @@ export const STARTER_LOADOUTS: StarterLoadout[] = [
       top: ["eternal"],
       bottom: ["eternal"],
       shoulder: ["eternal"],
-      cape: ["acs", "arcane umbra", "arcaneshade"],
-      gloves: ["acs", "arcane umbra", "arcaneshade"],
-      shoes: ["acs", "arcane umbra", "arcaneshade"],
+      cape: ["eternal"],
+      gloves: ["eternal"],
+      shoes: ["eternal"],
       weapon: ["genesis"],
       ring: [
         "dawn-guardian-angel-ring",

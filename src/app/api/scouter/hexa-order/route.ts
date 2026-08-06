@@ -1,37 +1,25 @@
 import { NextResponse } from "next/server";
-import { toMapleScouterUserStat } from "@/lib/scouter/to-user-stat";
-import type { BuffState, LinkState } from "@/lib/scouter/buffs";
+import { buildLocalHexaEfficiencyOrder } from "@/lib/hexa-efficiency-order";
+import {
+  DEFAULT_BOSS_CONVERTED_STAT,
+  normalizeBossConvertedStat,
+} from "@/lib/hexa-priority";
+import { calculateScouter } from "@/lib/scouter/calc";
 import type { ScouterInput } from "@/lib/scouter/types";
-import { CHAR_TO_KMS_CLASS } from "@/lib/scouter/kms-class";
 
-const CALC_DMG_URL = "https://api.maplescouter.com/api/calc/dmg";
-const HEXA_ORDER_URL = "https://api.maplescouter.com/api/calc/hexa-order";
-
-const MS_HEADERS = {
-  "Content-Type": "application/json",
-  Origin: "https://maplescouter.com",
-  Referer: "https://maplescouter.com/",
-  "User-Agent": "Mozilla/5.0 MapleCompile",
-};
-
-export type HexaOrderOptions = {
-  /** Piece (true) vs Erda (false) efficiency ranking */
-  sole: boolean;
-  /** Start from current levels (true) vs reset (false) */
-  start: boolean;
-  /** "3" = general boss, "1" = Kaling (MapleScouter) */
-  cycle: string;
-  /** Mercedes combat variant; 1 = Without Surge + Full Chain */
-  merType: number;
-};
-
+/**
+ * Local Hexa Efficiency order (MapleHub FD bands).
+ * Kept as a POST endpoint for parity with the old MapleScouter proxy; the
+ * Scouter UI computes the same path client-side.
+ */
 export async function POST(req: Request) {
   let body: {
     input: ScouterInput;
-    buffs: BuffState;
-    links: LinkState;
     hexa: number[];
-    options?: Partial<HexaOrderOptions>;
+    options?: {
+      start?: boolean;
+      bossConvertedStat?: number;
+    };
   };
   try {
     body = await req.json();
@@ -43,86 +31,37 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Missing input" }, { status: 400 });
   }
 
-  const options: HexaOrderOptions = {
-    sole: body.options?.sole ?? true,
-    start: body.options?.start ?? true,
-    cycle: body.options?.cycle ?? "3",
-    merType: body.options?.merType ?? 1,
-  };
-
   try {
-    const userStat = toMapleScouterUserStat(body);
-    const myClass = CHAR_TO_KMS_CLASS[body.input.charType] ?? "영웅";
-    const myHexa = (userStat as { hexa?: Record<string, unknown> }).hexa ?? {};
+    let bossConvertedStat = normalizeBossConvertedStat(
+      body.options?.bossConvertedStat ?? DEFAULT_BOSS_CONVERTED_STAT,
+    );
+    if (body.options?.bossConvertedStat == null) {
+      try {
+        const calc = calculateScouter(body.input);
+        const raw = Math.round(Number(calc.boss380Stat) || 0);
+        if (raw > 0) bossConvertedStat = normalizeBossConvertedStat(raw);
+      } catch {
+        /* keep default */
+      }
+    }
 
-    const dmgRes = await fetch(CALC_DMG_URL, {
-      method: "POST",
-      headers: MS_HEADERS,
-      body: JSON.stringify({ userStat }),
+    const result = buildLocalHexaEfficiencyOrder({
+      charType: body.input.charType,
+      levels: Array.isArray(body.hexa) ? body.hexa : [],
+      bossConvertedStat,
+      fromCurrent: body.options?.start ?? true,
+      includeHexaStat: true,
     });
-    if (!dmgRes.ok) {
-      const text = await dmgRes.text().catch(() => "");
-      return NextResponse.json(
-        {
-          error: `MapleScouter CALC_DMG failed (${dmgRes.status})`,
-          detail: text.slice(0, 500),
-        },
-        { status: 502 },
-      );
-    }
-
-    const dmgJson = (await dmgRes.json()) as {
-      calculatedData?: {
-        specEfficiency?: Record<string, number>;
-      };
-    };
-    const specEff = dmgJson.calculatedData?.specEfficiency;
-    if (!specEff) {
-      return NextResponse.json(
-        { error: "MapleScouter returned no specEfficiency" },
-        { status: 502 },
-      );
-    }
-
-    const orderUrl = `${HEXA_ORDER_URL}?class=${encodeURIComponent(myClass)}`;
-    const orderRes = await fetch(orderUrl, {
-      method: "POST",
-      headers: MS_HEADERS,
-      body: JSON.stringify({
-        myHexa,
-        specEff,
-        sole: options.sole,
-        merType: options.merType,
-        start: options.start,
-        cycle: options.cycle,
-        userStat,
-        id: "",
-      }),
-    });
-
-    if (!orderRes.ok) {
-      const text = await orderRes.text().catch(() => "");
-      return NextResponse.json(
-        {
-          error: `MapleScouter hexa-order failed (${orderRes.status})`,
-          detail: text.slice(0, 500),
-        },
-        { status: 502 },
-      );
-    }
-
-    const orderJson = (await orderRes.json()) as {
-      class_hexa?: unknown[];
-      patch?: string;
-    };
 
     return NextResponse.json({
-      className: myClass,
-      class_hexa: orderJson.class_hexa ?? [],
-      patch: orderJson.patch ?? null,
+      className: result.classId,
+      class_hexa: result.steps,
+      patch: `band ${result.bandTarget}`,
+      bossConvertedStat: result.bossConvertedStat,
+      bandTarget: result.bandTarget,
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Upstream request failed";
-    return NextResponse.json({ error: message }, { status: 502 });
+    const message = err instanceof Error ? err.message : "Hexa order failed";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

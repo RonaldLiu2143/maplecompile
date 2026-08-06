@@ -1506,11 +1506,11 @@ export default function ScouterPage() {
               onClick={() =>
                 runIfStatsReady(() => {
                   persistScouterDraft();
-                  setShowHexaEff(true);
+                  router.push("/calc/scouter/result");
                 })
               }
             >
-              Hexa Efficiency
+              Detailed Information
             </button>
             <button
               type="button"
@@ -1518,18 +1518,12 @@ export default function ScouterPage() {
               onClick={() =>
                 runIfStatsReady(() => {
                   persistScouterDraft();
-                  router.push("/calc/scouter/result");
+                  setShowHexaEff(true);
                 })
               }
             >
-              Detailed Information
+              Hexa Efficiency
             </button>
-            <Link
-              href="/calc/equips/setup"
-              className="block w-full rounded-md border border-border/60 bg-background px-4 py-2 text-center text-sm font-semibold transition hover:bg-surface-muted"
-            >
-              Next: Equipment Setup → Pair
-            </Link>
           </div>
         </section>
 
