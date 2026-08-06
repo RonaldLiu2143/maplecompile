@@ -265,7 +265,9 @@ function FieldCell({
 }) {
   return (
     <div className="grid min-w-0 grid-cols-[minmax(6.5rem,1.15fr)_minmax(4rem,0.85fr)]">
-      <div className={labelCell}>{label}</div>
+      <div className={`${labelCell} min-w-0 truncate`} title={label}>
+        {label}
+      </div>
       {children}
     </div>
   );
