@@ -6,12 +6,14 @@ import {
   purgeShare,
   removeFromPublicGallery,
   SHARE_MAX_BYTES,
+  SHARE_VIEW_DEBOUNCE_SEC,
   updateShare,
   type ScouterShareState,
   type ShareCharacterRef,
   type ShareEquipmentPayload,
   type ShareIdentity,
 } from "@/lib/scouter/share";
+import { invalidatePublicGalleryCache } from "@/lib/scouter/share-gallery-cache";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -32,6 +34,15 @@ function allowAdminGalleryDelete(req: Request): boolean {
   return hostname === "localhost" || hostname === "127.0.0.1";
 }
 
+function shareViewCookieName(id: string): string {
+  return `scouter_v_${id}`;
+}
+
+function hasShareViewCookie(cookieHeader: string, id: string): boolean {
+  const prefix = `${shareViewCookieName(id)}=`;
+  return cookieHeader.split(";").some((part) => part.trim().startsWith(prefix));
+}
+
 export async function GET(req: Request, { params }: Params) {
   try {
     if (!isRedisConfigured()) {
@@ -50,16 +61,32 @@ export async function GET(req: Request, { params }: Params) {
       return NextResponse.json({ error: "Share not found" }, { status: 404 });
     }
 
-    // Count a view when the public share page loads (?view=1).
+    // Count a view when the public share page loads (?view=1), debounced per
+    // browser via HttpOnly cookie so refresh spam doesn't INCR every time.
     const url = new URL(req.url);
     const countView = url.searchParams.get("view") === "1";
+    const cookieHeader = req.headers.get("cookie") ?? "";
+    const alreadyCounted = hasShareViewCookie(cookieHeader, id);
     let views = record.views ?? 0;
-    if (countView) {
+    let setViewCookie = false;
+    if (countView && !alreadyCounted) {
       const next = await incrementShareViews(id);
-      if (next != null) views = next;
+      if (next != null) {
+        views = next;
+        setViewCookie = true;
+      }
     }
 
-    return NextResponse.json({ ...record, views });
+    const res = NextResponse.json({ ...record, views });
+    if (setViewCookie) {
+      res.cookies.set(shareViewCookieName(id), "1", {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        maxAge: SHARE_VIEW_DEBOUNCE_SEC,
+      });
+    }
+    return res;
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
     return NextResponse.json({ error: message }, { status: 500 });
@@ -133,6 +160,9 @@ export async function PATCH(req: Request, { params }: Params) {
       equipment: body.equipment,
     });
 
+    // Public flag / name / BCS fields affect gallery rows.
+    invalidatePublicGalleryCache();
+
     const origin = new URL(req.url).origin;
     const url = `${origin}/calc/character/share/${record.id}`;
 
@@ -201,6 +231,7 @@ export async function DELETE(req: Request, { params }: Params) {
         admin,
       });
     }
+    invalidatePublicGalleryCache();
     return NextResponse.json({ ok: true });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";

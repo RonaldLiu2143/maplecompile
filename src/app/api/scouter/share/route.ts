@@ -3,13 +3,16 @@ import {
   createShare,
   getRedis,
   isRedisConfigured,
-  listPublicShares,
   SHARE_MAX_BYTES,
   type ScouterShareState,
   type ShareCharacterRef,
   type ShareEquipmentPayload,
   type ShareIdentity,
 } from "@/lib/scouter/share";
+import {
+  invalidatePublicGalleryCache,
+  listPublicSharesCached,
+} from "@/lib/scouter/share-gallery-cache";
 import {
   assertShareNotAbusive,
   clientIpFromRequest,
@@ -28,7 +31,7 @@ export async function GET() {
       );
     }
 
-    const items = await listPublicShares();
+    const items = await listPublicSharesCached();
     return NextResponse.json({ items });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
@@ -117,6 +120,10 @@ export async function POST(req: Request) {
       character: body.character,
       equipment: body.equipment,
     });
+
+    if (created.record.public) {
+      invalidatePublicGalleryCache();
+    }
 
     const origin = new URL(req.url).origin;
     const url = `${origin}/calc/character/share/${created.record.id}`;

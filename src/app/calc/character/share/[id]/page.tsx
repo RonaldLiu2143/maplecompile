@@ -30,6 +30,7 @@ import {
 } from "@/lib/scouter";
 import {
   countEquipPieces,
+  SHARE_VIEW_DEBOUNCE_SEC,
   type ScouterShareRecord,
 } from "@/lib/scouter/share";
 import { storage } from "@/lib/storage";
@@ -40,6 +41,28 @@ type LoadState =
   | { status: "loading" }
   | { status: "error"; message: string }
   | { status: "ready"; record: ScouterShareRecord };
+
+/** Client-side view debounce (pairs with server HttpOnly cookie). */
+function shouldRequestShareViewCount(id: string): boolean {
+  try {
+    const raw = localStorage.getItem(`mh_share_view_${id}`);
+    const prev = raw ? Number(raw) : 0;
+    if (Number.isFinite(prev) && prev > 0) {
+      if (Date.now() - prev < SHARE_VIEW_DEBOUNCE_SEC * 1000) return false;
+    }
+  } catch {
+    // private mode / blocked storage — still request ?view=1; server cookie gates
+  }
+  return true;
+}
+
+function markShareViewCountedLocally(id: string): void {
+  try {
+    localStorage.setItem(`mh_share_view_${id}`, String(Date.now()));
+  } catch {
+    // ignore
+  }
+}
 
 function formatStat(n: number | null | undefined): string {
   if (n == null || !Number.isFinite(n)) return "—";
@@ -65,8 +88,10 @@ export default function CharacterShareProfilePage() {
     let cancelled = false;
     (async () => {
       try {
+        const countView = shouldRequestShareViewCount(id);
+        const qs = countView ? "?view=1" : "";
         const res = await fetch(
-          `/api/scouter/share/${encodeURIComponent(id)}?view=1`,
+          `/api/scouter/share/${encodeURIComponent(id)}${qs}`,
         );
         const data = (await res.json()) as ScouterShareRecord & {
           error?: string;
@@ -79,6 +104,7 @@ export default function CharacterShareProfilePage() {
         }
         if (cancelled) return;
         setLoad({ status: "ready", record: data });
+        if (countView) markShareViewCountedLocally(id);
         storage.recordScouterShareView(id);
         const tokens = storage.getScouterShareTokens();
         setOwnedToken(tokens[id]?.deleteToken ?? null);

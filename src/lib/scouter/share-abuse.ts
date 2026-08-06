@@ -69,16 +69,31 @@ export function publicShareFingerprint(state: ScouterShareState): string {
   return createHash("sha256").update(payload).digest("hex").slice(0, 32);
 }
 
+/**
+ * INCR both windows + conditional EXPIRE in one EVAL (was 2–4 Redis cmds).
+ * Upstash bills EVAL as a single command.
+ */
+const RATE_BUMP_SCRIPT = `
+local m = redis.call("INCR", KEYS[1])
+if m == 1 then redis.call("EXPIRE", KEYS[1], ARGV[1]) end
+local h = redis.call("INCR", KEYS[2])
+if h == 1 then redis.call("EXPIRE", KEYS[2], ARGV[2]) end
+return {m, h}
+`;
+
 async function bumpRate(
   redis: Redis,
   ip: string,
 ): Promise<{ minute: number; hour: number }> {
   const mKey = rateKey(ip, "m");
   const hKey = rateKey(ip, "h");
-  const minute = Number(await redis.incr(mKey)) || 0;
-  if (minute === 1) await redis.expire(mKey, 60);
-  const hour = Number(await redis.incr(hKey)) || 0;
-  if (hour === 1) await redis.expire(hKey, 3600);
+  const result = await redis.eval<[string, string], [number, number]>(
+    RATE_BUMP_SCRIPT,
+    [mKey, hKey],
+    ["60", "3600"],
+  );
+  const minute = Number(result?.[0]) || 0;
+  const hour = Number(result?.[1]) || 0;
   return { minute, hour };
 }
 
