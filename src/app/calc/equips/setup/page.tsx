@@ -734,80 +734,84 @@ export default function SetupClient() {
               </button>
             </div>
 
-            <div className="inline-flex max-w-full flex-wrap items-center justify-end gap-1 rounded-md border border-border/50 bg-surface/50 px-1.5 py-1">
-              <span className="px-0.5 text-[9px] font-bold uppercase tracking-wide opacity-55">
-                My presets
-              </span>
-              <input
-                type="text"
-                value={customPresetName}
-                onChange={(e) => {
-                  setPresetNameTouched(true);
-                  setCustomPresetName(e.target.value);
-                }}
-                placeholder={classDisplayName || "Preset name"}
-                className="w-[7.5rem] rounded border border-border bg-surface px-1.5 py-1 text-[11px] outline-none focus:border-accent sm:w-[9rem]"
-                aria-label="Custom preset name"
-                disabled={status !== "ready"}
-              />
-              <button
-                type="button"
-                onClick={() => saveCustomPreset(false)}
-                disabled={
-                  status !== "ready" ||
-                  (!customPresetName.trim() && !loadedCustomPresetId)
-                }
-                className="rounded bg-accent px-2 py-1 text-[11px] font-semibold text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
-                title={
-                  loadedCustomPresetId
-                    ? "Overwrite the loaded preset"
-                    : "Save current setup as a new named preset"
-                }
-              >
-                {loadedCustomPresetId ? "Update" : "Save"}
-              </button>
-              <button
-                type="button"
-                onClick={() => saveCustomPreset(true)}
-                disabled={status !== "ready" || !customPresetName.trim()}
-                className="rounded border border-border px-2 py-1 text-[11px] font-semibold hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
-                title="Keep the current preset and save a copy under this name"
-              >
-                Save as new
-              </button>
-              <select
-                value={customPresetId}
-                onChange={(e) => setCustomPresetId(e.target.value)}
-                className="max-w-[9rem] rounded border border-border bg-surface px-1.5 py-1 text-[11px] font-semibold outline-none focus:border-accent"
-                aria-label="Saved custom presets"
-                disabled={status !== "ready"}
-              >
-                <option value="">Saved…</option>
-                {customPresets.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
-              </select>
-              <button
-                type="button"
-                onClick={() => loadCustomPreset(customPresetId)}
-                disabled={status !== "ready" || !customPresetId}
-                className="rounded border border-border px-2 py-1 text-[11px] font-semibold hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                Load
-              </button>
-              <button
-                type="button"
-                onClick={deleteCustomPreset}
-                disabled={
-                  status !== "ready" ||
-                  !(customPresetId || loadedCustomPresetId)
-                }
-                className="rounded border border-border px-2 py-1 text-[11px] font-semibold text-danger hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                Delete
-              </button>
+            <div className="flex max-w-full flex-col items-stretch gap-1 rounded-md border border-border/50 bg-surface/50 px-1.5 py-1">
+              <div className="inline-flex max-w-full flex-wrap items-center justify-end gap-1">
+                <span className="px-0.5 text-[9px] font-bold uppercase tracking-wide opacity-55">
+                  My presets
+                </span>
+                <input
+                  type="text"
+                  value={customPresetName}
+                  onChange={(e) => {
+                    setPresetNameTouched(true);
+                    setCustomPresetName(e.target.value);
+                  }}
+                  placeholder={classDisplayName || "Preset name"}
+                  className="w-[7.5rem] rounded border border-border bg-surface px-1.5 py-1 text-[11px] outline-none focus:border-accent sm:w-[9rem]"
+                  aria-label="Custom preset name"
+                  disabled={status !== "ready"}
+                />
+                <button
+                  type="button"
+                  onClick={() => saveCustomPreset(false)}
+                  disabled={
+                    status !== "ready" ||
+                    (!customPresetName.trim() && !loadedCustomPresetId)
+                  }
+                  className="rounded bg-accent px-2 py-1 text-[11px] font-semibold text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+                  title={
+                    loadedCustomPresetId
+                      ? "Overwrite the loaded preset"
+                      : "Save current setup as a new named preset"
+                  }
+                >
+                  {loadedCustomPresetId ? "Update" : "Save"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => saveCustomPreset(true)}
+                  disabled={status !== "ready" || !customPresetName.trim()}
+                  className="rounded border border-border px-2 py-1 text-[11px] font-semibold hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
+                  title="Keep the current preset and save a copy under this name"
+                >
+                  Save as new
+                </button>
+              </div>
+              <div className="inline-flex max-w-full flex-wrap items-center justify-end gap-1">
+                <select
+                  value={customPresetId}
+                  onChange={(e) => setCustomPresetId(e.target.value)}
+                  className="max-w-[9rem] rounded border border-border bg-surface px-1.5 py-1 text-[11px] font-semibold outline-none focus:border-accent"
+                  aria-label="Saved custom presets"
+                  disabled={status !== "ready"}
+                >
+                  <option value="">Saved…</option>
+                  {customPresets.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={() => loadCustomPreset(customPresetId)}
+                  disabled={status !== "ready" || !customPresetId}
+                  className="rounded border border-border px-2 py-1 text-[11px] font-semibold hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  Load
+                </button>
+                <button
+                  type="button"
+                  onClick={deleteCustomPreset}
+                  disabled={
+                    status !== "ready" ||
+                    !(customPresetId || loadedCustomPresetId)
+                  }
+                  className="rounded border border-border px-2 py-1 text-[11px] font-semibold text-danger hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  Delete
+                </button>
+              </div>
             </div>
           </div>
         </div>
