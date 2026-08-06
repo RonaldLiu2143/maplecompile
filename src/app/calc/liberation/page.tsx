@@ -16,10 +16,7 @@ import {
   type DisplayPrefs,
 } from "@/lib/display-prefs";
 import {
-  DESTINY_CARRYOVER_CAP,
-  GENESIS_CARRYOVER_CAP,
   NOT_DOING,
-  TRACE_INPUT_MAX,
   bossIconSrc,
   bossesFor,
   calculateLiberation,
@@ -29,6 +26,7 @@ import {
   ensureCharacterBundle,
   getActiveInputs,
   getActiveKey,
+  highestDifficulty,
   milestonesFor,
   readLiberationStore,
   tracesFromClear,
@@ -72,13 +70,13 @@ function weeksLabel(weeks: number | null): string {
 
 function bossCardClass(cleared: boolean, doing: boolean): string {
   const base =
-    "relative flex flex-col gap-3 rounded-xl border p-3.5 transition select-none sm:flex-row sm:items-center sm:gap-4";
+    "relative flex flex-col gap-3 rounded-xl border p-3.5 transition select-none sm:flex-row sm:items-center sm:gap-4 cursor-pointer";
   if (!doing) {
-    return `${base} cursor-default border-border/30 bg-surface/50 opacity-75`;
+    return `${base} border-border/30 bg-surface/50 opacity-75 hover:border-border/55 hover:opacity-90`;
   }
   return cleared
-    ? `${base} cursor-pointer border-accent bg-accent-soft/40`
-    : `${base} cursor-pointer border-border/45 bg-surface/80 hover:border-border/70`;
+    ? `${base} border-accent bg-accent-soft/40`
+    : `${base} border-border/45 bg-surface/80 hover:border-border/70`;
 }
 
 export default function LiberationPage() {
@@ -236,6 +234,29 @@ export default function LiberationPage() {
       const bossSelections = current.bossSelections.map((s) => {
         if (s.bossName !== bossName) return s;
         if (s.difficulty === NOT_DOING) return s;
+        return { ...s, cleared: !s.cleared };
+      });
+      return upsertActiveInputs(prev, { bossSelections });
+    });
+  };
+
+  /** Card click: enable at highest+Solo, or toggle clear when already selected. */
+  const onBossCardActivate = (bossName: string) => {
+    setStore((prev) => {
+      const current = getActiveInputs(prev);
+      const typeNow = current.liberationType;
+      const boss = bossesFor(typeNow).find((b) => b.name === bossName);
+      if (!boss) return prev;
+      const bossSelections = current.bossSelections.map((s) => {
+        if (s.bossName !== bossName) return s;
+        if (s.difficulty === NOT_DOING) {
+          return {
+            ...s,
+            difficulty: highestDifficulty(boss),
+            partySize: 1,
+            cleared: false,
+          };
+        }
         return { ...s, cleared: !s.cleared };
       });
       return upsertActiveInputs(prev, { bossSelections });
@@ -546,9 +567,9 @@ export default function LiberationPage() {
             </div>
 
             <p className="text-[11px] leading-relaxed opacity-60">
-              {type === "destiny"
-                ? `Tip: you can keep up to ${DESTINY_CARRYOVER_CAP.toLocaleString()} ${currencyShort} when moving to the next step.`
-                : `Tip: you can keep up to ${GENESIS_CARRYOVER_CAP.toLocaleString()} ${currencyShort} when moving to the next step.`}
+              Tip: this mission needs up to{" "}
+              {result.missionCap.toLocaleString()} {currencyShort}. Extra
+              carryover accelerates the next step after you advance the quest.
             </p>
           </section>
         </aside>
@@ -623,7 +644,7 @@ export default function LiberationPage() {
                 <input
                   type="number"
                   min={0}
-                  max={TRACE_INPUT_MAX}
+                  max={result.missionCap}
                   inputMode="numeric"
                   className={`${inputClass} w-full placeholder:text-foreground/25`}
                   value={
@@ -638,11 +659,18 @@ export default function LiberationPage() {
                     }
                     const n = Number(raw);
                     if (!Number.isFinite(n)) return;
-                    patch({ currentTraces: clampTracesHeld(n) });
+                    patch({
+                      currentTraces: clampTracesHeld(
+                        n,
+                        type,
+                        inputs.liberationQuest,
+                      ),
+                    });
                   }}
                 />
                 <span className="text-[11px] opacity-50">
-                  Leave blank for 0 · max {TRACE_INPUT_MAX.toLocaleString()}
+                  Leave blank for 0 · this mission max{" "}
+                  {result.missionCap.toLocaleString()}
                 </span>
               </label>
 
@@ -712,8 +740,8 @@ export default function LiberationPage() {
               Weekly bosses
             </h2>
             <p className="mt-0.5 text-xs opacity-65">
-              Pick difficulty &amp; party size. Tap the card or status button
-              when you clear that boss this week.
+              Pick difficulty &amp; party size (defaults to highest + Solo).
+              Tap the card to clear, or tap an idle card to add that boss.
             </p>
           </div>
           <span className="rounded-md border border-border/40 px-2.5 py-1 text-xs font-semibold tabular-nums opacity-80">
@@ -748,24 +776,22 @@ export default function LiberationPage() {
             return (
               <div
                 key={boss.name}
-                role={doing ? "button" : undefined}
-                tabIndex={doing ? 0 : undefined}
+                role="button"
+                tabIndex={0}
                 onClick={(e) => {
-                  if (!doing) return;
                   const t = e.target as HTMLElement;
                   if (t.closest("button, select, input, a, textarea, label")) {
                     return;
                   }
-                  toggleCleared(boss.name);
+                  onBossCardActivate(boss.name);
                 }}
                 onKeyDown={(e) => {
-                  if (!doing) return;
                   if (e.key === "Enter" || e.key === " ") {
                     e.preventDefault();
-                    toggleCleared(boss.name);
+                    onBossCardActivate(boss.name);
                   }
                 }}
-                aria-pressed={doing ? sel.cleared : undefined}
+                aria-pressed={doing ? sel.cleared : false}
                 className={bossCardClass(sel.cleared, doing)}
               >
                 <div className="flex min-w-0 flex-1 items-start gap-3">
@@ -815,19 +841,24 @@ export default function LiberationPage() {
                       <select
                         className={`${inputClass} min-w-[11rem] flex-1 py-1.5 text-sm`}
                         value={sel.difficulty}
-                        onChange={(e) =>
+                        onChange={(e) => {
+                          const difficulty = e.target.value;
+                          const enabling =
+                            sel.difficulty === NOT_DOING &&
+                            difficulty !== NOT_DOING;
                           patchBoss(boss.name, {
-                            difficulty: e.target.value,
+                            difficulty,
+                            partySize: enabling
+                              ? 1
+                              : clampPartySize(sel.partySize),
                             cleared:
-                              e.target.value === NOT_DOING
-                                ? false
-                                : sel.cleared,
-                          })
-                        }
+                              difficulty === NOT_DOING ? false : sel.cleared,
+                          });
+                        }}
                         aria-label={`${boss.name} difficulty`}
                       >
                         <option value={NOT_DOING}>Not doing</option>
-                        {boss.difficulties.map((d) => (
+                        {[...boss.difficulties].reverse().map((d) => (
                           <option key={d.label} value={d.label}>
                             {d.label} ({d.baseTraces})
                           </option>

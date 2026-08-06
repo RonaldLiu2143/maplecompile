@@ -2,11 +2,14 @@ import {
   TRACE_INPUT_MAX,
   bossesFor,
   milestonesForType,
+  missionCapFor,
   targetForType,
   type LiberationMilestone,
   type LiberationType,
   type TraceBoss,
 } from "./data";
+
+export { missionCapFor } from "./data";
 
 export const NOT_DOING = "Not doing";
 
@@ -21,7 +24,7 @@ export type TraceSelection = {
 
 export type LiberationInputs = {
   type: LiberationType;
-  /** Banked currency currently held (0–3000 input clamp). */
+  /** Banked currency currently held (clamped to current mission cap). */
   tracesHeld: number;
   /** Milestone select value `${required}|${bossName}`. */
   liberationQuest: string;
@@ -54,6 +57,8 @@ export type LiberationResult = {
     held: number;
   } | null;
   completionRate: number;
+  /** Cap for traces held on the current mission. */
+  missionCap: number;
 };
 
 export function milestonesFor(type: LiberationType): LiberationMilestone[] {
@@ -85,8 +90,20 @@ export function parseQuestTraces(liberationQuest: string): number {
   return Number.isFinite(n) ? n : 0;
 }
 
-export function clampTracesHeld(n: number): number {
-  return Math.min(TRACE_INPUT_MAX, Math.max(0, Math.floor(n) || 0));
+export function highestDifficulty(boss: TraceBoss): string {
+  return boss.difficulties[boss.difficulties.length - 1]?.label ?? NOT_DOING;
+}
+
+export function clampTracesHeld(
+  n: number,
+  type?: LiberationType,
+  liberationQuest?: string,
+): number {
+  const max =
+    type && liberationQuest
+      ? missionCapFor(type, liberationQuest)
+      : TRACE_INPUT_MAX;
+  return Math.min(max, Math.max(0, Math.floor(n) || 0));
 }
 
 export function clampPartySize(n: number): number {
@@ -163,12 +180,20 @@ function stepProgressFor(
 ): LiberationResult["stepProgress"] {
   const list = milestonesFor(type);
   const idx = list.findIndex((m) => m.value === liberationQuest);
-  if (idx < 0 || idx >= list.length - 1) return null;
+  if (idx < 0) return null;
   const current = list[idx]!;
-  const next = list[idx + 1]!;
-  const needed = next.requiredTraces - current.requiredTraces;
+  const next = list[idx + 1];
+  if (next) {
+    return {
+      nextBossName: next.bossName,
+      needed: next.requiredTraces - current.requiredTraces,
+      held: tracesHeld,
+    };
+  }
+  const needed = targetFor(type) - current.requiredTraces;
+  if (needed <= 0) return null;
   return {
-    nextBossName: next.bossName,
+    nextBossName: "Liberation",
     needed,
     held: tracesHeld,
   };
@@ -181,7 +206,12 @@ function stepProgressFor(
 export function calculateLiberation(input: LiberationInputs): LiberationResult {
   const target = targetFor(input.type);
   const questTraces = parseQuestTraces(input.liberationQuest);
-  const tracesHeld = clampTracesHeld(input.tracesHeld);
+  const missionCap = missionCapFor(input.type, input.liberationQuest);
+  const tracesHeld = clampTracesHeld(
+    input.tracesHeld,
+    input.type,
+    input.liberationQuest,
+  );
   const progress = Math.min(target, questTraces + tracesHeld);
   const remaining = Math.max(0, target - progress);
   const weeklyResetDay = input.weeklyResetDay ?? 4;
@@ -235,6 +265,7 @@ export function calculateLiberation(input: LiberationInputs): LiberationResult {
       nextMilestone,
       stepProgress,
       completionRate: 100,
+      missionCap,
     };
   }
 
@@ -253,6 +284,7 @@ export function calculateLiberation(input: LiberationInputs): LiberationResult {
       nextMilestone,
       stepProgress,
       completionRate,
+      missionCap,
     };
   }
 
@@ -271,6 +303,7 @@ export function calculateLiberation(input: LiberationInputs): LiberationResult {
       nextMilestone,
       stepProgress,
       completionRate,
+      missionCap,
     };
   }
 
@@ -290,6 +323,7 @@ export function calculateLiberation(input: LiberationInputs): LiberationResult {
       nextMilestone,
       stepProgress,
       completionRate,
+      missionCap,
     };
   }
 
@@ -324,6 +358,7 @@ export function calculateLiberation(input: LiberationInputs): LiberationResult {
     nextMilestone,
     stepProgress,
     completionRate,
+    missionCap,
   };
 }
 

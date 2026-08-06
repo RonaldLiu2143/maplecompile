@@ -73,7 +73,13 @@ function normalizeInputs(
   if (!raw || typeof raw !== "object") return base;
   return {
     liberationType: type,
-    currentTraces: clampTracesHeld(Number(raw.currentTraces) || 0),
+    currentTraces: clampTracesHeld(
+      Number(raw.currentTraces) || 0,
+      type,
+      typeof raw.liberationQuest === "string" && raw.liberationQuest
+        ? raw.liberationQuest
+        : defaultLiberationQuest(type),
+    ),
     targetTraces: targetForType(type),
     startDate:
       typeof raw.startDate === "string" && raw.startDate

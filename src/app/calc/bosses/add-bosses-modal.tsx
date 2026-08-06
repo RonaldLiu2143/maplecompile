@@ -156,7 +156,7 @@ export function AddBossesModal({
       onAdd({
         bossId: boss.id,
         difficulty,
-        partySize: draftParty[boss.id] ?? sel.partySize,
+        partySize: draftParty[boss.id] ?? 1,
       });
     }
   };
@@ -167,8 +167,13 @@ export function AddBossesModal({
       onRemove(boss.id);
       return;
     }
-    const difficulty = draftDiff[boss.id] ?? defaultDifficulty(boss, sel);
+    const difficulty =
+      draftDiff[boss.id] ??
+      boss.difficulties[boss.difficulties.length - 1]?.name ??
+      "";
     const partySize = clampPartySize(boss.id, draftParty[boss.id] ?? 1);
+    setDraftDiff((prev) => ({ ...prev, [boss.id]: difficulty }));
+    setDraftParty((prev) => ({ ...prev, [boss.id]: partySize }));
     onAdd({ bossId: boss.id, difficulty, partySize });
   };
 
@@ -500,11 +505,14 @@ export function AddBossesModal({
                           value={difficulty}
                           onChange={(e) => setDiff(boss, e.target.value)}
                         >
-                          {boss.difficulties.map((d) => (
-                            <option key={d.name} value={d.name}>
-                              {d.name}
-                            </option>
-                          ))}
+                          {boss.difficulties
+                            .slice()
+                            .reverse()
+                            .map((d) => (
+                              <option key={d.name} value={d.name}>
+                                {d.name}
+                              </option>
+                            ))}
                         </select>
                       </div>
 

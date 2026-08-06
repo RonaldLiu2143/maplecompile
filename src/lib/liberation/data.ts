@@ -21,12 +21,15 @@ export type LiberationMilestone = {
   value: string;
 };
 
-/** Input clamp matches MapleHub (`Math.min(..., 3000)` for both types). */
+/**
+ * Absolute bank ceiling (game / MapleHub input clamp).
+ * Per-mission turn-in amounts are smaller — see {@link missionCapFor}.
+ */
 export const TRACE_INPUT_MAX = 3000;
-/** In-game carryover tip shown for Genesis (MapleHub copy). */
-export const GENESIS_CARRYOVER_CAP = 1500;
-/** In-game carryover tip / Destiny bank (MapleHub copy). */
+/** @deprecated Prefer {@link missionCapFor}; Destiny bank ceiling. */
 export const DESTINY_CARRYOVER_CAP = 3000;
+/** @deprecated Prefer {@link missionCapFor}; legacy MapleHub Genesis tip. */
+export const GENESIS_CARRYOVER_CAP = 1500;
 
 export const GENESIS_TARGET = 6500;
 export const DESTINY_TARGET = 7500;
@@ -279,6 +282,29 @@ export function milestonesForType(type: LiberationType): LiberationMilestone[] {
 
 export function targetForType(type: LiberationType): number {
   return type === "destiny" ? DESTINY_TARGET : GENESIS_TARGET;
+}
+
+/**
+ * Traces / Determination needed for the current mission step
+ * (gap from selected quest to the next milestone, or to the final target).
+ *
+ * Genesis: 500 early, then 1,000 per step.
+ * Destiny: 2,000 → 2,500 → 3,000.
+ */
+export function missionCapFor(
+  type: LiberationType,
+  liberationQuest: string,
+): number {
+  const list = milestonesForType(type);
+  const idx = list.findIndex((m) => m.value === liberationQuest);
+  const current =
+    idx >= 0 ? list[idx]!.requiredTraces : (list[0]?.requiredTraces ?? 0);
+  const nextReq =
+    idx >= 0 && idx < list.length - 1
+      ? list[idx + 1]!.requiredTraces
+      : targetForType(type);
+  const gap = Math.max(0, nextReq - current);
+  return Math.min(TRACE_INPUT_MAX, gap || TRACE_INPUT_MAX);
 }
 
 export function currencyLabel(type: LiberationType): string {
