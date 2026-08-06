@@ -490,6 +490,10 @@ export default function HexaTrackerPage() {
       })
     : null;
   const nextUp = progress ? cheapestNextUpgrade(progress.nodes) : null;
+  const nextUpIcon =
+    nextUp?.node.slotIndex != null
+      ? iconUrl(slotsHexa[nextUp.node.slotIndex]?.iconSuffix ?? null)
+      : "";
 
   const groups = useMemo(() => {
     if (!progress) return [];
@@ -890,7 +894,21 @@ export default function HexaTrackerPage() {
             <h2 className="text-sm font-semibold">Next Upgrade</h2>
             {nextUp ? (
               <div className="mt-2 space-y-2">
-                <p className="text-base font-bold">{nextUp.node.label}</p>
+                <div className="flex items-center gap-2.5">
+                  {nextUpIcon ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={nextUpIcon}
+                      alt=""
+                      width={36}
+                      height={36}
+                      className="shrink-0 rounded"
+                    />
+                  ) : (
+                    <div className="h-9 w-9 shrink-0 rounded bg-surface-muted" />
+                  )}
+                  <p className="text-base font-bold">{nextUp.node.label}</p>
+                </div>
                 <p className="text-xs opacity-70">
                   Level {nextUp.node.current} → {nextUp.nextLevel}
                 </p>
