@@ -4,6 +4,14 @@ import {
   hasScouterStats,
 } from "./pairing";
 import {
+  DEFAULT_FRAGMENT_RATE,
+  HEXA_CORE_MAX_LEVEL,
+  HEXA_STAT_MAX_LEVEL,
+  type FragmentRateSettings,
+  type WeeklyDungeonId,
+  WEEKLY_DUNGEON_FRAGMENTS,
+} from "./hexa-costs";
+import {
   HEXA_MAX_LEVEL,
   HEXA_SLOT_COUNT,
   clampHexaForGms,
@@ -24,10 +32,18 @@ const HEXA_MIGRATED_KEY = "maplecompile-hexa-tracker-migrated-v1";
 export type HexaTrackerState = {
   /** Per-slot skill levels (length HEXA_SLOT_COUNT). */
   levels: number[];
+  /** Per-slot target levels (default 30). */
+  targets: number[];
   /** Sol Erda fragments held. */
   fragments: number;
   /** Optional Sol Erda energy held. */
   erda: number;
+  /** Hexa Stat node level (0–3). */
+  hexaStatLevel: number;
+  /** Hexa Stat target (0–3). */
+  hexaStatTarget: number;
+  /** Fragment farming rate assumptions. */
+  rate: FragmentRateSettings;
   /** Roster character key when linked (`region:name`). */
   rosterKey: string | null;
   updatedAt: number;
@@ -71,13 +87,52 @@ function normalizeLevels(raw: unknown): number[] {
   return clampHexaForGms(next.slice(0, HEXA_SLOT_COUNT));
 }
 
+function defaultTargets(): number[] {
+  return Array.from({ length: HEXA_SLOT_COUNT }, (_, i) => {
+    // GMS-unavailable stay 0; others default target max.
+    if (i === 10 || i === 11) return 0;
+    return HEXA_CORE_MAX_LEVEL;
+  });
+}
+
+function normalizeTargets(raw: unknown, levels: number[]): number[] {
+  const base = defaultTargets();
+  if (!Array.isArray(raw)) {
+    // Legacy: target = max(current, default max) so progress isn't empty.
+    return base.map((t, i) => Math.max(t, levels[i] ?? 0));
+  }
+  return base.map((fallback, i) => {
+    if (i === 10 || i === 11) return 0;
+    const n = Math.floor(Number(raw[i]));
+    if (!Number.isFinite(n)) return Math.max(fallback, levels[i] ?? 0);
+    return Math.max(0, Math.min(HEXA_CORE_MAX_LEVEL, n));
+  });
+}
+
+function normalizeRate(raw: unknown): FragmentRateSettings {
+  if (!raw || typeof raw !== "object") return { ...DEFAULT_FRAGMENT_RATE };
+  const r = raw as Partial<FragmentRateSettings>;
+  const dungeon = String(r.weeklyDungeon ?? "none") as WeeklyDungeonId;
+  return {
+    fragPerWap: Math.max(0, Math.floor(Number(r.fragPerWap) || 0)),
+    wapsPerDay: Math.max(0, Number(r.wapsPerDay) || 0),
+    weeklyQuestEnabled: r.weeklyQuestEnabled !== false,
+    weeklyDungeon:
+      dungeon in WEEKLY_DUNGEON_FRAGMENTS ? dungeon : "none",
+  };
+}
+
 export function defaultHexaTrackerState(
   rosterKey: string | null = null,
 ): HexaTrackerState {
   return {
     levels: defaultHexaLevels().map(() => 0),
+    targets: defaultTargets(),
     fragments: 0,
     erda: 0,
+    hexaStatLevel: 0,
+    hexaStatTarget: HEXA_STAT_MAX_LEVEL,
+    rate: { ...DEFAULT_FRAGMENT_RATE },
     rosterKey,
     updatedAt: Date.now(),
   };
@@ -88,10 +143,29 @@ function normalizeTracker(
   rosterKey: string | null,
 ): HexaTrackerState {
   if (!raw) return defaultHexaTrackerState(rosterKey);
+  const levels = normalizeLevels(raw.levels);
   return {
-    levels: normalizeLevels(raw.levels),
+    levels,
+    targets: normalizeTargets(raw.targets, levels),
     fragments: Math.max(0, Math.floor(Number(raw.fragments) || 0)),
     erda: Math.max(0, Math.floor(Number(raw.erda) || 0)),
+    hexaStatLevel: Math.max(
+      0,
+      Math.min(
+        HEXA_STAT_MAX_LEVEL,
+        Math.floor(Number(raw.hexaStatLevel) || 0),
+      ),
+    ),
+    hexaStatTarget: Math.max(
+      0,
+      Math.min(
+        HEXA_STAT_MAX_LEVEL,
+        Math.floor(
+          Number(raw.hexaStatTarget) || HEXA_STAT_MAX_LEVEL,
+        ),
+      ),
+    ),
+    rate: normalizeRate(raw.rate),
     rosterKey:
       typeof raw.rosterKey === "string"
         ? raw.rosterKey
@@ -206,8 +280,21 @@ export function saveHexaTracker(
   const next: HexaTrackerState = {
     ...state,
     levels: normalizeLevels(state.levels),
+    targets: normalizeTargets(state.targets, normalizeLevels(state.levels)),
     fragments: Math.max(0, Math.floor(state.fragments)),
     erda: Math.max(0, Math.floor(state.erda)),
+    hexaStatLevel: Math.max(
+      0,
+      Math.min(HEXA_STAT_MAX_LEVEL, Math.floor(state.hexaStatLevel || 0)),
+    ),
+    hexaStatTarget: Math.max(
+      0,
+      Math.min(
+        HEXA_STAT_MAX_LEVEL,
+        Math.floor(state.hexaStatTarget ?? HEXA_STAT_MAX_LEVEL),
+      ),
+    ),
+    rate: normalizeRate(state.rate),
     rosterKey: key === "__local__" ? null : key,
     updatedAt: Date.now(),
   };

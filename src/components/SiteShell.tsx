@@ -27,7 +27,7 @@ const ROSTER_LINKS: NavLink[] = [
   { href: "/calc/bosses", label: "Boss Income", match: "exact" },
   { href: "/calc/boss-schedule", label: "Boss Schedule", match: "exact" },
   { href: "/calc/liberation", label: "Liberation", match: "exact" },
-  { href: "/calc/hexa-tracker", label: "HEXA Tracker", match: "exact" },
+  { href: "/calc/hexa-tracker", label: "HEXA / Fragments", match: "exact" },
   { href: "/calc/diary", label: "Diary", match: "exact" },
 ];
 

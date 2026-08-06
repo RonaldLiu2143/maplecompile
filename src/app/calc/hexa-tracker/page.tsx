@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { ActiveCharacterBar } from "@/components/ActiveCharacterBar";
 import {
   ManageDisplayButton,
@@ -17,6 +17,20 @@ import {
   type DisplayPrefs,
 } from "@/lib/display-prefs";
 import {
+  GMS_HEXA_SLOT_INDICES,
+  WEEKLY_DUNGEON_OPTIONS,
+  WEEKLY_QUEST_FRAGMENTS,
+  cheapestNextUpgrade,
+  dailyFragmentRate,
+  estimateCompletion,
+  summarizeHexaProgress,
+  type FragmentRateSettings,
+  type WeeklyDungeonId,
+  HEXA_STAT_MAX_LEVEL,
+  HEXA_CORE_MAX_LEVEL,
+} from "@/lib/hexa-costs";
+import { hexaSlotLabels } from "@/lib/hexa-skill-labels";
+import {
   HEXA_MAX_LEVEL,
   clearHexaScouterPairing,
   formatHexaPairingLabel,
@@ -30,6 +44,7 @@ import {
   type HexaScouterPairing,
   type HexaTrackerState,
 } from "@/lib/hexa-tracker";
+import { CLASS_OPTIONS } from "@/lib/jobs";
 import { hasScouterStats } from "@/lib/pairing";
 import {
   GMS_UNAVAILABLE_HEXA_INDICES,
@@ -40,7 +55,9 @@ import { storage } from "@/lib/storage";
 import type { RosterEntry } from "@/lib/dashboard/roster";
 
 const inputClass =
-  "rounded border border-border bg-background px-2 py-1 text-sm outline-none focus:border-accent";
+  "rounded-md border border-border/50 bg-background px-2.5 py-1.5 text-sm outline-none focus:border-accent";
+
+type ViewMode = "characters" | "preview";
 
 function iconUrl(suffix: string | null): string {
   if (!suffix) return "";
@@ -48,258 +65,205 @@ function iconUrl(suffix: string | null): string {
   return `${SCOUTER_CDN}${suffix.startsWith("/") ? suffix : `/${suffix}`}`;
 }
 
-function CounterField({
+function formatDate(d: Date | null): string {
+  if (!d) return "—";
+  try {
+    return new Intl.DateTimeFormat(undefined, {
+      year: "numeric",
+      month: "numeric",
+      day: "numeric",
+    }).format(d);
+  } catch {
+    return d.toLocaleDateString();
+  }
+}
+
+function ProgressBar({
   label,
-  value,
-  onChange,
+  current,
+  max,
+  leftLabel,
 }: {
   label: string;
-  value: number;
-  onChange: (n: number) => void;
+  current: number;
+  max: number;
+  leftLabel?: string;
 }) {
+  const pct = max > 0 ? Math.min(100, (current / max) * 100) : 0;
+  const left = Math.max(0, max - current);
   return (
-    <div className="rounded-xl border border-border/50 bg-surface/80 p-3">
-      <p className="text-xs font-semibold uppercase tracking-wide opacity-55">
-        {label}
-      </p>
-      <div className="mt-2 flex items-center gap-2">
-        <button
-          type="button"
-          aria-label={`Decrease ${label}`}
-          onClick={() => onChange(Math.max(0, value - 1))}
-          className="rounded-lg border border-border px-2.5 py-1 text-sm font-bold hover:bg-surface-muted"
-        >
-          −
-        </button>
-        <input
-          type="number"
-          min={0}
-          value={value === 0 ? "" : value}
-          placeholder="0"
-          onChange={(e) => {
-            const raw = e.target.value.trim();
-            if (raw === "") {
-              onChange(0);
-              return;
-            }
-            const n = Number(raw);
-            if (!Number.isFinite(n)) return;
-            onChange(Math.max(0, Math.floor(n)));
-          }}
-          className={`${inputClass} w-24 text-center font-semibold placeholder:text-foreground/25`}
-        />
-        <button
-          type="button"
-          aria-label={`Increase ${label}`}
-          onClick={() => onChange(value + 1)}
-          className="rounded-lg border border-border px-2.5 py-1 text-sm font-bold hover:bg-surface-muted"
-        >
-          +
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function PairPanel({
-  pairing,
-  presets,
-  selectedPresetId,
-  onPresetChange,
-  rosterKey,
-  onRosterChange,
-  rosterOptions,
-  msg,
-  onPair,
-  onUnpair,
-  onImport,
-}: {
-  pairing: HexaScouterPairing | null;
-  presets: { id: string; name: string }[];
-  selectedPresetId: string;
-  onPresetChange: (id: string) => void;
-  rosterKey: string;
-  onRosterChange: (key: string) => void;
-  rosterOptions: { key: string; label: string; primary: boolean }[];
-  msg: string | null;
-  onPair: () => void;
-  onUnpair: () => void;
-  onImport: () => void;
-}) {
-  return (
-    <div className="rounded-xl border border-border/50 bg-surface/90 px-4 py-3">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0 space-y-1">
-          {pairing ? (
-            <p className="text-sm font-semibold text-accent">
-              {formatHexaPairingLabel(pairing)}
-            </p>
-          ) : (
-            <p className="text-sm font-semibold opacity-80">
-              Not paired — link HEXA Tracker with Scouter
-            </p>
-          )}
-          <p className="text-xs opacity-60">
-            Pairing stores a link to your scouter draft or preset so progress
-            stays tied to the same character build.
-          </p>
-          {msg ? (
-            <p className="text-xs font-medium text-accent">{msg}</p>
+    <div className="space-y-1">
+      <div className="flex items-center justify-between gap-2 text-[11px]">
+        <span className="font-medium opacity-70">{label}</span>
+        <span className="tabular-nums font-semibold">
+          {current.toLocaleString()} / {max.toLocaleString()}
+          {leftLabel ? (
+            <span className="ml-1 font-normal opacity-60">
+              · {left.toLocaleString()} {leftLabel}
+            </span>
           ) : null}
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          {pairing ? (
-            <>
-              <button
-                type="button"
-                onClick={onImport}
-                className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold transition hover:bg-surface-muted"
-              >
-                Import levels from Scouter
-              </button>
-              <button
-                type="button"
-                onClick={onUnpair}
-                className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold transition hover:bg-surface-muted"
-              >
-                Unpair
-              </button>
-            </>
-          ) : (
-            <button
-              type="button"
-              onClick={onPair}
-              className="rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-white transition hover:opacity-90 dark:text-zinc-900"
-            >
-              Pair with Scouter
-            </button>
-          )}
-          <Link
-            href="/calc/scouter"
-            className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold transition hover:bg-surface-muted"
-          >
-            Open Scouter
-          </Link>
-        </div>
+        </span>
       </div>
-
-      {!pairing ? (
-        <div className="mt-3 grid gap-2 sm:grid-cols-2">
-          <label className="flex flex-col gap-1 text-xs font-semibold opacity-70">
-            Scouter source
-            <select
-              value={selectedPresetId}
-              onChange={(e) => onPresetChange(e.target.value)}
-              className={inputClass}
-            >
-              <option value="">Current draft</option>
-              {presets.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="flex flex-col gap-1 text-xs font-semibold opacity-70">
-            Roster character
-            <select
-              value={rosterKey}
-              onChange={(e) => onRosterChange(e.target.value)}
-              className={inputClass}
-            >
-              <option value="">None</option>
-              {rosterOptions.map((o) => (
-                <option key={o.key} value={o.key}>
-                  {o.label}
-                  {o.primary ? " ★" : ""}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-      ) : null}
+      <div className="h-2 overflow-hidden rounded-full bg-surface-muted">
+        <div
+          className="h-full rounded-full bg-accent transition-all"
+          style={{ width: `${pct}%` }}
+        />
+      </div>
     </div>
   );
 }
 
-function SlotRow({
-  label,
-  icon,
-  level,
+function LevelStepper({
+  value,
+  max,
   disabled,
   onChange,
+  ariaLabel,
 }: {
-  label: string;
-  icon: string;
-  level: number;
+  value: number;
+  max: number;
   disabled?: boolean;
   onChange: (n: number) => void;
+  ariaLabel: string;
 }) {
+  return (
+    <div className="flex items-center gap-1">
+      <button
+        type="button"
+        disabled={disabled || value <= 0}
+        aria-label={`Decrease ${ariaLabel}`}
+        onClick={() => onChange(Math.max(0, value - 1))}
+        className="rounded border border-border px-2 py-0.5 text-xs font-bold disabled:opacity-40"
+      >
+        −
+      </button>
+      <input
+        type="number"
+        min={0}
+        max={max}
+        disabled={disabled}
+        value={value === 0 ? "" : value}
+        placeholder="0"
+        aria-label={ariaLabel}
+        onChange={(e) => {
+          const raw = e.target.value.trim();
+          if (raw === "") {
+            onChange(0);
+            return;
+          }
+          const n = Number(raw);
+          if (!Number.isFinite(n)) return;
+          onChange(Math.max(0, Math.min(max, Math.floor(n))));
+        }}
+        className={`${inputClass} w-12 px-1 text-center text-xs placeholder:text-foreground/25`}
+      />
+      <button
+        type="button"
+        disabled={disabled || value >= max}
+        aria-label={`Increase ${ariaLabel}`}
+        onClick={() => onChange(Math.min(max, value + 1))}
+        className="rounded border border-border px-2 py-0.5 text-xs font-bold disabled:opacity-40"
+      >
+        +
+      </button>
+    </div>
+  );
+}
+
+function SkillNodeCard({
+  icon,
+  label,
+  current,
+  target,
+  maxLevel,
+  fragmentsNeeded,
+  solErdaNeeded,
+  onCurrent,
+  onTarget,
+}: {
+  icon: string;
+  label: string;
+  current: number;
+  target: number;
+  maxLevel: number;
+  fragmentsNeeded: number;
+  solErdaNeeded: number;
+  onCurrent: (n: number) => void;
+  onTarget: (n: number) => void;
+}) {
+  const pct = target > 0 ? Math.min(100, (current / target) * 100) : 0;
+  const done = current >= target && target > 0;
   return (
     <div
       className={[
-        "flex items-center gap-3 rounded-lg border border-border/40 px-2.5 py-2",
-        disabled ? "opacity-45" : "bg-surface/70",
+        "rounded-xl border px-3 py-2.5 transition",
+        done
+          ? "border-accent/50 bg-accent-soft/30"
+          : "border-border/45 bg-surface/80",
       ].join(" ")}
     >
-      {icon ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={icon} alt="" width={28} height={28} className="rounded" />
-      ) : (
-        <div className="h-7 w-7 rounded bg-surface-muted" />
-      )}
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-semibold">{label}</p>
-        {disabled ? (
-          <p className="text-[0.65rem] opacity-60">Unavailable in GMS</p>
-        ) : null}
-      </div>
-      <div className="flex items-center gap-1">
-        <button
-          type="button"
-          disabled={disabled || level <= 0}
-          onClick={() => onChange(Math.max(0, level - 1))}
-          className="rounded border border-border px-2 py-0.5 text-xs font-bold disabled:opacity-40"
-        >
-          −
-        </button>
-        <input
-          type="number"
-          min={0}
-          max={HEXA_MAX_LEVEL}
-          disabled={disabled}
-          value={level === 0 ? "" : level}
-          placeholder="0"
-          onChange={(e) => {
-            const raw = e.target.value.trim();
-            if (raw === "") {
-              onChange(0);
-              return;
-            }
-            const n = Number(raw);
-            if (!Number.isFinite(n)) return;
-            onChange(Math.max(0, Math.min(HEXA_MAX_LEVEL, Math.floor(n))));
-          }}
-          className={`${inputClass} w-14 text-center text-xs placeholder:text-foreground/25`}
-        />
-        <button
-          type="button"
-          disabled={disabled || level >= HEXA_MAX_LEVEL}
-          onClick={() => onChange(Math.min(HEXA_MAX_LEVEL, level + 1))}
-          className="rounded border border-border px-2 py-0.5 text-xs font-bold disabled:opacity-40"
-        >
-          +
-        </button>
+      <div className="flex items-start gap-2.5">
+        {icon ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={icon}
+            alt=""
+            width={36}
+            height={36}
+            className="mt-0.5 rounded"
+          />
+        ) : (
+          <div className="mt-0.5 h-9 w-9 rounded bg-surface-muted" />
+        )}
+        <div className="min-w-0 flex-1 space-y-1.5">
+          <div className="flex items-start justify-between gap-2">
+            <p className="truncate text-sm font-semibold leading-tight">
+              {label}
+            </p>
+            <p className="shrink-0 text-[10px] font-semibold tabular-nums opacity-55">
+              {current}/{target}
+            </p>
+          </div>
+          <div className="h-1.5 overflow-hidden rounded-full bg-surface-muted">
+            <div
+              className="h-full rounded-full bg-accent transition-all"
+              style={{ width: `${pct}%` }}
+            />
+          </div>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] tabular-nums opacity-70">
+            <span>
+              {fragmentsNeeded.toLocaleString()} frag
+              {fragmentsNeeded === 1 ? "" : "s"}
+            </span>
+            {solErdaNeeded > 0 ? (
+              <span>{solErdaNeeded.toLocaleString()} Sol Erda</span>
+            ) : null}
+          </div>
+          <div className="flex flex-wrap items-center gap-3 pt-0.5">
+            <label className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide opacity-55">
+              Now
+              <LevelStepper
+                value={current}
+                max={maxLevel}
+                ariaLabel={`${label} current`}
+                onChange={onCurrent}
+              />
+            </label>
+            <span className="opacity-40">→</span>
+            <label className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide opacity-55">
+              Goal
+              <LevelStepper
+                value={target}
+                max={maxLevel}
+                ariaLabel={`${label} target`}
+                onChange={onTarget}
+              />
+            </label>
+          </div>
+        </div>
       </div>
     </div>
-  );
-}
-
-function GroupHeading({ children }: { children: ReactNode }) {
-  return (
-    <p className="pt-2 text-[0.7rem] font-semibold uppercase tracking-wider opacity-55">
-      {children}
-    </p>
   );
 }
 
@@ -316,12 +280,30 @@ export default function HexaTrackerPage() {
   >([]);
   const [msg, setMsg] = useState<string | null>(null);
   const [charType, setCharType] = useState("adele");
+  const [viewMode, setViewMode] = useState<ViewMode>("characters");
+  const [previewCharType, setPreviewCharType] = useState("adele");
+  const [previewState, setPreviewState] = useState<HexaTrackerState | null>(
+    null,
+  );
   const [displayPrefs, setDisplayPrefs] = useState<DisplayPrefs>(() =>
     readHexaDisplay(),
   );
   const [manageOpen, setManageOpen] = useState(false);
+  const [pairOpen, setPairOpen] = useState(false);
 
-  const slotsHexa = useMemo(() => getHexaSlots(charType), [charType]);
+  const activeCharType =
+    viewMode === "preview" ? previewCharType : charType;
+  const activeState =
+    viewMode === "preview" ? previewState : state;
+
+  const slotsHexa = useMemo(
+    () => getHexaSlots(activeCharType),
+    [activeCharType],
+  );
+  const labels = useMemo(
+    () => hexaSlotLabels(activeCharType),
+    [activeCharType],
+  );
 
   const allRosterIds = useMemo(() => roster.map((e) => entryKey(e)), [roster]);
 
@@ -346,7 +328,9 @@ export default function HexaTrackerPage() {
     setPresets(
       storage.listScouterPresets().map((p) => ({ id: p.id, name: p.name })),
     );
-    setCharType(storage.getCharType() || "adele");
+    const ct = storage.getCharType() || "adele";
+    setCharType(ct);
+    setPreviewCharType((prev) => prev || ct);
     const prefs = readHexaDisplay();
     setDisplayPrefs(prefs);
     const available = options.map((o) => o.key);
@@ -361,6 +345,7 @@ export default function HexaTrackerPage() {
     const tracker = loadHexaTracker(key || null);
     setState(tracker);
     setPairing(getHexaScouterPairing(key || null));
+    setPreviewState((prev) => prev ?? loadHexaTracker("__preview__"));
     setReady(true);
   }, []);
 
@@ -372,18 +357,37 @@ export default function HexaTrackerPage() {
   };
 
   const persist = (next: HexaTrackerState, key = rosterKey) => {
+    if (viewMode === "preview") {
+      const saved = saveHexaTracker(next, "__preview__");
+      setPreviewState(saved);
+      return;
+    }
     const saved = saveHexaTracker(next, key || null);
     setState(saved);
   };
 
   const setLevel = (index: number, level: number) => {
-    if (!state) return;
+    if (!activeState) return;
     if ((GMS_UNAVAILABLE_HEXA_INDICES as readonly number[]).includes(index)) {
       return;
     }
-    const levels = [...state.levels];
+    const levels = [...activeState.levels];
     levels[index] = level;
-    persist({ ...state, levels });
+    const targets = [...activeState.targets];
+    if ((targets[index] ?? 0) < level) targets[index] = level;
+    persist({ ...activeState, levels, targets });
+  };
+
+  const setTarget = (index: number, target: number) => {
+    if (!activeState) return;
+    if ((GMS_UNAVAILABLE_HEXA_INDICES as readonly number[]).includes(index)) {
+      return;
+    }
+    const targets = [...activeState.targets];
+    targets[index] = target;
+    const levels = [...activeState.levels];
+    if ((levels[index] ?? 0) > target) levels[index] = target;
+    persist({ ...activeState, levels, targets });
   };
 
   const selectRosterCharacter = (key: string) => {
@@ -392,6 +396,7 @@ export default function HexaTrackerPage() {
       handleSetPrimary(entry);
     }
     setRosterKey(key);
+    setViewMode("characters");
     const tracker = loadHexaTracker(key || null);
     setState(tracker);
     setPairing(getHexaScouterPairing(key || null));
@@ -455,174 +460,668 @@ export default function HexaTrackerPage() {
     handleSetPrimary(entry);
     const key = entryKey(entry);
     setRosterKey(key);
+    setViewMode("characters");
     setState(loadHexaTracker(key));
     setPairing(getHexaScouterPairing(key));
     setCharType(storage.getCharType() || "adele");
   };
 
-  if (!ready || !state || !hydrated) {
+  const progress = useMemo(() => {
+    if (!activeState) return null;
+    return summarizeHexaProgress({
+      levels: activeState.levels,
+      targets: activeState.targets,
+      hexaStatLevel: activeState.hexaStatLevel,
+      hexaStatTarget: activeState.hexaStatTarget,
+      fragmentsHeld: activeState.fragments,
+      erdaHeld: activeState.erda,
+      activeSlotIndices: [...GMS_HEXA_SLOT_INDICES],
+      labels,
+      includeHexaStat: true,
+    });
+  }, [activeState, labels]);
+
+  const rate = activeState?.rate;
+  const dailyRate = rate ? dailyFragmentRate(rate) : 0;
+  const eta = progress
+    ? estimateCompletion({
+        fragmentsRemaining: progress.fragmentsRemainingAfterInventory,
+        dailyRate,
+      })
+    : null;
+  const nextUp = progress ? cheapestNextUpgrade(progress.nodes) : null;
+
+  const groups = useMemo(() => {
+    if (!progress) return [];
+    const byType = {
+      skill: progress.nodes.filter(
+        (n) => n.skillType === "Origin" || n.skillType === "Ascent",
+      ),
+      mastery: progress.nodes.filter((n) => n.skillType === "Mastery"),
+      boost: progress.nodes.filter((n) => n.skillType === "Boost"),
+      common: progress.nodes.filter((n) => n.skillType === "Common"),
+      hexaStat: progress.nodes.filter((n) => n.skillType === "Hexa Stat"),
+    };
+    return [
+      { key: "skill", label: "Skill Node", nodes: byType.skill },
+      { key: "mastery", label: "Mastery Node", nodes: byType.mastery },
+      { key: "boost", label: "Boost Node", nodes: byType.boost },
+      { key: "common", label: "Common Node", nodes: byType.common },
+      { key: "hexaStat", label: "Hexa Stat", nodes: byType.hexaStat },
+    ].filter((g) => g.nodes.length > 0);
+  }, [progress]);
+
+  if (!ready || !activeState || !hydrated || !progress) {
     return (
       <div className="space-y-2">
         <h1 className="font-display text-2xl font-bold tracking-tight">
-          HEXA Tracker
+          HEXA / Fragment Tracker
         </h1>
         <p className="text-sm opacity-60">Loading…</p>
       </div>
     );
   }
 
-  const groups: { key: string; label: string; indices: number[] }[] = [
-    { key: "mastery", label: "Mastery", indices: [0, 1, 2, 3] },
-    { key: "reinforcement", label: "Enhancement", indices: [4, 5, 6, 7] },
-    { key: "skill", label: "Skill", indices: [8, 9, 10] },
-    { key: "common", label: "Common", indices: [11, 12, 13] },
-  ];
+  const updateRate = (patch: Partial<FragmentRateSettings>) => {
+    persist({
+      ...activeState,
+      rate: { ...activeState.rate, ...patch },
+    });
+  };
 
   return (
     <div className="space-y-5">
       <div>
         <h1 className="font-display text-2xl font-bold tracking-tight">
-          HEXA Tracker
+          HEXA / Fragment Tracker
         </h1>
         <p className="mt-1 text-sm opacity-70">
-          Track HEXA core levels and Sol Erda fragments. Pair with Scouter to
-          keep progress linked to a preset or draft.
+          Track Sol Erda fragments, core levels, and time-to-goal — per
+          character. Pair with Scouter when you want levels synced.
         </p>
       </div>
 
       <ActiveCharacterBar onSelect={onBarSelect} />
 
-      {roster.length > 0 ? (
-        <section className="rounded-xl border border-border/40 bg-surface/80 p-3">
-          <div className="mb-2 flex items-center justify-between gap-2">
-            <h2 className="text-xs font-semibold uppercase tracking-wider opacity-60">
-              My Characters
-            </h2>
-            <ManageDisplayButton onClick={() => setManageOpen(true)} />
-          </div>
-          {visibleEntries.length === 0 ? (
-            <p className="rounded-lg border border-dashed border-border/50 px-3 py-4 text-center text-xs opacity-65">
-              All characters are hidden. Use the gear icon to show some.
-            </p>
-          ) : (
-            <div className="overflow-x-auto">
-              <div className="flex w-max gap-2">
-                {visibleEntries.map((entry) => {
-                  const key = entryKey(entry);
-                  const active = rosterKey === key;
-                  const slot = slots[key];
-                  const character =
-                    slot?.status === "ready" ? slot.character : null;
-                  const name = character?.name ?? entry.name;
-                  const avatar = character?.characterImgURL;
-                  return (
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="inline-flex rounded-lg border border-border/50 bg-surface/80 p-0.5">
+          {(
+            [
+              ["characters", "My Characters"],
+              ["preview", "Job Preview"],
+            ] as const
+          ).map(([id, label]) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => {
+                setViewMode(id);
+                if (id === "preview" && !previewState) {
+                  setPreviewState(loadHexaTracker("__preview__"));
+                }
+              }}
+              className={[
+                "rounded-md px-3 py-1.5 text-xs font-semibold transition",
+                viewMode === id
+                  ? "bg-accent text-white dark:text-zinc-900"
+                  : "opacity-70 hover:opacity-100",
+              ].join(" ")}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        {viewMode === "preview" ? (
+          <label className="flex items-center gap-2 text-xs font-semibold opacity-70">
+            Job class
+            <select
+              value={
+                CLASS_OPTIONS.find((o) => o.charType === previewCharType)
+                  ?.value ?? `warrior:${previewCharType}`
+              }
+              onChange={(e) => {
+                const opt = CLASS_OPTIONS.find((o) => o.value === e.target.value);
+                if (opt) setPreviewCharType(opt.charType);
+              }}
+              className={inputClass}
+            >
+              {CLASS_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : null}
+      </div>
+
+      {viewMode === "characters" ? (
+        roster.length > 0 ? (
+          <section className="rounded-xl border border-border/40 bg-surface/80 p-3">
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <h2 className="text-xs font-semibold uppercase tracking-wider opacity-60">
+                My Characters
+              </h2>
+              <ManageDisplayButton onClick={() => setManageOpen(true)} />
+            </div>
+            {visibleEntries.length === 0 ? (
+              <p className="rounded-lg border border-dashed border-border/50 px-3 py-4 text-center text-xs opacity-65">
+                All characters are hidden. Use the gear icon to show some.
+              </p>
+            ) : (
+              <div className="overflow-x-auto">
+                <div className="flex w-max gap-2">
+                  {visibleEntries.map((entry) => {
+                    const key = entryKey(entry);
+                    const active = rosterKey === key;
+                    const slot = slots[key];
+                    const character =
+                      slot?.status === "ready" ? slot.character : null;
+                    const name = character?.name ?? entry.name;
+                    const avatar = character?.characterImgURL;
+                    return (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => selectRosterCharacter(key)}
+                        className={[
+                          "flex w-[4.75rem] shrink-0 flex-col items-center gap-1 rounded-xl border px-1.5 py-2 transition",
+                          active
+                            ? "border-accent bg-accent-soft/45"
+                            : "border-border/50 bg-background/40 hover:border-accent/40",
+                        ].join(" ")}
+                      >
+                        {avatar ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={avatar}
+                            alt=""
+                            width={48}
+                            height={48}
+                            className="h-12 w-12 object-contain"
+                          />
+                        ) : (
+                          <div className="flex h-12 w-12 items-center justify-center rounded-md bg-surface-muted text-[10px] font-bold uppercase opacity-50">
+                            {name.slice(0, 2)}
+                          </div>
+                        )}
+                        <p className="w-full truncate text-center text-[10px] font-semibold leading-tight">
+                          {name}
+                        </p>
+                        <p className="font-mono text-[10px] tabular-nums opacity-65">
+                          {character?.level != null
+                            ? `Lv.${character.level}`
+                            : "—"}
+                          {isPrimary(entry, primary) ? " ★" : ""}
+                        </p>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </section>
+        ) : (
+          <p className="text-xs opacity-65">
+            No roster yet.{" "}
+            <Link href="/roster" className="text-accent hover:underline">
+              Add characters
+            </Link>{" "}
+            or use Job Preview to plan a class.
+          </p>
+        )
+      ) : (
+        <p className="text-xs opacity-65">
+          Previewing{" "}
+          <span className="font-semibold text-accent">
+            {CLASS_OPTIONS.find((o) => o.charType === previewCharType)?.name ??
+              previewCharType}
+          </span>{" "}
+          — levels save locally as a sandbox, not tied to a roster character.
+        </p>
+      )}
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        {/* —— Summary / rate —— */}
+        <div className="space-y-3">
+          <section className="rounded-xl border border-border/45 bg-surface/90 p-4">
+            <div className="flex items-baseline justify-between gap-2">
+              <h2 className="text-sm font-semibold">HEXA Progress</h2>
+              <p className="text-lg font-bold tabular-nums text-accent">
+                {progress.completionPct.toFixed(1)}%
+              </p>
+            </div>
+            <div className="mt-3 space-y-2.5">
+              <ProgressBar
+                label="Fragments"
+                current={progress.fragmentsSpent}
+                max={progress.fragmentsTotal}
+                leftLabel="left"
+              />
+              <ProgressBar
+                label="Sol Erda"
+                current={progress.solErdaSpent}
+                max={progress.solErdaTotal}
+                leftLabel="left"
+              />
+            </div>
+            <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+              <div className="rounded-lg bg-background/50 px-2.5 py-2">
+                <p className="opacity-55">Remaining frags</p>
+                <p className="text-base font-bold tabular-nums">
+                  {progress.fragmentsLeft.toLocaleString()}
+                </p>
+              </div>
+              <div className="rounded-lg bg-background/50 px-2.5 py-2">
+                <p className="opacity-55">Remaining Sol Erda</p>
+                <p className="text-base font-bold tabular-nums">
+                  {progress.solErdaLeft.toLocaleString()}
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <section className="rounded-xl border border-border/45 bg-surface/90 p-4">
+            <h2 className="text-sm font-semibold">On hand</h2>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              {(
+                [
+                  ["fragments", "Sol Erda fragments", activeState.fragments],
+                  ["erda", "Sol Erda", activeState.erda],
+                ] as const
+              ).map(([key, label, value]) => (
+                <div key={key} className="space-y-1.5">
+                  <p className="text-[10px] font-semibold uppercase tracking-wide opacity-55">
+                    {label}
+                  </p>
+                  <div className="flex items-center gap-1.5">
                     <button
-                      key={key}
                       type="button"
-                      onClick={() => selectRosterCharacter(key)}
-                      className={[
-                        "flex w-[4.75rem] shrink-0 flex-col items-center gap-1 rounded-xl border px-1.5 py-2 transition",
-                        active
-                          ? "border-accent bg-accent-soft/45"
-                          : "border-border/50 bg-background/40 hover:border-accent/40",
-                      ].join(" ")}
+                      onClick={() =>
+                        persist({
+                          ...activeState,
+                          [key]: Math.max(0, value - 1),
+                        })
+                      }
+                      className="rounded-lg border border-border px-2.5 py-1 text-sm font-bold hover:bg-surface-muted"
                     >
-                      {avatar ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={avatar}
-                          alt=""
-                          width={48}
-                          height={48}
-                          className="h-12 w-12 object-contain"
-                        />
-                      ) : (
-                        <div className="flex h-12 w-12 items-center justify-center rounded-md bg-surface-muted text-[10px] font-bold uppercase opacity-50">
-                          {name.slice(0, 2)}
-                        </div>
-                      )}
-                      <p className="w-full truncate text-center text-[10px] font-semibold leading-tight">
-                        {name}
-                      </p>
-                      <p className="font-mono text-[10px] tabular-nums opacity-65">
-                        {character?.level != null
-                          ? `Lv.${character.level}`
-                          : "—"}
-                        {isPrimary(entry, primary) ? " ★" : ""}
-                      </p>
+                      −
                     </button>
+                    <input
+                      type="number"
+                      min={0}
+                      value={value === 0 ? "" : value}
+                      placeholder="0"
+                      onChange={(e) => {
+                        const raw = e.target.value.trim();
+                        const n =
+                          raw === ""
+                            ? 0
+                            : Math.max(0, Math.floor(Number(raw) || 0));
+                        persist({ ...activeState, [key]: n });
+                      }}
+                      className={`${inputClass} w-full text-center font-semibold placeholder:text-foreground/25`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        persist({ ...activeState, [key]: value + 1 })
+                      }
+                      className="rounded-lg border border-border px-2.5 py-1 text-sm font-bold hover:bg-surface-muted"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <p className="mt-2 text-[10px] opacity-55">
+              Inventory reduces days-left (after remaining costs).
+            </p>
+          </section>
+
+          <section className="rounded-xl border border-border/45 bg-surface/90 p-4">
+            <h2 className="text-sm font-semibold">Fragment Rate Calculator</h2>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              <label className="space-y-1 text-xs font-semibold opacity-70">
+                Fragments per WAP
+                <input
+                  type="number"
+                  min={0}
+                  value={activeState.rate.fragPerWap || ""}
+                  placeholder="0"
+                  onChange={(e) =>
+                    updateRate({
+                      fragPerWap: Math.max(
+                        0,
+                        Math.floor(Number(e.target.value) || 0),
+                      ),
+                    })
+                  }
+                  className={inputClass}
+                />
+              </label>
+              <label className="space-y-1 text-xs font-semibold opacity-70">
+                WAPs per day
+                <input
+                  type="number"
+                  min={0}
+                  step={0.5}
+                  value={activeState.rate.wapsPerDay || ""}
+                  placeholder="0"
+                  onChange={(e) =>
+                    updateRate({
+                      wapsPerDay: Math.max(0, Number(e.target.value) || 0),
+                    })
+                  }
+                  className={inputClass}
+                />
+              </label>
+            </div>
+            <div className="mt-3 space-y-2">
+              <p className="text-[10px] font-semibold uppercase tracking-wide opacity-55">
+                Additional sources
+              </p>
+              <label className="flex items-center justify-between gap-2 text-sm">
+                <span className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={activeState.rate.weeklyQuestEnabled}
+                    onChange={(e) =>
+                      updateRate({ weeklyQuestEnabled: e.target.checked })
+                    }
+                    className="accent-[var(--accent)]"
+                  />
+                  Weekly Quest
+                </span>
+                <span className="text-xs opacity-60">
+                  +{WEEKLY_QUEST_FRAGMENTS} fragments
+                </span>
+              </label>
+              <label className="flex flex-col gap-1 text-xs font-semibold opacity-70">
+                Weekly Dungeon
+                <select
+                  value={activeState.rate.weeklyDungeon}
+                  onChange={(e) =>
+                    updateRate({
+                      weeklyDungeon: e.target.value as WeeklyDungeonId,
+                    })
+                  }
+                  className={inputClass}
+                >
+                  {WEEKLY_DUNGEON_OPTIONS.map((o) => (
+                    <option key={o.id} value={o.id}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            <div className="mt-3 grid grid-cols-3 gap-2 text-center text-xs">
+              <div className="rounded-lg bg-background/50 px-2 py-2">
+                <p className="opacity-55">Daily rate</p>
+                <p className="text-sm font-bold tabular-nums">
+                  {dailyRate.toFixed(1)}
+                </p>
+              </div>
+              <div className="rounded-lg bg-background/50 px-2 py-2">
+                <p className="opacity-55">Days left</p>
+                <p className="text-sm font-bold tabular-nums">
+                  {eta && dailyRate > 0
+                    ? Math.ceil(eta.daysLeft).toLocaleString()
+                    : "—"}
+                </p>
+              </div>
+              <div className="rounded-lg bg-background/50 px-2 py-2">
+                <p className="opacity-55">Completion</p>
+                <p className="text-sm font-bold tabular-nums">
+                  {formatDate(eta?.completionDate ?? null)}
+                </p>
+              </div>
+            </div>
+            <p className="mt-2 text-[10px] opacity-55">
+              Uses remaining after inventory (
+              {progress.fragmentsRemainingAfterInventory.toLocaleString()}{" "}
+              frags).
+            </p>
+          </section>
+
+          <section className="rounded-xl border border-border/45 bg-surface/90 p-4">
+            <h2 className="text-sm font-semibold">Next Upgrade</h2>
+            {nextUp ? (
+              <div className="mt-2 space-y-2">
+                <p className="text-base font-bold">{nextUp.node.label}</p>
+                <p className="text-xs opacity-70">
+                  Level {nextUp.node.current} → {nextUp.nextLevel}
+                </p>
+                <div className="flex flex-wrap gap-3 text-sm tabular-nums">
+                  <span>
+                    <span className="opacity-55">Fragments </span>
+                    <span className="font-semibold text-accent">
+                      {nextUp.fragments.toLocaleString()}
+                    </span>
+                  </span>
+                  {nextUp.solErda > 0 ? (
+                    <span>
+                      <span className="opacity-55">Sol Erda </span>
+                      <span className="font-semibold">
+                        {nextUp.solErda.toLocaleString()}
+                      </span>
+                    </span>
+                  ) : null}
+                </div>
+                <p className="text-[10px] opacity-55">
+                  Cheapest next level by fragment cost — not class FD priority
+                  (MapleHub’s stat-based order needs Scouter damage data we
+                  don’t mirror here).
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (nextUp.node.slotIndex != null) {
+                      setLevel(nextUp.node.slotIndex, nextUp.nextLevel);
+                    } else {
+                      persist({
+                        ...activeState,
+                        hexaStatLevel: nextUp.nextLevel,
+                      });
+                    }
+                  }}
+                  className="rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-white transition hover:opacity-90 dark:text-zinc-900"
+                >
+                  Apply level {nextUp.nextLevel}
+                </button>
+              </div>
+            ) : (
+              <p className="mt-2 text-sm opacity-65">
+                All nodes at target — nice work.
+              </p>
+            )}
+          </section>
+
+          {viewMode === "characters" ? (
+            <section className="rounded-xl border border-border/45 bg-surface/90 px-4 py-3">
+              <button
+                type="button"
+                onClick={() => setPairOpen((v) => !v)}
+                className="flex w-full items-center justify-between gap-2 text-left text-sm font-semibold"
+              >
+                <span>
+                  {pairing
+                    ? formatHexaPairingLabel(pairing)
+                    : "Scouter pairing (optional)"}
+                </span>
+                <span className="text-xs opacity-55">
+                  {pairOpen ? "Hide" : "Show"}
+                </span>
+              </button>
+              {pairOpen ? (
+                <div className="mt-3 space-y-2 border-t border-border/40 pt-3">
+                  {msg ? (
+                    <p className="text-xs font-medium text-accent">{msg}</p>
+                  ) : null}
+                  <div className="flex flex-wrap gap-2">
+                    {pairing ? (
+                      <>
+                        <button
+                          type="button"
+                          onClick={onImport}
+                          className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold hover:bg-surface-muted"
+                        >
+                          Import levels from Scouter
+                        </button>
+                        <button
+                          type="button"
+                          onClick={onUnpair}
+                          className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold hover:bg-surface-muted"
+                        >
+                          Unpair
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={onPair}
+                        className="rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90 dark:text-zinc-900"
+                      >
+                        Pair with Scouter
+                      </button>
+                    )}
+                    <Link
+                      href="/calc/scouter"
+                      className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold hover:bg-surface-muted"
+                    >
+                      Open Scouter
+                    </Link>
+                  </div>
+                  {!pairing ? (
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      <label className="flex flex-col gap-1 text-xs font-semibold opacity-70">
+                        Scouter source
+                        <select
+                          value={selectedPresetId}
+                          onChange={(e) => setSelectedPresetId(e.target.value)}
+                          className={inputClass}
+                        >
+                          <option value="">Current draft</option>
+                          {presets.map((p) => (
+                            <option key={p.id} value={p.id}>
+                              {p.name}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className="flex flex-col gap-1 text-xs font-semibold opacity-70">
+                        Roster character
+                        <select
+                          value={rosterKey}
+                          onChange={(e) =>
+                            selectRosterCharacter(e.target.value)
+                          }
+                          className={inputClass}
+                        >
+                          <option value="">None</option>
+                          {filteredRosterOptions.map((o) => (
+                            <option key={o.key} value={o.key}>
+                              {o.label}
+                              {o.primary ? " ★" : ""}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+            </section>
+          ) : null}
+        </div>
+
+        {/* —— Skills —— */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="text-sm font-semibold">Skills Configuration</h2>
+            <button
+              type="button"
+              onClick={() => {
+                const targets = activeState.targets.map((t, i) =>
+                  (GMS_UNAVAILABLE_HEXA_INDICES as readonly number[]).includes(i)
+                    ? 0
+                    : HEXA_CORE_MAX_LEVEL,
+                );
+                persist({
+                  ...activeState,
+                  targets,
+                  hexaStatTarget: HEXA_STAT_MAX_LEVEL,
+                });
+              }}
+              className="text-xs font-semibold text-accent hover:underline"
+            >
+              Max all goals
+            </button>
+          </div>
+
+          {groups.map((group) => (
+            <div key={group.key} className="space-y-2">
+              <p className="text-[0.7rem] font-semibold uppercase tracking-wider opacity-55">
+                {group.label}
+              </p>
+              <div className="grid gap-2">
+                {group.nodes.map((node) => {
+                  if (node.slotIndex == null) {
+                    return (
+                      <SkillNodeCard
+                        key={node.id}
+                        icon=""
+                        label={node.label}
+                        current={node.current}
+                        target={node.target}
+                        maxLevel={HEXA_STAT_MAX_LEVEL}
+                        fragmentsNeeded={node.fragmentsNeeded}
+                        solErdaNeeded={node.solErdaNeeded}
+                        onCurrent={(n) =>
+                          persist({
+                            ...activeState,
+                            hexaStatLevel: n,
+                            hexaStatTarget: Math.max(
+                              activeState.hexaStatTarget,
+                              n,
+                            ),
+                          })
+                        }
+                        onTarget={(n) =>
+                          persist({
+                            ...activeState,
+                            hexaStatTarget: n,
+                            hexaStatLevel: Math.min(
+                              activeState.hexaStatLevel,
+                              n,
+                            ),
+                          })
+                        }
+                      />
+                    );
+                  }
+                  const slot = slotsHexa[node.slotIndex];
+                  return (
+                    <SkillNodeCard
+                      key={node.id}
+                      icon={iconUrl(slot?.iconSuffix ?? null)}
+                      label={node.label}
+                      current={node.current}
+                      target={node.target}
+                      maxLevel={HEXA_MAX_LEVEL}
+                      fragmentsNeeded={node.fragmentsNeeded}
+                      solErdaNeeded={node.solErdaNeeded}
+                      onCurrent={(n) => setLevel(node.slotIndex!, n)}
+                      onTarget={(n) => setTarget(node.slotIndex!, n)}
+                    />
                   );
                 })}
               </div>
             </div>
-          )}
-          <p className="mt-2 text-[10px] opacity-55">
-            Tap a character to link · Gear icon to show/hide
-          </p>
-        </section>
-      ) : (
-        <p className="text-xs opacity-65">
-          No roster yet.{" "}
-          <Link href="/roster" className="text-accent hover:underline">
-            Add characters
-          </Link>{" "}
-          to pick who shows here.
-        </p>
-      )}
-
-      <PairPanel
-        pairing={pairing}
-        presets={presets}
-        selectedPresetId={selectedPresetId}
-        onPresetChange={setSelectedPresetId}
-        rosterKey={rosterKey}
-        onRosterChange={(key) => {
-          selectRosterCharacter(key);
-        }}
-        rosterOptions={filteredRosterOptions}
-        msg={msg}
-        onPair={onPair}
-        onUnpair={onUnpair}
-        onImport={onImport}
-      />
-
-      <div className="grid gap-3 sm:grid-cols-2">
-        <CounterField
-          label="Sol Erda fragments"
-          value={state.fragments}
-          onChange={(fragments) => persist({ ...state, fragments })}
-        />
-        <CounterField
-          label="Sol Erda"
-          value={state.erda}
-          onChange={(erda) => persist({ ...state, erda })}
-        />
-      </div>
-
-      <div className="space-y-2">
-        {groups.map((group) => (
-          <div key={group.key} className="space-y-1.5">
-            <GroupHeading>{group.label}</GroupHeading>
-            <div className="grid gap-1.5 sm:grid-cols-2">
-              {group.indices.map((i) => {
-                const slot = slotsHexa[i];
-                const unavailable = (
-                  GMS_UNAVAILABLE_HEXA_INDICES as readonly number[]
-                ).includes(i);
-                return (
-                  <SlotRow
-                    key={slot?.id ?? i}
-                    label={slot?.label ?? `Core ${i + 1}`}
-                    icon={iconUrl(slot?.iconSuffix ?? null)}
-                    level={state.levels[i] ?? 0}
-                    disabled={unavailable}
-                    onChange={(n) => setLevel(i, n)}
-                  />
-                );
-              })}
-            </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
 
       <ManageDisplayModal

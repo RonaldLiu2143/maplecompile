@@ -31,7 +31,7 @@ const TOOL_LINKS = [
   { href: "/calc/bosses", label: "Boss Income" },
   { href: "/calc/liberation", label: "Liberation" },
   { href: "/calc/scouter/gallery", label: "Gallery" },
-  { href: "/calc/hexa-tracker", label: "HEXA" },
+  { href: "/calc/hexa-tracker", label: "HEXA / Fragments" },
 ] as const;
 
 function weeklyBossProgress(selections: BossClearSelection[]) {
@@ -291,7 +291,7 @@ export function DashboardPrimaryHero({
 
           <p className="text-[11px] opacity-55">
             Manager ★ / Active character bar sets the same primary across
-            Scouter, Equipment, HEXA, Bosses, and Liberation.
+            Scouter, Equipment, HEXA / Fragments, Bosses, and Liberation.
           </p>
 
           <div className="flex flex-wrap gap-2">
