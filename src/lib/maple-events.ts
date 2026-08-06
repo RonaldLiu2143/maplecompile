@@ -9,6 +9,7 @@ export type MapleDataChangedDetail = {
     | "flameSetup"
     | "scouterLast"
     | "scouterPresets"
+    | "equipPresets"
     | "plannerOverrides"
     | "jobClass"
     | "other";
@@ -76,6 +77,7 @@ export function subscribeMapleDataReload(onReload: () => void): () => void {
       e.key === "maplehub-scouter-last" ||
       e.key === "maplecompile-character-workspace-v1" ||
       e.key === "maplecompile-scouter-presets" ||
+      e.key === "maplecompile-equip-presets" ||
       e.key === "maplecompile-planner-overrides" ||
       e.key === "maplecompile-roster" ||
       e.key === "maplecompile-active-character-lock" ||

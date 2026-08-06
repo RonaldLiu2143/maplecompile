@@ -35,11 +35,25 @@ export type ScouterPreset = ScouterLastState & {
   updatedAt: number;
 };
 
+/** User-saved Equipment Setup snapshot (localStorage). */
+export type EquipSetupPreset = {
+  id: string;
+  name: string;
+  updatedAt: number;
+  setup: EquipSetup;
+  flameSetup?: FlameSetup;
+  /** Roster character key when saved under an active character. */
+  characterKey?: string | null;
+  jobType?: string;
+  charType?: string;
+};
+
 const SCOUTER_LAST_KEY = "maplecompile-scouter-last";
 const SCOUTER_LAST_KEY_LEGACY = "maplehub-scouter-last";
 const SCOUTER_PRESETS_KEY = "maplecompile-scouter-presets";
 const SCOUTER_PRESET_KEY_LEGACY_SINGLE = "maplecompile-scouter-preset";
 const SCOUTER_PRESET_KEY_LEGACY_HUB = "maplehub-scouter-preset";
+const EQUIP_PRESETS_KEY = "maplecompile-equip-presets";
 
 function newPresetId(): string {
   return `p_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
@@ -49,7 +63,7 @@ function newPresetId(): string {
  * File-style unique names: "Foo" → "Foo (1)" → "Foo (2)" …
  * When `excludeId` is set (overwrite), that preset's current name is allowed.
  */
-export function uniqueScouterPresetName(
+export function uniquePresetName(
   desired: string,
   existing: { id: string; name: string }[],
   excludeId?: string,
@@ -62,6 +76,27 @@ export function uniqueScouterPresetName(
   let n = 1;
   while (taken.has(`${base} (${n})`)) n += 1;
   return `${base} (${n})`;
+}
+
+/** @deprecated Prefer `uniquePresetName`. */
+export const uniqueScouterPresetName = uniquePresetName;
+
+function readEquipPresets(): EquipSetupPreset[] {
+  const list = readJson<EquipSetupPreset[] | null>(EQUIP_PRESETS_KEY, null);
+  if (!Array.isArray(list)) return [];
+  return list.filter(
+    (p) =>
+      p &&
+      typeof p === "object" &&
+      typeof p.id === "string" &&
+      typeof p.name === "string" &&
+      p.setup &&
+      typeof p.setup === "object",
+  );
+}
+
+function writeEquipPresets(list: EquipSetupPreset[]) {
+  writeJson(EQUIP_PRESETS_KEY, list);
 }
 
 function migrateLegacySinglePreset(): ScouterPreset[] {
@@ -187,7 +222,7 @@ export const storage = {
       if (idx < 0) {
         throw new Error(`Preset not found: ${args.id}`);
       }
-      const name = uniqueScouterPresetName(args.name, list, args.id);
+      const name = uniquePresetName(args.name, list, args.id);
       const updated: ScouterPreset = {
         ...list[idx]!,
         name,
@@ -199,7 +234,7 @@ export const storage = {
       notifyMapleDataChanged("scouterPresets");
       return updated;
     }
-    const name = uniqueScouterPresetName(args.name, list);
+    const name = uniquePresetName(args.name, list);
     const created: ScouterPreset = {
       id: newPresetId(),
       name,
@@ -215,6 +250,86 @@ export const storage = {
   deleteScouterPreset: (id: string): void => {
     writePresets(readPresets().filter((p) => p.id !== id));
     notifyMapleDataChanged("scouterPresets");
+  },
+
+  listEquipPresets: (opts?: {
+    characterKey?: string | null;
+  }): EquipSetupPreset[] => {
+    const key = opts?.characterKey;
+    const list = readEquipPresets();
+    const filtered =
+      key == null || key === ""
+        ? list
+        : list.filter(
+            (p) => !p.characterKey || p.characterKey === key,
+          );
+    return filtered.sort((a, b) => b.updatedAt - a.updatedAt);
+  },
+
+  getEquipPreset: (id: string): EquipSetupPreset | null =>
+    readEquipPresets().find((p) => p.id === id) ?? null,
+
+  saveEquipPreset: (args: {
+    id?: string;
+    name: string;
+    setup: EquipSetup;
+    flameSetup?: FlameSetup;
+    characterKey?: string | null;
+    jobType?: string;
+    charType?: string;
+  }): EquipSetupPreset => {
+    const list = readEquipPresets();
+    const now = Date.now();
+    if (args.id) {
+      const idx = list.findIndex((p) => p.id === args.id);
+      if (idx < 0) {
+        throw new Error(`Equip preset not found: ${args.id}`);
+      }
+      const name = uniquePresetName(args.name, list, args.id);
+      const updated: EquipSetupPreset = {
+        ...list[idx]!,
+        name,
+        updatedAt: now,
+        setup: structuredClone(args.setup),
+        flameSetup: args.flameSetup
+          ? structuredClone(args.flameSetup)
+          : list[idx]!.flameSetup,
+        characterKey:
+          args.characterKey !== undefined
+            ? args.characterKey
+            : list[idx]!.characterKey,
+        jobType:
+          args.jobType !== undefined ? args.jobType : list[idx]!.jobType,
+        charType:
+          args.charType !== undefined ? args.charType : list[idx]!.charType,
+      };
+      list[idx] = updated;
+      writeEquipPresets(list);
+      notifyMapleDataChanged("equipPresets");
+      return updated;
+    }
+    const name = uniquePresetName(args.name, list);
+    const created: EquipSetupPreset = {
+      id: newPresetId(),
+      name,
+      updatedAt: now,
+      setup: structuredClone(args.setup),
+      flameSetup: args.flameSetup
+        ? structuredClone(args.flameSetup)
+        : undefined,
+      characterKey: args.characterKey ?? null,
+      jobType: args.jobType,
+      charType: args.charType,
+    };
+    list.push(created);
+    writeEquipPresets(list);
+    notifyMapleDataChanged("equipPresets");
+    return created;
+  },
+
+  deleteEquipPreset: (id: string): void => {
+    writeEquipPresets(readEquipPresets().filter((p) => p.id !== id));
+    notifyMapleDataChanged("equipPresets");
   },
 
   /** Delete tokens for shares created in this browser (needed to remove from gallery). */

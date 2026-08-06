@@ -34,6 +34,8 @@ const GMS_NAME_REPLACEMENTS: ReadonlyArray<readonly [RegExp, string]> = [
   [/Cursed Green Magic Book/gi, "Cursed Green Spellbook"],
   [/Cursed Yellow Magic Book/gi, "Cursed Yellow Spellbook"],
   [/Complete Under Control/gi, "Total Control"],
+  [/Condensed Strength Crystalline/gi, "Condensed Power Crystal"],
+  [/Penombre Mark/gi, "Twilight Mark"],
   [/Superior Engraved Gollux/gi, "Superior Gollux"],
   [/Reinforced Engraved Gollux/gi, "Reinforced Gollux"],
   // Adele Bladebinder secondaries (WhackyBeanz uses "Bracelet").

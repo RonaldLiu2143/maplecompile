@@ -18,250 +18,274 @@ export type StarterLoadout = {
    * Optional per-equipType preferred matchers (ordered). When set, replaces
    * the category matchers for that type — used for mixed armor tiers and
    * specific pitched / Oz / Gollux accessory picks.
+   *
+   * Multi-slot types (ring ×4, pendant ×2): matchers are tried in order;
+   * each matcher can fill remaining capacity with distinct items.
    */
   typeMatchers?: Partial<Record<string, string[]>>;
 };
 
-/** Shared pitched + dawn accessory fallbacks (GMS names / setTypes). */
-const PITCHED_ACC = [
-  "hardBossAcc",
-  "endless terror",
-  "berserked",
-  "magic eyepatch",
-  "commanding force",
-  "source of suffering",
-  "dreamy belt",
-  "cursed red spellbook",
-  "genesis badge",
-  "mitra's rage",
-  "black heart",
+/** Job-variant Gold Lab emblems (WhackyBeanz / GMS). */
+const GOLD_EMBLEM = [
+  "gold maple",
+  "gold knight",
+  "gold crystal",
+  "gold hitman",
+  "gold resistance",
+  "gold agent",
+  "gold abyss",
+  "gold",
 ];
 
-const GOLLUX_ACC = [
-  "superiorGollux",
-  "superior gollux",
-  "reinforcedGollux",
-  "reinforced gollux",
-];
+const CRA_HAT = ["highness", "faf"];
+const CRA_TOP = ["eagle eye", "faf"];
+const CRA_BOTTOM = ["trickster", "faf"];
 
 /**
- * Heroic progression ladders — resolved against the loaded class catalog.
+ * Heroic progression presets from the Equipment Setup PDF matrix.
+ * Resolved against the loaded class catalog (job-filtered weapons / armor).
  *
  * Catalog setTypes / GMS name cues:
- * - pensalir — Pensalir (8th) armor + Utgard weapons (injected; overalls live in `top`)
- * - faf — CRA: Highness / Eagle Eye / Trickster armor + Fafnir weapons
+ * - pensalir — Pensalir armor + Utgard weapons (injected)
+ * - faf — CRA: Highness / Eagle Eye / Trickster + Fafnir weapons
  * - abs — Absolabs
  * - acs — Arcane Umbra (catalog may say Arcaneshade; renamed on load)
  * - eternal — Eternal armor
- * - genesis — Genesis weapons (name match; setType is also eternal; defaults to 22★)
- * - frozen — Frozen burning set (injected)
+ * - genesis / destiny — liberation weapons (setType eternal; default 22★)
  * - eventRing — Oz / Seed special skill rings (injected)
- *
- * Presets 3–6 follow Adele Heroic screenshots (class gear variants per catalog).
  */
 export const STARTER_LOADOUTS: StarterLoadout[] = [
   {
     id: "heroic-early",
-    name: "Early (Pensalir / CRA)",
+    name: "Early game",
     description:
-      "Pensalir armor with Utgard or Fafnir weapon when available — early Heroic.",
-    armorMatchers: ["pensalir"],
-    weaponMatchers: ["pensalir", "utgard", "faf", "fafnir"],
-    accessoryMatchers: [
-      "superiorGollux",
-      "dawnBossAcc",
-      "bossAcc",
-      "meister",
-      "sweetwater",
-    ],
+      "CRA armor, Fafnir weapon, Pensalir gloves/shoes, Tyrant cape, boss accessories, event rings.",
+    armorMatchers: ["faf", "pensalir"],
+    weaponMatchers: ["faf", "fafnir"],
+    accessoryMatchers: ["bossAcc", "eventRing", "sengoku", "meister"],
     typeMatchers: {
+      hat: CRA_HAT,
+      top: CRA_TOP,
+      bottom: CRA_BOTTOM,
+      shoulder: ["royal black metal", "magnus-shoulder", "magnus"],
+      cape: ["tyrant hyades cloak", "tyrant-cape", "tyrant"],
+      gloves: ["pensalir"],
+      shoes: ["pensalir"],
+      weapon: ["faf", "fafnir"],
+      ring: [
+        "kanna's treasure",
+        "kanna-ring",
+        "silver blossom",
+        "eventRing",
+      ],
+      pendant: ["dominator", "machinator", "chaos horntail", "horned tail"],
+      face: ["condensed power", "condensed strength", "condensed"],
+      eye: ["aqua letter"],
+      earring: ["dea sidus"],
+      belt: ["golden clover"],
+      pocket: ["pink holy grail", "phg", "pink holy"],
+      emblem: GOLD_EMBLEM,
+      secondary: ["princess no", "princess nou", "pnou"],
       medal: ["chaos vellum crusher", "chaos-vellum-crusher"],
+      heart: ["fairy heart"],
+      badge: ["crystal ventus", "ventus-badge"],
     },
   },
   {
-    id: "heroic-cra",
-    name: "Mid (CRA)",
+    id: "heroic-early-mid",
+    name: "Early-mid game",
     description:
-      "Chaos Root Abyss pieces (Highness / Eagle Eye / Trickster / Fafnir).",
-    armorMatchers: ["faf", "fafnir", "highness", "eagle eye", "trickster"],
-    accessoryMatchers: [
-      "dawnBossAcc",
-      "superiorGollux",
-      "bossAcc",
-      "meister",
-      "sweetwater",
-    ],
-    typeMatchers: {
-      medal: ["chaos vellum crusher", "chaos-vellum-crusher"],
-    },
-  },
-  {
-    id: "heroic-absolab",
-    name: "Early midgame (Absolab)",
-    description:
-      "5 Absolab + CRA top/bottom, Superior Gollux line, Pink Holy Grail pocket.",
-    armorMatchers: ["abs", "absolabs", "absolab"],
+      "Absolab weapon + 5-set (cape/gloves/shoes/shoulder) with CRA top/bottom/hat, Dawn GAR line.",
+    armorMatchers: ["abs", "faf"],
     weaponMatchers: ["abs", "absolabs", "absolab"],
     accessoryMatchers: [
-      ...GOLLUX_ACC,
-      "kanna",
-      "sweetwater",
-      "pink holy grail",
+      "dawnBossAcc",
+      "superiorGollux",
       "bossAcc",
-      "fairy heart",
-      "gold maple",
-      "gold knight",
-      "gold crystal",
-      "gold",
+      "meister",
+      "sengoku",
     ],
     typeMatchers: {
-      // Absolab 5-set + CRA armor (Eagle Eye / Trickster), not Absolab overall.
-      hat: ["abs", "absolabs", "absolab"],
-      top: ["faf", "eagle eye"],
-      bottom: ["faf", "trickster"],
+      hat: CRA_HAT,
+      top: CRA_TOP,
+      bottom: CRA_BOTTOM,
+      shoulder: ["abs", "absolabs", "absolab"],
       cape: ["abs", "absolabs", "absolab"],
       gloves: ["abs", "absolabs", "absolab"],
       shoes: ["abs", "absolabs", "absolab"],
-      shoulder: ["abs", "absolabs", "absolab"],
       weapon: ["abs", "absolabs", "absolab"],
       ring: [
+        "dawn-guardian-angel-ring",
+        "dawn guardian",
         "superior-gollux-ring",
-        "reinforced-gollux-ring",
+        "kanna's treasure",
         "kanna-ring",
-        "kanna",
         "meister signet",
-        "silver blossom",
+        "meister-signet",
       ],
-      pendant: [
-        "superior-gollux-pendant",
-        "reinforced-gollux-pendant",
-        "superiorGollux",
-        "reinforcedGollux",
-      ],
+      pendant: ["dominator", "superior-gollux-pendant", "superiorGollux"],
+      face: ["condensed power", "condensed strength", "condensed"],
+      eye: ["black bean"],
       earring: ["superior-gollux-earrings", "superiorGollux"],
-      belt: ["superior-gollux-belt", "superiorGollux"],
-      face: ["sweetwater tattoo", "sweetwater"],
-      eye: ["sweetwater monocle", "sweetwater"],
-      pocket: ["pink holy grail", "phg"],
-      emblem: [
-        "gold maple",
-        "gold knight",
-        "gold crystal",
-        "gold hitman",
-        "gold resistance",
-        "gold agent",
-        "gold abyss",
-        "gold",
-      ],
+      belt: ["golden clover"],
+      pocket: ["pink holy grail", "phg", "pink holy"],
+      emblem: GOLD_EMBLEM,
+      secondary: ["princess no", "princess nou", "pnou"],
+      medal: ["chaos vellum crusher", "chaos-vellum-crusher"],
       heart: ["fairy heart"],
-      secondary: ["astra", "terminus", "princess nou", "deimos"],
-      medal: ["seven-day monster parker", "monsterPark"],
+      badge: ["crystal ventus", "ventus-badge"],
     },
   },
   {
-    id: "heroic-arcane",
-    name: "Midgame (Arcane)",
+    id: "heroic-mid",
+    name: "Mid-game",
     description:
-      "Full Arcane Umbra armor / weapon with pitched + Superior Gollux accessories.",
-    armorMatchers: ["acs", "arcane umbra", "arcaneshade", "arcane"],
+      "Arcane weapon + gloves/shoes/cape/shoulder, CRA top/bottom, Arcane or Highness hat, Dawn/Gollux line.",
+    armorMatchers: ["acs", "faf"],
     weaponMatchers: ["acs", "arcane umbra", "arcaneshade"],
     accessoryMatchers: [
-      ...PITCHED_ACC,
-      ...GOLLUX_ACC,
-      "guardian angel ring",
-      "kanna",
-      "fairy heart",
       "dawnBossAcc",
+      "superiorGollux",
       "bossAcc",
+      "hardBossAcc",
+      "sengoku",
+      "eventRing",
     ],
     typeMatchers: {
-      hat: ["acs", "arcane umbra"],
-      top: ["acs", "arcane umbra"],
-      // Arcane overall lives in `top`; leave bottom empty.
-      bottom: [],
-      cape: ["acs", "arcane umbra"],
-      gloves: ["acs", "arcane umbra"],
-      shoes: ["acs", "arcane umbra"],
-      shoulder: ["acs", "arcane umbra"],
-      weapon: ["acs", "arcane umbra"],
+      hat: ["acs", "arcane umbra", "arcaneshade", ...CRA_HAT],
+      top: CRA_TOP,
+      bottom: CRA_BOTTOM,
+      shoulder: ["acs", "arcane umbra", "arcaneshade"],
+      cape: ["acs", "arcane umbra", "arcaneshade"],
+      gloves: ["acs", "arcane umbra", "arcaneshade"],
+      shoes: ["acs", "arcane umbra", "arcaneshade"],
+      weapon: ["acs", "arcane umbra", "arcaneshade"],
       ring: [
-        "endless terror",
-        "guardian-angel-ring",
+        "dawn-guardian-angel-ring",
+        "dawn guardian",
         "superior-gollux-ring",
+        "kanna's treasure",
         "kanna-ring",
+        "ring of restraint",
+        "ring-of-restraint",
       ],
-      pendant: ["source of suffering", "superior-gollux-pendant"],
-      face: ["berserked"],
-      eye: ["magic eyepatch"],
-      earring: ["commanding force"],
-      belt: ["dreamy belt", "superior-gollux-belt"],
-      pocket: ["cursed red spellbook"],
-      badge: ["genesis badge"],
-      emblem: ["mitra's rage"],
+      pendant: [
+        "daybreak",
+        "superior-gollux-pendant",
+        "superiorGollux",
+      ],
+      face: ["twilight mark", "penombre"],
+      eye: ["black bean"],
+      earring: ["superior-gollux-earrings", "superiorGollux"],
+      belt: ["superior-gollux-belt", "superiorGollux"],
+      pocket: ["pink holy grail", "phg", "pink holy"],
+      emblem: GOLD_EMBLEM,
+      secondary: ["princess no", "princess nou", "pnou"],
+      medal: ["chaos vellum crusher", "chaos-vellum-crusher"],
       heart: ["fairy heart"],
-      secondary: ["astra", "terminus", "princess nou", "deimos"],
-      medal: ["seven-day monster parker", "monsterPark"],
+      badge: ["crystal ventus", "ventus-badge"],
     },
   },
   {
-    id: "heroic-pitched",
-    name: "Lategame (Pitched)",
+    id: "heroic-late",
+    name: "Late-game",
     description:
-      "Eternal hat/top/bottom/shoulder + Arcane gloves/shoes/cape, pitched accessories, Genesis weapon.",
-    armorMatchers: ["eternal"],
+      "Eternal hat/top/bottom/shoulder + Arcane cape/gloves/shoes, Genesis weapon, pitched accessories.",
+    armorMatchers: ["eternal", "acs"],
     weaponMatchers: ["genesis"],
     accessoryMatchers: [
-      ...PITCHED_ACC,
-      ...GOLLUX_ACC,
-      "guardian angel ring",
-      "kanna",
-      "fairy heart",
-      "radiantBossAcc",
+      "hardBossAcc",
       "dawnBossAcc",
+      "superiorGollux",
+      "eventRing",
     ],
     typeMatchers: {
       hat: ["eternal"],
       top: ["eternal"],
       bottom: ["eternal"],
       shoulder: ["eternal"],
-      gloves: ["acs", "arcane umbra"],
-      shoes: ["acs", "arcane umbra"],
-      cape: ["acs", "arcane umbra"],
+      cape: ["acs", "arcane umbra", "arcaneshade"],
+      gloves: ["acs", "arcane umbra", "arcaneshade"],
+      shoes: ["acs", "arcane umbra", "arcaneshade"],
       weapon: ["genesis"],
       ring: [
-        "endless terror",
-        "guardian-angel-ring",
-        "kanna-ring",
+        "dawn-guardian-angel-ring",
+        "dawn guardian",
         "superior-gollux-ring",
+        "endless terror",
+        "giant fear",
+        "ring of restraint",
+        "ring-of-restraint",
       ],
-      pendant: ["source of suffering", "superior-gollux-pendant"],
-      face: ["berserked"],
-      eye: ["magic eyepatch"],
-      earring: ["commanding force"],
-      belt: ["superior-gollux-belt", "dreamy belt"],
-      pocket: ["cursed red spellbook"],
-      badge: ["genesis badge"],
-      emblem: ["mitra's rage"],
-      heart: ["fairy heart"],
-      secondary: ["astra", "terminus", "princess nou", "deimos"],
-      medal: ["seven-day monster parker", "monsterPark"],
+      pendant: ["daybreak", "source of suffering", "source of pain"],
+      face: ["berserked", "loose control"],
+      eye: ["magic eyepatch", "magical eye"],
+      earring: ["commanding force", "commander force"],
+      belt: ["dreamy belt", "fantasy belt"],
+      pocket: ["cursed red spellbook", "cursed red magic"],
+      emblem: ["mitra's rage", "mithra's rage"],
+      secondary: ["princess no", "princess nou", "pnou"],
+      medal: ["chaos vellum crusher", "chaos-vellum-crusher"],
+      heart: ["plasma heart"],
+      badge: ["crystal ventus", "ventus-badge"],
     },
   },
   {
-    id: "heroic-eternal",
-    name: "Endgame (Brilliant)",
+    id: "heroic-pitched",
+    name: "Endgame (Pitched)",
     description:
-      "Full Eternal armor, Genesis weapon, pitched accessories, Oz rings, Daybreak, Dreamy Belt.",
-    armorMatchers: ["eternal"],
+      "Eternal + Arcane mix, Genesis weapon, pitched accessories, Astra secondary, Total Control.",
+    armorMatchers: ["eternal", "acs"],
     weaponMatchers: ["genesis"],
     accessoryMatchers: [
-      ...PITCHED_ACC,
-      "breath of divinity",
-      "ring of restraint",
-      "guardian angel ring",
-      "daybreak",
+      "hardBossAcc",
+      "dawnBossAcc",
+      "superiorGollux",
+      "eventRing",
+    ],
+    typeMatchers: {
+      hat: ["eternal"],
+      top: ["eternal"],
+      bottom: ["eternal"],
+      shoulder: ["eternal"],
+      cape: ["acs", "arcane umbra", "arcaneshade"],
+      gloves: ["acs", "arcane umbra", "arcaneshade"],
+      shoes: ["acs", "arcane umbra", "arcaneshade"],
+      weapon: ["genesis"],
+      ring: [
+        "dawn-guardian-angel-ring",
+        "dawn guardian",
+        "superior-gollux-ring",
+        "endless terror",
+        "giant fear",
+        "ring of restraint",
+        "ring-of-restraint",
+      ],
+      pendant: ["daybreak", "source of suffering", "source of pain"],
+      face: ["berserked", "loose control"],
+      eye: ["magic eyepatch", "magical eye"],
+      earring: ["commanding force", "commander force"],
+      belt: ["dreamy belt", "fantasy belt"],
+      pocket: ["cursed red spellbook", "cursed red magic"],
+      emblem: ["mitra's rage", "mithra's rage"],
+      secondary: ["astra", "princess no", "princess nou", "pnou"],
+      medal: ["chaos vellum crusher", "chaos-vellum-crusher"],
+      heart: ["total control", "complete under control"],
+      badge: ["genesis badge", "badge in the beginning"],
+    },
+  },
+  {
+    id: "heroic-brilliant",
+    name: "Endgame (Brilliant)",
+    description:
+      "Full Eternal, Destiny weapon (22★), radiant accessories, Oz rings, Immortal Legacy.",
+    armorMatchers: ["eternal"],
+    weaponMatchers: ["destiny"],
+    accessoryMatchers: [
       "radiantBossAcc",
-      "black heart",
+      "hardBossAcc",
+      "dawnBossAcc",
+      "eventRing",
     ],
     typeMatchers: {
       hat: ["eternal"],
@@ -271,28 +295,41 @@ export const STARTER_LOADOUTS: StarterLoadout[] = [
       gloves: ["eternal"],
       shoes: ["eternal"],
       shoulder: ["eternal"],
-      weapon: ["genesis"],
-      // Adele Heroic screenshot order (ring-1 → ring-4).
+      weapon: ["destiny"],
       ring: [
-        "breath of divinity",
+        "entrancing nightmare",
+        "whisper of the source",
         "endless terror",
-        "guardian-angel-ring",
+        "giant fear",
+        "ring of restraint",
         "ring-of-restraint",
       ],
-      pendant: ["source of suffering", "daybreak"],
-      face: ["berserked"],
-      eye: ["magic eyepatch"],
-      earring: ["commanding force"],
-      belt: ["dreamy belt"],
-      pocket: ["cursed red spellbook"],
-      badge: ["genesis badge"],
-      emblem: ["mitra's rage"],
-      heart: ["black heart"],
-      secondary: ["astra", "terminus", "princess nou", "deimos", "ruin force"],
+      pendant: [
+        "oath of death",
+        "source of suffering",
+        "source of pain",
+      ],
+      face: ["original sin of pride", "original sin", "berserked"],
+      eye: ["magic eyepatch", "magical eye"],
+      earring: ["commanding force", "commander force"],
+      belt: ["dreamy belt", "fantasy belt"],
+      pocket: ["cursed red spellbook", "cursed red magic"],
+      emblem: ["mitra's rage", "mithra's rage"],
+      secondary: ["astra", "princess no", "princess nou", "pnou"],
       medal: ["immortal legacy", "radiantBossAcc"],
+      heart: ["total control", "complete under control"],
+      badge: ["genesis badge", "badge in the beginning"],
     },
   },
 ];
+
+/** @deprecated Prefer `heroic-brilliant` — kept as alias id lookup helper. */
+export const LEGACY_STARTER_IDS: Record<string, string> = {
+  "heroic-cra": "heroic-early",
+  "heroic-absolab": "heroic-early-mid",
+  "heroic-arcane": "heroic-mid",
+  "heroic-eternal": "heroic-brilliant",
+};
 
 const EQUIP_TYPES = [
   "weapon",
@@ -362,14 +399,32 @@ function pickEquips(
       if (!matchesAny(equip, [matcher])) continue;
       picked.push(equip);
       used.add(equip.id);
+      // One hit per matcher keeps ring/pendant order intentional.
+      break;
     }
     if (picked.length >= capacity) break;
+  }
+  // If a setType matcher (e.g. eventRing) needs multiple slots, fill remainder.
+  if (picked.length < capacity) {
+    for (const matcher of matchers) {
+      for (const equip of bucket) {
+        if (picked.length >= capacity) break;
+        if (used.has(equip.id)) continue;
+        if (!matchesAny(equip, [matcher])) continue;
+        picked.push(equip);
+        used.add(equip.id);
+      }
+      if (picked.length >= capacity) break;
+    }
   }
   return picked;
 }
 
 function matchersForType(type: string, loadout: StarterLoadout): string[] {
-  if (loadout.typeMatchers && Object.prototype.hasOwnProperty.call(loadout.typeMatchers, type)) {
+  if (
+    loadout.typeMatchers &&
+    Object.prototype.hasOwnProperty.call(loadout.typeMatchers, type)
+  ) {
     return loadout.typeMatchers[type] ?? [];
   }
   if (WEAPONISH.has(type)) {
@@ -401,4 +456,11 @@ export function buildStarterSetup(
 
 export function countFilledSlots(setup: EquipSetup): number {
   return Object.values(setup).reduce((n, list) => n + (list?.length ?? 0), 0);
+}
+
+export function resolveStarterLoadout(
+  id: string,
+): StarterLoadout | undefined {
+  const mapped = LEGACY_STARTER_IDS[id] ?? id;
+  return STARTER_LOADOUTS.find((l) => l.id === mapped);
 }

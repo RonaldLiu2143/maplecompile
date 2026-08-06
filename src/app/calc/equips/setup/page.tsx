@@ -34,7 +34,7 @@ import {
   slotIndex,
   slotToEquipType,
 } from "@/lib/slots";
-import { storage } from "@/lib/storage";
+import { storage, type EquipSetupPreset } from "@/lib/storage";
 import { ActiveCharacterBar } from "@/components/ActiveCharacterBar";
 import { PairingBar } from "@/components/PairingBar";
 import {
@@ -47,6 +47,7 @@ import {
   STARTER_LOADOUTS,
   buildStarterSetup,
   countFilledSlots,
+  resolveStarterLoadout,
 } from "@/lib/starter-loadouts";
 import type {
   Equip,
@@ -57,8 +58,6 @@ import type {
   SetEffect,
   SetEffectsResponse,
 } from "@/lib/types";
-
-type LoadStatus = "idle" | "loading" | "ready" | "error";
 
 /** Side panel mode: pick catalog item, or edit SF / flames / potential. */
 type PanelMode =
@@ -141,7 +140,21 @@ export default function SetupClient() {
   const [hydrated, setHydrated] = useState(false);
   const [starterId, setStarterId] = useState("");
   const [starterMsg, setStarterMsg] = useState<string | null>(null);
+  const [customPresets, setCustomPresets] = useState<EquipSetupPreset[]>([]);
+  const [customPresetId, setCustomPresetId] = useState("");
+  const [customPresetName, setCustomPresetName] = useState("");
+  const [loadedCustomPresetId, setLoadedCustomPresetId] = useState("");
   const skipWorkspaceAutosave = useRef(false);
+
+  const refreshCustomPresets = useCallback(() => {
+    const key = activeCharacterKey();
+    setCustomPresets(storage.listEquipPresets({ characterKey: key }));
+  }, []);
+
+  useEffect(() => {
+    refreshCustomPresets();
+  }, [refreshCustomPresets]);
+
 
   const classValue = `${jobType}:${charType}`;
   const activeSlot = panel?.slot ?? null;
@@ -245,6 +258,9 @@ export default function SetupClient() {
     );
     setFlameSetup(savedFlames);
     setPanel(null);
+    setLoadedCustomPresetId("");
+    setCustomPresetId("");
+    refreshCustomPresets();
     void loadCatalog(job, char);
     queueMicrotask(() => {
       skipWorkspaceAutosave.current = false;
@@ -426,7 +442,7 @@ export default function SetupClient() {
   };
 
   const applyStarter = () => {
-    const loadout = STARTER_LOADOUTS.find((l) => l.id === starterId);
+    const loadout = resolveStarterLoadout(starterId);
     if (!loadout) {
       setStarterMsg("Pick a starter loadout");
       return;
@@ -449,9 +465,94 @@ export default function SetupClient() {
     }
     setSetup(next);
     setPanel(null);
+    setLoadedCustomPresetId("");
+    setCustomPresetId("");
     setStarterMsg(`Applied “${loadout.name}” (${filled} pieces).`);
     setTimeout(() => setStarterMsg(null), 3000);
   };
+
+  const flashStarterMsg = (msg: string) => {
+    setStarterMsg(msg);
+    setTimeout(() => setStarterMsg(null), 3000);
+  };
+
+  const loadCustomPreset = (id: string) => {
+    if (!id) {
+      setCustomPresetId("");
+      setLoadedCustomPresetId("");
+      return;
+    }
+    const preset = storage.getEquipPreset(id);
+    if (!preset) {
+      flashStarterMsg("Preset not found");
+      refreshCustomPresets();
+      setCustomPresetId("");
+      setLoadedCustomPresetId("");
+      return;
+    }
+    const next: EquipSetup = {};
+    for (const [type, list] of Object.entries(preset.setup ?? {})) {
+      next[type] = (list ?? []).map(withHeroicDefaults);
+    }
+    setSetup(clampSetupStarForce(next));
+    if (preset.flameSetup) setFlameSetup(structuredClone(preset.flameSetup));
+    setCustomPresetId(preset.id);
+    setLoadedCustomPresetId(preset.id);
+    setCustomPresetName(preset.name);
+    setStarterId("");
+    setPanel(null);
+    flashStarterMsg(`Loaded “${preset.name}”`);
+  };
+
+  const saveCustomPreset = (asNew: boolean) => {
+    const filled = countFilledSlots(setup);
+    if (!filled) {
+      flashStarterMsg("Equip at least one piece before saving a preset");
+      return;
+    }
+    const requested =
+      customPresetName.trim() ||
+      customPresets.find((p) => p.id === customPresetId)?.name ||
+      "Untitled";
+    try {
+      const overwriteId = asNew ? undefined : loadedCustomPresetId || undefined;
+      const saved = storage.saveEquipPreset({
+        id: overwriteId,
+        name: requested,
+        setup,
+        flameSetup,
+        characterKey: activeCharacterKey(),
+        jobType,
+        charType,
+      });
+      refreshCustomPresets();
+      setCustomPresetId(saved.id);
+      setLoadedCustomPresetId(saved.id);
+      setCustomPresetName(saved.name);
+      flashStarterMsg(
+        asNew || !overwriteId
+          ? `Saved “${saved.name}”`
+          : `Updated “${saved.name}”`,
+      );
+    } catch (err) {
+      flashStarterMsg(
+        err instanceof Error ? err.message : "Could not save preset",
+      );
+    }
+  };
+
+  const deleteCustomPreset = () => {
+    const id = customPresetId || loadedCustomPresetId;
+    if (!id) return;
+    const name =
+      customPresets.find((p) => p.id === id)?.name ?? customPresetName;
+    storage.deleteEquipPreset(id);
+    refreshCustomPresets();
+    if (loadedCustomPresetId === id) setLoadedCustomPresetId("");
+    setCustomPresetId("");
+    flashStarterMsg(name ? `Deleted “${name}”` : "Preset deleted");
+  };
+
 
   return (
     <div className="space-y-8">
@@ -503,7 +604,7 @@ export default function SetupClient() {
               aria-label="Starter loadout"
               disabled={status !== "ready"}
             >
-              <option value="">Starter loadout…</option>
+              <option value="">Tier preset…</option>
               {STARTER_LOADOUTS.map((l) => (
                 <option key={l.id} value={l.id} title={l.description}>
                   {l.name}
@@ -517,10 +618,10 @@ export default function SetupClient() {
               className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
               title={
                 STARTER_LOADOUTS.find((l) => l.id === starterId)?.description ??
-                "Apply a Heroic progression starter"
+                "Apply a Heroic progression tier preset"
               }
             >
-              Apply starter
+              Apply tier
             </button>
             <button
               type="button"
@@ -530,6 +631,8 @@ export default function SetupClient() {
                 storage.clearSetup();
                 setPanel(null);
                 setStarterMsg(null);
+                setLoadedCustomPresetId("");
+                setCustomPresetId("");
               }}
               className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold hover:bg-surface-muted"
             >
@@ -537,13 +640,86 @@ export default function SetupClient() {
             </button>
           </div>
         </div>
+
+        <div className="flex flex-wrap items-center gap-1.5 rounded-lg border border-border/60 bg-surface/40 p-2">
+          <span className="px-1 text-[10px] font-bold uppercase tracking-wide opacity-60">
+            My presets
+          </span>
+          <input
+            type="text"
+            value={customPresetName}
+            onChange={(e) => setCustomPresetName(e.target.value)}
+            placeholder="Preset name"
+            className="min-w-[8rem] flex-1 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs outline-none focus:border-accent sm:max-w-[14rem]"
+            aria-label="Custom preset name"
+            disabled={status !== "ready"}
+          />
+          <button
+            type="button"
+            onClick={() => saveCustomPreset(false)}
+            disabled={
+              status !== "ready" ||
+              (!customPresetName.trim() && !loadedCustomPresetId)
+            }
+            className="rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+            title={
+              loadedCustomPresetId
+                ? "Overwrite the loaded preset"
+                : "Save current setup as a new named preset"
+            }
+          >
+            {loadedCustomPresetId ? "Update" : "Save"}
+          </button>
+          <button
+            type="button"
+            onClick={() => saveCustomPreset(true)}
+            disabled={status !== "ready" || !customPresetName.trim()}
+            className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
+            title="Keep the current preset and save a copy under this name"
+          >
+            Save as new
+          </button>
+          <select
+            value={customPresetId}
+            onChange={(e) => setCustomPresetId(e.target.value)}
+            className="rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs font-semibold outline-none focus:border-accent"
+            aria-label="Saved custom presets"
+            disabled={status !== "ready"}
+          >
+            <option value="">Saved presets…</option>
+            {customPresets.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            onClick={() => loadCustomPreset(customPresetId)}
+            disabled={status !== "ready" || !customPresetId}
+            className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            Load
+          </button>
+          <button
+            type="button"
+            onClick={deleteCustomPreset}
+            disabled={
+              status !== "ready" || !(customPresetId || loadedCustomPresetId)
+            }
+            className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-danger hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            Delete
+          </button>
+        </div>
+
         {starterMsg ? (
           <p className="text-xs font-medium text-accent">{starterMsg}</p>
         ) : (
           <p className="text-xs opacity-60">
-            Starters auto-fill matching pieces from this class catalog (Heroic
-            progression ladder). Click a filled slot to edit stars, flames, and
-            potential.
+            Tier presets auto-fill matching pieces from this class catalog.
+            Save your own named presets to reload later. Click a filled slot to
+            edit stars, flames, and potential.
           </p>
         )}
         {status === "loading" && (
