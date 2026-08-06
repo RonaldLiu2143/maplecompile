@@ -4,13 +4,14 @@
  *
  * ## Active Character lock
  * - Default: unlocked (new users).
- * - Locking stores a sticky default (`lockedCharacterKey`) for the current
- *   primary. That character remains the default active across tool pages.
- * - Explicit switches (ActiveCharacterBar dropdown, Manager ★, etc.) still
- *   work — lock does not block viewing or temporarily activating others.
- * - Temporary primary lasts for the current page session. On the next tool
- *   page load (`restoreLockedActiveCharacter` via ActiveCharacterBar /
- *   useRoster hydrate), the locked character is restored as primary.
+ * - Locking stores a sticky default for the current primary. That character
+ *   remains the active/primary until the user unlocks.
+ * - While locked, sticky switches are blocked (ActiveCharacterBar dropdown,
+ *   Manager ★, HEXA/tool list clicks that would call `switchActiveCharacter`).
+ *   Callers should show `UNLOCK_TO_CHANGE_ACTIVE_MSG` when blocked.
+ * - Tools may still browse other characters via local view state (e.g. HEXA
+ *   `rosterKey`) without changing primary or clearing the lock.
+ * - Switching back to the locked character itself is always allowed.
  * - Share import does not overwrite primary while a lock is set (unless the
  *   import target is already the locked character).
  * - Removing the locked character from the roster clears the lock.
@@ -48,6 +49,10 @@ import type { JobType } from "@/lib/types";
 
 /** Persisted sticky default while Active Character lock is on. */
 export const ACTIVE_CHARACTER_LOCK_KEY = "maplecompile-active-character-lock";
+
+/** Shown when a sticky primary switch is attempted while locked. */
+export const UNLOCK_TO_CHANGE_ACTIVE_MSG =
+  "Unlock to change active character";
 
 function normalizeLock(
   raw: Partial<RosterPrimary> | null | undefined,
@@ -106,12 +111,27 @@ export function isLockedActiveCharacter(
 }
 
 /**
+ * True when setting `target` as sticky primary would be refused because a
+ * different character is locked. Switching to the locked character is fine.
+ */
+export function isStickyActiveSwitchBlocked(
+  target: Pick<RosterEntry, "name" | "region">,
+): boolean {
+  const lock = readActiveCharacterLock();
+  if (!lock) return false;
+  return entryKey(lock) !== entryKey(target);
+}
+
+/**
  * Lock the current (or given) character as sticky default.
  * Ensures they are also the live primary.
  */
 export function lockActiveCharacter(
   entry: Pick<RosterEntry, "name" | "region">,
 ): RosterState {
+  // Clear any prior lock first so switchActiveCharacter is not blocked when
+  // re-locking to a different character.
+  writeActiveCharacterLock(null);
   const state = switchActiveCharacter(entry as RosterEntry);
   writeActiveCharacterLock(entry);
   return state;
@@ -211,11 +231,14 @@ export function syncLiberationActive(characterKey: string): void {
  * Persist the previous primary's live Scouter/Equip, set the new primary,
  * load that character's workspace, and sync Boss/Liberation/pairing focus.
  *
- * When a lock is set, this is still allowed — temporary switch for the
- * current page. Call `restoreLockedActiveCharacter` on the next tool-page
- * load to bring the sticky default back.
+ * When a lock is set for a different character, this is a no-op (primary and
+ * lock unchanged). Use tool-local view state to browse other characters.
  */
 export function switchActiveCharacter(entry: RosterEntry): RosterState {
+  if (isStickyActiveSwitchBlocked(entry)) {
+    return readRosterState();
+  }
+
   const prev = readRosterState();
   const prevKey = prev.primary ? entryKey(prev.primary) : null;
   const nextKey = entryKey(entry);

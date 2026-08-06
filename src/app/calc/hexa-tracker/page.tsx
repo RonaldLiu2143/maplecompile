@@ -9,6 +9,13 @@ import {
 } from "@/components/ManageDisplayModal";
 import { useMapleDataReload } from "@/hooks/useMapleDataReload";
 import { useRoster } from "@/hooks/useRoster";
+import {
+  isActiveCharacterLocked,
+  isStickyActiveSwitchBlocked,
+  UNLOCK_TO_CHANGE_ACTIVE_MSG,
+} from "@/lib/active-character";
+import { getWorkspace } from "@/lib/character-workspace";
+import { readSessionCharacter } from "@/lib/character/client";
 import { entryKey, isPrimary } from "@/lib/dashboard/roster";
 import {
   readHexaDisplay,
@@ -52,7 +59,7 @@ import {
   type HexaScouterPairing,
   type HexaTrackerState,
 } from "@/lib/hexa-tracker";
-import { CLASS_OPTIONS } from "@/lib/jobs";
+import { CLASS_OPTIONS, classFromJobName } from "@/lib/jobs";
 import { hasScouterStats } from "@/lib/pairing";
 import {
   GMS_UNAVAILABLE_HEXA_INDICES,
@@ -72,6 +79,22 @@ const SOL_ERDA_ICON =
   "https://cdn.maplehub.app/skill-images/sol_erda.webp";
 
 type ViewMode = "characters" | "preview";
+
+/** Resolve HEXA job class for a roster key without switching sticky primary. */
+function charTypeForRosterKey(
+  key: string,
+  entry: RosterEntry | undefined,
+): string {
+  if (!key) return storage.getCharType() || "adele";
+  const ws = getWorkspace(key);
+  if (ws?.charType) return ws.charType;
+  if (entry) {
+    const session = readSessionCharacter(entry.name, entry.region);
+    const mapped = classFromJobName(session?.jobName);
+    if (mapped?.charType) return mapped.charType;
+  }
+  return storage.getCharType() || "adele";
+}
 
 function iconUrl(suffix: string | null): string {
   if (!suffix) return "";
@@ -398,7 +421,10 @@ export default function HexaTrackerPage() {
 
   const selectRosterCharacter = (key: string) => {
     const entry = roster.find((e) => entryKey(e) === key);
-    if (entry) {
+    // Sticky primary only when unlocked (or selecting the locked character).
+    // While locked, My Characters is a local temporary view — do not call
+    // switchActiveCharacter / handleSetPrimary.
+    if (entry && !isStickyActiveSwitchBlocked(entry)) {
       handleSetPrimary(entry);
     }
     setRosterKey(key);
@@ -406,7 +432,7 @@ export default function HexaTrackerPage() {
     const tracker = loadHexaTracker(key || null);
     setState(tracker);
     setPairing(getHexaScouterPairing(key || null));
-    setCharType(storage.getCharType() || "adele");
+    setCharType(charTypeForRosterKey(key, entry));
   };
 
   const applyDisplayIds = (ids: string[]) => {
@@ -463,13 +489,17 @@ export default function HexaTrackerPage() {
   };
 
   const onBarSelect = (entry: RosterEntry) => {
+    if (isStickyActiveSwitchBlocked(entry)) {
+      flash(UNLOCK_TO_CHANGE_ACTIVE_MSG);
+      return;
+    }
     handleSetPrimary(entry);
     const key = entryKey(entry);
     setRosterKey(key);
     setViewMode("characters");
     setState(loadHexaTracker(key));
     setPairing(getHexaScouterPairing(key));
-    setCharType(storage.getCharType() || "adele");
+    setCharType(charTypeForRosterKey(key, entry));
   };
 
   const progress = useMemo(() => {
@@ -714,6 +744,18 @@ export default function HexaTrackerPage() {
                   })}
                 </div>
               </div>
+            )}
+            {isActiveCharacterLocked() &&
+            primary &&
+            rosterKey &&
+            entryKey(primary) !== rosterKey ? (
+              <p className="mt-2 text-[10px] text-amber-600 opacity-90">
+                Viewing temporarily — Active character stays locked
+              </p>
+            ) : (
+              <p className="mt-2 text-[10px] opacity-55">
+                Tap a character to edit HEXA · ★ is the active default
+              </p>
             )}
           </section>
         ) : (

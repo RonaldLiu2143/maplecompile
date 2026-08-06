@@ -4,10 +4,12 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import {
   ACTIVE_CHARACTER_LOCK_KEY,
+  isStickyActiveSwitchBlocked,
   readActiveCharacterLock,
   restoreLockedActiveCharacter,
   switchActiveCharacter,
   toggleActiveCharacterLock,
+  UNLOCK_TO_CHANGE_ACTIVE_MSG,
 } from "@/lib/active-character";
 import { readSessionCharacter } from "@/lib/character/client";
 import {
@@ -74,9 +76,9 @@ function LockIcon({ filled, size = 14 }: { filled: boolean; size?: number }) {
  * Compact active-character context for tool pages.
  * Switching here sets roster primary and runs the shared workspace/tool sync path.
  *
- * Lock: sticky default for the locked character. Explicit switches still work
- * for the current page; the locked character is restored on the next tool-page
- * load (this bar's mount).
+ * Lock: sticky primary stays put until unlock. Dropdown switches to other
+ * characters are blocked with a clear message; "Switch back" still works if
+ * primary somehow diverged from the lock.
  */
 export function ActiveCharacterBar({
   onSelect,
@@ -89,6 +91,7 @@ export function ActiveCharacterBar({
     lock: null,
   });
   const [ready, setReady] = useState(false);
+  const [lockHint, setLockHint] = useState<string | null>(null);
 
   const refresh = useCallback(() => {
     setState(readBarState());
@@ -146,11 +149,18 @@ export function ActiveCharacterBar({
     const entry = roster.find((e) => entryKey(e) === key);
     if (!entry) return;
     if (primary && entryKey(primary) === key) return;
+    if (isStickyActiveSwitchBlocked(entry)) {
+      setLockHint(UNLOCK_TO_CHANGE_ACTIVE_MSG);
+      window.setTimeout(() => setLockHint(null), 2800);
+      return;
+    }
+    setLockHint(null);
     applySelect(entry);
   };
 
   const handleToggleLock = () => {
     if (!primary) return;
+    setLockHint(null);
     toggleActiveCharacterLock(primary);
     setState(readBarState());
   };
@@ -159,6 +169,7 @@ export function ActiveCharacterBar({
     if (!lock) return;
     const entry = roster.find((e) => entryKey(e) === entryKey(lock));
     if (!entry) return;
+    setLockHint(null);
     applySelect(entry);
   };
 
@@ -185,9 +196,9 @@ export function ActiveCharacterBar({
 
   const lockTitle = locked
     ? viewingTemporary
-      ? `Default locked to ${lockedLabel}. You can still use other characters; this page will restore the locked default next visit.`
-      : `Locked as default active character. You can still open others — unlock to stop restoring on tool-page load.`
-    : "Lock as default active character. You can still switch to others temporarily.";
+      ? `Default locked to ${lockedLabel}. Unlock or use Switch back to restore the sticky active character.`
+      : `Locked as active character. Unlock to change the sticky default — tools can still browse other characters in a local view.`
+    : "Lock as default active character. While locked, sticky switches are blocked until you unlock.";
 
   return (
     <div
@@ -295,6 +306,15 @@ export function ActiveCharacterBar({
           Manager
         </Link>
       </div>
+
+      {lockHint ? (
+        <p
+          role="status"
+          className="w-full text-xs font-semibold text-amber-600"
+        >
+          {lockHint}
+        </p>
+      ) : null}
     </div>
   );
 }

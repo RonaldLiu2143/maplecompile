@@ -3,7 +3,11 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { RosterDragProps } from "@/components/dashboard/RosterCharacterCard";
-import { switchActiveCharacter } from "@/lib/active-character";
+import {
+  isStickyActiveSwitchBlocked,
+  switchActiveCharacter,
+  UNLOCK_TO_CHANGE_ACTIVE_MSG,
+} from "@/lib/active-character";
 import { characterProfileHref } from "@/lib/character/client";
 import type { CharacterLookupResult } from "@/lib/character/lookup";
 import type { RosterEntry } from "@/lib/dashboard/roster";
@@ -384,7 +388,11 @@ export function RosterListRow({
   const showStatus = weeklyBoss != null || status != null;
 
   function activateTool(href: string) {
-    switchActiveCharacter(entry);
+    // While locked, keep sticky primary — tools open against the locked
+    // active character (local tool lists can still browse alts separately).
+    if (!isStickyActiveSwitchBlocked(entry)) {
+      switchActiveCharacter(entry);
+    }
     router.push(href);
   }
 
@@ -452,7 +460,11 @@ export function RosterListRow({
               type="button"
               onClick={onSetPrimary}
               className="inline-flex shrink-0 rounded p-0.5 text-foreground/25 transition hover:text-amber-400"
-              title="Set as primary"
+              title={
+                isStickyActiveSwitchBlocked(entry)
+                  ? UNLOCK_TO_CHANGE_ACTIVE_MSG
+                  : "Set as primary"
+              }
               aria-label={`Set ${name} as primary`}
             >
               <StarIcon size={iconSize} />

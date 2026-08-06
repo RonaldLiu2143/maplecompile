@@ -2,6 +2,10 @@
 
 import Link from "next/link";
 import { useRef, type DragEvent, type MouseEvent } from "react";
+import {
+  isStickyActiveSwitchBlocked,
+  UNLOCK_TO_CHANGE_ACTIVE_MSG,
+} from "@/lib/active-character";
 import { characterProfileHref } from "@/lib/character/client";
 import type { CharacterLookupResult } from "@/lib/character/lookup";
 
@@ -265,7 +269,14 @@ export function RosterCharacterCard({
                   type="button"
                   onClick={handleSetPrimary}
                   className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border/70 bg-surface text-foreground/35 transition hover:border-amber-400/50 hover:bg-surface-muted hover:text-amber-400"
-                  title="Set as primary"
+                  title={
+                    isStickyActiveSwitchBlocked({
+                      name: character.name,
+                      region: character.region,
+                    })
+                      ? UNLOCK_TO_CHANGE_ACTIVE_MSG
+                      : "Set as primary"
+                  }
                   aria-label={`Set ${character.name} as primary`}
                 >
                   <StarIcon />

@@ -21,8 +21,10 @@ import {
 } from "@/lib/dashboard/roster";
 import {
   clearActiveCharacterLockIfKey,
+  isStickyActiveSwitchBlocked,
   restoreLockedActiveCharacter,
   switchActiveCharacter,
+  UNLOCK_TO_CHANGE_ACTIVE_MSG,
 } from "@/lib/active-character";
 
 export type RosterSlotState =
@@ -179,8 +181,15 @@ export function useRoster() {
     applyRosterState(removeFromRoster(entry));
   }
 
-  function handleSetPrimary(entry: RosterEntry) {
+  function handleSetPrimary(entry: RosterEntry): boolean {
+    if (isStickyActiveSwitchBlocked(entry)) {
+      if (typeof window !== "undefined") {
+        window.alert(UNLOCK_TO_CHANGE_ACTIVE_MSG);
+      }
+      return false;
+    }
     applyRosterState(switchActiveCharacter(entry));
+    return true;
   }
 
   function handleMoveUp(index: number) {
