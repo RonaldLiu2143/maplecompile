@@ -230,40 +230,40 @@ function BossClearCard({
     <div
       tabIndex={0}
       title={`${row.difficulty} ${row.nameEn}`}
-      className={`group relative z-0 flex w-full flex-col items-center gap-1 rounded-lg border bg-surface p-1.5 text-center shadow-sm transition hover:z-30 hover:-translate-y-0.5 hover:shadow-md focus-within:z-30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent ${borderClass}`}
+      className={`group relative z-0 flex w-full flex-col items-center gap-0.5 rounded-md border bg-surface p-1 text-center shadow-sm transition hover:z-30 hover:-translate-y-0.5 hover:shadow-md focus-within:z-30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent ${borderClass}`}
     >
       <BossHoverPanel row={row} hpRegion={hpRegion} />
 
-      <div className="relative w-full overflow-hidden rounded-md bg-surface-muted">
+      <div className="relative w-full overflow-hidden rounded bg-surface-muted">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={row.imgUrl}
           alt={`${row.difficulty} ${row.nameEn}`}
-          width={80}
-          height={80}
+          width={64}
+          height={64}
           className="aspect-square w-full object-cover"
           loading="lazy"
         />
         {row.cantEnter ? (
-          <div className="absolute left-1 top-1 flex gap-0.5">
-            <span className="rounded-full bg-rose-600 px-1.5 text-[9px] font-bold leading-4 text-white shadow">
+          <div className="absolute left-0.5 top-0.5 flex gap-0.5">
+            <span className="rounded-full bg-rose-600 px-1 text-[8px] font-bold leading-3 text-white shadow">
               {row.level > 0 ? "LV" : "F"}
             </span>
           </div>
         ) : null}
       </div>
 
-      <p className="text-sm font-bold tabular-nums tracking-tight">
+      <p className="text-[11px] font-bold tabular-nums tracking-tight leading-tight">
         {formatNum(Math.round(row.userStat))}
       </p>
 
       <span
-        className={`max-w-full truncate rounded-full px-1.5 py-0.5 text-[10px] font-bold leading-tight ${labelPillClass(row.label)}`}
+        className={`max-w-full truncate rounded-full px-1 py-px text-[9px] font-bold leading-tight ${labelPillClass(row.label)}`}
       >
         {row.label}
       </span>
 
-      <p className={`text-xs font-bold tabular-nums ${pctColor}`}>
+      <p className={`text-[10px] font-bold tabular-nums leading-tight ${pctColor}`}>
         {row.isPartyBoss ? (
           <span className="opacity-70">[Party] </span>
         ) : null}
@@ -324,7 +324,7 @@ function BossCardGrid({
   hpRegion: BossHpRegion;
 }) {
   return (
-    <div className={`relative z-0 grid gap-2 overflow-visible ${columnsClass}`}>
+    <div className={`relative z-0 grid gap-1 overflow-visible ${columnsClass}`}>
       {rows.map((row) => (
         <BossClearCard
           key={`${row.id}-${row.difficulty}-${row.isPartyBoss ? "p" : "s"}-${row.rank}`}
@@ -616,7 +616,7 @@ export default function ScouterDetailedResultPage() {
                   <BossCardGrid
                     rows={destinyChampionRows}
                     hpRegion={hpRegion}
-                    columnsClass="grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-5 xl:grid-cols-6"
+                    columnsClass="grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-7 xl:grid-cols-8 2xl:grid-cols-9"
                   />
                 )
               ) : (
@@ -656,17 +656,17 @@ export default function ScouterDetailedResultPage() {
                 </div>
               }
             >
-              <div className="mb-3 flex flex-wrap gap-2 text-[11px]">
-                <span className="rounded-full bg-emerald-500/15 px-2 py-1 font-semibold text-emerald-800 dark:text-emerald-300">
+              <div className="mb-2 flex flex-wrap gap-1.5 text-[10px]">
+                <span className="rounded-full bg-emerald-500/15 px-1.5 py-0.5 font-semibold text-emerald-800 dark:text-emerald-300">
                   Easy / Possible
                 </span>
-                <span className="rounded-full bg-amber-500/15 px-2 py-1 font-semibold text-amber-800 dark:text-amber-300">
+                <span className="rounded-full bg-amber-500/15 px-1.5 py-0.5 font-semibold text-amber-800 dark:text-amber-300">
                   Solo Min (~90%+)
                 </span>
-                <span className="rounded-full bg-blue-500/15 px-2 py-1 font-semibold text-blue-800 dark:text-blue-300">
+                <span className="rounded-full bg-blue-500/15 px-1.5 py-0.5 font-semibold text-blue-800 dark:text-blue-300">
                   Party cuts
                 </span>
-                <span className="rounded-full bg-rose-500/15 px-2 py-1 font-semibold text-rose-800 dark:text-rose-300">
+                <span className="rounded-full bg-rose-500/15 px-1.5 py-0.5 font-semibold text-rose-800 dark:text-rose-300">
                   Under cut
                 </span>
               </div>
@@ -687,7 +687,7 @@ export default function ScouterDetailedResultPage() {
                 <BossCardGrid
                   rows={bossRows}
                   hpRegion={hpRegion}
-                  columnsClass="grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-5 xl:grid-cols-6"
+                  columnsClass="grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-7 xl:grid-cols-8 2xl:grid-cols-9"
                 />
               )}
 
