@@ -362,7 +362,7 @@ export function HexaEfficiencyPanel({
       </p>
 
       {visible.length > 0 ? (
-        <div className="mt-4 grid grid-cols-6 gap-1.5 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-12">
+        <div className="mt-4 flex flex-wrap gap-1.5">
           {visible.map((step, idx) => {
             const [, level, icon, , , , , , , coreKey] = step;
             const t = coreTypeFromKey(String(coreKey)) ?? "G";
@@ -371,21 +371,23 @@ export function HexaEfficiencyPanel({
               <div
                 key={`${coreKey}-${level}-${idx}`}
                 title={`${step[0]} · ${step[10] ?? `→${level}`} · score ${Number(step[7]).toFixed(0)}`}
-                className={`relative aspect-square overflow-hidden rounded-md border-2 bg-background ${meta.border}`}
+                className={`relative size-8 overflow-hidden rounded-md border-2 bg-background sm:size-9 ${meta.border}`}
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={iconUrl(String(icon))}
                   alt={String(step[0])}
-                  className="size-full object-contain p-0.5"
+                  width={36}
+                  height={36}
+                  className="size-full object-contain p-px"
                   loading="lazy"
                   referrerPolicy="no-referrer"
                 />
-                <span className="absolute right-0.5 bottom-0.5 rounded bg-black/75 px-1 text-[10px] font-bold tabular-nums text-white">
+                <span className="absolute right-0 bottom-0 rounded-sm bg-black/75 px-0.5 text-[9px] font-bold leading-none tabular-nums text-white">
                   {level}
                 </span>
                 <span
-                  className={`absolute top-0.5 left-0.5 rounded px-0.5 text-[9px] font-bold text-white ${meta.badge}`}
+                  className={`absolute top-0 left-0 rounded-sm px-0.5 text-[8px] font-bold leading-none text-white ${meta.badge}`}
                 >
                   {t}
                 </span>
