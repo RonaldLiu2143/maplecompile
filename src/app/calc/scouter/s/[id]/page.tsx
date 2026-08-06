@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { storage } from "@/lib/storage";
 
 /** Legacy scouter share URL → character build profile. */
 export default function ScouterShareRedirectPage() {
@@ -11,6 +12,7 @@ export default function ScouterShareRedirectPage() {
 
   useEffect(() => {
     if (!id) return;
+    storage.recordScouterShareView(id);
     router.replace(`/calc/character/share/${encodeURIComponent(id)}`);
   }, [id, router]);
 

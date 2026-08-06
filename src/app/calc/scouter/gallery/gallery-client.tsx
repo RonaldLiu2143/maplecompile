@@ -12,7 +12,7 @@ import {
   GALLERY_LEADERBOARD_LIMIT,
   type ScouterGalleryItem,
 } from "@/lib/scouter/share";
-import { storage } from "@/lib/storage";
+import { storage, type ScouterRecentView } from "@/lib/storage";
 
 /** Relative time; pass a client `now` so SSR stays stable. */
 function formatSharedAt(ts: number, now: number | null): string {
@@ -94,7 +94,13 @@ function IdentityBadge({
   );
 }
 
-type GalleryMode = "recent" | "leaderboard";
+type GalleryMode = "leaderboard" | "recent" | "yours";
+
+function isLocalhostHost(): boolean {
+  if (typeof window === "undefined") return false;
+  const h = window.location.hostname;
+  return h === "localhost" || h === "127.0.0.1";
+}
 
 export function GalleryClient({
   items: initialItems,
@@ -110,12 +116,16 @@ export function GalleryClient({
   const [owned, setOwned] = useState<
     Record<string, { deleteToken: string; name: string; public: boolean }>
   >({});
+  const [recentViews, setRecentViews] = useState<ScouterRecentView[]>([]);
+  const [localAdmin, setLocalAdmin] = useState(false);
   const [now, setNow] = useState<number | null>(null);
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
 
   useEffect(() => {
     setOwned(storage.getScouterShareTokens());
+    setRecentViews(storage.getScouterRecentViews());
+    setLocalAdmin(isLocalhostHost());
     setNow(Date.now());
   }, []);
 
@@ -135,32 +145,32 @@ export function GalleryClient({
   );
   const avatars = useCharacterAvatars(avatarRefs);
 
-  const yourPosts = useMemo(() => {
-    return items
-      .filter((item) => Boolean(owned[item.id]?.deleteToken))
-      .sort((a, b) => b.createdAt - a.createdAt);
-  }, [items, owned]);
+  const viewedAtById = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const row of recentViews) map.set(row.id, row.viewedAt);
+    return map;
+  }, [recentViews]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const base = !q
-      ? items
-      : items.filter((item) => {
-          const className = getCharName(item.jobType, item.charType).toLowerCase();
-          return (
-            item.name.toLowerCase().includes(q) ||
-            className.includes(q) ||
-            item.id.toLowerCase().includes(q) ||
-            String(item.level).includes(q) ||
-            item.achievement.toLowerCase().includes(q) ||
-            item.identity.includes(q) ||
-            (item.characterName?.toLowerCase().includes(q) ?? false) ||
-            (item.characterRegion?.includes(q) ?? false) ||
-            (item.hasEquipment && (q === "gear" || q === "equipment"))
-          );
-        });
+    const matchesQuery = (item: ScouterGalleryItem) => {
+      if (!q) return true;
+      const className = getCharName(item.jobType, item.charType).toLowerCase();
+      return (
+        item.name.toLowerCase().includes(q) ||
+        className.includes(q) ||
+        item.id.toLowerCase().includes(q) ||
+        String(item.level).includes(q) ||
+        item.achievement.toLowerCase().includes(q) ||
+        item.identity.includes(q) ||
+        (item.characterName?.toLowerCase().includes(q) ?? false) ||
+        (item.characterRegion?.includes(q) ?? false) ||
+        (item.hasEquipment && (q === "gear" || q === "equipment"))
+      );
+    };
 
     if (mode === "leaderboard") {
+      const base = items.filter(matchesQuery);
       return [...base]
         .sort((a, b) => {
           const dv = (b.views ?? 0) - (a.views ?? 0);
@@ -169,16 +179,36 @@ export function GalleryClient({
         })
         .slice(0, GALLERY_LEADERBOARD_LIMIT);
     }
-    return base;
-  }, [items, query, mode]);
+
+    if (mode === "yours") {
+      return items
+        .filter((item) => Boolean(owned[item.id]?.deleteToken))
+        .filter(matchesQuery)
+        .sort((a, b) => b.createdAt - a.createdAt);
+    }
+
+    // Recent = locally viewed shares only (not globally recent posts).
+    const byId = new Map(items.map((item) => [item.id, item]));
+    const rows: ScouterGalleryItem[] = [];
+    for (const row of recentViews) {
+      const item = byId.get(row.id);
+      if (item && matchesQuery(item)) rows.push(item);
+    }
+    return rows;
+  }, [items, query, mode, owned, recentViews]);
 
   const removeFromGallery = async (item: ScouterGalleryItem) => {
     const token = owned[item.id];
-    if (!token?.deleteToken) return;
+    const ownedToken = token?.deleteToken;
+    const useAdmin = localAdmin && !ownedToken;
+    if (!ownedToken && !localAdmin) return;
+
     const ok = window.confirm(
-      `Remove “${item.name}” from the public gallery?\n\nThe direct link will still work as private.${
-        item.identity === "ign" ? " This IGN can be reused." : ""
-      }`,
+      useAdmin
+        ? `ADMIN (localhost): Remove “${item.name}” from the public gallery?\n\nNo edit token — local/dev override only. The direct link will still work as private.`
+        : `Remove “${item.name}” from the public gallery?\n\nThe direct link will still work as private.${
+            item.identity === "ign" ? " This IGN can be reused." : ""
+          }`,
     );
     if (!ok) return;
 
@@ -190,15 +220,21 @@ export function GalleryClient({
         {
           method: "DELETE",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ deleteToken: token.deleteToken }),
+          body: JSON.stringify(
+            useAdmin
+              ? { admin: true }
+              : { deleteToken: ownedToken },
+          ),
         },
       );
       const data = (await res.json()) as { error?: string };
       if (!res.ok) {
         throw new Error(data.error || `Remove failed (${res.status})`);
       }
-      storage.clearScouterShareToken(item.id);
-      setOwned(storage.getScouterShareTokens());
+      if (ownedToken) {
+        storage.clearScouterShareToken(item.id);
+        setOwned(storage.getScouterShareTokens());
+      }
       setItems((prev) => prev.filter((row) => row.id !== item.id));
     } catch (err) {
       setActionError(
@@ -212,10 +248,11 @@ export function GalleryClient({
   const renderRow = (
     item: ScouterGalleryItem,
     index: number,
-    opts: { showRank: boolean },
+    opts: { showRank: boolean; timeLabel: "shared" | "viewed" },
   ) => {
     const className = getCharName(item.jobType, item.charType);
-    const canRemove = Boolean(owned[item.id]?.deleteToken);
+    const canRemoveOwned = Boolean(owned[item.id]?.deleteToken);
+    const canRemove = canRemoveOwned || localAdmin;
     const paired =
       item.characterName && item.characterRegion
         ? {
@@ -226,6 +263,10 @@ export function GalleryClient({
     const avatarUrl = paired
       ? avatars[characterAvatarKey(paired.region, paired.name)]
       : undefined;
+    const timeTs =
+      opts.timeLabel === "viewed"
+        ? (viewedAtById.get(item.id) ?? item.createdAt)
+        : item.createdAt;
     return (
       <tr
         key={item.id}
@@ -290,7 +331,7 @@ export function GalleryClient({
           {item.achievement || <span className="opacity-50">—</span>}
         </td>
         <td className="px-3 py-2.5 text-xs opacity-70">
-          {formatSharedAt(item.createdAt, now)}
+          {formatSharedAt(timeTs, now)}
         </td>
         <td className="px-3 py-2.5 text-right">
           <div className="inline-flex flex-wrap items-center justify-end gap-1.5">
@@ -307,7 +348,11 @@ export function GalleryClient({
                 onClick={() => void removeFromGallery(item)}
                 className="rounded border border-border/50 bg-background px-2.5 py-1 text-xs font-semibold text-red-700 transition hover:bg-surface-muted disabled:opacity-40 dark:text-red-400"
               >
-                {removingId === item.id ? "Removing…" : "Remove"}
+                {removingId === item.id
+                  ? "Removing…"
+                  : canRemoveOwned
+                    ? "Remove"
+                    : "Delete"}
               </button>
             ) : null}
           </div>
@@ -315,6 +360,33 @@ export function GalleryClient({
       </tr>
     );
   };
+
+  const emptyMessage = (() => {
+    if (items.length === 0) {
+      return "No public loadouts yet. Use Share to gallery from Scouter.";
+    }
+    if (mode === "recent" && recentViews.length === 0) {
+      return "No recently viewed builds. Open a gallery profile to add it here.";
+    }
+    if (mode === "recent" && filtered.length === 0) {
+      return query.trim()
+        ? "No loadouts match your search."
+        : "None of your recently viewed builds are still public.";
+    }
+    if (mode === "yours" && filtered.length === 0) {
+      return query.trim()
+        ? "No loadouts match your search."
+        : "No posts from this browser yet. Share to gallery from Scouter.";
+    }
+    return "No loadouts match your search.";
+  })();
+
+  const countLabel =
+    mode === "leaderboard"
+      ? `Top ${filtered.length} by views`
+      : mode === "recent"
+        ? `${filtered.length} viewed`
+        : `${filtered.length} post${filtered.length === 1 ? "" : "s"}`;
 
   return (
     <div className="space-y-6">
@@ -326,7 +398,16 @@ export function GalleryClient({
           <p className="mt-1 max-w-2xl text-sm opacity-75">
             Shared Scouter + Equipment builds (anonymous class-code or IGN).
             Open a profile to view, import, or edit if you own the token.
-            Leaderboard ranks by profile views. BCS HEXA is 20 min / KMS.
+            Leaderboard ranks by profile views; Recent is builds you opened on
+            this device. BCS HEXA is 20 min / KMS.
+            {localAdmin ? (
+              <>
+                {" "}
+                <span className="font-semibold text-amber-700 dark:text-amber-400">
+                  Localhost admin: Delete is available on every row.
+                </span>
+              </>
+            ) : null}
           </p>
         </div>
         <Link
@@ -337,86 +418,34 @@ export function GalleryClient({
         </Link>
       </header>
 
-      {yourPosts.length > 0 ? (
-        <section className="space-y-2">
-          <div className="flex flex-wrap items-end justify-between gap-2">
-            <div>
-              <h2 className="font-display text-lg font-bold tracking-tight">
-                Your posts
-              </h2>
-              <p className="text-xs opacity-60">
-                Loadouts you shared from this browser (edit tokens). They also
-                appear in the gallery below.
-              </p>
-            </div>
-            <span className="text-xs opacity-60">
-              {yourPosts.length} post{yourPosts.length === 1 ? "" : "s"}
-            </span>
-          </div>
-          <div className="overflow-x-auto rounded-lg border border-accent/30 bg-accent/5">
-            <table className="w-full min-w-[48rem] text-left text-sm">
-              <thead className="border-b border-border/40 bg-surface-muted/50 text-xs uppercase tracking-wide opacity-70">
-                <tr>
-                  <th className="px-3 py-2.5 font-semibold">Name</th>
-                  <th className="px-3 py-2.5 font-semibold">Class</th>
-                  <th className="px-3 py-2.5 font-semibold">Level</th>
-                  <th className="px-3 py-2.5 font-semibold">Gear</th>
-                  <th className="px-3 py-2.5 font-semibold">Views</th>
-                  <th
-                    className="px-3 py-2.5 font-semibold"
-                    title="Boss Converted Stat HEXA · 20 min / KMS"
-                  >
-                    BCS HEXA
-                  </th>
-                  <th className="px-3 py-2.5 font-semibold">Achievement</th>
-                  <th className="px-3 py-2.5 font-semibold">Shared</th>
-                  <th className="px-3 py-2.5 font-semibold">
-                    <span className="sr-only">Actions</span>
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {yourPosts.map((item, index) =>
-                  renderRow(item, index, { showRank: false }),
-                )}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      ) : null}
-
       <div className="flex flex-wrap items-center gap-2">
         <div
           className="inline-flex rounded border border-border/50 bg-background p-0.5"
           role="tablist"
           aria-label="Gallery view"
         >
-          <button
-            type="button"
-            role="tab"
-            aria-selected={mode === "leaderboard"}
-            onClick={() => setMode("leaderboard")}
-            className={`rounded px-3 py-1.5 text-sm font-semibold transition ${
-              mode === "leaderboard"
-                ? "bg-accent text-white"
-                : "opacity-70 hover:bg-surface-muted hover:opacity-100"
-            }`}
-          >
-            Leaderboard
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={mode === "recent"}
-            onClick={() => setMode("recent")}
-            className={`rounded px-3 py-1.5 text-sm font-semibold transition ${
-              mode === "recent"
-                ? "bg-accent text-white"
-                : "opacity-70 hover:bg-surface-muted hover:opacity-100"
-            }`}
-          >
-            Recent
-          </button>
+          {(
+            [
+              ["leaderboard", "Leaderboard"],
+              ["recent", "Recent"],
+              ["yours", "Your posts"],
+            ] as const
+          ).map(([id, label]) => (
+            <button
+              key={id}
+              type="button"
+              role="tab"
+              aria-selected={mode === id}
+              onClick={() => setMode(id)}
+              className={`rounded px-3 py-1.5 text-sm font-semibold transition ${
+                mode === id
+                  ? "bg-accent text-white"
+                  : "opacity-70 hover:bg-surface-muted hover:opacity-100"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
         </div>
         <input
           type="search"
@@ -426,11 +455,7 @@ export function GalleryClient({
           className="min-w-[14rem] flex-1 rounded border border-border/50 bg-background px-3 py-2 text-sm outline-none focus:border-accent"
           aria-label="Search gallery"
         />
-        <span className="text-xs opacity-60">
-          {mode === "leaderboard"
-            ? `Top ${filtered.length} by views`
-            : `${filtered.length} loadout${filtered.length === 1 ? "" : "s"}`}
-        </span>
+        <span className="text-xs opacity-60">{countLabel}</span>
       </div>
 
       {error ? (
@@ -447,9 +472,7 @@ export function GalleryClient({
 
       {!error && filtered.length === 0 ? (
         <p className="rounded-lg border border-border/50 bg-surface/80 px-4 py-10 text-center text-sm opacity-70">
-          {items.length === 0
-            ? "No public loadouts yet. Use Share to gallery from Scouter."
-            : "No loadouts match your search."}
+          {emptyMessage}
         </p>
       ) : null}
 
@@ -473,7 +496,9 @@ export function GalleryClient({
                   BCS HEXA
                 </th>
                 <th className="px-3 py-2.5 font-semibold">Achievement</th>
-                <th className="px-3 py-2.5 font-semibold">Shared</th>
+                <th className="px-3 py-2.5 font-semibold">
+                  {mode === "recent" ? "Viewed" : "Shared"}
+                </th>
                 <th className="px-3 py-2.5 font-semibold">
                   <span className="sr-only">Actions</span>
                 </th>
@@ -483,6 +508,7 @@ export function GalleryClient({
               {filtered.map((item, index) =>
                 renderRow(item, index, {
                   showRank: mode === "leaderboard",
+                  timeLabel: mode === "recent" ? "viewed" : "shared",
                 }),
               )}
             </tbody>

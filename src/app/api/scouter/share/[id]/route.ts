@@ -15,6 +15,23 @@ import {
 
 type Params = { params: Promise<{ id: string }> };
 
+/**
+ * Localhost-only gallery admin delete.
+ * Never true on production Vercel (NODE_ENV=production and Host ≠ localhost).
+ */
+function allowAdminGalleryDelete(req: Request): boolean {
+  const envOk =
+    process.env.NODE_ENV === "development" ||
+    process.env.ALLOW_GALLERY_ADMIN_DELETE === "1";
+  if (!envOk) return false;
+  const host = (req.headers.get("x-forwarded-host") || req.headers.get("host") || "")
+    .split(",")[0]
+    ?.trim()
+    .toLowerCase() ?? "";
+  const hostname = host.split(":")[0] ?? "";
+  return hostname === "localhost" || hostname === "127.0.0.1";
+}
+
 export async function GET(req: Request, { params }: Params) {
   try {
     if (!isRedisConfigured()) {
@@ -160,17 +177,28 @@ export async function DELETE(req: Request, { params }: Params) {
       editToken?: string;
       /** When true, permanently delete (404). Used for gallery replace. */
       hard?: boolean;
+      /** Localhost/dev admin override — unlist any post without edit token. */
+      admin?: boolean;
     };
     const token = (body.editToken ?? body.deleteToken ?? "").trim();
+    const admin = body.admin === true && allowAdminGalleryDelete(req);
+    if (!admin && !token) {
+      return NextResponse.json(
+        { error: "Missing deleteToken" },
+        { status: 400 },
+      );
+    }
     if (body.hard === true) {
       await purgeShare({
         id,
         deleteToken: token,
+        admin,
       });
     } else {
       await removeFromPublicGallery({
         id,
         deleteToken: token,
+        admin,
       });
     }
     return NextResponse.json({ ok: true });

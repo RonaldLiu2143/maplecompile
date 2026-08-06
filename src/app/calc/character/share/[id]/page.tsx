@@ -79,6 +79,7 @@ export default function CharacterShareProfilePage() {
         }
         if (cancelled) return;
         setLoad({ status: "ready", record: data });
+        storage.recordScouterShareView(id);
         const tokens = storage.getScouterShareTokens();
         setOwnedToken(tokens[id]?.deleteToken ?? null);
         const suggested =

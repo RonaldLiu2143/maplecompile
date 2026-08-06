@@ -934,6 +934,22 @@ async function assertDeleteToken(id: string, deleteToken: string): Promise<{
   };
 }
 
+/** Load a share for admin/dev gallery remove (no delete-token check). */
+async function loadShareForAdminRemove(id: string): Promise<{
+  redis: Redis;
+  raw: ScouterShareRecord | null;
+}> {
+  if (!id || !/^[A-Za-z0-9_-]{4,32}$/.test(id)) {
+    throw new Error("Invalid share id");
+  }
+  const redis = getRedis();
+  const raw = await redis.get<ScouterShareRecord>(shareKey(id));
+  return {
+    redis,
+    raw: raw && typeof raw === "object" ? raw : null,
+  };
+}
+
 /** Release the public IGN name lock when this share owns it. */
 async function releasePublicNameLock(
   redis: Redis,
@@ -954,23 +970,27 @@ async function releasePublicNameLock(
 
 /**
  * Remove a loadout from the public gallery (frees the IGN name lock when applicable).
- * Requires the delete token returned at create time.
+ * Requires the delete token returned at create time, unless `admin` is set
+ * (localhost / development override only — gated by the API route).
  * The share remains openable by direct link as private.
  */
 export async function removeFromPublicGallery(args: {
   id: string;
-  deleteToken: string;
+  deleteToken?: string;
+  /** Skip delete-token check (API must gate this to local/dev only). */
+  admin?: boolean;
 }): Promise<void> {
   const id = args.id?.trim();
-  const deleteToken = args.deleteToken?.trim();
-  const { redis, raw } = await assertDeleteToken(id, deleteToken ?? "");
+  const { redis, raw } = args.admin
+    ? await loadShareForAdminRemove(id ?? "")
+    : await assertDeleteToken(id ?? "", args.deleteToken?.trim() ?? "");
 
-  await releasePublicNameLock(redis, id, raw);
+  await releasePublicNameLock(redis, id ?? "", raw);
   if (raw?.public) {
-    await redis.set(shareKey(id), { ...raw, public: false });
+    await redis.set(shareKey(id ?? ""), { ...raw, public: false });
   }
 
-  await redis.srem(SHARE_PUBLIC_SET, id);
+  await redis.srem(SHARE_PUBLIC_SET, id ?? "");
 }
 
 /**
@@ -979,13 +999,16 @@ export async function removeFromPublicGallery(args: {
  */
 export async function purgeShare(args: {
   id: string;
-  deleteToken: string;
+  deleteToken?: string;
+  /** Skip delete-token check (API must gate this to local/dev only). */
+  admin?: boolean;
 }): Promise<void> {
   const id = args.id?.trim();
-  const deleteToken = args.deleteToken?.trim();
-  const { redis, raw } = await assertDeleteToken(id, deleteToken ?? "");
+  const { redis, raw } = args.admin
+    ? await loadShareForAdminRemove(id ?? "")
+    : await assertDeleteToken(id ?? "", args.deleteToken?.trim() ?? "");
 
-  await releasePublicNameLock(redis, id, raw);
-  await redis.srem(SHARE_PUBLIC_SET, id);
-  await redis.del(shareKey(id), deleteTokenKey(id), viewsKey(id));
+  await releasePublicNameLock(redis, id ?? "", raw);
+  await redis.srem(SHARE_PUBLIC_SET, id ?? "");
+  await redis.del(shareKey(id ?? ""), deleteTokenKey(id ?? ""), viewsKey(id ?? ""));
 }

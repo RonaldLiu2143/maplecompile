@@ -408,6 +408,25 @@ export const storage = {
   unlinkScouterGalleryShare: (shareId: string) => {
     clearGalleryLinkForShareId(shareId);
   },
+
+  /**
+   * Local history of opened gallery / share / profile links, newest first.
+   * Used by Public Build Gallery → Recent (not global public posts).
+   */
+  getScouterRecentViews: (): ScouterRecentView[] => readRecentViews(),
+
+  /** Record that this browser opened a share (gallery item, profile, or legacy /s/). */
+  recordScouterShareView: (id: string) => {
+    const trimmed = id.trim();
+    if (!trimmed) return;
+    const now = Date.now();
+    const next = readRecentViews().filter((row) => row.id !== trimmed);
+    next.unshift({ id: trimmed, viewedAt: now });
+    writeJson(
+      SCOUTER_RECENT_VIEWS_KEY,
+      next.slice(0, SCOUTER_RECENT_VIEWS_LIMIT),
+    );
+  },
 };
 
 type ScouterGalleryLinkMap = {
@@ -424,7 +443,34 @@ export type ScouterGalleryOwnedShare = {
   public: true;
 };
 
+/** One entry in local “recently viewed” gallery history. */
+export type ScouterRecentView = {
+  id: string;
+  viewedAt: number;
+};
+
 const SCOUTER_GALLERY_LINKS_KEY = "maplecompile-scouter-gallery-links";
+const SCOUTER_RECENT_VIEWS_KEY = "maplecompile-scouter-recent-views";
+const SCOUTER_RECENT_VIEWS_LIMIT = 50;
+
+function readRecentViews(): ScouterRecentView[] {
+  const raw = readJson<unknown>(SCOUTER_RECENT_VIEWS_KEY, []);
+  if (!Array.isArray(raw)) return [];
+  const out: ScouterRecentView[] = [];
+  const seen = new Set<string>();
+  for (const row of raw) {
+    if (!row || typeof row !== "object") continue;
+    const id = typeof (row as { id?: unknown }).id === "string"
+      ? (row as { id: string }).id.trim()
+      : "";
+    const viewedAt = Number((row as { viewedAt?: unknown }).viewedAt);
+    if (!id || seen.has(id) || !Number.isFinite(viewedAt)) continue;
+    seen.add(id);
+    out.push({ id, viewedAt });
+  }
+  out.sort((a, b) => b.viewedAt - a.viewedAt);
+  return out.slice(0, SCOUTER_RECENT_VIEWS_LIMIT);
+}
 
 function readGalleryLinks(): ScouterGalleryLinkMap {
   const raw = readJson<Partial<ScouterGalleryLinkMap> | null>(
