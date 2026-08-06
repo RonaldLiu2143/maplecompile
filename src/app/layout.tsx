@@ -2,25 +2,11 @@ import type { Metadata } from "next";
 import {
   IBM_Plex_Sans,
   JetBrains_Mono,
-  Outfit,
-  Source_Sans_3,
   Source_Serif_4,
 } from "next/font/google";
 import { SiteShell } from "@/components/SiteShell";
 import { themeBootScript } from "@/lib/theme";
 import "./globals.css";
-
-const outfit = Outfit({
-  variable: "--font-outfit",
-  subsets: ["latin"],
-  weight: ["500", "600", "700"],
-});
-
-const sourceSans = Source_Sans_3({
-  variable: "--font-source-sans",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-});
 
 const ibmPlexSans = IBM_Plex_Sans({
   variable: "--font-ibm-plex-sans",
@@ -54,9 +40,9 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${outfit.variable} ${sourceSans.variable} ${ibmPlexSans.variable} ${sourceSerif.variable} ${jetbrainsMono.variable} dark h-full`}
+      className={`${ibmPlexSans.variable} ${sourceSerif.variable} ${jetbrainsMono.variable} dark h-full`}
       data-theme="compile"
-      data-font="default"
+      data-font="sans"
       data-backdrop="none"
       suppressHydrationWarning
     >
@@ -65,7 +51,7 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: themeBootScript() }}
         />
       </head>
-      <body className="flex min-h-full flex-col antialiased">
+      <body className="flex min-h-full flex-col">
         <SiteShell>{children}</SiteShell>
       </body>
     </html>

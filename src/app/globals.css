@@ -42,10 +42,6 @@
   --mc-wallpaper-image: none;
 }
 
-html {
-  isolation: isolate;
-}
-
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -57,8 +53,8 @@ html {
   --color-accent: var(--accent);
   --color-accent-soft: var(--accent-soft);
   --color-danger: var(--danger);
-  --font-sans: var(--font-source-sans);
-  --font-display: var(--font-outfit);
+  --font-sans: var(--font-ibm-plex-sans);
+  --font-display: var(--font-ibm-plex-sans);
   /* Soft-lift dim-text steps (opacity-55…75); ≤50 unchanged for fades. */
   --opacity-55: 70%;
   --opacity-60: 76%;
@@ -69,11 +65,6 @@ html {
 
 /* Font presets — next/font CSS vars on <html>; switch via data-font */
 :root,
-html[data-font="default"] {
-  --font-sans: var(--font-source-sans);
-  --font-display: var(--font-outfit);
-}
-
 html[data-font="sans"] {
   --font-sans: var(--font-ibm-plex-sans);
   --font-display: var(--font-ibm-plex-sans);
@@ -90,14 +81,14 @@ html[data-font="mono"] {
 }
 
 /*
-  Opera-style wallpaper stack:
-  html::before = backdrop (gradient mesh / custom image) + blur via filter
-  html::after  = readability dim overlay
-  (filter on ::before is more reliable than backdrop-filter over a sibling layer)
-  body falls back to solid theme canvas when backdrop is none
+  Opera-style wallpaper stack on body (not html):
+  body::before = backdrop + blur — filter stays on this layer only
+  body::after  = readability dim overlay
+  Avoid filter/isolation on <html>: Chromium can rasterize all text poorly
+  when the root (or its filtered ::before) promotes a low-DPI compositor layer.
 */
-html::before,
-html::after {
+body::before,
+body::after {
   content: "";
   position: fixed;
   pointer-events: none;
@@ -105,7 +96,7 @@ html::after {
   transition: opacity 0.2s ease;
 }
 
-html::before {
+body::before {
   /* Expand by blur radius so filter:blur doesn't show empty edges */
   inset: calc(-1.5 * var(--mc-blur));
   z-index: -2;
@@ -113,28 +104,33 @@ html::before {
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
-  filter: blur(var(--mc-blur));
 }
 
-html::after {
+html[data-backdrop]:not([data-backdrop="none"]) body::before {
+  /* Isolate blur to this layer only (not html / content) */
+  filter: blur(var(--mc-blur));
+  transform: translateZ(0);
+}
+
+body::after {
   inset: 0;
   z-index: -1;
   background: rgb(0 0 0 / var(--mc-dim));
 }
 
-html[data-backdrop]:not([data-backdrop="none"])::before,
-html[data-backdrop]:not([data-backdrop="none"])::after {
+html[data-backdrop]:not([data-backdrop="none"]) body::before,
+html[data-backdrop]:not([data-backdrop="none"]) body::after {
   opacity: 1;
 }
 
-html[data-backdrop="deep-night"]::before {
+html[data-backdrop="deep-night"] body::before {
   background-image:
     radial-gradient(ellipse 70% 55% at 18% 12%, #1e3a5fcc, transparent 55%),
     radial-gradient(ellipse 55% 45% at 88% 8%, #0f766e55, transparent 50%),
     linear-gradient(165deg, #0b1220 0%, #121826 48%, #0a0f1a 100%);
 }
 
-html[data-backdrop="teal-aurora"]::before {
+html[data-backdrop="teal-aurora"] body::before {
   background-image:
     radial-gradient(ellipse 80% 50% at 25% -5%, #14b8a6aa, transparent 55%),
     radial-gradient(ellipse 60% 40% at 95% 15%, #38bdf866, transparent 50%),
@@ -142,7 +138,7 @@ html[data-backdrop="teal-aurora"]::before {
     linear-gradient(180deg, #071418 0%, #0c1a1f 55%, #0a1618 100%);
 }
 
-html[data-backdrop="amber-ember"]::before {
+html[data-backdrop="amber-ember"] body::before {
   background-image:
     radial-gradient(ellipse 65% 45% at 85% 5%, #f59e0b55, transparent 50%),
     radial-gradient(ellipse 55% 40% at 8% 85%, #b4530944, transparent 50%),
@@ -150,7 +146,7 @@ html[data-backdrop="amber-ember"]::before {
     linear-gradient(160deg, #1a1208 0%, #1c1410 50%, #120d08 100%);
 }
 
-html[data-backdrop="forest-mist"]::before {
+html[data-backdrop="forest-mist"] body::before {
   background-image:
     radial-gradient(ellipse 70% 50% at 50% -10%, #16653477, transparent 55%),
     radial-gradient(ellipse 45% 35% at 10% 70%, #115e5944, transparent 50%),
@@ -158,7 +154,7 @@ html[data-backdrop="forest-mist"]::before {
     linear-gradient(180deg, #0a1f18 0%, #0f241c 55%, #081612 100%);
 }
 
-html[data-backdrop="horizon"]::before {
+html[data-backdrop="horizon"] body::before {
   background-image:
     linear-gradient(185deg, #0ea5e955 0%, transparent 42%),
     linear-gradient(0deg, #f59e0b33 0%, transparent 38%),
@@ -166,7 +162,7 @@ html[data-backdrop="horizon"]::before {
     linear-gradient(180deg, #0c1220 0%, #0f172a 55%, #111827 100%);
 }
 
-html[data-backdrop="slate-mesh"]::before {
+html[data-backdrop="slate-mesh"] body::before {
   background-image:
     radial-gradient(at 0% 0%, #33415577 0, transparent 50%),
     radial-gradient(at 100% 0%, #1e293b88 0, transparent 45%),
@@ -175,7 +171,7 @@ html[data-backdrop="slate-mesh"]::before {
     linear-gradient(160deg, #0b1120, #111827 55%, #0f172a);
 }
 
-html[data-backdrop="custom"]::before {
+html[data-backdrop="custom"] body::before {
   background-image: var(--mc-wallpaper-image);
   background-color: #0a0a0a;
 }
@@ -183,12 +179,18 @@ html[data-backdrop="custom"]::before {
 body {
   position: relative;
   z-index: 0;
+  /* No filter/transform/isolation here — keeps text on the primary raster path */
   background:
     radial-gradient(ellipse 80% 50% at 10% -10%, var(--glow-a), transparent),
     radial-gradient(ellipse 60% 40% at 100% 0%, var(--glow-b), transparent),
     var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), system-ui, sans-serif;
+  /* Prefer Windows ClearType / subpixel over grayscale antialiased (thin/fuzzy on dark UI) */
+  -webkit-font-smoothing: auto;
+  -moz-osx-font-smoothing: auto;
+  text-rendering: optimizeLegibility;
+  font-synthesis: none;
 }
 
 html[data-backdrop]:not([data-backdrop="none"]) body {
