@@ -458,11 +458,10 @@ export default function ScouterDetailedResultPage() {
           relevantOnly: true,
         })
       : allBossRows;
-    if (showDestinyChampion) {
-      return base.filter((row) => !isDestinyOrChampion(row));
-    }
-    return base;
-  }, [allBossRows, clearInput, fightMinutes, relevantOnly, showDestinyChampion]);
+    // Always keep Destiny/Champion out of Boss Clear — Hide only collapses
+    // that section; it must not dump those cards into this list.
+    return base.filter((row) => !isDestinyOrChampion(row));
+  }, [allBossRows, clearInput, fightMinutes, relevantOnly]);
 
   return (
     <div className="mx-auto max-w-7xl space-y-5 pb-12">
