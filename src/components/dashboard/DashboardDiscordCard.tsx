@@ -8,6 +8,7 @@ type DiscordLatestResponse =
       message: {
         id: string;
         author: string;
+        title: string | null;
         content: string;
         timestamp: string | null;
         url: string;
@@ -17,6 +18,7 @@ type DiscordLatestResponse =
       ok: false;
       reason: string;
       message: string;
+      hint?: string;
     };
 
 function formatWhen(iso: string | null): string {
@@ -50,7 +52,7 @@ export function DashboardDiscordCard() {
           setData({
             ok: false,
             reason: "fetch_failed",
-            message: "Could not reach Discord right now.",
+            message: "Discord announcements unavailable",
           });
         }
       });
@@ -62,9 +64,11 @@ export function DashboardDiscordCard() {
   return (
     <section className="rounded-xl border border-border/50 bg-surface/80 p-4">
       <div className="flex items-baseline justify-between gap-2">
-        <h2 className="font-display text-base font-semibold">Discord</h2>
+        <h2 className="font-display text-base font-semibold">
+          Discord announcements
+        </h2>
         <p className="text-[11px] font-semibold uppercase tracking-wide opacity-50">
-          Latest post
+          Latest announcement
         </p>
       </div>
 
@@ -78,8 +82,21 @@ export function DashboardDiscordCard() {
               ? ` · ${formatWhen(data.message.timestamp)}`
               : ""}
           </p>
+          {data.message.title ? (
+            <a
+              href={data.message.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block font-semibold text-accent hover:underline"
+            >
+              {data.message.title}
+            </a>
+          ) : null}
           <p className="whitespace-pre-wrap text-sm leading-snug">
-            {data.message.content || "(no text — open in Discord)"}
+            {data.message.content ||
+              (data.message.title
+                ? ""
+                : "(no text — open in Discord)")}
           </p>
           <a
             href={data.message.url}
@@ -90,16 +107,21 @@ export function DashboardDiscordCard() {
             Open in Discord
           </a>
         </div>
-      ) : data.reason === "no_token" ? (
-        <p className="mt-3 text-sm opacity-70">
-          Connect Discord bot token{" "}
-          <code className="rounded bg-surface-muted px-1 text-xs">
-            DISCORD_BOT_TOKEN
-          </code>{" "}
-          to show the latest channel post here.
-        </p>
       ) : (
-        <p className="mt-3 text-sm opacity-70">{data.message}</p>
+        <div className="mt-3 space-y-2">
+          <p className="text-sm opacity-70">{data.message}</p>
+          {data.reason === "no_token" && data.hint ? (
+            <p className="text-xs opacity-55">{data.hint}</p>
+          ) : null}
+          <a
+            href="https://discord.gg/maplestory"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-block text-sm font-semibold text-accent hover:underline"
+          >
+            Official MapleStory Discord
+          </a>
+        </div>
       )}
     </section>
   );

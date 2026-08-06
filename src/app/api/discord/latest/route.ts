@@ -2,7 +2,30 @@ import { NextResponse } from "next/server";
 
 export const revalidate = 120;
 
-const CHANNEL_ID = "309809230095843328";
+/**
+ * Latest message from a Discord announcement (GUILD_ANNOUNCEMENT / news) channel.
+ *
+ * Discord does not expose a public message feed for followable announcement channels
+ * (guild widget is disabled on MapleStory; invite metadata has no message history).
+ * Reading messages still requires a Discord app token with Read Message History on
+ * that channel — same GET /channels/{id}/messages flow as any text channel.
+ *
+ * Env:
+ * - DISCORD_TOKEN (preferred) or DISCORD_BOT_TOKEN (alias): app token
+ * - DISCORD_ANNOUNCEMENT_CHANNEL_ID: announcement channel snowflake
+ * - DISCORD_GUILD_ID: server snowflake for deep links (defaults to official MapleStory)
+ *
+ * Note: `309809230095843328` is the official MapleStory guild id
+ * (discord.com/servers/maplestory-309809230095843328). If used as the channel id
+ * by mistake, set DISCORD_ANNOUNCEMENT_CHANNEL_ID to the real #announcements channel.
+ */
+const DEFAULT_CHANNEL_ID = "309809230095843328";
+const DEFAULT_GUILD_ID = "309809230095843328";
+
+type DiscordEmbed = {
+  title?: string;
+  description?: string;
+};
 
 type DiscordMessage = {
   id: string;
@@ -10,6 +33,7 @@ type DiscordMessage = {
   timestamp?: string;
   guild_id?: string;
   author?: { username?: string; global_name?: string | null };
+  embeds?: DiscordEmbed[];
 };
 
 function cacheHeaders() {
@@ -18,18 +42,63 @@ function cacheHeaders() {
   };
 }
 
+function truncate(text: string, max: number): string {
+  const t = text.trim();
+  if (t.length <= max) return t;
+  return `${t.slice(0, Math.max(0, max - 1)).trimEnd()}…`;
+}
+
+function deriveAnnouncement(msg: DiscordMessage): {
+  title: string | null;
+  body: string;
+} {
+  const embed = msg.embeds?.find((e) => e.title?.trim() || e.description?.trim());
+  const content = (msg.content ?? "").trim();
+  const embedTitle = embed?.title?.trim() || null;
+  const embedDesc = embed?.description?.trim() || "";
+
+  if (embedTitle) {
+    const body = content || embedDesc;
+    return { title: truncate(embedTitle, 120), body: truncate(body, 280) };
+  }
+
+  if (content) {
+    const lines = content.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+    const first = lines[0] ?? content;
+    // Treat a short first line as a title when the message has more body.
+    if (lines.length > 1 && first.length <= 100) {
+      return {
+        title: truncate(first, 120),
+        body: truncate(lines.slice(1).join("\n"), 280),
+      };
+    }
+    return { title: null, body: truncate(content, 280) };
+  }
+
+  if (embedDesc) {
+    return { title: null, body: truncate(embedDesc, 280) };
+  }
+
+  return { title: null, body: "" };
+}
+
 export async function GET() {
   const token =
-    process.env.DISCORD_BOT_TOKEN?.trim() ||
     process.env.DISCORD_TOKEN?.trim() ||
+    process.env.DISCORD_BOT_TOKEN?.trim() ||
     "";
+  const channelId =
+    process.env.DISCORD_ANNOUNCEMENT_CHANNEL_ID?.trim() || DEFAULT_CHANNEL_ID;
+  const guildId =
+    process.env.DISCORD_GUILD_ID?.trim() || DEFAULT_GUILD_ID;
 
   if (!token) {
     return NextResponse.json(
       {
         ok: false as const,
         reason: "no_token" as const,
-        message: "Connect Discord bot token",
+        message: "Discord announcements unavailable",
+        hint: "Set DISCORD_TOKEN (or DISCORD_BOT_TOKEN) with Read Message History on the announcement channel.",
       },
       { status: 200, headers: cacheHeaders() },
     );
@@ -37,11 +106,11 @@ export async function GET() {
 
   try {
     const res = await fetch(
-      `https://discord.com/api/v10/channels/${CHANNEL_ID}/messages?limit=1`,
+      `https://discord.com/api/v10/channels/${channelId}/messages?limit=1`,
       {
         headers: {
           Authorization: `Bot ${token}`,
-          "User-Agent": "MapleCompile (discord-latest)",
+          "User-Agent": "MapleCompile (discord-announcements)",
         },
         next: { revalidate: 120 },
       },
@@ -53,7 +122,7 @@ export async function GET() {
         {
           ok: false as const,
           reason: "discord_error" as const,
-          message: "Could not load the latest Discord post.",
+          message: "Discord announcements unavailable",
           status: res.status,
           detail: detail.slice(0, 200),
         },
@@ -68,7 +137,7 @@ export async function GET() {
         {
           ok: false as const,
           reason: "empty" as const,
-          message: "No posts in that channel yet.",
+          message: "No announcements in that channel yet.",
         },
         { status: 200, headers: cacheHeaders() },
       );
@@ -77,14 +146,10 @@ export async function GET() {
     const author =
       msg.author?.global_name?.trim() ||
       msg.author?.username?.trim() ||
-      "Discord";
-    const content = (msg.content ?? "").trim();
-    const preview =
-      content.length > 280 ? `${content.slice(0, 277).trimEnd()}…` : content;
-    const guildId = msg.guild_id?.trim() || "";
-    const url = guildId
-      ? `https://discord.com/channels/${guildId}/${CHANNEL_ID}/${msg.id}`
-      : `https://discord.com/channels/@me/${CHANNEL_ID}/${msg.id}`;
+      "MapleStory Discord";
+    const { title, body } = deriveAnnouncement(msg);
+    const resolvedGuild = msg.guild_id?.trim() || guildId;
+    const url = `https://discord.com/channels/${resolvedGuild}/${channelId}/${msg.id}`;
 
     return NextResponse.json(
       {
@@ -92,11 +157,13 @@ export async function GET() {
         message: {
           id: msg.id,
           author,
-          content: preview,
-          fullContent: content,
+          title,
+          content: body,
+          fullContent: (msg.content ?? "").trim(),
           timestamp: msg.timestamp ?? null,
           url,
-          channelId: CHANNEL_ID,
+          channelId,
+          guildId: resolvedGuild,
         },
       },
       { headers: cacheHeaders() },
@@ -106,7 +173,7 @@ export async function GET() {
       {
         ok: false as const,
         reason: "fetch_failed" as const,
-        message: "Could not reach Discord right now.",
+        message: "Discord announcements unavailable",
       },
       { status: 200, headers: cacheHeaders() },
     );
