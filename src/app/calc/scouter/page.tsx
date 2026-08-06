@@ -711,6 +711,13 @@ export default function ScouterPage() {
     replaceExisting?: boolean;
   }) => {
     if (sharing) return;
+    if (args.asPublic) {
+      const missing = getMissingRequiredScouterFields(input);
+      if (missing.length > 0) {
+        setMissingFields(missing);
+        return;
+      }
+    }
     const identity = args.identity ?? "ign";
     const name =
       (args.name ?? presetName).trim() ||
@@ -916,13 +923,15 @@ export default function ScouterPage() {
   };
 
   const openGalleryShareModal = () => {
-    const existing = storage.getScouterGalleryShareForPreset(
-      loadedPresetId || null,
-    );
-    setExistingGalleryPost(
-      existing ? { id: existing.id, name: existing.name } : null,
-    );
-    setGalleryModalOpen(true);
+    runIfStatsReady(() => {
+      const existing = storage.getScouterGalleryShareForPreset(
+        loadedPresetId || null,
+      );
+      setExistingGalleryPost(
+        existing ? { id: existing.id, name: existing.name } : null,
+      );
+      setGalleryModalOpen(true);
+    });
   };
 
   const copyShareUrl = async () => {
@@ -990,6 +999,7 @@ export default function ScouterPage() {
 
       <PairingBar
         compact
+        beforePair={(proceed) => runIfStatsReady(proceed)}
         pairArgs={{
           scouterPresetId: loadedPresetId || null,
           scouterName:
@@ -1355,6 +1365,7 @@ export default function ScouterPage() {
               <FieldCell label="Damage">
                 <NumInput
                   value={input.damagePercent}
+                  fieldId="damage"
                   onChange={(damagePercent) => patch({ damagePercent })}
                 />
               </FieldCell>
@@ -1394,6 +1405,7 @@ export default function ScouterPage() {
               <FieldCell label="Critical Rate">
                 <NumInput
                   value={input.criticalRatePercent}
+                  fieldId="crit-rate"
                   onChange={(criticalRatePercent) =>
                     patch({ criticalRatePercent })
                   }
@@ -1936,8 +1948,8 @@ export default function ScouterPage() {
                     Missing required stats
                   </h2>
                   <p className="mt-0.5 text-xs opacity-65">
-                    Only main, secondary, and ATT/MATT are required. Other
-                    combat stats use defaults until you fill them.
+                    Fill these character-window stats before calculating,
+                    sharing publicly, pairing, or checking boss clear rates.
                   </p>
                 </div>
                 <button

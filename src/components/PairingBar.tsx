@@ -14,16 +14,28 @@ import {
   type PairArgs,
   type ScouterEquipPairing,
 } from "@/lib/pairing";
+import { getMissingRequiredScouterFields } from "@/lib/scouter";
+import { storage } from "@/lib/storage";
 
 type Props = {
   /** Extra pair args (e.g. current scouter state / preset id). */
   pairArgs?: PairArgs;
   /** Called after pair / unpair so parents can refresh. */
   onChange?: (pairing: ScouterEquipPairing | null) => void;
+  /**
+   * Optional gate (e.g. scouter missing-stats modal). Receives the pair
+   * action to run only when validation passes.
+   */
+  beforePair?: (proceed: () => void) => void;
   compact?: boolean;
 };
 
-export function PairingBar({ pairArgs, onChange, compact }: Props) {
+export function PairingBar({
+  pairArgs,
+  onChange,
+  beforePair,
+  compact,
+}: Props) {
   const router = useRouter();
   const [pairing, setPairingState] = useState<ScouterEquipPairing | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
@@ -43,9 +55,11 @@ export function PairingBar({ pairArgs, onChange, compact }: Props) {
     setTimeout(() => setMsg(null), 2800);
   };
 
-  const onPair = () => {
-    const scouterFilled = hasScouterStats() || !!pairArgs?.scouterState;
-    const equipFilled = hasEquipSetup();
+  const tryPair = () => {
+    const input =
+      pairArgs?.scouterState?.input ?? storage.getScouterLast()?.input ?? null;
+    const scouterFilled =
+      !!input || hasScouterStats() || !!pairArgs?.scouterState;
 
     // Redirect to whichever side is still empty; pair only when both are ready.
     if (!scouterFilled) {
@@ -53,7 +67,19 @@ export function PairingBar({ pairArgs, onChange, compact }: Props) {
       router.push("/calc/scouter");
       return;
     }
-    if (!equipFilled) {
+
+    if (input) {
+      const missing = getMissingRequiredScouterFields(input);
+      if (missing.length > 0) {
+        flash(
+          `Fill required stats: ${missing.map((m) => m.label).join(", ")}`,
+        );
+        router.push("/calc/scouter");
+        return;
+      }
+    }
+
+    if (!hasEquipSetup()) {
       flash("Build an equipment setup first");
       router.push("/calc/equips/setup");
       return;
@@ -63,6 +89,14 @@ export function PairingBar({ pairArgs, onChange, compact }: Props) {
     setPairingState(next);
     onChange?.(next);
     flash("Paired scouter ↔ equipment");
+  };
+
+  const onPair = () => {
+    if (beforePair) {
+      beforePair(tryPair);
+      return;
+    }
+    tryPair();
   };
 
   const onUnpair = () => {

@@ -20,8 +20,8 @@ function tripleEmpty(t: StatTriple): boolean {
 }
 
 /**
- * Required fields before running scouter: main stat(s), secondary, and
- * ATT / MATT. Level / boss / IED / crit keep calc defaults when left empty.
+ * Required character-window fields before calculate / public share / pair /
+ * boss-clear checks. Empty zeros produce nonsense Combat Power and clear rates.
  */
 export function getMissingRequiredScouterFields(
   input: ScouterInput,
@@ -54,6 +54,22 @@ export function getMissingRequiredScouterFields(
     }
   } else if (tripleEmpty(input.attack)) {
     missing.push({ id: "att", label: "Attack" });
+  }
+
+  if (!input.damagePercent) {
+    missing.push({ id: "damage", label: "Damage" });
+  }
+  if (!input.bossDamagePercent) {
+    missing.push({ id: "boss-damage", label: "Boss Damage" });
+  }
+  if (!input.criticalRatePercent) {
+    missing.push({ id: "crit-rate", label: "Critical Rate" });
+  }
+  if (!input.criticalDamagePercent) {
+    missing.push({ id: "crit-damage", label: "Critical Damage" });
+  }
+  if (!input.ignoreDefensePercent) {
+    missing.push({ id: "ied", label: "Ignore Defense" });
   }
 
   return missing;
