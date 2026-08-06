@@ -6,7 +6,6 @@ import { ExpRangeGraph } from "@/components/character/ExpRangeGraph";
 import { characterProfileHref } from "@/lib/character/client";
 import {
   daysToLevel,
-  expPercent,
   expRemainingToLevel,
   formatCompact,
   parseCompactExp,
@@ -106,10 +105,9 @@ function MiniStat({ label, value }: { label: string; value: string }) {
   );
 }
 
-function formatDays(n: number | null): string {
-  if (n == null || !Number.isFinite(n)) return "—";
-  if (n < 10) return `${n.toFixed(1)} days`;
-  return `${Math.round(n)} days`;
+function formatDaysNumber(n: number): string {
+  if (n < 10) return n.toFixed(1);
+  return String(Math.round(n));
 }
 
 function defaultAvgInput(avg7n: number, avg7Label: string | null): string {
@@ -119,37 +117,10 @@ function defaultAvgInput(avg7n: number, avg7Label: string | null): string {
   return formatCompact(avg7n);
 }
 
-/** Project level after gaining `gained` EXP from current progress. */
-function projectAfterExp(
-  level: number,
-  exp: number,
-  gained: number,
-): { level: number; exp: number; pct: number | null } {
-  let walkLv = level;
-  let walkExp = exp;
-  let pool = Math.max(0, gained);
-  while (pool > 0 && walkLv < 300) {
-    const rem = expRemainingToLevel(walkLv, walkExp, walkLv + 1);
-    if (rem == null || rem <= 0) break;
-    if (pool < rem) {
-      walkExp += pool;
-      pool = 0;
-      break;
-    }
-    pool -= rem;
-    walkLv += 1;
-    walkExp = 0;
-  }
-  return {
-    level: walkLv,
-    exp: walkExp,
-    pct: expPercent(walkLv, walkExp),
-  };
-}
-
 /**
  * ETA to next levels using the 7d average as the base rate.
- * Toggle: override daily EXP, or enter a time window to project progress.
+ * Edit daily EXP to recalculate ETAs, or edit a milestone's days to set the
+ * required daily rate for that target (remaining EXP / days).
  */
 function EtaToLevelSection({
   level,
@@ -164,160 +135,123 @@ function EtaToLevelSection({
   avg7Label: string | null;
   targets: number[];
 }) {
-  const [mode, setMode] = useState<"exp" | "time">("exp");
   const [expInput, setExpInput] = useState(() =>
     defaultAvgInput(avg7n, avg7Label),
   );
-  const [daysInput, setDaysInput] = useState("7");
+  const [editingDays, setEditingDays] = useState<{
+    lv: number;
+    value: string;
+  } | null>(null);
 
   const rate = useMemo(() => {
-    if (mode === "time") return avg7n;
     const parsed = parseCompactExp(expInput);
     return parsed != null && parsed > 0 ? parsed : avg7n;
-  }, [mode, expInput, avg7n]);
-
-  const windowDays = useMemo(() => {
-    const n = Number(String(daysInput).trim());
-    return Number.isFinite(n) && n > 0 ? n : null;
-  }, [daysInput]);
-
-  const projected = useMemo(() => {
-    if (mode !== "time" || windowDays == null) return null;
-    const gained = windowDays * avg7n;
-    return { gained, ...projectAfterExp(level, exp, gained) };
-  }, [mode, windowDays, avg7n, level, exp]);
+  }, [expInput, avg7n]);
 
   const baseLabel = avg7Label?.replace(/\/day$/i, "") ?? formatCompact(avg7n);
 
+  function commitDays(lv: number, raw: string) {
+    setEditingDays(null);
+    const n = Number(String(raw).trim());
+    if (!Number.isFinite(n) || n <= 0) return;
+    const remaining = expRemainingToLevel(level, exp, lv);
+    if (remaining == null || remaining <= 0) return;
+    setExpInput(formatCompact(remaining / n));
+  }
+
   return (
     <div className="mt-5 border-t border-border/40 pt-4">
-      <div className="flex flex-wrap items-end justify-between gap-2">
-        <div>
-          <h4 className="font-display text-[0.7rem] font-bold uppercase tracking-[0.14em] text-foreground/55">
-            ETA to Level
-          </h4>
-          <p className="mt-1 text-[0.7rem] text-foreground/50">
-            Base rate: 7d average ({baseLabel}/day)
-          </p>
-        </div>
-        <div
-          className="inline-flex rounded-lg border border-border/60 bg-surface-muted/40 p-0.5"
-          role="group"
-          aria-label="ETA input mode"
-        >
-          {(
-            [
-              ["exp", "Daily EXP"],
-              ["time", "Time"],
-            ] as const
-          ).map(([id, label]) => {
-            const active = mode === id;
-            return (
-              <button
-                key={id}
-                type="button"
-                onClick={() => setMode(id)}
-                className={`rounded-md px-2.5 py-0.5 text-[0.7rem] font-semibold transition ${
-                  active
-                    ? "bg-accent text-white dark:text-zinc-900"
-                    : "opacity-70 hover:bg-surface-muted hover:opacity-100"
-                }`}
-                aria-pressed={active}
-              >
-                {label}
-              </button>
-            );
-          })}
-        </div>
+      <div>
+        <h4 className="font-display text-[0.7rem] font-bold uppercase tracking-[0.14em] text-foreground/55">
+          ETA to Level
+        </h4>
+        <p className="mt-1 text-[0.7rem] text-foreground/50">
+          Base rate: 7d average ({baseLabel}/day)
+        </p>
       </div>
 
       <div className="mt-3">
-        {mode === "exp" ? (
-          <label className="flex max-w-xs flex-col gap-1">
-            <span className="text-[0.65rem] font-semibold uppercase tracking-wider text-foreground/50">
-              Daily EXP rate
-            </span>
-            <input
-              type="text"
-              inputMode="decimal"
-              value={expInput}
-              onChange={(e) => setExpInput(e.target.value)}
-              placeholder={baseLabel}
-              className="rounded-lg border border-border/60 bg-surface px-3 py-1.5 font-mono text-sm tabular-nums outline-none focus:border-accent"
-              aria-describedby="eta-exp-hint"
-            />
-            <span id="eta-exp-hint" className="text-[0.65rem] text-foreground/45">
-              Defaults to 7d avg — edit to recalculate ETAs (e.g. 12.5T)
-            </span>
-          </label>
-        ) : (
-          <label className="flex max-w-xs flex-col gap-1">
-            <span className="text-[0.65rem] font-semibold uppercase tracking-wider text-foreground/50">
-              Days of grinding
-            </span>
-            <input
-              type="number"
-              min={0.1}
-              step="any"
-              value={daysInput}
-              onChange={(e) => setDaysInput(e.target.value)}
-              className="rounded-lg border border-border/60 bg-surface px-3 py-1.5 font-mono text-sm tabular-nums outline-none focus:border-accent"
-              aria-describedby="eta-time-hint"
-            />
-            <span id="eta-time-hint" className="text-[0.65rem] text-foreground/45">
-              Projects progress at the 7d average rate
-            </span>
-          </label>
-        )}
+        <label className="flex max-w-xs flex-col gap-1">
+          <span className="text-[0.65rem] font-semibold uppercase tracking-wider text-foreground/50">
+            Daily EXP rate
+          </span>
+          <input
+            type="text"
+            inputMode="decimal"
+            value={expInput}
+            onChange={(e) => setExpInput(e.target.value)}
+            placeholder={baseLabel}
+            className="rounded-lg border border-border/60 bg-surface px-3 py-1.5 font-mono text-sm tabular-nums outline-none focus:border-accent"
+            aria-describedby="eta-exp-hint"
+          />
+          <span id="eta-exp-hint" className="text-[0.65rem] text-foreground/45">
+            Edit rate or a milestone&apos;s days to keep ETAs consistent
+          </span>
+        </label>
       </div>
-
-      {projected ? (
-        <p className="mt-3 rounded-lg bg-surface-muted/40 px-3 py-2 text-sm text-foreground/75">
-          In {windowDays} day{windowDays === 1 ? "" : "s"} at 7d avg you gain{" "}
-          <span className="font-mono font-semibold tabular-nums text-foreground">
-            {formatCompact(projected.gained)}
-          </span>
-          {" → "}
-          <span className="font-semibold text-foreground">
-            Lv. {projected.level}
-            {projected.pct != null ? (
-              <span className="ml-1 font-mono text-sm font-medium tabular-nums text-foreground/60">
-                ({projected.pct.toFixed(2)}%)
-              </span>
-            ) : null}
-          </span>
-        </p>
-      ) : null}
 
       <ul className="mt-3 grid gap-2 sm:grid-cols-2">
         {targets.map((lv) => {
+          const remaining = expRemainingToLevel(level, exp, lv);
           const days = daysToLevel(level, exp, lv, rate);
-          const withinWindow =
-            mode === "time" &&
-            windowDays != null &&
-            days != null &&
-            days <= windowDays;
+          const canEdit = remaining != null && remaining > 0;
+          const displayDays =
+            editingDays?.lv === lv
+              ? editingDays.value
+              : days != null && Number.isFinite(days)
+                ? formatDaysNumber(days)
+                : "";
+
           return (
             <li
               key={lv}
               className="flex items-baseline justify-between gap-3 rounded-lg bg-surface-muted/40 px-3 py-2"
             >
-              <span className="text-sm font-semibold">
-                Lv. {lv}
-                {withinWindow ? (
-                  <span className="ml-1.5 text-[0.65rem] font-semibold text-accent">
-                    in window
-                  </span>
-                ) : null}
-              </span>
-              <span className="font-mono text-sm tabular-nums text-foreground/75">
-                {formatDays(days)}
-              </span>
+              <span className="text-sm font-semibold">Lv. {lv}</span>
+              {canEdit ? (
+                <label className="flex items-baseline gap-1.5 font-mono text-sm tabular-nums text-foreground/75">
+                  <span className="sr-only">Days to Lv. {lv}</span>
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    value={displayDays}
+                    placeholder="—"
+                    onFocus={() =>
+                      setEditingDays({
+                        lv,
+                        value:
+                          days != null && Number.isFinite(days)
+                            ? formatDaysNumber(days)
+                            : "",
+                      })
+                    }
+                    onChange={(e) =>
+                      setEditingDays({ lv, value: e.target.value })
+                    }
+                    onBlur={(e) => commitDays(lv, e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.currentTarget.blur();
+                      } else if (e.key === "Escape") {
+                        setEditingDays(null);
+                        e.currentTarget.blur();
+                      }
+                    }}
+                    className="w-14 rounded border border-transparent bg-transparent px-1 py-0.5 text-right outline-none hover:border-border/50 focus:border-accent focus:bg-surface"
+                    aria-label={`Days to reach level ${lv}`}
+                  />
+                  <span className="text-foreground/55">days</span>
+                </label>
+              ) : (
+                <span className="font-mono text-sm tabular-nums text-foreground/45">
+                  —
+                </span>
+              )}
             </li>
           );
         })}
       </ul>
-      {mode === "exp" && rate !== avg7n ? (
+      {rate !== avg7n ? (
         <p className="mt-2 text-[0.65rem] text-foreground/45">
           Using custom rate {formatCompact(rate)}/day (7d avg{" "}
           {formatCompact(avg7n)}/day)
