@@ -302,12 +302,6 @@ export default function BossesIncomePage() {
             >
               {hasRoster ? "Manage roster" : "Add to roster"}
             </Link>
-            <Link
-              href="/calc/boss-schedule"
-              className="ml-auto text-sm font-semibold text-accent hover:underline"
-            >
-              Boss Schedule
-            </Link>
           </div>
         </div>
       </section>

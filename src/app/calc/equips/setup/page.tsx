@@ -65,6 +65,8 @@ type PanelMode =
   | { kind: "editor"; slot: string }
   | null;
 
+type LoadStatus = "idle" | "loading" | "ready" | "error";
+
 function withHeroicDefaults(equip: Equip): Equip {
   const next: Equip = {
     ...equip,
@@ -144,6 +146,7 @@ export default function SetupClient() {
   const [customPresetId, setCustomPresetId] = useState("");
   const [customPresetName, setCustomPresetName] = useState("");
   const [loadedCustomPresetId, setLoadedCustomPresetId] = useState("");
+  const [presetNameTouched, setPresetNameTouched] = useState(false);
   const skipWorkspaceAutosave = useRef(false);
 
   const refreshCustomPresets = useCallback(() => {
@@ -155,6 +158,14 @@ export default function SetupClient() {
     refreshCustomPresets();
   }, [refreshCustomPresets]);
 
+  const classDisplayName = getCharName(jobType, charType);
+
+  // Default custom preset name to the selected class unless the user edited it
+  // or a saved preset is loaded.
+  useEffect(() => {
+    if (loadedCustomPresetId || presetNameTouched) return;
+    setCustomPresetName(classDisplayName);
+  }, [classDisplayName, loadedCustomPresetId, presetNameTouched]);
 
   const classValue = `${jobType}:${charType}`;
   const activeSlot = panel?.slot ?? null;
@@ -499,6 +510,7 @@ export default function SetupClient() {
     setCustomPresetId(preset.id);
     setLoadedCustomPresetId(preset.id);
     setCustomPresetName(preset.name);
+    setPresetNameTouched(true);
     setStarterId("");
     setPanel(null);
     flashStarterMsg(`Loaded “${preset.name}”`);
@@ -513,6 +525,7 @@ export default function SetupClient() {
     const requested =
       customPresetName.trim() ||
       customPresets.find((p) => p.id === customPresetId)?.name ||
+      classDisplayName ||
       "Untitled";
     try {
       const overwriteId = asNew ? undefined : loadedCustomPresetId || undefined;
@@ -529,6 +542,7 @@ export default function SetupClient() {
       setCustomPresetId(saved.id);
       setLoadedCustomPresetId(saved.id);
       setCustomPresetName(saved.name);
+      setPresetNameTouched(true);
       flashStarterMsg(
         asNew || !overwriteId
           ? `Saved “${saved.name}”`
@@ -548,7 +562,11 @@ export default function SetupClient() {
       customPresets.find((p) => p.id === id)?.name ?? customPresetName;
     storage.deleteEquipPreset(id);
     refreshCustomPresets();
-    if (loadedCustomPresetId === id) setLoadedCustomPresetId("");
+    if (loadedCustomPresetId === id) {
+      setLoadedCustomPresetId("");
+      setPresetNameTouched(false);
+      setCustomPresetName(classDisplayName);
+    }
     setCustomPresetId("");
     flashStarterMsg(name ? `Deleted “${name}”` : "Preset deleted");
   };
@@ -592,124 +610,129 @@ export default function SetupClient() {
       </section>
 
       <section className="space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-sm font-bold uppercase tracking-wide opacity-70">
-            2) Fill in your equipment setup
+            2) Your gear
           </h2>
-          <div className="flex flex-wrap items-center gap-1.5">
+          <div className="ml-auto inline-flex max-w-full flex-wrap items-center justify-end gap-1 rounded-md border border-border/50 bg-surface/50 px-1.5 py-1">
+            <span className="px-0.5 text-[9px] font-bold uppercase tracking-wide opacity-55">
+              My presets
+            </span>
+            <input
+              type="text"
+              value={customPresetName}
+              onChange={(e) => {
+                setPresetNameTouched(true);
+                setCustomPresetName(e.target.value);
+              }}
+              placeholder={classDisplayName || "Preset name"}
+              className="w-[7.5rem] rounded border border-border bg-surface px-1.5 py-1 text-[11px] outline-none focus:border-accent sm:w-[9rem]"
+              aria-label="Custom preset name"
+              disabled={status !== "ready"}
+            />
+            <button
+              type="button"
+              onClick={() => saveCustomPreset(false)}
+              disabled={
+                status !== "ready" ||
+                (!customPresetName.trim() && !loadedCustomPresetId)
+              }
+              className="rounded bg-accent px-2 py-1 text-[11px] font-semibold text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+              title={
+                loadedCustomPresetId
+                  ? "Overwrite the loaded preset"
+                  : "Save current setup as a new named preset"
+              }
+            >
+              {loadedCustomPresetId ? "Update" : "Save"}
+            </button>
+            <button
+              type="button"
+              onClick={() => saveCustomPreset(true)}
+              disabled={status !== "ready" || !customPresetName.trim()}
+              className="rounded border border-border px-2 py-1 text-[11px] font-semibold hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
+              title="Keep the current preset and save a copy under this name"
+            >
+              Save as new
+            </button>
             <select
-              value={starterId}
-              onChange={(e) => setStarterId(e.target.value)}
-              className="rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs font-semibold outline-none focus:border-accent"
-              aria-label="Starter loadout"
+              value={customPresetId}
+              onChange={(e) => setCustomPresetId(e.target.value)}
+              className="max-w-[9rem] rounded border border-border bg-surface px-1.5 py-1 text-[11px] font-semibold outline-none focus:border-accent"
+              aria-label="Saved custom presets"
               disabled={status !== "ready"}
             >
-              <option value="">Tier preset…</option>
-              {STARTER_LOADOUTS.map((l) => (
-                <option key={l.id} value={l.id} title={l.description}>
-                  {l.name}
+              <option value="">Saved…</option>
+              {customPresets.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
                 </option>
               ))}
             </select>
             <button
               type="button"
-              onClick={applyStarter}
-              disabled={status !== "ready" || !starterId}
-              className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
-              title={
-                STARTER_LOADOUTS.find((l) => l.id === starterId)?.description ??
-                "Apply a Heroic progression tier preset"
-              }
+              onClick={() => loadCustomPreset(customPresetId)}
+              disabled={status !== "ready" || !customPresetId}
+              className="rounded border border-border px-2 py-1 text-[11px] font-semibold hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
             >
-              Apply tier
+              Load
             </button>
             <button
               type="button"
-              onClick={() => {
-                setSetup({});
-                setFlameSetup({});
-                storage.clearSetup();
-                setPanel(null);
-                setStarterMsg(null);
-                setLoadedCustomPresetId("");
-                setCustomPresetId("");
-              }}
-              className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold hover:bg-surface-muted"
+              onClick={deleteCustomPreset}
+              disabled={
+                status !== "ready" || !(customPresetId || loadedCustomPresetId)
+              }
+              className="rounded border border-border px-2 py-1 text-[11px] font-semibold text-danger hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
             >
-              Clear setup
+              Delete
             </button>
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-1.5 rounded-lg border border-border/60 bg-surface/40 p-2">
-          <span className="px-1 text-[10px] font-bold uppercase tracking-wide opacity-60">
-            My presets
-          </span>
-          <input
-            type="text"
-            value={customPresetName}
-            onChange={(e) => setCustomPresetName(e.target.value)}
-            placeholder="Preset name"
-            className="min-w-[8rem] flex-1 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs outline-none focus:border-accent sm:max-w-[14rem]"
-            aria-label="Custom preset name"
-            disabled={status !== "ready"}
-          />
-          <button
-            type="button"
-            onClick={() => saveCustomPreset(false)}
-            disabled={
-              status !== "ready" ||
-              (!customPresetName.trim() && !loadedCustomPresetId)
-            }
-            className="rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
-            title={
-              loadedCustomPresetId
-                ? "Overwrite the loaded preset"
-                : "Save current setup as a new named preset"
-            }
-          >
-            {loadedCustomPresetId ? "Update" : "Save"}
-          </button>
-          <button
-            type="button"
-            onClick={() => saveCustomPreset(true)}
-            disabled={status !== "ready" || !customPresetName.trim()}
-            className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
-            title="Keep the current preset and save a copy under this name"
-          >
-            Save as new
-          </button>
+        <div className="flex flex-wrap items-center gap-1.5">
           <select
-            value={customPresetId}
-            onChange={(e) => setCustomPresetId(e.target.value)}
+            value={starterId}
+            onChange={(e) => setStarterId(e.target.value)}
             className="rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs font-semibold outline-none focus:border-accent"
-            aria-label="Saved custom presets"
+            aria-label="Starter loadout"
             disabled={status !== "ready"}
           >
-            <option value="">Saved presets…</option>
-            {customPresets.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
+            <option value="">Tier preset…</option>
+            {STARTER_LOADOUTS.map((l) => (
+              <option key={l.id} value={l.id} title={l.description}>
+                {l.name}
               </option>
             ))}
           </select>
           <button
             type="button"
-            onClick={() => loadCustomPreset(customPresetId)}
-            disabled={status !== "ready" || !customPresetId}
+            onClick={applyStarter}
+            disabled={status !== "ready" || !starterId}
             className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
+            title={
+              STARTER_LOADOUTS.find((l) => l.id === starterId)?.description ??
+              "Apply a Heroic progression tier preset"
+            }
           >
-            Load
+            Apply tier
           </button>
           <button
             type="button"
-            onClick={deleteCustomPreset}
-            disabled={
-              status !== "ready" || !(customPresetId || loadedCustomPresetId)
-            }
-            className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-danger hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
+            onClick={() => {
+              setSetup({});
+              setFlameSetup({});
+              storage.clearSetup();
+              setPanel(null);
+              setStarterMsg(null);
+              setLoadedCustomPresetId("");
+              setCustomPresetId("");
+              setPresetNameTouched(false);
+              setCustomPresetName(classDisplayName);
+            }}
+            className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold hover:bg-surface-muted"
           >
-            Delete
+            Clear setup
           </button>
         </div>
 
@@ -717,9 +740,8 @@ export default function SetupClient() {
           <p className="text-xs font-medium text-accent">{starterMsg}</p>
         ) : (
           <p className="text-xs opacity-60">
-            Tier presets auto-fill matching pieces from this class catalog.
-            Save your own named presets to reload later. Click a filled slot to
-            edit stars, flames, and potential.
+            Click empty slots to pick gear. Presets are optional — save a named
+            loadout anytime. Tier presets can auto-fill matching pieces.
           </p>
         )}
         {status === "loading" && (

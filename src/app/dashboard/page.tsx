@@ -6,6 +6,9 @@ import { CharacterSearchBar } from "@/components/dashboard/CharacterSearchBar";
 import { DashboardPrimaryHero } from "@/components/dashboard/DashboardCommandCenter";
 import { DashboardDailiesSection } from "@/components/dashboard/DashboardDailiesSection";
 import { DashboardDiarySection } from "@/components/dashboard/DashboardDiarySection";
+import { DashboardDiscordCard } from "@/components/dashboard/DashboardDiscordCard";
+import { DashboardOnboardingWizard } from "@/components/dashboard/DashboardOnboardingWizard";
+import { DashboardPatchNotesCard } from "@/components/dashboard/DashboardPatchNotesCard";
 import { DashboardRosterWeeklySection } from "@/components/dashboard/DashboardWeeklyChecklist";
 import { useRoster } from "@/hooks/useRoster";
 import { entryKey } from "@/lib/dashboard/roster";
@@ -63,6 +66,14 @@ function DashboardInner() {
       </header>
 
       {hydrated ? (
+        <DashboardOnboardingWizard
+          roster={roster}
+          primary={primary}
+          onSetPrimary={handleSetPrimary}
+        />
+      ) : null}
+
+      {hydrated ? (
         <DashboardPrimaryHero primary={primary} slot={primarySlot} />
       ) : (
         <div className="rounded-2xl border border-border/50 bg-surface/80 px-4 py-8 text-center text-sm opacity-70">
@@ -71,7 +82,16 @@ function DashboardInner() {
       )}
 
       {hydrated ? (
-        <CharacterSearchBar roster={roster} onAdded={handleRosterAdded} />
+        <div id="character-search">
+          <CharacterSearchBar roster={roster} onAdded={handleRosterAdded} />
+        </div>
+      ) : null}
+
+      {hydrated ? (
+        <div className="grid gap-4 lg:grid-cols-2">
+          <DashboardDiscordCard />
+          <DashboardPatchNotesCard />
+        </div>
       ) : null}
 
       {hydrated ? (

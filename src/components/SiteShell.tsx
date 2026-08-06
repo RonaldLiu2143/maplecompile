@@ -25,7 +25,6 @@ const PRIMARY_LINKS: NavLink[] = [
 const ROSTER_LINKS: NavLink[] = [
   { href: "/roster", label: "Manager", match: "exact" },
   { href: "/calc/bosses", label: "Boss Income", match: "exact" },
-  { href: "/calc/boss-schedule", label: "Boss Schedule", match: "exact" },
   { href: "/calc/liberation", label: "Liberation", match: "exact" },
   { href: "/calc/hexa-tracker", label: "HEXA / Fragments", match: "exact" },
   { href: "/calc/diary", label: "Diary", match: "exact" },
@@ -41,7 +40,11 @@ const EQUIPMENT_LINKS: NavLink[] = [
   { href: "/calc/equips/setup", label: "Equipment Setup" },
 ];
 
-const GUIDE_LINK: NavLink = { href: "/guide", label: "Guide", match: "exact" };
+const GUIDE_LINK: NavLink = {
+  href: "/onboarding",
+  label: "Guide",
+  match: "exact",
+};
 
 function linkActive(pathname: string, link: NavLink): boolean {
   if (link.match === "exact") {

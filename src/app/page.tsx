@@ -23,10 +23,10 @@ export default function Home() {
         </p>
         <div className="mt-8 flex flex-wrap gap-3">
           <Link
-            href="/guide"
+            href="/dashboard#get-started"
             className="rounded-lg bg-accent px-5 py-2.5 font-semibold text-white transition hover:opacity-90 dark:text-zinc-900"
           >
-            Start guide
+            Start here
           </Link>
           <Link
             href="/calc/scouter"

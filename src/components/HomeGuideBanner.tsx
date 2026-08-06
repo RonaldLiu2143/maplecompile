@@ -21,19 +21,19 @@ export function HomeGuideBanner() {
             New here?
           </p>
           <p className="mt-1 font-display text-lg font-semibold">
-            Start with Scouter → Equipment → Pair
+            5 easy steps on the Dashboard
           </p>
           <p className="mt-1 text-sm opacity-75">
-            A short guide walks you through stats, gear, and linking them
-            together.
+            Find your character → lock your main → fill damage numbers → fill
+            gear → link them together.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Link
-            href="/guide"
+            href="/dashboard#get-started"
             className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90 dark:text-zinc-900"
           >
-            Open start guide
+            Start here
           </Link>
           <button
             type="button"

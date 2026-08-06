@@ -4,9 +4,13 @@ import { notifyMapleDataChanged } from "./maple-events";
 import { storage, type ScouterLastState } from "./storage";
 import { countFilledSlots } from "./starter-loadouts";
 import type { EquipSetup } from "./types";
-import type { ScouterInput } from "./scouter/types";
+import type { ScouterInput, StatTriple } from "./scouter/types";
 import { defaultScouterInput } from "./scouter/types";
+import { resolveMainSecondary } from "./scouter/calc";
 import { entryKey, readRosterState } from "./dashboard/roster";
+import {
+  isLockedActiveCharacter,
+} from "./active-character";
 
 /** Legacy global pairing key (pre per-character). */
 export const PAIRING_KEY = "maplecompile-scouter-equip-pair";
@@ -353,4 +357,53 @@ export function hasEquipSetup(): boolean {
 
 export function hasScouterStats(): boolean {
   return storage.getScouterLast()?.input != null;
+}
+
+function tripleFilled(t: StatTriple | undefined | null): boolean {
+  if (!t) return false;
+  return t.base > 0 || t.flat > 0 || t.percent > 0;
+}
+
+/**
+ * Onboarding / basics check: main, sub, and attack (or magic attack) filled.
+ * Pairing still uses the looser `hasScouterStats`.
+ */
+export function hasScouterBasics(): boolean {
+  const input = storage.getScouterLast()?.input;
+  if (!input) return false;
+
+  const { mainKeys, secondaryKeys, isXenon, isDa } =
+    resolveMainSecondary(input);
+
+  if (isDa) {
+    if (!tripleFilled(input.stats.hp) || !tripleFilled(input.stats.str)) {
+      return false;
+    }
+  } else if (isXenon) {
+    if (
+      !tripleFilled(input.stats.str) &&
+      !tripleFilled(input.stats.dex) &&
+      !tripleFilled(input.stats.luk)
+    ) {
+      return false;
+    }
+  } else {
+    if (!mainKeys.some((k) => tripleFilled(input.stats[k]))) return false;
+    if (
+      secondaryKeys.length > 0 &&
+      !secondaryKeys.some((k) => tripleFilled(input.stats[k]))
+    ) {
+      return false;
+    }
+  }
+
+  const attack = input.useMagicAttack ? input.magicAttack : input.attack;
+  return tripleFilled(attack);
+}
+
+/** Primary set + Active Character lock for onboarding step 2. */
+export function hasPrimaryLocked(): boolean {
+  const primary = readRosterState().primary;
+  if (!primary) return false;
+  return isLockedActiveCharacter(primary);
 }
