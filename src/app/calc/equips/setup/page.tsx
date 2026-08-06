@@ -614,131 +614,6 @@ export default function SetupClient() {
           2) Your gear
         </h2>
 
-        <div className="flex flex-wrap justify-end">
-          <div className="inline-flex max-w-full flex-wrap items-center justify-end gap-1.5">
-            <select
-              value={starterId}
-              onChange={(e) => setStarterId(e.target.value)}
-              className="rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs font-semibold outline-none focus:border-accent"
-              aria-label="Starter loadout"
-              disabled={status !== "ready"}
-            >
-              <option value="">Tier preset…</option>
-              {STARTER_LOADOUTS.map((l) => (
-                <option key={l.id} value={l.id} title={l.description}>
-                  {l.name}
-                </option>
-              ))}
-            </select>
-            <button
-              type="button"
-              onClick={applyStarter}
-              disabled={status !== "ready" || !starterId}
-              className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
-              title={
-                STARTER_LOADOUTS.find((l) => l.id === starterId)?.description ??
-                "Apply a Heroic progression tier preset"
-              }
-            >
-              Apply tier
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setSetup({});
-                setFlameSetup({});
-                storage.clearSetup();
-                setPanel(null);
-                setStarterMsg(null);
-                setLoadedCustomPresetId("");
-                setCustomPresetId("");
-                setPresetNameTouched(false);
-                setCustomPresetName(classDisplayName);
-              }}
-              className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold hover:bg-surface-muted"
-            >
-              Clear setup
-            </button>
-          </div>
-        </div>
-
-        <div className="flex flex-wrap justify-end">
-          <div className="inline-flex max-w-full flex-wrap items-center justify-end gap-1 rounded-md border border-border/50 bg-surface/50 px-1.5 py-1">
-            <span className="px-0.5 text-[9px] font-bold uppercase tracking-wide opacity-55">
-              My presets
-            </span>
-            <input
-              type="text"
-              value={customPresetName}
-              onChange={(e) => {
-                setPresetNameTouched(true);
-                setCustomPresetName(e.target.value);
-              }}
-              placeholder={classDisplayName || "Preset name"}
-              className="w-[7.5rem] rounded border border-border bg-surface px-1.5 py-1 text-[11px] outline-none focus:border-accent sm:w-[9rem]"
-              aria-label="Custom preset name"
-              disabled={status !== "ready"}
-            />
-            <button
-              type="button"
-              onClick={() => saveCustomPreset(false)}
-              disabled={
-                status !== "ready" ||
-                (!customPresetName.trim() && !loadedCustomPresetId)
-              }
-              className="rounded bg-accent px-2 py-1 text-[11px] font-semibold text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
-              title={
-                loadedCustomPresetId
-                  ? "Overwrite the loaded preset"
-                  : "Save current setup as a new named preset"
-              }
-            >
-              {loadedCustomPresetId ? "Update" : "Save"}
-            </button>
-            <button
-              type="button"
-              onClick={() => saveCustomPreset(true)}
-              disabled={status !== "ready" || !customPresetName.trim()}
-              className="rounded border border-border px-2 py-1 text-[11px] font-semibold hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
-              title="Keep the current preset and save a copy under this name"
-            >
-              Save as new
-            </button>
-            <select
-              value={customPresetId}
-              onChange={(e) => setCustomPresetId(e.target.value)}
-              className="max-w-[9rem] rounded border border-border bg-surface px-1.5 py-1 text-[11px] font-semibold outline-none focus:border-accent"
-              aria-label="Saved custom presets"
-              disabled={status !== "ready"}
-            >
-              <option value="">Saved…</option>
-              {customPresets.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
-            <button
-              type="button"
-              onClick={() => loadCustomPreset(customPresetId)}
-              disabled={status !== "ready" || !customPresetId}
-              className="rounded border border-border px-2 py-1 text-[11px] font-semibold hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              Load
-            </button>
-            <button
-              type="button"
-              onClick={deleteCustomPreset}
-              disabled={
-                status !== "ready" || !(customPresetId || loadedCustomPresetId)
-              }
-              className="rounded border border-border px-2 py-1 text-[11px] font-semibold text-danger hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              Delete
-            </button>
-          </div>
-        </div>
-
         {starterMsg ? (
           <p className="text-xs font-medium text-accent">{starterMsg}</p>
         ) : (
@@ -753,8 +628,9 @@ export default function SetupClient() {
         {status === "error" && (
           <p className="text-sm text-danger">{error}</p>
         )}
-        {status === "ready" && (
-          <div className="flex flex-col items-start gap-4 lg:flex-row">
+
+        <div className="flex flex-col items-start gap-4 lg:flex-row lg:items-start">
+          {status === "ready" && (
             <EquipGrid
               setup={setup}
               flameSetup={flameSetup}
@@ -762,37 +638,165 @@ export default function SetupClient() {
               charLabel={getCharName(jobType, charType)}
               activeSlot={activeSlot}
             />
-            {panel?.kind === "picker" && pickerType ? (
-              <EquipPicker
-                key={pickerSlot!}
-                label={SLOT_LABELS[pickerSlot!] ?? pickerType}
-                equips={pickerEquips}
-                selectedIds={selectedForType}
-                onToggle={toggleEquip}
-                onClose={() => setPanel(null)}
-              />
-            ) : panel?.kind === "editor" && editingEquip && editorSlot ? (
-              <EquipItemEditor
-                key={`${editorSlot}-${editingEquip.id}`}
-                slotLabel={SLOT_LABELS[editorSlot] ?? editorSlot}
-                equip={editingEquip}
-                flames={editingFlames}
-                onChange={(patch) => patchEquipped(editorSlot, patch)}
-                onChangeItem={() =>
-                  setPanel({ kind: "picker", slot: editorSlot })
+          )}
+
+          {/* Presets sit with the item picker/editor column (same vertical start). */}
+          <div className="flex w-full min-w-0 flex-col items-end gap-1.5 lg:max-w-sm lg:flex-1">
+            <div className="inline-flex max-w-full flex-wrap items-center justify-end gap-1.5">
+              <select
+                value={starterId}
+                onChange={(e) => setStarterId(e.target.value)}
+                className="rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs font-semibold outline-none focus:border-accent"
+                aria-label="Starter loadout"
+                disabled={status !== "ready"}
+              >
+                <option value="">Tier preset…</option>
+                {STARTER_LOADOUTS.map((l) => (
+                  <option key={l.id} value={l.id} title={l.description}>
+                    {l.name}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={applyStarter}
+                disabled={status !== "ready" || !starterId}
+                className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
+                title={
+                  STARTER_LOADOUTS.find((l) => l.id === starterId)
+                    ?.description ??
+                  "Apply a Heroic progression tier preset"
                 }
-                onUnequip={() => unequipSlot(editorSlot)}
-                onClose={() => setPanel(null)}
+              >
+                Apply tier
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setSetup({});
+                  setFlameSetup({});
+                  storage.clearSetup();
+                  setPanel(null);
+                  setStarterMsg(null);
+                  setLoadedCustomPresetId("");
+                  setCustomPresetId("");
+                  setPresetNameTouched(false);
+                  setCustomPresetName(classDisplayName);
+                }}
+                className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold hover:bg-surface-muted"
+              >
+                Clear setup
+              </button>
+            </div>
+
+            <div className="inline-flex max-w-full flex-wrap items-center justify-end gap-1 rounded-md border border-border/50 bg-surface/50 px-1.5 py-1">
+              <span className="px-0.5 text-[9px] font-bold uppercase tracking-wide opacity-55">
+                My presets
+              </span>
+              <input
+                type="text"
+                value={customPresetName}
+                onChange={(e) => {
+                  setPresetNameTouched(true);
+                  setCustomPresetName(e.target.value);
+                }}
+                placeholder={classDisplayName || "Preset name"}
+                className="w-[7.5rem] rounded border border-border bg-surface px-1.5 py-1 text-[11px] outline-none focus:border-accent sm:w-[9rem]"
+                aria-label="Custom preset name"
+                disabled={status !== "ready"}
               />
-            ) : (
-              <p className="max-w-sm self-center text-sm opacity-70">
-                Click an empty slot to choose equipment, or a filled slot to edit
-                Star Force, flames, and potential. Rings fill from the top slot;
-                pendants fill pendant-1 then pendant-2.
-              </p>
-            )}
+              <button
+                type="button"
+                onClick={() => saveCustomPreset(false)}
+                disabled={
+                  status !== "ready" ||
+                  (!customPresetName.trim() && !loadedCustomPresetId)
+                }
+                className="rounded bg-accent px-2 py-1 text-[11px] font-semibold text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+                title={
+                  loadedCustomPresetId
+                    ? "Overwrite the loaded preset"
+                    : "Save current setup as a new named preset"
+                }
+              >
+                {loadedCustomPresetId ? "Update" : "Save"}
+              </button>
+              <button
+                type="button"
+                onClick={() => saveCustomPreset(true)}
+                disabled={status !== "ready" || !customPresetName.trim()}
+                className="rounded border border-border px-2 py-1 text-[11px] font-semibold hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
+                title="Keep the current preset and save a copy under this name"
+              >
+                Save as new
+              </button>
+              <select
+                value={customPresetId}
+                onChange={(e) => setCustomPresetId(e.target.value)}
+                className="max-w-[9rem] rounded border border-border bg-surface px-1.5 py-1 text-[11px] font-semibold outline-none focus:border-accent"
+                aria-label="Saved custom presets"
+                disabled={status !== "ready"}
+              >
+                <option value="">Saved…</option>
+                {customPresets.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={() => loadCustomPreset(customPresetId)}
+                disabled={status !== "ready" || !customPresetId}
+                className="rounded border border-border px-2 py-1 text-[11px] font-semibold hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Load
+              </button>
+              <button
+                type="button"
+                onClick={deleteCustomPreset}
+                disabled={
+                  status !== "ready" ||
+                  !(customPresetId || loadedCustomPresetId)
+                }
+                className="rounded border border-border px-2 py-1 text-[11px] font-semibold text-danger hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Delete
+              </button>
+            </div>
+
+            {status === "ready" &&
+              (panel?.kind === "picker" && pickerType ? (
+                <EquipPicker
+                  key={pickerSlot!}
+                  label={SLOT_LABELS[pickerSlot!] ?? pickerType}
+                  equips={pickerEquips}
+                  selectedIds={selectedForType}
+                  onToggle={toggleEquip}
+                  onClose={() => setPanel(null)}
+                />
+              ) : panel?.kind === "editor" && editingEquip && editorSlot ? (
+                <EquipItemEditor
+                  key={`${editorSlot}-${editingEquip.id}`}
+                  slotLabel={SLOT_LABELS[editorSlot] ?? editorSlot}
+                  equip={editingEquip}
+                  flames={editingFlames}
+                  onChange={(patch) => patchEquipped(editorSlot, patch)}
+                  onChangeItem={() =>
+                    setPanel({ kind: "picker", slot: editorSlot })
+                  }
+                  onUnequip={() => unequipSlot(editorSlot)}
+                  onClose={() => setPanel(null)}
+                />
+              ) : (
+                <p className="max-w-sm self-center text-sm opacity-70 lg:self-stretch">
+                  Click an empty slot to choose equipment, or a filled slot to
+                  edit Star Force, flames, and potential. Rings fill from the
+                  top slot; pendants fill pendant-1 then pendant-2.
+                </p>
+              ))}
           </div>
-        )}
+        </div>
       </section>
 
       {status === "ready" && (
