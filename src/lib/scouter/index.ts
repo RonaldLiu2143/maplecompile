@@ -55,6 +55,7 @@ export {
   getMissingRequiredScouterFields,
   focusScouterField,
   type MissingScouterField,
+  type ScouterRequiredMode,
 } from "./validate";
 export {
   parseScouterOcrText,

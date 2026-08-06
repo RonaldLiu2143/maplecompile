@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { CharacterSprite } from "@/components/character/CharacterSprite";
 import { EquipGrid } from "@/components/EquipGrid";
+import { useFlashMessage } from "@/hooks/useFlashMessage";
 import {
   activeCharacterKey,
   importBuildToCharacter,
@@ -18,10 +19,7 @@ import {
   CHARACTER_NAME_REGEX,
   type NexonRegion,
 } from "@/lib/character/lookup";
-import {
-  isActiveCharacterLocked,
-  isLockedActiveCharacter,
-} from "@/lib/active-character";
+import { isStickyActiveSwitchBlocked } from "@/lib/active-character";
 import { addToRoster, setPrimary } from "@/lib/dashboard/roster";
 import { getCharName } from "@/lib/jobs";
 import { pairScouterAndEquip } from "@/lib/pairing";
@@ -55,7 +53,7 @@ export default function CharacterShareProfilePage() {
   const [load, setLoad] = useState<LoadState>({ status: "loading" });
   const [ownedToken, setOwnedToken] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
-  const [msg, setMsg] = useState<string | null>(null);
+  const { msg, flash } = useFlashMessage(2800);
   const [importName, setImportName] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
@@ -160,11 +158,6 @@ export default function CharacterShareProfilePage() {
   const importRegion: NexonRegion =
     record?.character?.region === "eu" ? "eu" : "na";
 
-  const flash = (text: string) => {
-    setMsg(text);
-    setTimeout(() => setMsg(null), 2800);
-  };
-
   const applyLocally = (opts: {
     scouter: boolean;
     equipment: boolean;
@@ -207,10 +200,7 @@ export default function CharacterShareProfilePage() {
       // Locked active character is sticky — don't overwrite primary when
       // browsing/importing shares (unless the import target is the lock).
       const importTarget = { name, region: importRegion };
-      if (
-        !isActiveCharacterLocked() ||
-        isLockedActiveCharacter(importTarget)
-      ) {
+      if (!isStickyActiveSwitchBlocked(importTarget)) {
         setPrimary(importTarget);
       }
       importBuildToCharacter({

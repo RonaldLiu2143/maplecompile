@@ -3,7 +3,6 @@
 import {
   useEffect,
   useId,
-  useLayoutEffect,
   useRef,
   useState,
   useSyncExternalStore,
@@ -20,7 +19,6 @@ import {
   THEME_PRESETS,
   WALLPAPER_DEFAULT_BLUR,
   WALLPAPER_DEFAULT_DIM,
-  applyThemeToDocument,
   getFontPreset,
   getThemePreset,
   parseAccentHex,
@@ -128,11 +126,6 @@ export function ThemePicker({
   const panelId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
 
-  // Before paint — avoids hydration wiping boot-script wallpaper for a frame.
-  useLayoutEffect(() => {
-    applyThemeToDocument(prefs);
-  }, [prefs]);
-
   useEffect(() => {
     if (!open) return;
     setCustomDraft(prefs.backdropUrl ?? "");
@@ -156,7 +149,6 @@ export function ThemePicker({
 
   const commit = (next: ThemePrefs) => {
     writeThemePrefs(next);
-    applyThemeToDocument(next);
   };
 
   const setThemeId = (id: ThemeId) => {

@@ -15,16 +15,29 @@ export type MissingScouterField = {
   label: string;
 };
 
+/** Onboarding gate vs calculate / share / pair required set. */
+export type ScouterRequiredMode = "basics" | "full";
+
+function tripleFilled(t: StatTriple | undefined | null): boolean {
+  if (!t) return false;
+  return t.base > 0 || t.flat > 0 || t.percent > 0;
+}
+
 function tripleEmpty(t: StatTriple): boolean {
-  return !(t.base || t.percent || t.flat);
+  return !tripleFilled(t);
 }
 
 /**
- * Required character-window fields before calculate / public share / pair /
- * boss-clear checks. Empty zeros produce nonsense Combat Power and clear rates.
+ * Required character-window fields.
+ *
+ * - `basics`: main (any), sub (any if present), and ATT/MATT — DA/Xenon rules
+ *   match onboarding (`hasScouterBasics`). Xenon needs any of STR/DEX/LUK.
+ * - `full`: all primary/secondary stats for the job, ATT/MATT, plus damage
+ *   window fields used before calculate / public share / pair / boss-clear.
  */
 export function getMissingRequiredScouterFields(
   input: ScouterInput,
+  mode: ScouterRequiredMode = "full",
 ): MissingScouterField[] {
   const missing: MissingScouterField[] = [];
   const { mainKeys, secondaryKeys, isXenon, isDa } =
@@ -40,9 +53,33 @@ export function getMissingRequiredScouterFields(
     pushStat("hp");
     pushStat("str");
   } else if (isXenon) {
-    pushStat("str");
-    pushStat("dex");
-    pushStat("luk");
+    if (mode === "basics") {
+      if (
+        !tripleFilled(input.stats.str) &&
+        !tripleFilled(input.stats.dex) &&
+        !tripleFilled(input.stats.luk)
+      ) {
+        missing.push({ id: "stat-str", label: "STR / DEX / LUK" });
+      }
+    } else {
+      pushStat("str");
+      pushStat("dex");
+      pushStat("luk");
+    }
+  } else if (mode === "basics") {
+    if (!mainKeys.some((k) => tripleFilled(input.stats[k]))) {
+      const key = mainKeys[0];
+      if (key) {
+        missing.push({ id: `stat-${key}`, label: STAT_LABELS[key] });
+      }
+    }
+    if (
+      secondaryKeys.length > 0 &&
+      !secondaryKeys.some((k) => tripleFilled(input.stats[k]))
+    ) {
+      const key = secondaryKeys[0]!;
+      missing.push({ id: `stat-${key}`, label: STAT_LABELS[key] });
+    }
   } else {
     for (const key of mainKeys) pushStat(key);
     for (const key of secondaryKeys) pushStat(key);
@@ -56,20 +93,22 @@ export function getMissingRequiredScouterFields(
     missing.push({ id: "att", label: "Attack" });
   }
 
-  if (!input.damagePercent) {
-    missing.push({ id: "damage", label: "Damage" });
-  }
-  if (!input.bossDamagePercent) {
-    missing.push({ id: "boss-damage", label: "Boss Damage" });
-  }
-  if (!input.criticalRatePercent) {
-    missing.push({ id: "crit-rate", label: "Critical Rate" });
-  }
-  if (!input.criticalDamagePercent) {
-    missing.push({ id: "crit-damage", label: "Critical Damage" });
-  }
-  if (!input.ignoreDefensePercent) {
-    missing.push({ id: "ied", label: "Ignore Defense" });
+  if (mode === "full") {
+    if (!input.damagePercent) {
+      missing.push({ id: "damage", label: "Damage" });
+    }
+    if (!input.bossDamagePercent) {
+      missing.push({ id: "boss-damage", label: "Boss Damage" });
+    }
+    if (!input.criticalRatePercent) {
+      missing.push({ id: "crit-rate", label: "Critical Rate" });
+    }
+    if (!input.criticalDamagePercent) {
+      missing.push({ id: "crit-damage", label: "Critical Damage" });
+    }
+    if (!input.ignoreDefensePercent) {
+      missing.push({ id: "ied", label: "Ignore Defense" });
+    }
   }
 
   return missing;

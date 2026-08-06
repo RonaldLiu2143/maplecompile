@@ -11,6 +11,7 @@ import {
 } from "react";
 import { ThemePicker } from "@/components/ThemePicker";
 import { WeeklyResetBar } from "@/components/WeeklyResetBar";
+import { useApplyThemeToDocument } from "@/hooks/useApplyThemeToDocument";
 
 const STORAGE_KEY = "maplecompile-sidebar-open";
 
@@ -207,6 +208,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(true);
   const [ready, setReady] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  useApplyThemeToDocument();
 
   const syncViewport = useEffectEvent(() => {
     setIsMobile(window.matchMedia("(max-width: 767px)").matches);

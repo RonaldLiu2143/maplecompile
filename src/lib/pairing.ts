@@ -4,9 +4,9 @@ import { notifyMapleDataChanged } from "./maple-events";
 import { storage, type ScouterLastState } from "./storage";
 import { countFilledSlots } from "./starter-loadouts";
 import type { EquipSetup } from "./types";
-import type { ScouterInput, StatTriple } from "./scouter/types";
+import type { ScouterInput } from "./scouter/types";
 import { defaultScouterInput } from "./scouter/types";
-import { resolveMainSecondary } from "./scouter/calc";
+import { getMissingRequiredScouterFields } from "./scouter/validate";
 import { entryKey, readRosterState } from "./dashboard/roster";
 import {
   isLockedActiveCharacter,
@@ -359,46 +359,15 @@ export function hasScouterStats(): boolean {
   return storage.getScouterLast()?.input != null;
 }
 
-function tripleFilled(t: StatTriple | undefined | null): boolean {
-  if (!t) return false;
-  return t.base > 0 || t.flat > 0 || t.percent > 0;
-}
-
 /**
  * Onboarding / basics check: main, sub, and attack (or magic attack) filled.
- * Pairing still uses the looser `hasScouterStats`.
+ * Pairing still uses the looser `hasScouterStats`. Job rules live in
+ * `getMissingRequiredScouterFields(..., "basics")`.
  */
 export function hasScouterBasics(): boolean {
   const input = storage.getScouterLast()?.input;
   if (!input) return false;
-
-  const { mainKeys, secondaryKeys, isXenon, isDa } =
-    resolveMainSecondary(input);
-
-  if (isDa) {
-    if (!tripleFilled(input.stats.hp) || !tripleFilled(input.stats.str)) {
-      return false;
-    }
-  } else if (isXenon) {
-    if (
-      !tripleFilled(input.stats.str) &&
-      !tripleFilled(input.stats.dex) &&
-      !tripleFilled(input.stats.luk)
-    ) {
-      return false;
-    }
-  } else {
-    if (!mainKeys.some((k) => tripleFilled(input.stats[k]))) return false;
-    if (
-      secondaryKeys.length > 0 &&
-      !secondaryKeys.some((k) => tripleFilled(input.stats[k]))
-    ) {
-      return false;
-    }
-  }
-
-  const attack = input.useMagicAttack ? input.magicAttack : input.attack;
-  return tripleFilled(attack);
+  return getMissingRequiredScouterFields(input, "basics").length === 0;
 }
 
 /** Primary set + Active Character lock for onboarding step 2. */

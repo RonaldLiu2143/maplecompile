@@ -97,6 +97,20 @@ export function writeActiveCharacterLock(
   }
 }
 
+/**
+ * Primary lock gate for sticky primary switches / share import.
+ * True when a lock is set for a *different* character than `target`.
+ * Switching to the locked character itself is always allowed.
+ */
+export function isStickyActiveSwitchBlocked(
+  target: Pick<RosterEntry, "name" | "region">,
+): boolean {
+  const lock = readActiveCharacterLock();
+  if (!lock) return false;
+  return entryKey(lock) !== entryKey(target);
+}
+
+/** Whether any sticky Active Character lock is set. */
 export function isActiveCharacterLocked(): boolean {
   return readActiveCharacterLock() != null;
 }
@@ -106,20 +120,7 @@ export function isLockedActiveCharacter(
   target: Pick<RosterEntry, "name" | "region">,
 ): boolean {
   const lock = readActiveCharacterLock();
-  if (!lock) return false;
-  return entryKey(lock) === entryKey(target);
-}
-
-/**
- * True when setting `target` as sticky primary would be refused because a
- * different character is locked. Switching to the locked character is fine.
- */
-export function isStickyActiveSwitchBlocked(
-  target: Pick<RosterEntry, "name" | "region">,
-): boolean {
-  const lock = readActiveCharacterLock();
-  if (!lock) return false;
-  return entryKey(lock) !== entryKey(target);
+  return lock != null && entryKey(lock) === entryKey(target);
 }
 
 /**
@@ -132,7 +133,7 @@ export function lockActiveCharacter(
   // Clear any prior lock first so switchActiveCharacter is not blocked when
   // re-locking to a different character.
   writeActiveCharacterLock(null);
-  const state = switchActiveCharacter(entry as RosterEntry);
+  const state = switchActiveCharacter(entry);
   writeActiveCharacterLock(entry);
   return state;
 }
@@ -234,7 +235,9 @@ export function syncLiberationActive(characterKey: string): void {
  * When a lock is set for a different character, this is a no-op (primary and
  * lock unchanged). Use tool-local view state to browse other characters.
  */
-export function switchActiveCharacter(entry: RosterEntry): RosterState {
+export function switchActiveCharacter(
+  entry: Pick<RosterEntry, "name" | "region">,
+): RosterState {
   if (isStickyActiveSwitchBlocked(entry)) {
     return readRosterState();
   }

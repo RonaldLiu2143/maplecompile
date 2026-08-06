@@ -40,6 +40,8 @@ export function ScouterOcrImport({ input, onApply }: Props) {
   const textRef = useRef<HTMLTextAreaElement | null>(null);
   const inputRef = useRef(input);
   const abortRef = useRef<AbortController | null>(null);
+  const progressAtRef = useRef(0);
+  const lastProgressRef = useRef<string | null>(null);
 
   useEffect(() => {
     inputRef.current = input;
@@ -111,6 +113,8 @@ export function ScouterOcrImport({ input, onApply }: Props) {
       setError(null);
       setOcrBusy(true);
       setStatus("Preparing image…");
+      progressAtRef.current = 0;
+      lastProgressRef.current = "Preparing image…";
 
       try {
         const { text: ocrText, cancelled } = await recognizeScouterScreenshot(
@@ -118,7 +122,14 @@ export function ScouterOcrImport({ input, onApply }: Props) {
           {
             signal: ac.signal,
             onProgress: (info) => {
-              if (!ac.signal.aborted) setStatus(info.status);
+              if (ac.signal.aborted) return;
+              const next = info.status;
+              if (next === lastProgressRef.current) return;
+              const now = Date.now();
+              if (now - progressAtRef.current < 100) return;
+              progressAtRef.current = now;
+              lastProgressRef.current = next;
+              setStatus(next);
             },
           },
         );

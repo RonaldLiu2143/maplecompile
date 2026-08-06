@@ -27,6 +27,8 @@ import {
   UNLOCK_TO_CHANGE_ACTIVE_MSG,
 } from "@/lib/active-character";
 
+const BATCH_CHUNK = 30;
+
 export type RosterSlotState =
   | { status: "loading" }
   | { status: "error"; error: string }
@@ -124,41 +126,64 @@ export function useRoster() {
     async function loadBatch(
       items: Array<{ entry: RosterEntry; key: string }>,
     ) {
-      for (const { key } of items) {
+      for (let i = 0; i < items.length; i += BATCH_CHUNK) {
+        const chunk = items.slice(i, i + BATCH_CHUNK);
+
         setSlots((prev) => {
-          if (prev[key]?.status === "ready") return prev;
-          return { ...prev, [key]: { status: "loading" } };
-        });
-      }
-
-      try {
-        const results = await fetchCharacterLookupBatch(
-          items.map(({ entry }) => ({
-            name: entry.name,
-            region: entry.region,
-          })),
-          { fields: "card" },
-        );
-
-        if (cancelled) return;
-
-        for (const { key } of items) {
-          const hit = results[key];
-          if (hit?.ok) {
-            applyReady(key, hit.character);
-          } else {
-            applyError(
-              key,
-              hit && !hit.ok ? hit.error : CHARACTER_LOOKUP_NETWORK_ERROR,
-            );
+          let changed = false;
+          const next = { ...prev };
+          for (const { key } of chunk) {
+            if (prev[key]?.status === "ready") continue;
+            next[key] = { status: "loading" };
+            changed = true;
           }
-        }
-      } catch (err) {
-        if (cancelled) return;
-        const message =
-          err instanceof Error ? err.message : CHARACTER_LOOKUP_NETWORK_ERROR;
-        for (const { key } of items) {
-          applyError(key, message);
+          return changed ? next : prev;
+        });
+
+        try {
+          const results = await fetchCharacterLookupBatch(
+            chunk.map(({ entry }) => ({
+              name: entry.name,
+              region: entry.region,
+            })),
+            { fields: "card" },
+          );
+
+          if (cancelled) return;
+
+          const ready: Record<string, CharacterLookupResult> = {};
+          const errors: Record<string, string> = {};
+          for (const { key } of chunk) {
+            const hit = results[key];
+            if (hit?.ok) {
+              writeSessionCharacter(hit.character);
+              loadedKeys.current.add(key);
+              ready[key] = hit.character;
+            } else {
+              errors[key] =
+                hit && !hit.ok ? hit.error : CHARACTER_LOOKUP_NETWORK_ERROR;
+            }
+          }
+
+          setSlots((prev) => {
+            const next = { ...prev };
+            for (const [key, character] of Object.entries(ready)) {
+              next[key] = { status: "ready", character };
+            }
+            for (const [key, error] of Object.entries(errors)) {
+              if (prev[key]?.status === "ready") continue;
+              loadedKeys.current.delete(key);
+              next[key] = { status: "error", error };
+            }
+            return next;
+          });
+        } catch (err) {
+          if (cancelled) return;
+          const message =
+            err instanceof Error ? err.message : CHARACTER_LOOKUP_NETWORK_ERROR;
+          for (const { key } of chunk) {
+            applyError(key, message);
+          }
         }
       }
     }

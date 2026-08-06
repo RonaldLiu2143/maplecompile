@@ -3,7 +3,6 @@
 import { useEffect, useSyncExternalStore } from "react";
 import {
   DEFAULT_THEME_PREFS,
-  applyThemeToDocument,
   isLightThemeId,
   preferredDarkThemeId,
   readThemePrefs,
@@ -19,6 +18,7 @@ function getServerThemePrefs() {
 /**
  * Compact Light / Dark control for the sticky top bar.
  * Light ↔ Compile; if the user was on Contrast, Dark restores Contrast.
+ * Theme DOM apply lives in SiteShell (`useApplyThemeToDocument`).
  */
 export function ThemeSchemeSwitch({ className }: { className?: string }) {
   const prefs = useSyncExternalStore(
@@ -28,9 +28,8 @@ export function ThemeSchemeSwitch({ className }: { className?: string }) {
   );
 
   useEffect(() => {
-    applyThemeToDocument(prefs);
     rememberDarkThemeId(prefs.id);
-  }, [prefs]);
+  }, [prefs.id]);
 
   const light = isLightThemeId(prefs.id);
 

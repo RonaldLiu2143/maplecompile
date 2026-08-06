@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
+import { useFlashMessage } from "@/hooks/useFlashMessage";
 import { useMapleDataReload } from "@/hooks/useMapleDataReload";
 import {
   clearPairing,
@@ -38,7 +39,7 @@ export function PairingBar({
 }: Props) {
   const router = useRouter();
   const [pairing, setPairingState] = useState<ScouterEquipPairing | null>(null);
-  const [msg, setMsg] = useState<string | null>(null);
+  const { msg, flash } = useFlashMessage(2800);
   const [ready, setReady] = useState(false);
 
   const refresh = useCallback(() => {
@@ -49,11 +50,6 @@ export function PairingBar({
   }, []);
 
   useMapleDataReload(refresh);
-
-  const flash = (text: string) => {
-    setMsg(text);
-    setTimeout(() => setMsg(null), 2800);
-  };
 
   const tryPair = () => {
     const input =
