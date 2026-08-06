@@ -190,11 +190,17 @@ export default function LiberationPage() {
 
   useEffect(() => {
     if (!ready) return;
-    if (inputs.completionRate === result.completionRate) return;
+    const nextRate = inputs.liberated ? 100 : result.completionRate;
+    if (inputs.completionRate === nextRate) return;
     setStore((prev) =>
-      upsertActiveInputs(prev, { completionRate: result.completionRate }),
+      upsertActiveInputs(prev, { completionRate: nextRate }),
     );
-  }, [ready, result.completionRate, inputs.completionRate]);
+  }, [
+    ready,
+    result.completionRate,
+    inputs.completionRate,
+    inputs.liberated,
+  ]);
 
   const patch = (partial: Partial<LiberationCharacterInputs>) => {
     setStore((prev) => upsertActiveInputs(prev, partial));
@@ -327,8 +333,9 @@ export default function LiberationPage() {
   };
 
   const clearedCount = inputs.bossSelections.filter((s) => s.cleared).length;
-  const achieved = result.remaining <= 0;
-  const pct = Math.min(100, result.completionRate);
+  const liberated = inputs.liberated;
+  const achieved = liberated || result.remaining <= 0;
+  const pct = liberated ? 100 : Math.min(100, result.completionRate);
 
   const currencyShort =
     type === "destiny" ? "Adversary's Determination" : "Traces of Darkness";
@@ -422,12 +429,13 @@ export default function LiberationPage() {
                         slot?.status === "ready" ? slot.character : null;
                       const name = character?.name ?? entry.name;
                       const avatar = character?.characterImgURL;
-                      const rate =
-                        store.characterData[key]?.[
-                          store.characterData[key]?.currentTab ?? "genesis"
-                        ]?.completionRate ?? 0;
-                      const tab =
-                        store.characterData[key]?.currentTab ?? "genesis";
+                      const bundle = store.characterData[key];
+                      const tab = bundle?.currentTab ?? "genesis";
+                      const tabInputs = bundle?.[tab];
+                      const rate = tabInputs?.liberated
+                        ? 100
+                        : (tabInputs?.completionRate ?? 0);
+                      const isLib = !!tabInputs?.liberated;
                       return (
                         <button
                           key={key}
@@ -478,7 +486,10 @@ export default function LiberationPage() {
                             {name}
                           </p>
                           <p className="font-mono text-[10px] tabular-nums opacity-65">
-                            {rate}%{isPrimary(entry, primary) ? " ★" : ""}
+                            {isLib
+                              ? "Liberated"
+                              : `${rate}%`}
+                            {isPrimary(entry, primary) ? " ★" : ""}
                           </p>
                         </button>
                       );
@@ -506,12 +517,20 @@ export default function LiberationPage() {
           <section className="space-y-4 rounded-xl border border-border/40 bg-surface/80 p-4">
             <div className="text-center">
               <p className="font-display text-2xl font-bold tabular-nums tracking-tight sm:text-3xl">
-                {achieved ? "Done!" : formatDisplayDate(result.etaISO)}
+                {liberated
+                  ? "Liberated!"
+                  : achieved
+                    ? "Done!"
+                    : formatDisplayDate(result.etaISO)}
               </p>
               <p className="mt-1 text-xs opacity-65">
-                {achieved
-                  ? "Liberation finished"
-                  : "When you should finish (estimate)"}
+                {liberated
+                  ? type === "destiny"
+                    ? "Destiny weapon liberated"
+                    : "Genesis weapon liberated"
+                  : achieved
+                    ? "Liberation finished"
+                    : "When you should finish (estimate)"}
               </p>
             </div>
 
@@ -578,7 +597,7 @@ export default function LiberationPage() {
         <div className="space-y-4">
           <section className="space-y-4 rounded-xl border border-border/40 bg-surface/80 p-4 sm:p-5">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="flex gap-1.5">
+              <div className="flex flex-wrap gap-1.5">
                 {(
                   [
                     ["genesis", "GENESIS"],
@@ -600,13 +619,33 @@ export default function LiberationPage() {
                   </button>
                 ))}
               </div>
-              <button
-                type="button"
-                onClick={resetActive}
-                className="text-xs font-semibold text-accent hover:underline"
-              >
-                Reset
-              </button>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => patch({ liberated: !liberated })}
+                  aria-pressed={liberated}
+                  className={[
+                    "rounded-md border px-3 py-2 text-xs font-semibold transition-colors",
+                    liberated
+                      ? "border-accent bg-accent text-white dark:text-zinc-900"
+                      : "border-border/50 bg-surface-muted/60 opacity-80 hover:border-accent/50 hover:text-accent",
+                  ].join(" ")}
+                  title={
+                    liberated
+                      ? `Unmark ${type === "destiny" ? "Destiny" : "Genesis"} as liberated`
+                      : `Mark ${type === "destiny" ? "Destiny" : "Genesis"} weapon as liberated`
+                  }
+                >
+                  {liberated ? "Liberated" : "Mark liberated"}
+                </button>
+                <button
+                  type="button"
+                  onClick={resetActive}
+                  className="text-xs font-semibold text-accent hover:underline"
+                >
+                  Reset
+                </button>
+              </div>
             </div>
 
             <div>

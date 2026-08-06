@@ -341,7 +341,7 @@ function CompactCharacterProfile({
 }: {
   character: CharacterLookupResult;
   actions?: ReactNode;
-  /** Dashboard-tight: smaller chrome, no EXP spark chart (keeps bar + ranks). */
+  /** Dashboard-tight: smaller chrome; still includes Daily EXP graph. */
   dense?: boolean;
 }) {
   const world = character.worldName;
@@ -350,7 +350,6 @@ function CompactCharacterProfile({
   const ranking = character.ranking;
   const pct = character.expPercent;
   const need = character.expToNext;
-  const avg7 = character.expAverages?.avg7d ?? null;
 
   const classInWorld = formatRank(ranking?.jobRank);
   const worldRank = formatRank(ranking?.worldRank);
@@ -475,23 +474,11 @@ function CompactCharacterProfile({
             <MiniStat label="Legion" value={legion} />
           </div>
 
-          {dense ? (
-            avg7 ? (
-              <p className="mt-2 font-mono text-xs tabular-nums text-foreground/65">
-                <span className="mr-1.5 text-[0.65rem] font-semibold uppercase tracking-wider opacity-55">
-                  7d avg
-                </span>
-                {avg7.replace(/\/day$/i, "")}
-                <span className="opacity-55">/day</span>
-              </p>
-            ) : null
-          ) : (
-            <ExpRangeGraph
-              graph={character.graph}
-              averages={character.expAverages}
-              compact
-            />
-          )}
+          <ExpRangeGraph
+            graph={character.graph}
+            averages={character.expAverages}
+            compact
+          />
         </div>
       </div>
     </article>
@@ -820,7 +807,7 @@ export function CharacterProfile({
   compact?: boolean;
   /**
    * Tighter than compact (dashboard Primary): smaller avatar/padding, ranks +
-   * EXP bar, optional 7d avg line — no spark chart.
+   * EXP bar, and compact Daily EXP graph.
    */
   dense?: boolean;
   /** Optional action buttons (e.g. Add to roster) for compact search results. */

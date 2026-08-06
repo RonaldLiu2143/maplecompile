@@ -22,6 +22,8 @@ export type LiberationCharacterInputs = {
   liberationQuest: string;
   bossSelections: TraceSelection[];
   completionRate: number;
+  /** Weapon / quest line marked finished (per Genesis or Destiny). */
+  liberated: boolean;
 };
 
 export type CharacterLiberationBundle = {
@@ -54,6 +56,7 @@ export function defaultInputs(
     liberationQuest: defaultLiberationQuest(type),
     bossSelections: defaultTraceSelections(type),
     completionRate: 0,
+    liberated: false,
   };
 }
 
@@ -95,6 +98,7 @@ function normalizeInputs(
       0,
       Math.min(100, Math.round(Number(raw.completionRate) || 0)),
     ),
+    liberated: !!raw.liberated,
   };
 }
 
