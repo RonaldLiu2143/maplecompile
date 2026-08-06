@@ -50,7 +50,7 @@ function Breakdown({ line }: { line: TooltipStatLine }) {
   if (parts.length < 2 && line.base === line.total) return null;
 
   return (
-    <span className="ml-1 tabular-nums">
+    <span className="ml-1 shrink-0 text-[10px] tabular-nums tracking-tight">
       <span style={{ color: C_MUTED }}>(</span>
       {parts.map((p, i) => (
         <span key={i}>
@@ -127,7 +127,7 @@ export function EquipItemTooltip({
   return (
     <div
       className={`select-none rounded border border-[#6a6a6a] bg-[#1a1a1a]/95 text-[11px] text-white shadow-lg backdrop-blur-sm ${
-        compact ? "w-[220px] p-2" : "w-full max-w-[280px] p-2.5"
+        compact ? "min-w-[260px] w-[260px] p-2" : "w-full min-w-[260px] max-w-[300px] p-2.5"
       } ${className}`}
       role="img"
       aria-label={`${equip.name} item stats${stars > 0 ? `, ${stars} stars` : ""}`}
@@ -191,11 +191,14 @@ export function EquipItemTooltip({
           </p>
         )}
         {model.lines.map((line) => (
-          <div key={line.id} className="flex flex-wrap items-baseline">
-            <span style={{ color: C_MUTED }} className="mr-1 min-w-[5.5rem]">
+          <div
+            key={line.id}
+            className="flex flex-nowrap items-baseline whitespace-nowrap"
+          >
+            <span style={{ color: C_MUTED }} className="mr-1 shrink-0">
               {line.label}
             </span>
-            <span className="tabular-nums" style={{ color: C_BASE }}>
+            <span className="shrink-0 tabular-nums" style={{ color: C_BASE }}>
               : {fmtNum(line.total, line.percent)}
             </span>
             <Breakdown line={line} />
