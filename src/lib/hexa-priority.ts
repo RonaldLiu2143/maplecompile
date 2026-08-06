@@ -23,6 +23,8 @@ import {
 } from "./hexa-costs";
 
 export const DEFAULT_BOSS_CONVERTED_STAT = 85_000;
+/** Max HEXA Converted score digits / value (6 numeric digits). */
+export const MAX_BOSS_CONVERTED_STAT = 999_999;
 
 type BandRow = { target: number; order: number[][] };
 type ClassBands = { name: string; bands: BandRow[] };
@@ -307,5 +309,10 @@ export function buildScoreUpgradePath(
 export function normalizeBossConvertedStat(raw: unknown): number {
   const n = Math.floor(Number(raw));
   if (!Number.isFinite(n) || n < 0) return DEFAULT_BOSS_CONVERTED_STAT;
-  return n;
+  return Math.min(n, MAX_BOSS_CONVERTED_STAT);
+}
+
+/** Keep only up to 6 numeric digits for the HEXA Converted draft input. */
+export function clampBossConvertedStatDigits(raw: string): string {
+  return raw.replace(/\D/g, "").slice(0, 6);
 }

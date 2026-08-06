@@ -34,6 +34,7 @@ import {
   DEFAULT_BOSS_CONVERTED_STAT,
   bestScoreNextUpgrade,
   buildScoreUpgradePath,
+  clampBossConvertedStatDigits,
   normalizeBossConvertedStat,
 } from "@/lib/hexa-priority";
 import { hexaSlotLabels } from "@/lib/hexa-skill-labels";
@@ -886,15 +887,17 @@ export default function HexaTrackerPage() {
             <label className="mt-3 block space-y-1 text-xs font-semibold opacity-70">
               HEXA Converted score
               <input
-                type="number"
-                min={0}
-                step={1}
+                type="text"
                 inputMode="numeric"
+                pattern="[0-9]*"
+                maxLength={6}
                 value={bcsDraft}
                 placeholder={String(DEFAULT_BOSS_CONVERTED_STAT)}
                 aria-label="HEXA Converted"
-                title="HEXA Converted"
-                onChange={(e) => setBcsDraft(e.target.value)}
+                title="HEXA Converted (max 6 digits)"
+                onChange={(e) =>
+                  setBcsDraft(clampBossConvertedStatDigits(e.target.value))
+                }
                 onBlur={(e) => commitBossConvertedStat(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
@@ -907,9 +910,9 @@ export default function HexaTrackerPage() {
               />
             </label>
             <p className="mt-2 text-[10px] opacity-55">
-              Base {DEFAULT_BOSS_CONVERTED_STAT.toLocaleString()}. Priority uses
-              the nearest class FD band for this score without changing the
-              value you entered.
+              Base {DEFAULT_BOSS_CONVERTED_STAT.toLocaleString()} (max 6 digits).
+              Priority uses the nearest class FD band for this score without
+              changing the value you entered.
             </p>
           </section>
 
