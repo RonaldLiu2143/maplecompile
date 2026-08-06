@@ -74,7 +74,7 @@ export function defaultTraceSelections(
 ): TraceSelection[] {
   return bossesFor(type).map((boss) => ({
     bossName: boss.name,
-    difficulty: NOT_DOING,
+    difficulty: highestDifficulty(boss),
     partySize: 1,
     cleared: false,
   }));
@@ -374,13 +374,22 @@ export function mergeSelections(
     const s = byName.get(d.bossName);
     if (!s) return d;
     const boss = findBoss(type, d.bossName);
+    const difficulty =
+      typeof s.difficulty === "string" && s.difficulty.length > 0
+        ? s.difficulty
+        : null;
     const validDiff =
-      s.difficulty === NOT_DOING ||
-      boss?.difficulties.some((x) => x.label === s.difficulty);
+      difficulty != null &&
+      (difficulty === NOT_DOING ||
+        !!boss?.difficulties.some((x) => x.label === difficulty));
     return {
       bossName: d.bossName,
-      difficulty: validDiff ? s.difficulty : NOT_DOING,
-      partySize: clampPartySize(s.partySize),
+      // Keep persisted difficulties (incl. Not doing); fill gaps with highest+solo defaults.
+      difficulty: validDiff ? difficulty : d.difficulty,
+      partySize:
+        s.partySize != null && Number.isFinite(Number(s.partySize))
+          ? clampPartySize(s.partySize)
+          : d.partySize,
       cleared: !!s.cleared,
     };
   });

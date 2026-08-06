@@ -234,18 +234,6 @@ export default function LiberationPage() {
     });
   };
 
-  const toggleCleared = (bossName: string) => {
-    setStore((prev) => {
-      const current = getActiveInputs(prev);
-      const bossSelections = current.bossSelections.map((s) => {
-        if (s.bossName !== bossName) return s;
-        if (s.difficulty === NOT_DOING) return s;
-        return { ...s, cleared: !s.cleared };
-      });
-      return upsertActiveInputs(prev, { bossSelections });
-    });
-  };
-
   /** Card click: enable at highest+Solo, or toggle clear when already selected. */
   const onBossCardActivate = (bossName: string) => {
     setStore((prev) => {
@@ -779,8 +767,8 @@ export default function LiberationPage() {
               Weekly bosses
             </h2>
             <p className="mt-0.5 text-xs opacity-65">
-              Pick difficulty &amp; party size (defaults to highest + Solo).
-              Tap the card to clear, or tap an idle card to add that boss.
+              Defaults to highest difficulty + Solo. Tap a card to toggle
+              cleared; use the menus to change difficulty or party size.
             </p>
           </div>
           <span className="rounded-md border border-border/40 px-2.5 py-1 text-xs font-semibold tabular-nums opacity-80">
@@ -794,7 +782,7 @@ export default function LiberationPage() {
               (s) => s.bossName === boss.name,
             ) ?? {
               bossName: boss.name,
-              difficulty: NOT_DOING,
+              difficulty: highestDifficulty(boss),
               partySize: 1,
               cleared: false,
             };
@@ -831,6 +819,11 @@ export default function LiberationPage() {
                   }
                 }}
                 aria-pressed={doing ? sel.cleared : false}
+                aria-label={
+                  doing
+                    ? `${boss.name}, ${sel.cleared ? "cleared" : "not cleared"}. Activate to toggle clear.`
+                    : `${boss.name}, not doing. Activate to enable at highest difficulty Solo.`
+                }
                 className={bossCardClass(sel.cleared, doing)}
               >
                 <div className="flex min-w-0 flex-1 items-start gap-3">
@@ -926,27 +919,20 @@ export default function LiberationPage() {
                   </div>
                 </div>
 
-                <div
-                  className="flex shrink-0 self-stretch sm:items-center"
-                  onClick={stop}
-                >
+                <div className="pointer-events-none flex shrink-0 self-stretch sm:items-center">
                   {doing ? (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggleCleared(boss.name);
-                      }}
+                    <span
+                      aria-hidden
                       className={[
                         "rounded-md border px-2.5 py-2 text-center text-xs font-semibold transition-colors",
                         CLEAR_CHIP_WIDTH,
                         sel.cleared
                           ? "border-accent bg-accent text-white dark:text-zinc-900"
-                          : "border-border/50 bg-surface-muted/60 opacity-80 hover:border-accent/50 hover:text-accent",
+                          : "border-border/50 bg-surface-muted/60 opacity-80",
                       ].join(" ")}
                     >
                       {sel.cleared ? "Done" : "Not cleared"}
-                    </button>
+                    </span>
                   ) : (
                     <span
                       className={`hidden text-center text-xs opacity-40 sm:flex sm:items-center sm:justify-center ${CLEAR_CHIP_WIDTH}`}
