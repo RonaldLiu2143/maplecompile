@@ -1,5 +1,11 @@
 import type { Metadata } from "next";
-import { Outfit, Source_Sans_3 } from "next/font/google";
+import {
+  IBM_Plex_Sans,
+  JetBrains_Mono,
+  Outfit,
+  Source_Sans_3,
+  Source_Serif_4,
+} from "next/font/google";
 import { SiteShell } from "@/components/SiteShell";
 import { themeBootScript } from "@/lib/theme";
 import "./globals.css";
@@ -12,6 +18,24 @@ const outfit = Outfit({
 
 const sourceSans = Source_Sans_3({
   variable: "--font-source-sans",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+});
+
+const ibmPlexSans = IBM_Plex_Sans({
+  variable: "--font-ibm-plex-sans",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+});
+
+const sourceSerif = Source_Serif_4({
+  variable: "--font-source-serif",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  variable: "--font-jetbrains-mono",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
 });
@@ -30,8 +54,9 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${outfit.variable} ${sourceSans.variable} dark h-full`}
+      className={`${outfit.variable} ${sourceSans.variable} ${ibmPlexSans.variable} ${sourceSerif.variable} ${jetbrainsMono.variable} dark h-full`}
       data-theme="compile"
+      data-font="default"
       data-backdrop="none"
       suppressHydrationWarning
     >

@@ -12,19 +12,23 @@ import {
   BACKDROP_PRESETS,
   BLUR_MAX,
   DEFAULT_BACKDROP_ID,
+  DEFAULT_FONT_ID,
   DEFAULT_THEME_PREFS,
   DIM_MAX,
+  FONT_PRESETS,
   THEME_ACCENT_SWATCHES,
   THEME_PRESETS,
   WALLPAPER_DEFAULT_BLUR,
   WALLPAPER_DEFAULT_DIM,
   applyThemeToDocument,
+  getFontPreset,
   getThemePreset,
   readThemePrefs,
   sanitizeBackdropUrl,
   subscribeThemePrefs,
   writeThemePrefs,
   type BackdropId,
+  type FontId,
   type ThemeId,
   type ThemePrefs,
 } from "@/lib/theme";
@@ -153,6 +157,10 @@ export function ThemePicker({
     commit({ ...prefs, id, accent: null });
   };
 
+  const setFontId = (font: FontId) => {
+    commit({ ...prefs, font });
+  };
+
   const setAccent = (accent: string | null) => {
     commit({ ...prefs, accent });
   };
@@ -217,11 +225,13 @@ export function ThemePicker({
   };
 
   const preset = getThemePreset(prefs.id);
+  const fontPreset = getFontPreset(prefs.font ?? DEFAULT_FONT_ID);
   const activeAccent = prefs.accent ?? preset.defaultAccent;
   const backdrop = prefs.backdrop ?? DEFAULT_BACKDROP_ID;
   const wallpaperOn = backdrop !== "none";
   const dim = prefs.dim ?? 0;
   const blur = prefs.blur ?? 0;
+  const activeFont = prefs.font ?? DEFAULT_FONT_ID;
 
   const panel = (
     <div
@@ -253,6 +263,40 @@ export function ThemePicker({
                   key={p.id}
                   type="button"
                   onClick={() => setThemeId(p.id)}
+                  className={[
+                    "rounded-lg px-2.5 py-2 text-left transition-colors",
+                    active
+                      ? "bg-accent text-white dark:text-zinc-900"
+                      : "hover:bg-accent-soft hover:text-accent",
+                  ].join(" ")}
+                >
+                  <span className="block text-sm font-semibold">{p.name}</span>
+                  <span
+                    className={[
+                      "mt-0.5 block text-[11px] leading-snug",
+                      active ? "text-white/90 dark:text-zinc-900/85" : "text-muted",
+                    ].join(" ")}
+                  >
+                    {p.description}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div>
+          <p className="mb-2 text-[0.7rem] font-semibold uppercase tracking-wider text-muted-soft">
+            Font
+          </p>
+          <div className="flex flex-col gap-1">
+            {FONT_PRESETS.map((p) => {
+              const active = activeFont === p.id;
+              return (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => setFontId(p.id)}
                   className={[
                     "rounded-lg px-2.5 py-2 text-left transition-colors",
                     active
@@ -489,6 +533,7 @@ export function ThemePicker({
         </span>
         <span className="text-xs font-semibold text-accent opacity-90">
           {preset.name}
+          {activeFont !== DEFAULT_FONT_ID ? ` · ${fontPreset.name}` : ""}
           {wallpaperOn ? " · Wallpaper" : ""}
         </span>
       </button>

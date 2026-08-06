@@ -67,6 +67,28 @@ html {
   --opacity-75: 88%;
 }
 
+/* Font presets — next/font CSS vars on <html>; switch via data-font */
+:root,
+html[data-font="default"] {
+  --font-sans: var(--font-source-sans);
+  --font-display: var(--font-outfit);
+}
+
+html[data-font="sans"] {
+  --font-sans: var(--font-ibm-plex-sans);
+  --font-display: var(--font-ibm-plex-sans);
+}
+
+html[data-font="serif"] {
+  --font-sans: var(--font-source-serif);
+  --font-display: var(--font-source-serif);
+}
+
+html[data-font="mono"] {
+  --font-sans: var(--font-jetbrains-mono);
+  --font-display: var(--font-jetbrains-mono);
+}
+
 /*
   Opera-style wallpaper stack:
   html::before = backdrop (gradient mesh / custom image) + blur via filter

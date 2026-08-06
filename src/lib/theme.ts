@@ -101,8 +101,43 @@ export const BACKDROP_PRESETS: readonly BackdropPreset[] = [
   },
 ] as const;
 
+/** Site-wide font stack presets (applied via data-font + CSS vars). */
+export const FONT_IDS = ["default", "sans", "serif", "mono"] as const;
+export type FontId = (typeof FONT_IDS)[number];
+
+export type FontPreset = {
+  id: FontId;
+  name: string;
+  description: string;
+};
+
+export const FONT_PRESETS: readonly FontPreset[] = [
+  {
+    id: "default",
+    name: "Compile",
+    description: "Source Sans body + Outfit headings — site default.",
+  },
+  {
+    id: "sans",
+    name: "Plex Sans",
+    description: "IBM Plex Sans throughout — clean and compact.",
+  },
+  {
+    id: "serif",
+    name: "Serif",
+    description: "Source Serif 4 — softer, book-like reading.",
+  },
+  {
+    id: "mono",
+    name: "Mono",
+    description: "JetBrains Mono — monospace UI look.",
+  },
+] as const;
+
 export type ThemePrefs = {
   id: ThemeId;
+  /** Site font preset. Default / omitted = Compile (Source Sans + Outfit). */
+  font?: FontId;
   /** Optional accent override (hex). Null/undefined = use preset default. */
   accent?: string | null;
   /** Wallpaper preset. Default / omitted = none. */
@@ -116,6 +151,7 @@ export type ThemePrefs = {
 };
 
 export const DEFAULT_THEME_ID: ThemeId = "compile";
+export const DEFAULT_FONT_ID: FontId = "default";
 export const DEFAULT_BACKDROP_ID: BackdropId = "none";
 export const DEFAULT_DIM = 0;
 export const DEFAULT_BLUR = 0;
@@ -159,8 +195,19 @@ export function isBackdropId(value: unknown): value is BackdropId {
   );
 }
 
+export function isFontId(value: unknown): value is FontId {
+  return (
+    typeof value === "string" &&
+    (FONT_IDS as readonly string[]).includes(value)
+  );
+}
+
 export function getThemePreset(id: ThemeId): ThemePreset {
   return THEME_PRESETS.find((p) => p.id === id) ?? THEME_PRESETS[0]!;
+}
+
+export function getFontPreset(id: FontId): FontPreset {
+  return FONT_PRESETS.find((p) => p.id === id) ?? FONT_PRESETS[0]!;
 }
 
 export function clampDim(n: number): number {
@@ -215,6 +262,7 @@ export function wallpaperImageCssValue(url: string): string {
 function prefsEqual(a: ThemePrefs, b: ThemePrefs): boolean {
   return (
     a.id === b.id &&
+    (a.font ?? DEFAULT_FONT_ID) === (b.font ?? DEFAULT_FONT_ID) &&
     (a.accent ?? null) === (b.accent ?? null) &&
     (a.backdrop ?? DEFAULT_BACKDROP_ID) === (b.backdrop ?? DEFAULT_BACKDROP_ID) &&
     (a.backdropUrl ?? null) === (b.backdropUrl ?? null) &&
@@ -226,6 +274,7 @@ function prefsEqual(a: ThemePrefs, b: ThemePrefs): boolean {
 function isDefaultPrefs(prefs: ThemePrefs): boolean {
   return (
     prefs.id === DEFAULT_THEME_ID &&
+    (prefs.font ?? DEFAULT_FONT_ID) === DEFAULT_FONT_ID &&
     (prefs.accent ?? null) == null &&
     (prefs.backdrop ?? DEFAULT_BACKDROP_ID) === DEFAULT_BACKDROP_ID &&
     (prefs.backdropUrl ?? null) == null &&
@@ -246,8 +295,10 @@ function canonicalize(prefs: ThemePrefs): ThemePrefs {
   } else {
     backdropUrl = null;
   }
+  const font = prefs.font ?? DEFAULT_FONT_ID;
   const next: ThemePrefs = {
     id: prefs.id,
+    font,
     accent: prefs.accent ?? null,
     backdrop,
     backdropUrl,
@@ -265,6 +316,8 @@ export function normalizeThemePrefs(raw: unknown): ThemePrefs {
   const obj = raw as Partial<ThemePrefs> & { id?: unknown };
   // Mist/Maple (and any unknown id) → Compile.
   const id = isThemeId(obj.id) ? obj.id : DEFAULT_THEME_ID;
+  // Missing / unknown font → default (migrate old prefs).
+  const font = isFontId(obj.font) ? obj.font : DEFAULT_FONT_ID;
   const accent =
     typeof obj.accent === "string" && /^#[0-9a-fA-F]{6}$/.test(obj.accent)
       ? obj.accent
@@ -284,6 +337,7 @@ export function normalizeThemePrefs(raw: unknown): ThemePrefs {
   );
   return canonicalize({
     id,
+    font,
     accent,
     backdrop,
     backdropUrl: backdrop === "custom" ? backdropUrl : null,
@@ -300,6 +354,7 @@ function serializePrefs(prefs: ThemePrefs): string {
   const c = canonicalize(prefs);
   return JSON.stringify({
     id: c.id,
+    font: c.font ?? DEFAULT_FONT_ID,
     accent: c.accent ?? null,
     backdrop: c.backdrop ?? DEFAULT_BACKDROP_ID,
     backdropUrl: c.backdropUrl ?? null,
@@ -328,6 +383,7 @@ export function readThemePrefs(): ThemePrefs {
       const p = parsed as Partial<ThemePrefs>;
       const needsRewrite =
         isLegacyThemeId(p.id) ||
+        !("font" in p) ||
         !("backdrop" in p) ||
         !("dim" in p) ||
         !("blur" in p);
@@ -402,6 +458,7 @@ export function applyThemeToDocument(prefs: ThemePrefs): void {
   if (typeof document === "undefined") return;
   const preset = getThemePreset(prefs.id);
   const root = document.documentElement;
+  const font = prefs.font ?? DEFAULT_FONT_ID;
   const backdrop = prefs.backdrop ?? DEFAULT_BACKDROP_ID;
   const dim = clampDim(prefs.dim ?? DEFAULT_DIM);
   const blur = clampBlur(prefs.blur ?? DEFAULT_BLUR);
@@ -411,6 +468,7 @@ export function applyThemeToDocument(prefs: ThemePrefs): void {
     backdrop === "custom" ? (url ? "custom" : "none") : backdrop;
 
   root.setAttribute("data-theme", prefs.id);
+  root.setAttribute("data-font", font);
   root.setAttribute("data-backdrop", activeBackdrop);
   root.style.colorScheme = preset.scheme;
   if (preset.scheme === "dark") {
@@ -451,7 +509,7 @@ export function applyThemeToDocument(prefs: ThemePrefs): void {
 /** Inline script source for FOUC-free boot (keep in sync with applyThemeToDocument). */
 export function themeBootScript(): string {
   // Legacy maple/mist ids fall through to compile (not in `ids`).
-  // Backdrop / dim / blur applied so wallpaper paints before React.
+  // Missing font → default. Backdrop / dim / blur before React.
   // URL sanitize mirrors sanitizeBackdropUrl (quotes / missing scheme).
-  return `(function(){try{var k=${JSON.stringify(THEME_STORAGE_KEY)};var ids=${JSON.stringify([...THEME_IDS])};var backs=${JSON.stringify([...BACKDROP_IDS])};var schemes={compile:"dark",contrast:"dark"};var raw=localStorage.getItem(k);var prefs=raw?JSON.parse(raw):{};var id=ids.indexOf(prefs.id)>=0?prefs.id:"compile";var accent=typeof prefs.accent==="string"&&/^#[0-9a-fA-F]{6}$/.test(prefs.accent)?prefs.accent:null;var backdrop=backs.indexOf(prefs.backdrop)>=0?prefs.backdrop:"none";var url=null;if(typeof prefs.backdropUrl==="string"){var t=prefs.backdropUrl.trim();if((t.charAt(0)==='"'&&t.charAt(t.length-1)==='"')||(t.charAt(0)==="'"&&t.charAt(t.length-1)==="'")||(t.charAt(0)==="<"&&t.charAt(t.length-1)===">"))t=t.slice(1,-1).trim();if(t.indexOf("//")===0)t="https:"+t;else if(!/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(t))t="https://"+t;if(t&&t.length<=2048){try{var u=new URL(t);if((u.protocol==="http:"||u.protocol==="https:")&&u.hostname)url=u.href}catch(e){}}}if(backdrop==="custom"&&!url)backdrop="none";var dim=typeof prefs.dim==="number"&&isFinite(prefs.dim)?Math.max(0,Math.min(${DIM_MAX},Math.round(prefs.dim))):0;var blur=typeof prefs.blur==="number"&&isFinite(prefs.blur)?Math.max(0,Math.min(${BLUR_MAX},Math.round(prefs.blur))):0;var scheme=schemes[id]||"dark";var r=document.documentElement;r.setAttribute("data-theme",id);r.setAttribute("data-backdrop",backdrop);r.style.colorScheme=scheme;if(scheme==="dark")r.classList.add("dark");else r.classList.remove("dark");if(accent){r.style.setProperty("--accent",accent);var hr=parseInt(accent.slice(1,3),16),hg=parseInt(accent.slice(3,5),16),hb=parseInt(accent.slice(5,7),16);var soft=scheme==="dark"?"rgb("+Math.round(hr*0.22)+" "+Math.round(hg*0.22)+" "+Math.round(hb*0.28)+")":"rgb("+Math.min(255,Math.round(hr+(255-hr)*0.72))+" "+Math.min(255,Math.round(hg+(255-hg)*0.72))+" "+Math.min(255,Math.round(hb+(255-hb)*0.65))+")";r.style.setProperty("--accent-soft",soft)}if(backdrop==="none"){r.style.setProperty("--mc-dim","0");r.style.setProperty("--mc-blur","0px");r.style.removeProperty("--mc-wallpaper-image")}else{r.style.setProperty("--mc-dim",String(dim/100));r.style.setProperty("--mc-blur",blur+"px");if(backdrop==="custom"&&url)r.style.setProperty("--mc-wallpaper-image","url("+JSON.stringify(url)+")");else r.style.removeProperty("--mc-wallpaper-image")}}catch(e){var d=document.documentElement;d.setAttribute("data-theme","compile");d.setAttribute("data-backdrop","none");d.classList.add("dark");d.style.colorScheme="dark"}})();`;
+  return `(function(){try{var k=${JSON.stringify(THEME_STORAGE_KEY)};var ids=${JSON.stringify([...THEME_IDS])};var fonts=${JSON.stringify([...FONT_IDS])};var backs=${JSON.stringify([...BACKDROP_IDS])};var schemes={compile:"dark",contrast:"dark"};var raw=localStorage.getItem(k);var prefs=raw?JSON.parse(raw):{};var id=ids.indexOf(prefs.id)>=0?prefs.id:"compile";var font=fonts.indexOf(prefs.font)>=0?prefs.font:"default";var accent=typeof prefs.accent==="string"&&/^#[0-9a-fA-F]{6}$/.test(prefs.accent)?prefs.accent:null;var backdrop=backs.indexOf(prefs.backdrop)>=0?prefs.backdrop:"none";var url=null;if(typeof prefs.backdropUrl==="string"){var t=prefs.backdropUrl.trim();if((t.charAt(0)==='"'&&t.charAt(t.length-1)==='"')||(t.charAt(0)==="'"&&t.charAt(t.length-1)==="'")||(t.charAt(0)==="<"&&t.charAt(t.length-1)===">"))t=t.slice(1,-1).trim();if(t.indexOf("//")===0)t="https:"+t;else if(!/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(t))t="https://"+t;if(t&&t.length<=2048){try{var u=new URL(t);if((u.protocol==="http:"||u.protocol==="https:")&&u.hostname)url=u.href}catch(e){}}}if(backdrop==="custom"&&!url)backdrop="none";var dim=typeof prefs.dim==="number"&&isFinite(prefs.dim)?Math.max(0,Math.min(${DIM_MAX},Math.round(prefs.dim))):0;var blur=typeof prefs.blur==="number"&&isFinite(prefs.blur)?Math.max(0,Math.min(${BLUR_MAX},Math.round(prefs.blur))):0;var scheme=schemes[id]||"dark";var r=document.documentElement;r.setAttribute("data-theme",id);r.setAttribute("data-font",font);r.setAttribute("data-backdrop",backdrop);r.style.colorScheme=scheme;if(scheme==="dark")r.classList.add("dark");else r.classList.remove("dark");if(accent){r.style.setProperty("--accent",accent);var hr=parseInt(accent.slice(1,3),16),hg=parseInt(accent.slice(3,5),16),hb=parseInt(accent.slice(5,7),16);var soft=scheme==="dark"?"rgb("+Math.round(hr*0.22)+" "+Math.round(hg*0.22)+" "+Math.round(hb*0.28)+")":"rgb("+Math.min(255,Math.round(hr+(255-hr)*0.72))+" "+Math.min(255,Math.round(hg+(255-hg)*0.72))+" "+Math.min(255,Math.round(hb+(255-hb)*0.65))+")";r.style.setProperty("--accent-soft",soft)}if(backdrop==="none"){r.style.setProperty("--mc-dim","0");r.style.setProperty("--mc-blur","0px");r.style.removeProperty("--mc-wallpaper-image")}else{r.style.setProperty("--mc-dim",String(dim/100));r.style.setProperty("--mc-blur",blur+"px");if(backdrop==="custom"&&url)r.style.setProperty("--mc-wallpaper-image","url("+JSON.stringify(url)+")");else r.style.removeProperty("--mc-wallpaper-image")}}catch(e){var d=document.documentElement;d.setAttribute("data-theme","compile");d.setAttribute("data-font","default");d.setAttribute("data-backdrop","none");d.classList.add("dark");d.style.colorScheme="dark"}})();`;
 }
