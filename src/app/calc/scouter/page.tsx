@@ -55,6 +55,7 @@ import { ScouterOcrImport } from "./ocr-import";
 import { ShareGalleryModal } from "./share-gallery-modal";
 import { countFilledSlots } from "@/lib/starter-loadouts";
 import { readRosterState } from "@/lib/dashboard/roster";
+import { parseUserNumber } from "@/lib/scouter/parse-number";
 
 const cell =
   "border border-border/50 bg-background px-2 py-1.5 text-sm outline-none focus:relative focus:z-10 focus:border-accent";
@@ -70,6 +71,9 @@ const STAT_LABELS: Record<StatKey, string> = {
   luk: "LUK",
   hp: "Max HP",
 };
+
+/** Allow digits / one decimal / optional sign while typing (incl. leading `.`). */
+const NUM_DRAFT_RE = /^[+-]?[\d,]*\.?[\d,]*$/;
 
 function applyTriple(t: StatTriple): number {
   return t.base * (1 + t.percent / 100) + t.flat;
@@ -92,11 +96,14 @@ function NumInput({
   fieldId?: string;
 }) {
   const n = Number.isFinite(value) ? value : 0;
-  // Empty + muted placeholder when 0 so typing replaces zero (no leading 0).
-  const display = n === 0 ? "" : n;
+  // Draft while focused so typing `.` then `5` works with empty/zero placeholder.
+  const [draft, setDraft] = useState<string | null>(null);
+  const display = draft !== null ? draft : n === 0 ? "" : String(n);
+
   return (
     <input
-      type="number"
+      type="text"
+      inputMode="decimal"
       readOnly={readOnly}
       placeholder={placeholder}
       data-scouter-field={fieldId}
@@ -104,17 +111,34 @@ function NumInput({
         readOnly ? "bg-surface-muted/40 text-foreground/70" : ""
       } ${className}`}
       value={display}
+      onFocus={
+        !readOnly
+          ? () => setDraft(n === 0 ? "" : String(n))
+          : undefined
+      }
+      onBlur={
+        !readOnly
+          ? () => {
+              if (draft !== null && onChange) {
+                onChange(parseUserNumber(draft) ?? 0);
+              }
+              setDraft(null);
+            }
+          : undefined
+      }
       onChange={
         !readOnly && onChange
           ? (e) => {
-              const raw = e.target.value.trim();
-              if (raw === "") {
+              const raw = e.target.value;
+              if (raw !== "" && !NUM_DRAFT_RE.test(raw.trim())) return;
+              setDraft(raw);
+              if (raw.trim() === "") {
                 onChange(0);
                 return;
               }
-              const next = Number(raw);
-              if (!Number.isFinite(next)) return;
-              onChange(next);
+              const next = parseUserNumber(raw);
+              // Keep draft for intermediates like `.` / `-.` without wiping.
+              if (next != null) onChange(next);
             }
           : undefined
       }

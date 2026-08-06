@@ -1,5 +1,6 @@
 import type { ScouterInput, StatKey, StatTriple } from "./types";
 import { EMPTY_TRIPLE } from "./types";
+import { parseUserNumber, USER_NUMBER_RE } from "./parse-number";
 
 export type ScouterOcrPatch = {
   level?: number;
@@ -23,23 +24,18 @@ export type ScouterOcrParseResult = {
   warnings: string[];
 };
 
-function parseNumberToken(raw: string): number | null {
-  const cleaned = raw.replace(/,/g, "").replace(/\s/g, "").replace(/^\+/, "");
-  if (!cleaned || cleaned === "-" || cleaned === ".") return null;
-  const n = Number(cleaned);
-  return Number.isFinite(n) ? n : null;
-}
-
-/** Pull the first plausible number from a line (handles 12,345 / +350% / 92.5%). */
+/** Pull the first plausible number from a line (handles 12,345 / +350% / .5 / 92.5%). */
 function firstNumber(line: string): number | null {
-  const m = line.match(/[+\-]?\d[\d,]*(?:\.\d+)?/);
-  return m ? parseNumberToken(m[0]) : null;
+  USER_NUMBER_RE.lastIndex = 0;
+  const m = line.match(USER_NUMBER_RE);
+  return m ? parseUserNumber(m[0]) : null;
 }
 
 /** Up to three numbers on a line → base / % / flat. */
 function tripleFromLine(line: string): StatTriple | null {
-  const nums = [...line.matchAll(/[+\-]?\d[\d,]*(?:\.\d+)?/g)]
-    .map((m) => parseNumberToken(m[0]))
+  USER_NUMBER_RE.lastIndex = 0;
+  const nums = [...line.matchAll(USER_NUMBER_RE)]
+    .map((m) => parseUserNumber(m[0]))
     .filter((n): n is number => n != null);
   if (nums.length === 0) return null;
   if (nums.length === 1) return { base: nums[0], percent: 0, flat: 0 };

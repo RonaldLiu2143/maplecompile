@@ -65,6 +65,11 @@ export {
   type ScouterOcrParseResult,
 } from "./ocr-parse";
 export {
+  normalizeLeadingDotDecimal,
+  parseUserNumber,
+  USER_NUMBER_RE,
+} from "./parse-number";
+export {
   recognizeScouterScreenshot,
   preprocessScouterScreenshot,
   SCOUTER_OCR_FAIL_MESSAGE,
