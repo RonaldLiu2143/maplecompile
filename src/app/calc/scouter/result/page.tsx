@@ -98,6 +98,10 @@ function tipStyleUnchanged(a: CSSProperties, b: CSSProperties): boolean {
   );
 }
 
+/** Only one portaled boss tooltip at a time (avoids stuck tips when hopping cards). */
+const BOSS_TIP_OPEN_EVENT = "mh-boss-tip-open";
+let activeBossTipId: string | null = null;
+
 function StatBlock({
   title,
   children,
@@ -406,39 +410,82 @@ function BossClearCard({
   row: BossClearRow;
   hpRegion: BossHpRegion;
 } & BossUserForces) {
+  const tipId = `${row.id}-${row.difficulty}-${row.isPartyBoss ? "p" : "s"}-${row.rank}`;
   const cardRef = useRef<HTMLDivElement>(null);
   const tipStyleRef = useRef<CSSProperties | null>(null);
+  const hoverOpenRef = useRef(false);
   const rafRef = useRef<number | null>(null);
   const [tip, setTip] = useState<{ style: CSSProperties } | null>(null);
 
   const applyTipStyle = (next: CSSProperties, forceOpen: boolean) => {
+    // Drop stale RAF / layout placements after pointer leave (stuck-tip race).
+    if (!hoverOpenRef.current) return;
     const prev = tipStyleRef.current;
     if (!forceOpen && prev && tipStyleUnchanged(prev, next)) return;
     tipStyleRef.current = next;
     setTip({ style: next });
   };
 
+  const closeTip = () => {
+    hoverOpenRef.current = false;
+    if (activeBossTipId === tipId) activeBossTipId = null;
+    if (rafRef.current != null) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+    tipStyleRef.current = null;
+    setTip(null);
+  };
+
   const openTip = () => {
+    activeBossTipId = tipId;
+    hoverOpenRef.current = true;
+    // Close any other card's portaled tip before opening this one.
+    window.dispatchEvent(
+      new CustomEvent(BOSS_TIP_OPEN_EVENT, { detail: tipId }),
+    );
     const el = cardRef.current;
     if (!el) return;
     applyTipStyle(computeTipStyle(el), true);
   };
 
-  const closeTip = () => {
-    tipStyleRef.current = null;
-    setTip(null);
-  };
+  useEffect(() => {
+    const onOtherOpen = (e: Event) => {
+      const openedId = (e as CustomEvent<string>).detail;
+      if (openedId === tipId) return;
+      hoverOpenRef.current = false;
+      if (activeBossTipId === tipId) activeBossTipId = null;
+      if (rafRef.current != null) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
+      tipStyleRef.current = null;
+      setTip(null);
+    };
+    window.addEventListener(BOSS_TIP_OPEN_EVENT, onOtherOpen);
+    return () => {
+      window.removeEventListener(BOSS_TIP_OPEN_EVENT, onOtherOpen);
+      hoverOpenRef.current = false;
+      if (activeBossTipId === tipId) activeBossTipId = null;
+      if (rafRef.current != null) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
+    };
+  }, [tipId]);
 
   useLayoutEffect(() => {
     if (!tip) return;
 
     const place = () => {
+      if (!hoverOpenRef.current) return;
       const el = cardRef.current;
       if (!el) return;
       applyTipStyle(computeTipStyle(el), false);
     };
 
     const placeRaf = () => {
+      if (!hoverOpenRef.current) return;
       if (rafRef.current != null) return;
       rafRef.current = requestAnimationFrame(() => {
         rafRef.current = null;
@@ -486,8 +533,8 @@ function BossClearCard({
       ref={cardRef}
       tabIndex={0}
       aria-label={`${row.difficulty} ${row.nameEn}`}
-      onMouseEnter={openTip}
-      onMouseLeave={closeTip}
+      onPointerEnter={openTip}
+      onPointerLeave={closeTip}
       onFocus={openTip}
       onBlur={closeTip}
       className={`relative z-0 flex w-full flex-col items-center gap-0.5 rounded-md border bg-surface p-1 text-center shadow-sm transition hover:z-30 hover:-translate-y-0.5 hover:shadow-md focus-within:z-30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent ${borderClass}`}
@@ -495,7 +542,7 @@ function BossClearCard({
       {tip && typeof document !== "undefined"
         ? createPortal(
             <div
-              className="pointer-events-none rounded-xl border border-border/60 bg-zinc-950 px-3 py-2.5 text-left text-white shadow-2xl"
+              className="pointer-events-none z-[9999] rounded-xl border border-border/60 bg-zinc-950 px-3 py-2.5 text-left text-white shadow-2xl"
               style={tip.style}
               role="tooltip"
             >
@@ -792,7 +839,12 @@ export default function ScouterDetailedResultPage() {
             Detailed Information
           </p>
           <h1 className="font-display text-3xl font-bold tracking-tight sm:text-4xl">
-            Lv.{level} {charLabel}
+            Lv.{displayLevel} {charLabel}
+            {simOverlay ? (
+              <span className="ml-2 align-middle text-sm font-semibold text-accent">
+                (sim)
+              </span>
+            ) : null}
           </h1>
           <p className="mt-1 max-w-xl text-sm opacity-65">
             Converted boss stats and clear standards for your current scouter
@@ -921,7 +973,11 @@ export default function ScouterDetailedResultPage() {
           <div className="min-w-0 flex-1 space-y-3">
             <StatBlock
               title="Destiny & Champion"
-              hint={`Solo-mode Destiny and Champion · ${fightMinutes} min.`}
+              hint={
+                simOverlay
+                  ? `Solo-mode Destiny and Champion · ${fightMinutes} min · Additional Spec Simulation`
+                  : `Solo-mode Destiny and Champion · ${fightMinutes} min.`
+              }
               action={
                 <button
                   type="button"
@@ -956,7 +1012,11 @@ export default function ScouterDetailedResultPage() {
 
             <StatBlock
               title="Boss Clear (Cut)"
-              hint={`Clear % · ${fightMinutes} min. Hover for HP, crystal, and drops.`}
+              hint={
+                simOverlay
+                  ? `Clear % · ${fightMinutes} min · Additional Spec Simulation. Hover for HP, crystal, and drops.`
+                  : `Clear % · ${fightMinutes} min. Hover for HP, crystal, and drops.`
+              }
               action={
                 <div className="flex flex-wrap items-center gap-2 text-xs">
                   <button

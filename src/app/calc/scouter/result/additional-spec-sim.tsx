@@ -259,25 +259,41 @@ function SimMetric({
   value,
   delta,
   emphasize,
+  compact,
 }: {
   label: string;
   value: string;
   delta: string;
   emphasize?: boolean;
+  compact?: boolean;
 }) {
   return (
-    <div className="rounded-md border border-border/30 bg-background/50 px-2.5 py-2">
-      <p className="text-[10px] font-semibold uppercase tracking-wide opacity-55">
+    <div
+      className={`min-w-0 rounded-md border border-border/30 bg-background/50 ${
+        compact ? "px-1.5 py-1" : "px-2.5 py-2"
+      }`}
+    >
+      <p
+        className={`font-semibold uppercase tracking-wide opacity-55 ${
+          compact ? "text-[9px]" : "text-[10px]"
+        }`}
+      >
         {label}
       </p>
       <p
-        className={`mt-0.5 font-display text-base font-bold tabular-nums ${
-          emphasize ? "text-accent" : ""
-        }`}
+        className={`mt-0.5 font-display font-bold tabular-nums leading-tight ${
+          compact ? "text-sm" : "text-base"
+        } ${emphasize ? "text-accent" : ""}`}
       >
         {value}
       </p>
-      <p className="text-[11px] tabular-nums opacity-60">({delta})</p>
+      <p
+        className={`tabular-nums opacity-60 ${
+          compact ? "text-[10px]" : "text-[11px]"
+        }`}
+      >
+        ({delta})
+      </p>
     </div>
   );
 }
@@ -596,17 +612,19 @@ export function AdditionalSpecSimulation({
         </label>
       </div>
 
-      <div className="mb-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-        <div className="rounded-lg border border-border/40 bg-background/40 p-3">
-          <p className="mb-2 text-sm font-semibold">Boss 300</p>
-          <div className="grid grid-cols-3 gap-2">
+      <div className="mb-4 grid grid-cols-2 gap-2 lg:grid-cols-[minmax(0,8.5rem)_minmax(0,8.5rem)_minmax(0,1fr)]">
+        <div className="rounded-lg border border-border/40 bg-background/40 p-2">
+          <p className="mb-1.5 text-xs font-semibold">Boss 300</p>
+          <div className="flex flex-col gap-1">
             <SimMetric
+              compact
               label="FD %"
               value={formatFdPercent(applied ? metrics.fd300 : 0)}
               delta={applied ? formatSigned(metrics.fd300, 3) : "—"}
               emphasize={applied && metrics.fd300 > 0}
             />
             <SimMetric
+              compact
               label="ITEM STAT"
               value={
                 applied
@@ -616,6 +634,7 @@ export function AdditionalSpecSimulation({
               delta={applied ? formatSigned(Math.round(metrics.dItem300)) : "—"}
             />
             <SimMetric
+              compact
               label="HEXA STAT"
               value={
                 applied
@@ -627,16 +646,18 @@ export function AdditionalSpecSimulation({
             />
           </div>
         </div>
-        <div className="rounded-lg border border-border/40 bg-background/40 p-3">
-          <p className="mb-2 text-sm font-semibold">Boss 380</p>
-          <div className="grid grid-cols-3 gap-2">
+        <div className="rounded-lg border border-border/40 bg-background/40 p-2">
+          <p className="mb-1.5 text-xs font-semibold">Boss 380</p>
+          <div className="flex flex-col gap-1">
             <SimMetric
+              compact
               label="FD %"
               value={formatFdPercent(applied ? metrics.fd380 : 0)}
               delta={applied ? formatSigned(metrics.fd380, 3) : "—"}
               emphasize={applied && metrics.fd380 > 0}
             />
             <SimMetric
+              compact
               label="ITEM STAT"
               value={
                 applied
@@ -646,6 +667,7 @@ export function AdditionalSpecSimulation({
               delta={applied ? formatSigned(Math.round(metrics.dItem380)) : "—"}
             />
             <SimMetric
+              compact
               label="HEXA STAT"
               value={
                 applied
@@ -657,7 +679,7 @@ export function AdditionalSpecSimulation({
             />
           </div>
         </div>
-        <div className="rounded-lg border border-border/40 bg-background/40 p-3 sm:col-span-2 xl:col-span-1">
+        <div className="col-span-2 min-w-0 rounded-lg border border-border/40 bg-background/40 p-3 lg:col-span-1">
           <p className="mb-2 text-sm font-semibold">Combat Power</p>
           <div className="grid grid-cols-3 gap-2">
             <SimMetric
@@ -696,7 +718,7 @@ export function AdditionalSpecSimulation({
 
       <p className="mb-3 text-xs text-sky-700 dark:text-sky-300">
         ※ Turn on Show simulation and press Apply to update Boss Converted
-        Stat, Boss Clear, and the FD cards above.
+        Stat, Destiny & Champion, Boss Clear (Cut), and the FD cards above.
       </p>
 
       <div className="space-y-2">
