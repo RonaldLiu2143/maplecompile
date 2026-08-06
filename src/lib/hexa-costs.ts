@@ -342,6 +342,69 @@ export function cheapestNextUpgrade(nodes: HexaProgressNode[]): {
   return best;
 }
 
+/** One step (or consecutive run) on the cheapest-fragment upgrade path. */
+export type HexaUpgradePathStep = {
+  nodeId: string;
+  label: string;
+  skillType: HexaSkillType;
+  slotIndex: number | null;
+  fromLevel: number;
+  toLevel: number;
+};
+
+/**
+ * Simulate repeatedly picking the cheapest next level until all targets are
+ * met. Returns one entry per level gained (may be long — use
+ * {@link groupConsecutiveUpgradeRuns} for UI).
+ */
+export function buildCheapestUpgradePath(
+  nodes: HexaProgressNode[],
+): HexaUpgradePathStep[] {
+  const levels = new Map(nodes.map((n) => [n.id, n.current]));
+  const steps: HexaUpgradePathStep[] = [];
+  const maxSteps = nodes.reduce(
+    (sum, n) => sum + Math.max(0, n.target - n.current),
+    0,
+  );
+
+  for (let i = 0; i < maxSteps; i++) {
+    const simulated = nodes.map((n) => ({
+      ...n,
+      current: levels.get(n.id) ?? n.current,
+    }));
+    const next = cheapestNextUpgrade(simulated);
+    if (!next) break;
+    const from = levels.get(next.node.id) ?? next.node.current;
+    const to = from + 1;
+    levels.set(next.node.id, to);
+    steps.push({
+      nodeId: next.node.id,
+      label: next.node.label,
+      skillType: next.node.skillType,
+      slotIndex: next.node.slotIndex,
+      fromLevel: from,
+      toLevel: to,
+    });
+  }
+  return steps;
+}
+
+/** Collapse consecutive same-skill steps into one run (badge = stop level). */
+export function groupConsecutiveUpgradeRuns(
+  steps: HexaUpgradePathStep[],
+): HexaUpgradePathStep[] {
+  const runs: HexaUpgradePathStep[] = [];
+  for (const step of steps) {
+    const last = runs[runs.length - 1];
+    if (last && last.nodeId === step.nodeId) {
+      last.toLevel = step.toLevel;
+    } else {
+      runs.push({ ...step });
+    }
+  }
+  return runs;
+}
+
 /** GMS-trackable slot indices (excludes unreleased skill3 / class common). */
 export const GMS_HEXA_SLOT_INDICES = [
   0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 13,

@@ -22,6 +22,8 @@ import {
   WEEKLY_QUEST_FRAGMENTS,
   cheapestNextUpgrade,
   costBetween,
+  buildCheapestUpgradePath,
+  groupConsecutiveUpgradeRuns,
   dailyFragmentRate,
   estimateCompletion,
   summarizeHexaProgress,
@@ -287,6 +289,8 @@ export default function HexaTrackerPage() {
   const [manageOpen, setManageOpen] = useState(false);
   const [pairOpen, setPairOpen] = useState(false);
   const [nextStopLevel, setNextStopLevel] = useState<number | null>(null);
+  const [showUpgradePath, setShowUpgradePath] = useState(false);
+  const [infoOpen, setInfoOpen] = useState(false);
 
   const activeCharType =
     viewMode === "preview" ? previewCharType : charType;
@@ -491,6 +495,13 @@ export default function HexaTrackerPage() {
     nextUp?.node.slotIndex != null
       ? iconUrl(slotsHexa[nextUp.node.slotIndex]?.iconSuffix ?? null)
       : "";
+
+  const upgradePathRuns = useMemo(() => {
+    if (!progress) return [];
+    return groupConsecutiveUpgradeRuns(
+      buildCheapestUpgradePath(progress.nodes),
+    );
+  }, [progress]);
 
   useEffect(() => {
     if (!nextUp) {
@@ -859,75 +870,191 @@ export default function HexaTrackerPage() {
           </section>
 
           <section className="rounded-xl border border-border/45 bg-surface/90 p-4">
-            <h2 className="text-sm font-semibold">Next Upgrade</h2>
+            <div className="relative flex items-center justify-between gap-2 pr-8">
+              <h2 className="flex items-center gap-1.5 text-sm font-semibold">
+                <svg
+                  viewBox="0 0 24 24"
+                  className="h-4 w-4 text-accent"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.25"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden
+                >
+                  <path d="M12 19V5" />
+                  <path d="m5 12 7-7 7 7" />
+                </svg>
+                Next Upgrade Priority
+              </h2>
+              <button
+                type="button"
+                onClick={() => setInfoOpen((v) => !v)}
+                className="absolute right-0 top-0 flex h-5 w-5 items-center justify-center rounded-full border border-border/50 text-[10px] font-bold opacity-55 transition hover:opacity-100"
+                aria-label="About upgrade priority"
+                aria-expanded={infoOpen}
+              >
+                i
+              </button>
+            </div>
+            {infoOpen ? (
+              <p className="mt-2 rounded-lg bg-background/50 px-2.5 py-2 text-[11px] leading-relaxed opacity-70">
+                Priorities pick the cheapest next fragment cost among skills
+                still below their goal — not class FD order. Use{" "}
+                <span className="font-semibold">Stop at level</span> to raise a
+                skill several levels at once without listing every step.
+              </p>
+            ) : null}
             {nextUp && stopLevel != null && stopCost ? (
-              <div className="mt-2 space-y-3">
-                <div className="flex items-center gap-2.5">
-                  {nextUpIcon ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={nextUpIcon}
-                      alt=""
-                      width={36}
-                      height={36}
-                      className="shrink-0 rounded"
-                    />
-                  ) : (
-                    <div className="h-9 w-9 shrink-0 rounded bg-surface-muted" />
-                  )}
+              <div className="mt-3 space-y-3">
+                <div className="flex items-start gap-3">
+                  <div className="relative shrink-0">
+                    {nextUpIcon ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={nextUpIcon}
+                        alt=""
+                        width={36}
+                        height={36}
+                        className="h-9 w-9 rounded border border-border/50"
+                      />
+                    ) : (
+                      <div className="h-9 w-9 rounded border border-border/50 bg-surface-muted" />
+                    )}
+                    <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 text-[10px] font-bold leading-none text-white dark:text-zinc-900">
+                      {nextUp.node.current}
+                    </span>
+                  </div>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-base font-bold">
-                      {nextUp.node.label}
-                    </p>
-                    <p className="text-xs opacity-70">
-                      Level {nextUp.node.current} → {stopLevel}
-                    </p>
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold">
+                          {nextUp.node.label}
+                        </p>
+                        <p className="text-xs opacity-60">
+                          Level {nextUp.node.current} → {stopLevel}
+                        </p>
+                      </div>
+                      <label className="flex shrink-0 items-center gap-1.5 text-[10px] font-semibold opacity-70">
+                        Stop at
+                        <select
+                          value={stopLevel}
+                          onChange={(e) =>
+                            setNextStopLevel(
+                              Math.floor(Number(e.target.value) || 0),
+                            )
+                          }
+                          className={`${inputClass} h-7 py-0 text-xs`}
+                        >
+                          {Array.from(
+                            {
+                              length: nextUp.node.target - nextUp.node.current,
+                            },
+                            (_, i) => nextUp.node.current + 1 + i,
+                          ).map((lv) => (
+                            <option key={lv} value={lv}>
+                              {lv}
+                              {lv === nextUp.node.target ? " (goal)" : ""}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    </div>
+                    <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 text-xs">
+                      <ResourceCost
+                        kind="fragment"
+                        amount={stopCost.fragments}
+                        className="font-semibold text-accent"
+                      />
+                      {stopCost.solErda > 0 ? (
+                        <ResourceCost
+                          kind="erda"
+                          amount={stopCost.solErda}
+                          className="font-semibold"
+                        />
+                      ) : null}
+                    </div>
                   </div>
                 </div>
 
-                <label className="flex flex-col gap-1 text-xs font-semibold opacity-70">
-                  Stop at level
-                  <select
-                    value={stopLevel}
-                    onChange={(e) =>
-                      setNextStopLevel(Math.floor(Number(e.target.value) || 0))
-                    }
-                    className={inputClass}
-                  >
-                    {Array.from(
-                      {
-                        length: nextUp.node.target - nextUp.node.current,
-                      },
-                      (_, i) => nextUp.node.current + 1 + i,
-                    ).map((lv) => (
-                      <option key={lv} value={lv}>
-                        {lv}
-                        {lv === nextUp.node.target ? " (goal)" : ""}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                {upgradePathRuns.length > 1 ? (
+                  <div>
+                    <button
+                      type="button"
+                      onClick={() => setShowUpgradePath((v) => !v)}
+                      className="flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-sm font-medium transition hover:bg-background/40"
+                    >
+                      <span>
+                        Show all ({upgradePathRuns.length})
+                      </span>
+                      <svg
+                        viewBox="0 0 24 24"
+                        className={[
+                          "h-4 w-4 opacity-55 transition",
+                          showUpgradePath ? "rotate-180" : "",
+                        ].join(" ")}
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden
+                      >
+                        <path d="m6 9 6 6 6-6" />
+                      </svg>
+                    </button>
+                    {showUpgradePath ? (
+                      <div className="mt-1 flex flex-wrap items-center gap-1 rounded-lg bg-background/40 p-3">
+                        {upgradePathRuns.map((run, idx) => {
+                          const icon =
+                            run.slotIndex != null
+                              ? iconUrl(
+                                  slotsHexa[run.slotIndex]?.iconSuffix ?? null,
+                                )
+                              : "";
+                          return (
+                            <div
+                              key={`${run.nodeId}-${run.toLevel}-${idx}`}
+                              className="flex items-center gap-1"
+                            >
+                              <div
+                                className="group relative"
+                                title={`${run.label}: Lv.${run.fromLevel} → ${run.toLevel}`}
+                              >
+                                <div className="relative h-8 w-8">
+                                  {icon ? (
+                                    // eslint-disable-next-line @next/next/no-img-element
+                                    <img
+                                      src={icon}
+                                      alt=""
+                                      width={32}
+                                      height={32}
+                                      className="h-8 w-8 rounded border border-border/50"
+                                    />
+                                  ) : (
+                                    <div className="h-8 w-8 rounded border border-border/50 bg-surface-muted" />
+                                  )}
+                                  <span className="absolute -right-1 -top-1 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-accent px-0.5 text-[9px] font-bold leading-none text-white dark:text-zinc-900">
+                                    {run.toLevel}
+                                  </span>
+                                  {idx === 0 ? (
+                                    <span className="absolute -left-1 -top-1 h-2.5 w-2.5 rounded-full border border-background bg-accent" />
+                                  ) : null}
+                                </div>
+                              </div>
+                              {idx < upgradePathRuns.length - 1 ? (
+                                <span className="px-0.5 text-sm opacity-40">
+                                  →
+                                </span>
+                              ) : null}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
 
-                <div className="flex flex-wrap gap-3 text-sm">
-                  <ResourceCost
-                    kind="fragment"
-                    amount={stopCost.fragments}
-                    className="font-semibold text-accent"
-                  />
-                  {stopCost.solErda > 0 ? (
-                    <ResourceCost
-                      kind="erda"
-                      amount={stopCost.solErda}
-                      className="font-semibold"
-                    />
-                  ) : null}
-                </div>
-                <p className="text-[10px] opacity-55">
-                  Cheapest next skill by fragment cost — pick how far to raise
-                  it, then apply. (Not class FD priority — MapleHub’s
-                  stat-based order needs Scouter damage data we don’t mirror
-                  here.)
-                </p>
                 <button
                   type="button"
                   onClick={() => {
@@ -1051,7 +1178,7 @@ export default function HexaTrackerPage() {
         </div>
 
         {/* —— Skills —— */}
-        <div className="space-y-4">
+        <section className="rounded-xl border border-border/45 bg-surface/90 p-4">
           <div className="flex items-center justify-between gap-2">
             <h2 className="text-sm font-semibold">Skills Configuration</h2>
             <button
@@ -1074,67 +1201,69 @@ export default function HexaTrackerPage() {
             </button>
           </div>
 
-          {groups.map((group) => (
-            <div key={group.key} className="space-y-2">
-              <p className="text-[0.7rem] font-semibold uppercase tracking-wider opacity-55">
-                {group.label}
-              </p>
-              <div className="grid gap-2 sm:grid-cols-2">
-                {group.nodes.map((node) => {
-                  if (node.slotIndex == null) {
+          <div className="mt-3 space-y-4">
+            {groups.map((group) => (
+              <div key={group.key} className="space-y-2">
+                <p className="text-[0.7rem] font-semibold uppercase tracking-wider opacity-55">
+                  {group.label}
+                </p>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {group.nodes.map((node) => {
+                    if (node.slotIndex == null) {
+                      return (
+                        <SkillNodeCard
+                          key={node.id}
+                          icon=""
+                          label={node.label}
+                          current={node.current}
+                          target={node.target}
+                          maxLevel={HEXA_STAT_MAX_LEVEL}
+                          fragmentsNeeded={node.fragmentsNeeded}
+                          solErdaNeeded={node.solErdaNeeded}
+                          onCurrent={(n) =>
+                            persist({
+                              ...activeState,
+                              hexaStatLevel: n,
+                              hexaStatTarget: Math.max(
+                                activeState.hexaStatTarget,
+                                n,
+                              ),
+                            })
+                          }
+                          onTarget={(n) =>
+                            persist({
+                              ...activeState,
+                              hexaStatTarget: n,
+                              hexaStatLevel: Math.min(
+                                activeState.hexaStatLevel,
+                                n,
+                              ),
+                            })
+                          }
+                        />
+                      );
+                    }
+                    const slot = slotsHexa[node.slotIndex];
                     return (
                       <SkillNodeCard
                         key={node.id}
-                        icon=""
+                        icon={iconUrl(slot?.iconSuffix ?? null)}
                         label={node.label}
                         current={node.current}
                         target={node.target}
-                        maxLevel={HEXA_STAT_MAX_LEVEL}
+                        maxLevel={HEXA_MAX_LEVEL}
                         fragmentsNeeded={node.fragmentsNeeded}
                         solErdaNeeded={node.solErdaNeeded}
-                        onCurrent={(n) =>
-                          persist({
-                            ...activeState,
-                            hexaStatLevel: n,
-                            hexaStatTarget: Math.max(
-                              activeState.hexaStatTarget,
-                              n,
-                            ),
-                          })
-                        }
-                        onTarget={(n) =>
-                          persist({
-                            ...activeState,
-                            hexaStatTarget: n,
-                            hexaStatLevel: Math.min(
-                              activeState.hexaStatLevel,
-                              n,
-                            ),
-                          })
-                        }
+                        onCurrent={(n) => setLevel(node.slotIndex!, n)}
+                        onTarget={(n) => setTarget(node.slotIndex!, n)}
                       />
                     );
-                  }
-                  const slot = slotsHexa[node.slotIndex];
-                  return (
-                    <SkillNodeCard
-                      key={node.id}
-                      icon={iconUrl(slot?.iconSuffix ?? null)}
-                      label={node.label}
-                      current={node.current}
-                      target={node.target}
-                      maxLevel={HEXA_MAX_LEVEL}
-                      fragmentsNeeded={node.fragmentsNeeded}
-                      solErdaNeeded={node.solErdaNeeded}
-                      onCurrent={(n) => setLevel(node.slotIndex!, n)}
-                      onTarget={(n) => setTarget(node.slotIndex!, n)}
-                    />
-                  );
-                })}
+                  })}
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        </section>
       </div>
 
       <ManageDisplayModal
