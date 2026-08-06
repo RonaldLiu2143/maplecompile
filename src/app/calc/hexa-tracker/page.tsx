@@ -685,7 +685,7 @@ export default function HexaTrackerPage() {
         </p>
       )}
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.35fr)]">
         {/* —— Summary / rate —— */}
         <div className="space-y-3">
           <section className="rounded-xl border border-border/45 bg-surface/90 p-4">
