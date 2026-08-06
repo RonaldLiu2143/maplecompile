@@ -69,7 +69,7 @@ export const BACKDROP_PRESETS: readonly BackdropPreset[] = [
   {
     id: "none",
     name: "None",
-    preview: "linear-gradient(135deg, #18181b, #27272a)",
+    preview: "#18181b",
   },
   {
     id: "deep-night",
