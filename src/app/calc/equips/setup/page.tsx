@@ -610,11 +610,58 @@ export default function SetupClient() {
       </section>
 
       <section className="space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-sm font-bold uppercase tracking-wide opacity-70">
-            2) Your gear
-          </h2>
-          <div className="ml-auto inline-flex max-w-full flex-wrap items-center justify-end gap-1 rounded-md border border-border/50 bg-surface/50 px-1.5 py-1">
+        <h2 className="text-sm font-bold uppercase tracking-wide opacity-70">
+          2) Your gear
+        </h2>
+
+        <div className="flex flex-wrap items-center gap-1.5">
+          <select
+            value={starterId}
+            onChange={(e) => setStarterId(e.target.value)}
+            className="rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs font-semibold outline-none focus:border-accent"
+            aria-label="Starter loadout"
+            disabled={status !== "ready"}
+          >
+            <option value="">Tier preset…</option>
+            {STARTER_LOADOUTS.map((l) => (
+              <option key={l.id} value={l.id} title={l.description}>
+                {l.name}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            onClick={applyStarter}
+            disabled={status !== "ready" || !starterId}
+            className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
+            title={
+              STARTER_LOADOUTS.find((l) => l.id === starterId)?.description ??
+              "Apply a Heroic progression tier preset"
+            }
+          >
+            Apply tier
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setSetup({});
+              setFlameSetup({});
+              storage.clearSetup();
+              setPanel(null);
+              setStarterMsg(null);
+              setLoadedCustomPresetId("");
+              setCustomPresetId("");
+              setPresetNameTouched(false);
+              setCustomPresetName(classDisplayName);
+            }}
+            className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold hover:bg-surface-muted"
+          >
+            Clear setup
+          </button>
+        </div>
+
+        <div className="flex flex-wrap justify-end">
+          <div className="inline-flex max-w-full flex-wrap items-center justify-end gap-1 rounded-md border border-border/50 bg-surface/50 px-1.5 py-1">
             <span className="px-0.5 text-[9px] font-bold uppercase tracking-wide opacity-55">
               My presets
             </span>
@@ -688,52 +735,6 @@ export default function SetupClient() {
               Delete
             </button>
           </div>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-1.5">
-          <select
-            value={starterId}
-            onChange={(e) => setStarterId(e.target.value)}
-            className="rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs font-semibold outline-none focus:border-accent"
-            aria-label="Starter loadout"
-            disabled={status !== "ready"}
-          >
-            <option value="">Tier preset…</option>
-            {STARTER_LOADOUTS.map((l) => (
-              <option key={l.id} value={l.id} title={l.description}>
-                {l.name}
-              </option>
-            ))}
-          </select>
-          <button
-            type="button"
-            onClick={applyStarter}
-            disabled={status !== "ready" || !starterId}
-            className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
-            title={
-              STARTER_LOADOUTS.find((l) => l.id === starterId)?.description ??
-              "Apply a Heroic progression tier preset"
-            }
-          >
-            Apply tier
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setSetup({});
-              setFlameSetup({});
-              storage.clearSetup();
-              setPanel(null);
-              setStarterMsg(null);
-              setLoadedCustomPresetId("");
-              setCustomPresetId("");
-              setPresetNameTouched(false);
-              setCustomPresetName(classDisplayName);
-            }}
-            className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold hover:bg-surface-muted"
-          >
-            Clear setup
-          </button>
         </div>
 
         {starterMsg ? (
