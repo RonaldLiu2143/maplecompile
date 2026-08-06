@@ -174,19 +174,36 @@ export const BLUR_MAX = 24;
 /** Stable default for SSR / empty storage — useSyncExternalStore requires referential equality. */
 export const DEFAULT_THEME_PREFS: ThemePrefs = { id: DEFAULT_THEME_ID };
 
+/** Preset accent picks — sky, cyan, amber, rose, emerald, lavender/grape. */
 const ACCENT_SWATCHES = [
   "#38bdf8",
   "#22d3ee",
-  "#8e95b1",
-  "#34d399",
   "#f59e0b",
   "#fb7185",
-  "#a3e635",
-  "#0369a1",
-  "#e11d48",
+  "#34d399",
+  "#a78bfa",
 ] as const;
 
 export const THEME_ACCENT_SWATCHES: readonly string[] = ACCENT_SWATCHES;
+
+/**
+ * Normalize a user/custom accent to `#rrggbb` (lowercase), or null if invalid.
+ * Accepts `#rgb`, `#rrggbb`, and the same without a leading `#`.
+ */
+export function parseAccentHex(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  let t = value.trim();
+  if (!t || t.length > 16) return null;
+  if (t[0] !== "#") t = `#${t}`;
+  if (/^#[0-9a-fA-F]{6}$/.test(t)) return t.toLowerCase();
+  if (/^#[0-9a-fA-F]{3}$/.test(t)) {
+    const r = t[1]!;
+    const g = t[2]!;
+    const b = t[3]!;
+    return `#${r}${r}${g}${g}${b}${b}`.toLowerCase();
+  }
+  return null;
+}
 
 /** Cache so getSnapshot returns the same object when localStorage is unchanged. */
 let cachedStorageRaw: string | null | undefined;
@@ -307,10 +324,11 @@ function canonicalize(prefs: ThemePrefs): ThemePrefs {
     backdropUrl = null;
   }
   const font = prefs.font ?? DEFAULT_FONT_ID;
+  const accent = prefs.accent == null ? null : parseAccentHex(prefs.accent);
   const next: ThemePrefs = {
     id: prefs.id,
     font,
-    accent: prefs.accent ?? null,
+    accent,
     backdrop,
     backdropUrl,
     dim: clampDim(prefs.dim ?? DEFAULT_DIM),
@@ -329,10 +347,7 @@ export function normalizeThemePrefs(raw: unknown): ThemePrefs {
   const id = isThemeId(obj.id) ? obj.id : DEFAULT_THEME_ID;
   // Missing / legacy "default" / unknown font → Plex Sans.
   const font = isFontId(obj.font) ? obj.font : DEFAULT_FONT_ID;
-  const accent =
-    typeof obj.accent === "string" && /^#[0-9a-fA-F]{6}$/.test(obj.accent)
-      ? obj.accent
-      : null;
+  const accent = parseAccentHex(obj.accent);
   let backdrop: BackdropId = isBackdropId(obj.backdrop)
     ? obj.backdrop
     : DEFAULT_BACKDROP_ID;

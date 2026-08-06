@@ -23,6 +23,7 @@ import {
   applyThemeToDocument,
   getFontPreset,
   getThemePreset,
+  parseAccentHex,
   readThemePrefs,
   sanitizeBackdropUrl,
   subscribeThemePrefs,
@@ -122,6 +123,8 @@ export function ThemePicker({
   const [open, setOpen] = useState(false);
   const [customDraft, setCustomDraft] = useState("");
   const [urlError, setUrlError] = useState<string | null>(null);
+  const [accentDraft, setAccentDraft] = useState("");
+  const [accentError, setAccentError] = useState<string | null>(null);
   const panelId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
 
@@ -134,6 +137,9 @@ export function ThemePicker({
     if (!open) return;
     setCustomDraft(prefs.backdropUrl ?? "");
     setUrlError(null);
+    const presetAccent = getThemePreset(prefs.id).defaultAccent;
+    setAccentDraft(prefs.accent ?? presetAccent);
+    setAccentError(null);
     const onPointer = (e: MouseEvent) => {
       if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
     };
@@ -146,7 +152,7 @@ export function ThemePicker({
       document.removeEventListener("mousedown", onPointer);
       document.removeEventListener("keydown", onKey);
     };
-  }, [open, prefs.backdropUrl]);
+  }, [open, prefs.backdropUrl, prefs.accent, prefs.id]);
 
   const commit = (next: ThemePrefs) => {
     writeThemePrefs(next);
@@ -162,7 +168,23 @@ export function ThemePicker({
   };
 
   const setAccent = (accent: string | null) => {
-    commit({ ...prefs, accent });
+    const next = accent == null ? null : parseAccentHex(accent);
+    if (accent != null && !next) return;
+    setAccentError(null);
+    if (next) setAccentDraft(next);
+    else setAccentDraft(getThemePreset(prefs.id).defaultAccent);
+    commit({ ...prefs, accent: next });
+  };
+
+  const applyCustomAccent = (raw?: string) => {
+    const parsed = parseAccentHex(raw ?? accentDraft);
+    if (!parsed) {
+      setAccentError("Use a hex color like #38bdf8.");
+      return;
+    }
+    setAccentError(null);
+    setAccentDraft(parsed);
+    commit({ ...prefs, accent: parsed });
   };
 
   const setBackdrop = (backdrop: BackdropId) => {
@@ -347,11 +369,81 @@ export function ThemePicker({
             <button
               type="button"
               onClick={() => setAccent(null)}
+              title="Reset to theme default"
               className="rounded-md border border-border/50 px-2 py-1 text-[11px] font-semibold text-muted hover:bg-surface-muted hover:text-foreground"
             >
               Reset
             </button>
           </div>
+          <div className="mt-2 flex items-center gap-1.5">
+            <label
+              className={[
+                "relative flex size-6 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-md border-2 transition",
+                prefs.accent != null &&
+                !THEME_ACCENT_SWATCHES.some(
+                  (h) => h.toLowerCase() === activeAccent.toLowerCase(),
+                )
+                  ? "border-foreground scale-110"
+                  : "border-border/40 hover:border-border",
+              ].join(" ")}
+              style={{ backgroundColor: activeAccent }}
+              title="Custom accent"
+            >
+              <span className="sr-only">Custom accent color</span>
+              <input
+                type="color"
+                value={parseAccentHex(activeAccent) ?? preset.defaultAccent}
+                aria-label="Pick custom accent"
+                onChange={(e) => applyCustomAccent(e.target.value)}
+                className="absolute inset-0 cursor-pointer opacity-0"
+              />
+            </label>
+            <input
+              type="text"
+              inputMode="text"
+              autoComplete="off"
+              spellCheck={false}
+              aria-label="Custom accent hex"
+              placeholder="#38bdf8"
+              value={accentDraft}
+              onChange={(e) => {
+                setAccentDraft(e.target.value);
+                if (accentError) setAccentError(null);
+              }}
+              onBlur={() => {
+                if (!accentDraft.trim()) return;
+                const parsed = parseAccentHex(accentDraft);
+                if (parsed && parsed !== (prefs.accent ?? "").toLowerCase()) {
+                  applyCustomAccent(parsed);
+                } else if (accentDraft.trim() && !parsed) {
+                  setAccentError("Use a hex color like #38bdf8.");
+                }
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  applyCustomAccent();
+                }
+              }}
+              className="min-w-0 flex-1 rounded-md border border-border/50 bg-background px-2 py-1 text-xs font-mono outline-none focus:border-accent"
+            />
+            <button
+              type="button"
+              onClick={() => applyCustomAccent()}
+              className="shrink-0 rounded-md border border-border/50 px-2 py-1 text-[11px] font-semibold hover:bg-accent-soft hover:text-accent"
+            >
+              Apply
+            </button>
+          </div>
+          {accentError ? (
+            <p className="mt-1 text-[10px] text-danger">{accentError}</p>
+          ) : prefs.accent == null ? (
+            <p className="mt-1 text-[10px] text-muted-soft">
+              Theme default ({preset.defaultAccent})
+            </p>
+          ) : (
+            <p className="mt-1 text-[10px] text-muted">Custom accent applied</p>
+          )}
         </div>
 
         <div className="border-t border-border/40 pt-3">
