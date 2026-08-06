@@ -79,7 +79,7 @@ function NumInput({
   value,
   onChange,
   className = "",
-  placeholder,
+  placeholder = "0",
   readOnly,
   fieldId,
 }: {
@@ -91,19 +91,31 @@ function NumInput({
   /** Focus target for missing-field modal (`data-scouter-field`). */
   fieldId?: string;
 }) {
+  const n = Number.isFinite(value) ? value : 0;
+  // Empty + muted placeholder when 0 so typing replaces zero (no leading 0).
+  const display = n === 0 ? "" : n;
   return (
     <input
       type="number"
       readOnly={readOnly}
       placeholder={placeholder}
       data-scouter-field={fieldId}
-      className={`${cell} w-full min-w-0 text-right tabular-nums ${
+      className={`${cell} w-full min-w-0 text-right tabular-nums placeholder:text-foreground/30 ${
         readOnly ? "bg-surface-muted/40 text-foreground/70" : ""
       } ${className}`}
-      value={Number.isFinite(value) ? value : 0}
+      value={display}
       onChange={
         !readOnly && onChange
-          ? (e) => onChange(Number(e.target.value) || 0)
+          ? (e) => {
+              const raw = e.target.value.trim();
+              if (raw === "") {
+                onChange(0);
+                return;
+              }
+              const next = Number(raw);
+              if (!Number.isFinite(next)) return;
+              onChange(next);
+            }
           : undefined
       }
     />
