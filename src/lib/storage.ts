@@ -99,6 +99,15 @@ function writeEquipPresets(list: EquipSetupPreset[]) {
   writeJson(EQUIP_PRESETS_KEY, list);
 }
 
+function removeStorageKey(key: string) {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.removeItem(key);
+  } catch {
+    /* ignore */
+  }
+}
+
 function migrateLegacySinglePreset(): ScouterPreset[] {
   for (const key of [
     SCOUTER_PRESET_KEY_LEGACY_SINGLE,
@@ -116,6 +125,8 @@ function migrateLegacySinglePreset(): ScouterPreset[] {
       hexa: legacy.hexa,
     };
     writeJson(SCOUTER_PRESETS_KEY, [preset]);
+    removeStorageKey(SCOUTER_PRESET_KEY_LEGACY_SINGLE);
+    removeStorageKey(SCOUTER_PRESET_KEY_LEGACY_HUB);
     return [preset];
   }
   return [];
@@ -133,10 +144,15 @@ function writePresets(list: ScouterPreset[]) {
 
 function readJsonMigrating<T>(key: string, legacyKey: string, fallback: T): T {
   const next = readJson<T | null>(key, null);
-  if (next != null) return next;
+  if (next != null) {
+    // New key already present — drop leftover legacy copy if any.
+    removeStorageKey(legacyKey);
+    return next;
+  }
   const legacy = readJson<T | null>(legacyKey, null);
   if (legacy != null) {
     writeJson(key, legacy);
+    removeStorageKey(legacyKey);
     return legacy;
   }
   return fallback;

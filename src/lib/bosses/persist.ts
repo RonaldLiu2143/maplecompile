@@ -136,6 +136,11 @@ export function readBossIncomeStore(): BossIncomeStore {
       const legacy = readLegacyV1();
       if (legacy) {
         writeBossIncomeStore(legacy);
+        try {
+          localStorage.removeItem(LEGACY_STORAGE_KEY);
+        } catch {
+          /* ignore */
+        }
         return legacy;
       }
       return emptyStore();
@@ -169,10 +174,38 @@ export function readBossIncomeStore(): BossIncomeStore {
   }
 }
 
+function compactSelectionsForStorage(
+  selections: BossClearSelection[],
+): BossClearSelection[] {
+  const defaults = defaultSelections();
+  const byId = new Map(defaults.map((d) => [d.bossId, d]));
+  return selections.filter((s) => {
+    const d = byId.get(s.bossId);
+    if (!d) return true;
+    if (s.enabled || s.cleared) return true;
+    if (s.difficulty !== d.difficulty) return true;
+    if (s.partySize !== d.partySize) return true;
+    return false;
+  });
+}
+
 export function writeBossIncomeStore(store: BossIncomeStore): void {
   if (typeof window === "undefined") return;
   try {
-    localStorage.setItem(BOSS_INCOME_STORAGE_KEY, JSON.stringify(store));
+    const compacted: BossIncomeStore = {
+      ...store,
+      byCharacter: Object.fromEntries(
+        Object.entries(store.byCharacter).map(([key, state]) => [
+          key,
+          {
+            selections: compactSelectionsForStorage(
+              normalizeSelections(state.selections),
+            ),
+          },
+        ]),
+      ),
+    };
+    localStorage.setItem(BOSS_INCOME_STORAGE_KEY, JSON.stringify(compacted));
   } catch {
     /* ignore quota / private mode */
   }

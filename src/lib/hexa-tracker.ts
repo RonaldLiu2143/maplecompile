@@ -31,7 +31,7 @@ export const HEXA_TRACKER_BY_CHAR_KEY = "maplecompile-hexa-tracker-by-char-v1";
 export const HEXA_SCOUTER_PAIR_KEY = "maplecompile-hexa-scouter-pair";
 export const HEXA_SCOUTER_PAIR_BY_CHAR_KEY =
   "maplecompile-hexa-scouter-pair-by-char-v1";
-const HEXA_MIGRATED_KEY = "maplecompile-hexa-tracker-migrated-v1";
+export const HEXA_MIGRATED_KEY = "maplecompile-hexa-tracker-migrated-v1";
 
 export type HexaTrackerState = {
   /** Per-slot skill levels (length HEXA_SLOT_COUNT). */
@@ -238,10 +238,11 @@ export function migrateLegacyHexaTracker(): void {
   const primaryKey = primaryRosterKey();
   const targetKey =
     (legacy && typeof legacy.rosterKey === "string" && legacy.rosterKey) ||
-    primaryKey;
+    primaryKey ||
+    (legacy ? "__local__" : null);
 
   if (legacy && targetKey && !map[targetKey]) {
-    map[targetKey] = normalizeTracker(legacy, targetKey);
+    map[targetKey] = normalizeTracker(legacy, targetKey === "__local__" ? null : targetKey);
     writeByCharacter(map);
   }
 
@@ -253,10 +254,20 @@ export function migrateLegacyHexaTracker(): void {
   const pairKey =
     (legacyPair && typeof legacyPair.rosterKey === "string"
       ? legacyPair.rosterKey
-      : null) || primaryKey;
+      : null) ||
+    primaryKey ||
+    (legacyPair?.scouter ? "__local__" : null);
   if (legacyPair?.scouter && pairKey && !pairMap[pairKey]) {
     pairMap[pairKey] = legacyPair;
     writePairByCharacter(pairMap);
+  }
+
+  // Legacy single-blob keys are superseded by the per-character maps.
+  try {
+    localStorage.removeItem(HEXA_TRACKER_KEY);
+    localStorage.removeItem(HEXA_SCOUTER_PAIR_KEY);
+  } catch {
+    /* ignore */
   }
 
   try {
@@ -318,8 +329,7 @@ export function saveHexaTracker(
   const map = readByCharacter();
   map[key] = next;
   writeByCharacter(map);
-  // Mirror legacy blob for active character (compat listeners).
-  writeJson(HEXA_TRACKER_KEY, next);
+  // Same-tab listeners use maple events; cross-tab listens on by-char key.
   notifyMapleDataChanged("other");
   return next;
 }
@@ -354,7 +364,6 @@ export function setHexaScouterPairing(
   const map = readPairByCharacter();
   map[key] = next;
   writePairByCharacter(map);
-  writeJson(HEXA_SCOUTER_PAIR_KEY, next);
   notifyMapleDataChanged("pairing");
 }
 

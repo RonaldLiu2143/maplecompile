@@ -225,6 +225,11 @@ export function readLiberationStore(): LiberationStore {
         const migrated = migrateV1(legacy);
         if (migrated) {
           writeLiberationStore(migrated);
+          try {
+            localStorage.removeItem("maplecompile.liberation.v1");
+          } catch {
+            /* ignore */
+          }
           return migrated;
         }
       }
@@ -256,9 +261,53 @@ export function readLiberationStore(): LiberationStore {
   }
 }
 
+/** Persist only boss rows that differ from type defaults (read path re-expands). */
+function compactTraceSelections(
+  type: LiberationType,
+  selections: TraceSelection[],
+): TraceSelection[] {
+  const defaults = defaultTraceSelections(type);
+  const byName = new Map(defaults.map((d) => [d.bossName, d]));
+  return selections.filter((s) => {
+    const d = byName.get(s.bossName);
+    if (!d) return true;
+    if (s.cleared) return true;
+    if (s.difficulty !== d.difficulty) return true;
+    if (s.partySize !== d.partySize) return true;
+    return false;
+  });
+}
+
+function compactInputsForStorage(
+  inputs: LiberationCharacterInputs,
+): LiberationCharacterInputs {
+  return {
+    ...inputs,
+    bossSelections: compactTraceSelections(
+      inputs.liberationType,
+      inputs.bossSelections,
+    ),
+  };
+}
+
+function compactStoreForStorage(store: LiberationStore): LiberationStore {
+  const characterData: Record<string, CharacterLiberationBundle> = {};
+  for (const [id, bundle] of Object.entries(store.characterData)) {
+    characterData[id] = {
+      currentTab: bundle.currentTab,
+      genesis: compactInputsForStorage(bundle.genesis),
+      destiny: compactInputsForStorage(bundle.destiny),
+    };
+  }
+  return { ...store, characterData };
+}
+
 export function writeLiberationStore(store: LiberationStore): void {
   try {
-    localStorage.setItem(LIBERATION_STORAGE_KEY, JSON.stringify(store));
+    localStorage.setItem(
+      LIBERATION_STORAGE_KEY,
+      JSON.stringify(compactStoreForStorage(store)),
+    );
   } catch {
     /* ignore quota */
   }

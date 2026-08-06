@@ -12,6 +12,7 @@ import {
 import { ThemePicker } from "@/components/ThemePicker";
 import { WeeklyResetBar } from "@/components/WeeklyResetBar";
 import { useApplyThemeToDocument } from "@/hooks/useApplyThemeToDocument";
+import { runStorageCleanupOnce } from "@/lib/storage-cleanup";
 
 const STORAGE_KEY = "maplecompile-sidebar-open";
 
@@ -219,6 +220,12 @@ export function SiteShell({ children }: { children: ReactNode }) {
     const mq = window.matchMedia("(max-width: 767px)");
     const onChange = () => syncViewport();
     mq.addEventListener("change", onChange);
+
+    try {
+      runStorageCleanupOnce();
+    } catch {
+      /* ignore */
+    }
 
     try {
       const stored = localStorage.getItem(STORAGE_KEY);

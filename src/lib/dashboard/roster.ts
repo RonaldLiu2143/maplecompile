@@ -82,22 +82,13 @@ function resolvePrimary(
   return { name: entries[0].name, region: entries[0].region };
 }
 
-function syncLegacyPin(primary: RosterPrimary | null, addedAt: number): void {
+function syncLegacyPin(_primary: RosterPrimary | null, _addedAt: number): void {
+  // Pin key was only for one-shot roster migration; drop leftovers so we do not
+  // keep a second copy of primary next to maplecompile-roster.
   try {
-    if (!primary) {
-      localStorage.removeItem(PINNED_CHARACTER_KEY);
-      return;
-    }
-    localStorage.setItem(
-      PINNED_CHARACTER_KEY,
-      JSON.stringify({
-        name: primary.name,
-        region: primary.region,
-        pinnedAt: addedAt,
-      } satisfies PinnedCharacter),
-    );
+    localStorage.removeItem(PINNED_CHARACTER_KEY);
   } catch {
-    /* ignore legacy sync failures */
+    /* ignore */
   }
 }
 
