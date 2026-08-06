@@ -38,22 +38,22 @@
 
 /*
   Night Grape — #000505 Black · #3B3355 Space Indigo · #443E60/#4C486B Vintage Grape ·
-  #555376/#5D5D81 Dusty Grape · #767999/#8E95B1 Lavender Gray
+  #555376/#5D5D81 Dusty Grape · #767999/#8E95B1 Lavender Grey ·
+  #E8EAF2 light lavender body text.
 */
 [data-theme="night-grape"] {
   --background: #000505;
-  /* Light lavender-tinted body text for contrast on near-black */
-  --foreground: #d8dce8;
+  --foreground: #e8eaf2;
   --muted: #8e95b1;
   --muted-soft: #767999;
-  --surface: #443e60;
-  --surface-muted: #555376;
+  --surface: #3b3355;
+  --surface-muted: #4c486b;
   --border: #5d5d81;
   --accent: #8e95b1;
-  --accent-soft: #3b3355;
+  --accent-soft: #2a2540;
   --danger: #fb7185;
   --glow-a: #3b335566;
-  --glow-b: #4c486b88;
+  --glow-b: #443e6088;
 }
 
 :root {

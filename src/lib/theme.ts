@@ -39,9 +39,9 @@ export const THEME_PRESETS: readonly ThemePreset[] = [
     id: "night-grape",
     name: "Night Grape",
     description:
-      "Near-black indigo canvas with dusty grape surfaces and lavender accents.",
+      "Near-black indigo canvas, dusty grape surfaces, lavender grey accent.",
     scheme: "dark",
-    defaultAccent: "#8E95B1",
+    defaultAccent: "#8e95b1",
   },
 ] as const;
 
@@ -177,7 +177,7 @@ export const DEFAULT_THEME_PREFS: ThemePrefs = { id: DEFAULT_THEME_ID };
 const ACCENT_SWATCHES = [
   "#38bdf8",
   "#22d3ee",
-  "#8E95B1",
+  "#8e95b1",
   "#34d399",
   "#f59e0b",
   "#fb7185",
