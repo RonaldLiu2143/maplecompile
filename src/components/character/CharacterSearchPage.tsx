@@ -4,12 +4,17 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { CharacterProfile } from "@/components/character/CharacterProfile";
+import {
+  LevelExpBar,
+  LevelProgressGraph,
+} from "@/components/character/ExpRangeGraph";
 import { useSavedCharacters } from "@/hooks/useSavedCharacters";
 import {
   CHARACTER_LOOKUP_NETWORK_ERROR,
   characterProfileHref,
   fetchCharacterLookup,
 } from "@/lib/character/client";
+import { expPercent } from "@/lib/character/exp";
 import {
   CHARACTER_NAME_REGEX,
   normalizeRegion,
@@ -30,6 +35,7 @@ function toSavedFields(result: CharacterLookupResult): SavedCharacterInput {
     name: result.name,
     region: result.region,
     level: result.level,
+    exp: result.exp,
     jobName: result.jobName,
     worldName: result.worldName,
     characterImgURL: result.characterImgURL,
@@ -54,66 +60,108 @@ function StarIcon({ filled }: { filled?: boolean }) {
   );
 }
 
+/** MapleRanks-style Saved card: avatar, name, job/world, Lv + %, EXP bar. */
 function SavedRow({
   entry,
   active,
+  activeGraph,
   onSelect,
   onRemove,
 }: {
   entry: SavedCharacter;
   active?: boolean;
+  /** When this card is the open profile, show compact Level Progress. */
+  activeGraph?: CharacterLookupResult["graph"];
   onSelect: () => void;
   onRemove: () => void;
 }) {
+  const pct =
+    entry.level != null && entry.exp != null
+      ? expPercent(entry.level, entry.exp)
+      : null;
+  const jobWorld = [entry.jobName, entry.worldName ? `in ${entry.worldName}` : null]
+    .filter(Boolean)
+    .join(" ");
+
   return (
     <li
       className={[
-        "group flex items-center gap-2.5 rounded-xl border p-2.5 transition",
+        "overflow-hidden rounded-xl border transition",
         active
-          ? "border-accent/50 bg-accent-soft/40"
+          ? "border-accent/55 bg-accent-soft/35"
           : "border-border/50 bg-surface/80 hover:border-border hover:bg-surface",
       ].join(" ")}
     >
-      <button
-        type="button"
-        onClick={onSelect}
-        className="flex min-w-0 flex-1 items-center gap-2.5 text-left"
-      >
-        {entry.characterImgURL ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={entry.characterImgURL}
-            alt=""
-            width={44}
-            height={44}
-            className="h-11 w-11 shrink-0 object-contain"
-          />
-        ) : (
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-surface-muted text-[0.6rem] opacity-50">
-            —
+      <div className="flex items-start gap-2.5 p-2.5">
+        <button
+          type="button"
+          onClick={onSelect}
+          className="flex min-w-0 flex-1 items-start gap-2.5 text-left"
+        >
+          {entry.characterImgURL ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={entry.characterImgURL}
+              alt=""
+              width={52}
+              height={52}
+              className="h-[52px] w-[52px] shrink-0 object-contain"
+            />
+          ) : (
+            <div className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-lg bg-surface-muted text-[0.6rem] opacity-50">
+              —
+            </div>
+          )}
+          <div className="min-w-0 flex-1">
+            <p className="truncate font-display text-sm font-bold tracking-tight">
+              {entry.name}
+            </p>
+            {jobWorld ? (
+              <p className="mt-0.5 truncate text-[0.7rem] text-foreground/55">
+                {jobWorld}
+                <span className="opacity-60">
+                  {` · ${entry.region.toUpperCase()}`}
+                </span>
+              </p>
+            ) : (
+              <p className="mt-0.5 truncate text-[0.7rem] text-foreground/55">
+                {entry.region.toUpperCase()}
+              </p>
+            )}
+            <p className="mt-1 font-display text-[0.8rem] font-semibold tabular-nums">
+              {entry.level != null ? (
+                <>
+                  Lv. {entry.level}
+                  {pct != null ? (
+                    <span className="ml-1 text-[0.7rem] font-medium text-foreground/55">
+                      ({pct.toFixed(2)}%)
+                    </span>
+                  ) : null}
+                </>
+              ) : (
+                <span className="text-[0.7rem] font-medium text-foreground/50">
+                  Saved
+                </span>
+              )}
+            </p>
+            <LevelExpBar level={entry.level} exp={entry.exp} dense />
           </div>
-        )}
-        <div className="min-w-0 flex-1">
-          <p className="truncate font-display text-sm font-bold tracking-tight">
-            {entry.name}
-          </p>
-          <p className="truncate text-[0.7rem] text-foreground/55">
-            {entry.level != null ? `Lv. ${entry.level}` : "Saved"}
-            {entry.jobName ? ` · ${entry.jobName}` : ""}
-            {entry.worldName ? ` · ${entry.worldName}` : ""}
-            {` · ${entry.region.toUpperCase()}`}
-          </p>
+        </button>
+        <button
+          type="button"
+          onClick={onRemove}
+          title="Remove from Saved"
+          aria-label={`Unsave ${entry.name}`}
+          className="rounded-lg p-1.5 text-accent opacity-70 transition hover:bg-accent-soft hover:opacity-100"
+        >
+          <StarIcon filled />
+        </button>
+      </div>
+      {active && activeGraph?.levels?.length ? (
+        <div className="border-t border-border/40 px-2.5 pb-2.5">
+          <LevelProgressGraph graph={activeGraph} compact />
         </div>
-      </button>
-      <button
-        type="button"
-        onClick={onRemove}
-        title="Remove from Saved"
-        aria-label={`Unsave ${entry.name}`}
-        className="rounded-lg p-1.5 text-accent opacity-70 transition hover:bg-accent-soft hover:opacity-100"
-      >
-        <StarIcon filled />
-      </button>
+      ) : null}
     </li>
   );
 }
@@ -232,7 +280,7 @@ export function CharacterSearchPage() {
         </p>
       </header>
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(16rem,20rem)] lg:items-start">
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(17rem,22rem)] lg:items-start">
         <section className="space-y-3">
           <form
             onSubmit={(e) => void onSubmit(e)}
@@ -327,10 +375,10 @@ export function CharacterSearchPage() {
           ) : null}
         </section>
 
-        <aside className="rounded-2xl border border-border/55 bg-surface/90 p-4 lg:sticky lg:top-4">
+        <aside className="self-start rounded-2xl border border-border/55 bg-surface/90 p-4 lg:sticky lg:top-14 lg:max-h-[calc(100dvh-5rem)] lg:overflow-y-auto">
           <div className="flex items-center justify-between gap-2">
             <h2 className="font-display text-[0.7rem] font-bold uppercase tracking-[0.14em] text-accent">
-              Saved
+              Saved Characters
             </h2>
             {hydrated && saved.length > 0 ? (
               <span className="font-mono text-[0.65rem] tabular-nums text-foreground/50">
@@ -346,21 +394,38 @@ export function CharacterSearchPage() {
             <p className="mt-4 text-sm opacity-60">Loading…</p>
           ) : saved.length === 0 ? (
             <p className="mt-4 rounded-xl border border-dashed border-border/50 bg-surface-muted/30 px-3 py-6 text-center text-sm text-foreground/55">
-              No saved characters yet. Search a character and tap Save.
+              Add characters to your saved list to get started!
             </p>
           ) : (
             <ul className="mt-3 flex flex-col gap-2">
-              {saved.map((entry) => (
-                <SavedRow
-                  key={entryKey(entry)}
-                  entry={entry}
-                  active={activeKey === entryKey(entry)}
-                  onSelect={() => {
-                    void loadCharacter(entry.name, entry.region);
-                  }}
-                  onRemove={() => unsave(entry)}
-                />
-              ))}
+              {saved.map((entry) => {
+                const key = entryKey(entry);
+                const isActive = activeKey === key;
+                return (
+                  <SavedRow
+                    key={key}
+                    entry={
+                      isActive && result
+                        ? {
+                            ...entry,
+                            level: result.level,
+                            exp: result.exp,
+                            jobName: result.jobName,
+                            worldName: result.worldName ?? entry.worldName,
+                            characterImgURL:
+                              result.characterImgURL ?? entry.characterImgURL,
+                          }
+                        : entry
+                    }
+                    active={isActive}
+                    activeGraph={isActive ? result?.graph : undefined}
+                    onSelect={() => {
+                      void loadCharacter(entry.name, entry.region);
+                    }}
+                    onRemove={() => unsave(entry)}
+                  />
+                );
+              })}
             </ul>
           )}
         </aside>

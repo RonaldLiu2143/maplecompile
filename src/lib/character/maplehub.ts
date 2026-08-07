@@ -149,7 +149,7 @@ function parseGraph(
   const levels = Array.isArray(graph.levelData) ? graph.levelData : [];
   const cumulativeExp = Array.isArray(graph.expValues) ? graph.expValues : [];
   const labels = Array.isArray(graph.labels) ? graph.labels : [];
-  if (!dailyExp.length && !cumulativeExp.length) return null;
+  if (!dailyExp.length && !cumulativeExp.length && !levels.length) return null;
   return { dailyExp, levels, cumulativeExp, labels };
 }
 

@@ -3,7 +3,10 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { ExpRangeGraph } from "@/components/character/ExpRangeGraph";
+import {
+  ExpRangeGraph,
+  LevelProgressGraph,
+} from "@/components/character/ExpRangeGraph";
 import type { LiberationTagFlags } from "@/lib/dashboard/roster-status";
 import { LiberationStatusTags } from "@/components/dashboard/LiberationStatusTags";
 import { characterProfileHref } from "@/lib/character/client";
@@ -449,6 +452,7 @@ function CompactCharacterProfile({
             averages={character.expAverages}
             compact
           />
+          <LevelProgressGraph graph={character.graph} compact />
         </div>
       </div>
     </article>
@@ -502,8 +506,11 @@ function FullCharacterProfile({
     .map((d) => character.level + d)
     .filter((lv) => lv <= 300 && lv > character.level);
 
+  const hasLevelProgress = Boolean(character.graph?.levels?.length);
   const hasExpSection =
-    Boolean(character.expAverages) || Boolean(dailyExp.length);
+    Boolean(character.expAverages) ||
+    Boolean(dailyExp.length) ||
+    hasLevelProgress;
 
   const overall = ranking?.globalRank ?? character.overallRank;
   const jobGlobal = ranking?.jobGlobalRank ?? character.classRank;
@@ -679,7 +686,7 @@ function FullCharacterProfile({
         </div>
 
         <div className="flex min-w-0 flex-col gap-4">
-          {hasExpSection ? (
+          {dailyExp.length || character.expAverages ? (
             <section className="rounded-2xl border border-border/60 bg-surface/90 p-4 sm:p-5">
               <div className="flex flex-wrap items-end justify-between gap-2">
                 <h3 className="font-display text-sm font-bold uppercase tracking-[0.14em] text-accent">
@@ -715,12 +722,28 @@ function FullCharacterProfile({
                 />
               ) : null}
             </section>
-          ) : (
+          ) : null}
+
+          {hasLevelProgress ? (
+            <section className="rounded-2xl border border-border/60 bg-surface/90 p-4 sm:p-5">
+              <div className="flex flex-wrap items-end justify-between gap-2">
+                <h3 className="font-display text-sm font-bold uppercase tracking-[0.14em] text-accent">
+                  Level Progress
+                </h3>
+                <p className="text-[0.7rem] text-foreground/50">
+                  Tracked history (MapleHub)
+                </p>
+              </div>
+              <LevelProgressGraph graph={character.graph} />
+            </section>
+          ) : null}
+
+          {!hasExpSection ? (
             <section className="rounded-2xl border border-dashed border-border/50 bg-surface/60 px-4 py-10 text-center text-sm text-foreground/55">
               No tracked daily EXP yet (available for characters MapleHub
               watches at Lv. 215+).
             </section>
-          )}
+          ) : null}
 
           <section className="rounded-xl border border-dashed border-border/45 bg-surface/40 p-4">
             <h3 className="font-display text-[0.7rem] font-bold uppercase tracking-[0.14em] text-foreground/55">

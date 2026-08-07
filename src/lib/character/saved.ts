@@ -18,6 +18,8 @@ export type SavedCharacter = {
   savedAt: number;
   /** Optional snapshot for list cards (updated when viewing profile). */
   level?: number;
+  /** Current EXP within the level — drives Saved card progress bar. */
+  exp?: number;
   jobName?: string;
   worldName?: string;
   characterImgURL?: string | null;
@@ -45,6 +47,9 @@ function normalizeSaved(
   const entry: SavedCharacter = { name, region, savedAt };
   if (typeof raw.level === "number" && Number.isFinite(raw.level)) {
     entry.level = raw.level;
+  }
+  if (typeof raw.exp === "number" && Number.isFinite(raw.exp) && raw.exp >= 0) {
+    entry.exp = raw.exp;
   }
   if (typeof raw.jobName === "string" && raw.jobName.trim()) {
     entry.jobName = raw.jobName.trim();
@@ -118,6 +123,7 @@ export function addSavedCharacter(
     region: entry.region,
     savedAt: entry.savedAt ?? Date.now(),
     level: entry.level,
+    exp: entry.exp,
     jobName: entry.jobName,
     worldName: entry.worldName,
     characterImgURL: entry.characterImgURL,
@@ -168,6 +174,7 @@ export function updateSavedCharacterSnapshot(
       ...e,
       name: snapshot.name.trim() || e.name,
       level: snapshot.level ?? e.level,
+      exp: snapshot.exp ?? e.exp,
       jobName: snapshot.jobName ?? e.jobName,
       worldName: snapshot.worldName ?? e.worldName,
       characterImgURL:
