@@ -18,10 +18,11 @@ import { entryKey } from "@/lib/dashboard/roster";
 import { readLiberationFlags } from "@/lib/dashboard/roster-status";
 import { useMapleDataReload } from "@/hooks/useMapleDataReload";
 
-function Chip({ children }: { children: ReactNode }) {
+function RankChip({ label, value }: { label: string; value: string }) {
   return (
-    <span className="inline-flex items-center rounded-md border border-border/70 bg-surface-muted/50 px-2 py-0.5 text-[0.7rem] font-semibold tabular-nums">
-      {children}
+    <span className="flex min-w-0 items-center justify-between gap-2 rounded-md border border-border/70 bg-surface-muted/50 px-2 py-1 text-[0.65rem] font-semibold leading-tight">
+      <span className="min-w-0 truncate text-foreground/70">{label}</span>
+      <span className="shrink-0 tabular-nums">{value}</span>
     </span>
   );
 }
@@ -585,16 +586,19 @@ function FullCharacterProfile({
                   </div>
                 </div>
 
-                <div className="mt-4 flex flex-wrap gap-1.5">
-                  <Chip>
-                    {job} · {formatRank(ranking?.jobRank)}
-                  </Chip>
-                  <Chip>
-                    {world} · {formatRank(ranking?.worldRank)}
-                  </Chip>
-                  <Chip>
-                    GMS {regionLabel} · {formatRank(overall)}
-                  </Chip>
+                <div className="mt-4 grid gap-1">
+                  <RankChip
+                    label={job ?? "Class"}
+                    value={formatRank(ranking?.jobRank)}
+                  />
+                  <RankChip
+                    label={world ?? "World"}
+                    value={formatRank(ranking?.worldRank)}
+                  />
+                  <RankChip
+                    label={`GMS ${regionLabel}`}
+                    value={formatRank(overall)}
+                  />
                 </div>
 
                 <p className="mt-4 text-[0.7rem] leading-relaxed text-foreground/45">

@@ -297,10 +297,10 @@ export function CharacterSearchPage() {
                       type="button"
                       onClick={handleToggleSave}
                       className={[
-                        "inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-semibold transition",
+                        "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold transition",
                         profileSaved
-                          ? "border-accent/50 bg-accent-soft text-accent"
-                          : "border-border hover:bg-surface-muted",
+                          ? "border border-accent/60 bg-accent-soft text-accent hover:bg-accent-soft/80"
+                          : "bg-accent text-white shadow-sm hover:opacity-90 dark:text-zinc-900",
                       ].join(" ")}
                       aria-pressed={profileSaved}
                     >
