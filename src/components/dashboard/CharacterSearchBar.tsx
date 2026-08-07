@@ -24,9 +24,18 @@ const inputClass =
 export function CharacterSearchBar({
   roster,
   onAdded,
+  onUseActive,
+  hint,
+  compactPanel,
 }: {
   roster: RosterEntry[];
   onAdded: (next: RosterState, character: CharacterLookupResult) => void;
+  /** Tool pages: switch this character to active after search. */
+  onUseActive?: (character: CharacterLookupResult) => void | Promise<void>;
+  /** Short help under the panel title. */
+  hint?: string;
+  /** Tighter bordered panel (e.g. Scouter). */
+  compactPanel?: boolean;
 }) {
   const [name, setName] = useState("");
   const [region, setRegion] = useState<NexonRegion>("na");
@@ -35,6 +44,7 @@ export function CharacterSearchBar({
   const [result, setResult] = useState<CharacterLookupResult | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
+  const [usingActive, setUsingActive] = useState(false);
 
   useEffect(() => {
     if (!feedback) return;
@@ -92,14 +102,39 @@ export function CharacterSearchBar({
     }
   }
 
+  async function handleUseActive() {
+    if (!result || !onUseActive) return;
+    setUsingActive(true);
+    setError(null);
+    try {
+      await onUseActive(result);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not switch active.");
+    } finally {
+      setUsingActive(false);
+    }
+  }
+
   const alreadyOnRoster = result ? rosterContains(roster, result) : false;
+  const panelClass = compactPanel
+    ? "space-y-3 rounded-xl border border-border/50 bg-surface/70 p-3"
+    : "space-y-3";
+  const formClass = compactPanel
+    ? "flex flex-wrap items-end gap-2"
+    : "flex flex-wrap items-end gap-3 rounded-xl border-2 border-border bg-surface p-4";
 
   return (
-    <section className="space-y-3">
-      <form
-        onSubmit={onSubmit}
-        className="flex flex-wrap items-end gap-3 rounded-xl border-2 border-border bg-surface p-4"
-      >
+    <section className={panelClass}>
+      {compactPanel || hint ? (
+        <div>
+          <h2 className="text-sm font-semibold text-accent">Find character</h2>
+          {hint ? (
+            <p className="mt-0.5 text-xs opacity-60">{hint}</p>
+          ) : null}
+        </div>
+      ) : null}
+
+      <form onSubmit={onSubmit} className={formClass}>
         <label className="flex min-w-[12rem] flex-1 flex-col gap-1 text-sm font-semibold">
           Search character
           <input
@@ -158,6 +193,8 @@ export function CharacterSearchBar({
           alreadyOnRoster={alreadyOnRoster}
           adding={adding}
           onAdd={handleAdd}
+          onUseActive={onUseActive ? () => void handleUseActive() : undefined}
+          usingActive={usingActive}
         />
       ) : null}
     </section>

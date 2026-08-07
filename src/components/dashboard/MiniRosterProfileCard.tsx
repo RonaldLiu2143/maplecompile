@@ -12,11 +12,15 @@ export function MiniRosterProfileCard({
   alreadyOnRoster,
   adding,
   onAdd,
+  onUseActive,
+  usingActive,
 }: {
   character: CharacterLookupResult;
   alreadyOnRoster: boolean;
   adding?: boolean;
   onAdd: () => void;
+  onUseActive?: () => void;
+  usingActive?: boolean;
 }) {
   return (
     <CharacterProfile
@@ -28,6 +32,8 @@ export function MiniRosterProfileCard({
           alreadyOnRoster={alreadyOnRoster}
           adding={adding}
           onAdd={onAdd}
+          onUseActive={onUseActive}
+          usingActive={usingActive}
         />
       }
     />

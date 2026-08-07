@@ -786,21 +786,36 @@ export function CharacterProfile({
   return <FullCharacterProfile character={character} embedded={embedded} />;
 }
 
-/** Search-result actions for compact profile (View + Add). */
+/** Search-result actions for compact profile (View + Add, optional Use as active). */
 export function CharacterSearchActions({
   character,
   alreadyOnRoster,
   adding,
   onAdd,
+  onUseActive,
+  usingActive,
 }: {
   character: CharacterLookupResult;
   alreadyOnRoster: boolean;
   adding?: boolean;
   onAdd: () => void;
+  /** When set, show primary “Use as active” for tool pages (e.g. Scouter pairing). */
+  onUseActive?: () => void;
+  usingActive?: boolean;
 }) {
   const profileHref = characterProfileHref(character);
   return (
     <>
+      {onUseActive ? (
+        <button
+          type="button"
+          onClick={onUseActive}
+          disabled={usingActive}
+          className="rounded-lg bg-accent px-3 py-1.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50 dark:text-zinc-900"
+        >
+          {usingActive ? "Switching…" : "Use as active"}
+        </button>
+      ) : null}
       <Link
         href={profileHref}
         className="rounded-lg border border-border px-3 py-1.5 text-sm font-semibold transition hover:bg-surface-muted"
@@ -816,7 +831,7 @@ export function CharacterSearchActions({
           type="button"
           onClick={onAdd}
           disabled={adding}
-          className="rounded-lg bg-accent px-3 py-1.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50 dark:text-zinc-900"
+          className="rounded-lg border border-border px-3 py-1.5 text-sm font-semibold transition hover:bg-surface-muted disabled:opacity-50"
         >
           {adding ? "Adding…" : "Add to roster"}
         </button>

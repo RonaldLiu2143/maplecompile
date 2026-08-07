@@ -51,6 +51,7 @@ import {
   persistLiveToWorkspace,
 } from "@/lib/character-workspace";
 import { ActiveCharacterBar } from "@/components/ActiveCharacterBar";
+import { CharacterSearchBar } from "@/components/dashboard/CharacterSearchBar";
 import { PairingBar } from "@/components/PairingBar";
 import { HexaEfficiencyPanel } from "./hexa-efficiency";
 import { ShareGalleryModal } from "./share-gallery-modal";
@@ -60,7 +61,17 @@ import {
   type BossConvertedStatValues,
 } from "./boss-converted-stat-panel";
 import { countFilledSlots } from "@/lib/starter-loadouts";
-import { readRosterState } from "@/lib/dashboard/roster";
+import {
+  addToRoster,
+  readRosterState,
+  type RosterEntry,
+} from "@/lib/dashboard/roster";
+import {
+  isStickyActiveSwitchBlocked,
+  switchActiveCharacter,
+  UNLOCK_TO_CHANGE_ACTIVE_MSG,
+} from "@/lib/active-character";
+import type { CharacterLookupResult } from "@/lib/character/lookup";
 import { parseUserNumber } from "@/lib/scouter/parse-number";
 import { filterDisplayText } from "@/lib/content-filter";
 import {
@@ -73,6 +84,7 @@ import {
   type BossClearFightMinutes,
 } from "@/lib/scouter/boss-cuts";
 import type { MapleScouterCalculatedData } from "@/lib/scouter/to-user-stat";
+import { useMapleDataReload } from "@/hooks/useMapleDataReload";
 
 const cell =
   "border border-border/50 bg-background px-2 py-1.5 text-sm outline-none focus:relative focus:z-10 focus:border-accent";
@@ -402,14 +414,26 @@ export default function ScouterPage() {
     hexaEffRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, [showHexaEff]);
 
+  // Only treat a public post as "linked" when a loaded preset maps to it
+  // (never fall back to lastPublicShareId for an unsaved draft).
   useEffect(() => {
-    const existing = storage.getScouterGalleryShareForPreset(
-      loadedPresetId || null,
-    );
+    if (!loadedPresetId) {
+      setExistingGalleryPost(null);
+      return;
+    }
+    const existing = storage.getScouterGalleryShareForPreset(loadedPresetId);
     setExistingGalleryPost(
       existing ? { id: existing.id, name: existing.name } : null,
     );
   }, [loadedPresetId]);
+
+  const [rosterEntries, setRosterEntries] = useState<RosterEntry[]>([]);
+  useEffect(() => {
+    setRosterEntries(readRosterState().entries);
+  }, []);
+  useMapleDataReload(() => {
+    setRosterEntries(readRosterState().entries);
+  });
 
   useEffect(() => {
     if (!presetMenuOpen) return;
@@ -998,6 +1022,12 @@ export default function ScouterPage() {
       }
       const name =
         presets.find((p) => p.id === selectedPresetId)?.name ?? "preset";
+      if (
+        typeof window !== "undefined" &&
+        !window.confirm(`Delete preset “${name}”? This cannot be undone.`)
+      ) {
+        return;
+      }
       storage.deleteScouterPreset(selectedPresetId);
       refreshPresets();
       setSelectedPresetId("");
@@ -1007,6 +1037,23 @@ export default function ScouterPage() {
     } catch {
       flashPresetMsg("Could not delete");
     }
+  };
+
+  const handleUseActiveCharacter = (character: CharacterLookupResult) => {
+    const target = { name: character.name, region: character.region };
+    if (isStickyActiveSwitchBlocked(target)) {
+      flashPresetMsg(UNLOCK_TO_CHANGE_ACTIVE_MSG);
+      return;
+    }
+    const { entry } = addToRoster({
+      name: character.name,
+      region: character.region,
+    });
+    setRosterEntries(readRosterState().entries);
+    switchActiveCharacter(entry);
+    reloadDraftFromLiveStorage();
+    setRosterEntries(readRosterState().entries);
+    flashPresetMsg(`Active: ${character.name}`);
   };
 
   const shareLoadout = async (args: {
@@ -1200,11 +1247,11 @@ export default function ScouterPage() {
       }
       setShareUrl(data.url);
       if (args.asPublic) {
-        if (identity === "ign") {
-          setPresetName(savedName);
-        }
+        // Keep gallery IGN in the modal / share record only — do not rename the local preset.
         setShareAchievement(achievement.trim());
-        setExistingGalleryPost({ id: data.id, name: savedName });
+        if (presetKey) {
+          setExistingGalleryPost({ id: data.id, name: savedName });
+        }
         setGalleryModalOpen(false);
       }
       const visibility = data.public ? "Public" : "Link-only";
@@ -1299,30 +1346,41 @@ export default function ScouterPage() {
             HEXA on the right.
           </p>
         </div>
-        {presetMsg ? (
-          <span className="text-sm font-medium text-accent">{presetMsg}</span>
-        ) : null}
       </header>
 
       <ActiveCharacterBar onSwitched={reloadDraftFromLiveStorage} />
 
-      <PairingBar
-        compact
-        beforePair={(proceed) => runIfStatsReady(proceed)}
-        pairArgs={{
-          scouterPresetId: loadedPresetId || null,
-          scouterName:
-            presetName.trim() ||
-            presets.find((p) => p.id === loadedPresetId)?.name ||
-            undefined,
-          scouterState: {
-            input,
-            buffs,
-            links,
-            hexa: clampHexaForGms(hexa),
-          },
-        }}
+      <CharacterSearchBar
+        roster={rosterEntries}
+        compactPanel
+        hint="Sets the active character for pairing and this page’s draft."
+        onAdded={(state) => setRosterEntries(state.entries)}
+        onUseActive={handleUseActiveCharacter}
       />
+
+      <div className="space-y-1">
+        <PairingBar
+          compact
+          beforePair={(proceed) => runIfStatsReady(proceed)}
+          pairArgs={{
+            scouterPresetId: loadedPresetId || null,
+            scouterName:
+              presetName.trim() ||
+              presets.find((p) => p.id === loadedPresetId)?.name ||
+              undefined,
+            scouterState: {
+              input,
+              buffs,
+              links,
+              hexa: clampHexaForGms(hexa),
+            },
+          }}
+        />
+        <p className="text-[11px] opacity-50">
+          Equipment pairing links Scouter ↔ gear for damage calc — not gallery
+          sharing.
+        </p>
+      </div>
 
       <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.95fr)]">
         {/* —— Left: Enter Directly —— */}
@@ -1353,189 +1411,241 @@ export default function ScouterPage() {
               )}
             </div>
 
-            <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center">
-              <div ref={presetMenuRef} className="relative min-w-0 flex-1">
-                <button
-                  type="button"
-                  className="flex w-full min-w-0 items-center justify-between gap-2 rounded border border-border/50 bg-background px-2.5 py-1.5 text-left text-xs outline-none focus:border-accent"
-                  aria-label="Saved presets"
-                  aria-haspopup="listbox"
-                  aria-expanded={presetMenuOpen}
-                  onClick={() => setPresetMenuOpen((o) => !o)}
-                >
-                  <span className="min-w-0 truncate">
-                    {(() => {
-                      if (!selectedPresetId) {
-                        return presets.length
-                          ? `Choose a preset (${presets.length})…`
-                          : "No saved presets yet";
-                      }
-                      const selected = presets.find(
-                        (p) => p.id === selectedPresetId,
-                      );
-                      const name =
-                        selected?.name || presetName.trim() || "Preset";
-                      const classLabel = getCharName(
-                        selected?.input?.jobType || input.jobType || "",
-                        selected?.input?.charType || input.charType || "",
-                      );
-                      return `${name}(${classLabel})`;
-                    })()}
+            <div className="grid gap-2 lg:grid-cols-2">
+              {/* —— Local presets —— */}
+              <div className="space-y-1.5 rounded-lg border border-border/40 bg-surface/70 p-2">
+                <div className="flex flex-wrap items-center justify-between gap-1">
+                  <span className="text-[10px] font-semibold uppercase tracking-wide opacity-55">
+                    Presets
                   </span>
-                  <span className="shrink-0 opacity-50" aria-hidden>
-                    ▾
-                  </span>
-                </button>
-                {presetMenuOpen ? (
-                  <ul
-                    role="listbox"
-                    className="absolute z-30 mt-1 max-h-56 w-full overflow-auto rounded border border-border/50 bg-background py-1 shadow-lg"
-                  >
-                    <li>
-                      <button
-                        type="button"
-                        role="option"
-                        aria-selected={!selectedPresetId}
-                        className="w-full px-2.5 py-1.5 text-left text-xs opacity-70 hover:bg-surface-muted"
-                        onClick={() => {
-                          setSelectedPresetId("");
-                          setLoadedPresetId("");
-                          setPresetName("");
-                          setPresetMenuOpen(false);
-                        }}
+                  {presetMsg ? (
+                    <span className="text-[11px] font-medium text-accent">
+                      {presetMsg}
+                    </span>
+                  ) : null}
+                </div>
+                <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center">
+                  <div ref={presetMenuRef} className="relative min-w-0 flex-1">
+                    <button
+                      type="button"
+                      className="flex w-full min-w-0 items-center justify-between gap-2 rounded border border-border/50 bg-background px-2.5 py-1.5 text-left text-xs outline-none focus:border-accent"
+                      aria-label="Saved presets"
+                      aria-haspopup="listbox"
+                      aria-expanded={presetMenuOpen}
+                      onClick={() => setPresetMenuOpen((o) => !o)}
+                    >
+                      <span className="min-w-0 truncate">
+                        {(() => {
+                          if (!selectedPresetId) {
+                            return presets.length
+                              ? `Clear selection (${presets.length} saved)…`
+                              : "No saved presets yet";
+                          }
+                          const selected = presets.find(
+                            (p) => p.id === selectedPresetId,
+                          );
+                          const name =
+                            selected?.name || presetName.trim() || "Preset";
+                          const classLabel = getCharName(
+                            selected?.input?.jobType || input.jobType || "",
+                            selected?.input?.charType || input.charType || "",
+                          );
+                          return `${name}(${classLabel})`;
+                        })()}
+                      </span>
+                      <span className="shrink-0 opacity-50" aria-hidden>
+                        ▾
+                      </span>
+                    </button>
+                    {presetMenuOpen ? (
+                      <ul
+                        role="listbox"
+                        className="absolute z-30 mt-1 max-h-56 w-full overflow-auto rounded border border-border/50 bg-background py-1 shadow-lg"
                       >
-                        {presets.length
-                          ? `Choose a preset (${presets.length})…`
-                          : "No saved presets yet"}
-                      </button>
-                    </li>
-                    {presets.map((p) => {
-                      const classLabel = getCharName(
-                        p.input?.jobType || "",
-                        p.input?.charType || "",
-                      );
-                      return (
-                        <li key={p.id}>
+                        <li>
                           <button
                             type="button"
                             role="option"
-                            aria-selected={selectedPresetId === p.id}
-                            className={`w-full px-2.5 py-1.5 text-left text-xs hover:bg-surface-muted ${
-                              selectedPresetId === p.id
-                                ? "bg-accent-soft/40 font-semibold text-accent"
-                                : ""
-                            }`}
+                            aria-selected={!selectedPresetId}
+                            className="w-full px-2.5 py-1.5 text-left text-xs opacity-70 hover:bg-surface-muted"
+                            title="Clear selection keeps your form values as an unsaved draft"
                             onClick={() => {
-                              // Load immediately so Overwrite can't write the previous
-                              // character's Attack / Magic Att into another preset.
-                              loadPresetById(p.id);
+                              setSelectedPresetId("");
+                              setLoadedPresetId("");
+                              setPresetName("");
                               setPresetMenuOpen(false);
                             }}
                           >
-                            {p.name}({classLabel})
+                            {presets.length
+                              ? "Clear selection…"
+                              : "No saved presets yet"}
                           </button>
                         </li>
-                      );
-                    })}
-                  </ul>
+                        {presets.map((p) => {
+                          const classLabel = getCharName(
+                            p.input?.jobType || "",
+                            p.input?.charType || "",
+                          );
+                          return (
+                            <li key={p.id}>
+                              <button
+                                type="button"
+                                role="option"
+                                aria-selected={selectedPresetId === p.id}
+                                className={`w-full px-2.5 py-1.5 text-left text-xs hover:bg-surface-muted ${
+                                  selectedPresetId === p.id
+                                    ? "bg-accent-soft/40 font-semibold text-accent"
+                                    : ""
+                                }`}
+                                onClick={() => {
+                                  loadPresetById(p.id);
+                                  setPresetMenuOpen(false);
+                                }}
+                              >
+                                {p.name}({classLabel})
+                              </button>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    ) : null}
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Preset name"
+                    value={presetName}
+                    onChange={(e) => setPresetName(e.target.value)}
+                    className="min-w-0 flex-1 rounded border border-border/50 bg-background px-2.5 py-1.5 text-xs outline-none focus:border-accent"
+                    aria-label="Preset name"
+                  />
+                </div>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => savePreset(false)}
+                    disabled={loadedPresetId ? false : !presetName.trim()}
+                    className="rounded bg-accent px-2.5 py-1.5 text-xs font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 dark:text-zinc-900"
+                    title={
+                      loadedPresetId
+                        ? "Update the loaded preset with current stats"
+                        : "Save current stats as a new preset"
+                    }
+                  >
+                    {loadedPresetId ? "Update preset" : "Save preset"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => savePreset(true)}
+                    disabled={!presetName.trim()}
+                    className="rounded border border-border/50 bg-background px-2.5 py-1.5 text-xs font-semibold transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
+                    title="Keep the current preset and save a copy under this name"
+                  >
+                    Save as new
+                  </button>
+                  <button
+                    type="button"
+                    onClick={deletePreset}
+                    disabled={!selectedPresetId}
+                    className="rounded border border-border/50 bg-background px-2.5 py-1.5 text-xs font-semibold text-red-700 transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40 dark:text-red-400"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+
+              {/* —— Share —— */}
+              <div className="space-y-1.5 rounded-lg border border-border/40 bg-surface/70 p-2">
+                <span className="text-[10px] font-semibold uppercase tracking-wide opacity-55">
+                  Share
+                </span>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => void shareLoadout({ asPublic: false })}
+                    disabled={sharing}
+                    className="rounded border border-border/50 bg-background px-2.5 py-1.5 text-xs font-semibold transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
+                    title="Create a private link anyone can open if they have it"
+                  >
+                    {sharing && !galleryModalOpen
+                      ? "Sharing…"
+                      : "Copy private link"}
+                  </button>
+                  {existingGalleryPost ? (
+                    <button
+                      type="button"
+                      onClick={openGalleryShareModal}
+                      disabled={sharing}
+                      className="rounded bg-accent px-2.5 py-1.5 text-xs font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 dark:text-zinc-900"
+                      title="Update the public gallery post linked to this preset"
+                    >
+                      {sharing && galleryModalOpen
+                        ? "Updating…"
+                        : "Update public post"}
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={openGalleryShareModal}
+                      disabled={sharing}
+                      className="rounded border border-border/50 bg-background px-2.5 py-1.5 text-xs font-semibold transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
+                      title={
+                        getMissingRequiredScouterFields(input).length
+                          ? "Fill required character stats before posting"
+                          : "Review and post to the public gallery"
+                      }
+                    >
+                      {sharing && galleryModalOpen
+                        ? "Posting…"
+                        : "Post to gallery"}
+                    </button>
+                  )}
+                  <Link
+                    href="/calc/scouter/gallery"
+                    className="rounded border border-border/50 bg-background px-2.5 py-1.5 text-xs font-semibold transition hover:bg-surface-muted"
+                  >
+                    Browse gallery
+                  </Link>
+                </div>
+                <p className="text-[11px] opacity-55">
+                  {existingGalleryPost ? (
+                    <>
+                      Public post linked
+                      {existingGalleryPost.name
+                        ? ` · ${existingGalleryPost.name}`
+                        : ""}{" "}
+                      ·{" "}
+                      <Link
+                        href={`/calc/character/share/${existingGalleryPost.id}`}
+                        className="font-semibold text-accent underline-offset-2 hover:underline"
+                      >
+                        Open
+                      </Link>
+                    </>
+                  ) : (
+                    "Not posted publicly"
+                  )}
+                </p>
+                {shareUrl ? (
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <input
+                      type="text"
+                      readOnly
+                      value={shareUrl}
+                      className="min-w-0 flex-1 rounded border border-border/50 bg-background px-2.5 py-1.5 text-xs outline-none focus:border-accent"
+                      aria-label="Share link"
+                      onFocus={(e) => e.currentTarget.select()}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => void copyShareUrl()}
+                      className="rounded border border-border/50 bg-background px-2.5 py-1.5 text-xs font-semibold transition hover:bg-surface-muted"
+                    >
+                      Copy link
+                    </button>
+                  </div>
                 ) : null}
               </div>
-              <input
-                type="text"
-                placeholder="Preset name"
-                value={presetName}
-                onChange={(e) => setPresetName(e.target.value)}
-                className="min-w-0 flex-1 rounded border border-border/50 bg-background px-2.5 py-1.5 text-xs outline-none focus:border-accent"
-                aria-label="Preset name"
-              />
             </div>
-
-            <div className="flex flex-wrap items-center gap-1.5">
-              <button
-                type="button"
-                onClick={() => savePreset(false)}
-                disabled={loadedPresetId ? false : !presetName.trim()}
-                className="rounded bg-accent px-2.5 py-1.5 text-xs font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
-                title={
-                  loadedPresetId
-                    ? "Update the loaded preset with current stats"
-                    : "Save current stats as a new preset"
-                }
-              >
-                {loadedPresetId ? "Update" : "Save"}
-              </button>
-              <button
-                type="button"
-                onClick={() => savePreset(true)}
-                disabled={!presetName.trim()}
-                className="rounded border border-border/50 bg-background px-2.5 py-1.5 text-xs font-semibold transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
-                title="Keep the current preset and save a copy under this name"
-              >
-                Save as new
-              </button>
-              <button
-                type="button"
-                onClick={deletePreset}
-                disabled={!selectedPresetId}
-                className="rounded border border-border/50 bg-background px-2.5 py-1.5 text-xs font-semibold text-red-700 transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40 dark:text-red-400"
-              >
-                Delete
-              </button>
-
-              <div
-                className="mx-0.5 hidden h-5 w-px bg-border/60 sm:block"
-                aria-hidden
-              />
-
-              <button
-                type="button"
-                onClick={() => void shareLoadout({ asPublic: false })}
-                disabled={sharing}
-                className="rounded border border-border/50 bg-background px-2.5 py-1.5 text-xs font-semibold transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
-                title="Create a private link anyone can open if they have it"
-              >
-                {sharing && !galleryModalOpen ? "Sharing…" : "Share link"}
-              </button>
-              <button
-                type="button"
-                onClick={openGalleryShareModal}
-                disabled={sharing}
-                className="rounded border border-border/50 bg-background px-2.5 py-1.5 text-xs font-semibold transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
-                title={
-                  existingGalleryPost
-                    ? "Replace your previous public gallery post with this loadout"
-                    : "Review and post to the public gallery"
-                }
-              >
-                {existingGalleryPost ? "Update gallery" : "Share to gallery"}
-              </button>
-              <Link
-                href="/calc/scouter/gallery"
-                className="rounded border border-border/50 bg-background px-2.5 py-1.5 text-xs font-semibold transition hover:bg-surface-muted"
-              >
-                Browse gallery
-              </Link>
-            </div>
-
-            {shareUrl ? (
-              <div className="flex flex-wrap items-center gap-1.5">
-                <input
-                  type="text"
-                  readOnly
-                  value={shareUrl}
-                  className="min-w-0 flex-1 rounded border border-border/50 bg-background px-2.5 py-1.5 text-xs outline-none focus:border-accent"
-                  aria-label="Share link"
-                  onFocus={(e) => e.currentTarget.select()}
-                />
-                <button
-                  type="button"
-                  onClick={() => void copyShareUrl()}
-                  className="rounded border border-border/50 bg-background px-2.5 py-1.5 text-xs font-semibold transition hover:bg-surface-muted"
-                >
-                  Copy link
-                </button>
-              </div>
-            ) : null}
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-4">
@@ -2248,6 +2358,7 @@ export default function ScouterPage() {
         initialName={
           presetName.trim() ||
           presets.find((p) => p.id === selectedPresetId)?.name ||
+          readRosterState().primary?.name ||
           ""
         }
         initialAchievement={shareAchievement}
