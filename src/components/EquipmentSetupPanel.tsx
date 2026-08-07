@@ -800,9 +800,9 @@ export function EquipmentSetupPanel({
             <p className="text-sm text-danger">{error}</p>
           )}
 
-          <div className="flex w-full flex-col items-start gap-4 lg:flex-row lg:items-start lg:justify-between lg:gap-6">
-            <div className="flex w-full min-w-0 flex-col items-start gap-4 lg:w-auto lg:flex-row lg:items-start lg:gap-4">
-              {hydrated && (status === "ready" || status === "loading") && (
+          <div className="grid w-full grid-cols-1 items-start gap-4 lg:grid-cols-[auto_minmax(0,24rem)_minmax(16rem,1fr)] lg:gap-x-8 lg:gap-y-4">
+            {hydrated && (status === "ready" || status === "loading") ? (
+              <div className="justify-self-start">
                 <EquipGrid
                   setup={setup}
                   flameSetup={flameSetup}
@@ -810,43 +810,45 @@ export function EquipmentSetupPanel({
                   charLabel={getCharName(jobType, charType)}
                   activeSlot={status === "ready" ? activeSlot : null}
                 />
-              )}
-
-              <div className="flex w-full min-w-0 flex-col items-stretch gap-1.5 lg:max-w-sm lg:shrink-0">
-                {status === "ready" &&
-                  (panel?.kind === "picker" && pickerType ? (
-                    <EquipPicker
-                      key={pickerSlot!}
-                      label={SLOT_LABELS[pickerSlot!] ?? pickerType}
-                      equips={pickerEquips}
-                      selectedIds={selectedForType}
-                      onToggle={toggleEquip}
-                      onClose={() => setPanel(null)}
-                    />
-                  ) : panel?.kind === "editor" && editingEquip && editorSlot ? (
-                    <EquipItemEditor
-                      key={`${editorSlot}-${editingEquip.id}`}
-                      slotLabel={SLOT_LABELS[editorSlot] ?? editorSlot}
-                      equip={editingEquip}
-                      flames={editingFlames}
-                      onChange={(patch) => patchEquipped(editorSlot, patch)}
-                      onChangeItem={() =>
-                        setPanel({ kind: "picker", slot: editorSlot })
-                      }
-                      onUnequip={() => unequipSlot(editorSlot)}
-                      onClose={() => setPanel(null)}
-                    />
-                  ) : (
-                    <p className="max-w-sm text-sm opacity-70">
-                      Click an empty slot to choose equipment, or a filled slot to
-                      edit Star Force, flames, and potential. Rings fill from the
-                      top slot; pendants fill pendant-1 then pendant-2.
-                    </p>
-                  ))}
               </div>
+            ) : (
+              <div className="hidden lg:block" aria-hidden />
+            )}
+
+            <div className="flex w-full min-w-0 max-w-sm flex-col items-stretch gap-1.5 lg:max-w-none">
+              {status === "ready" &&
+                (panel?.kind === "picker" && pickerType ? (
+                  <EquipPicker
+                    key={pickerSlot!}
+                    label={SLOT_LABELS[pickerSlot!] ?? pickerType}
+                    equips={pickerEquips}
+                    selectedIds={selectedForType}
+                    onToggle={toggleEquip}
+                    onClose={() => setPanel(null)}
+                  />
+                ) : panel?.kind === "editor" && editingEquip && editorSlot ? (
+                  <EquipItemEditor
+                    key={`${editorSlot}-${editingEquip.id}`}
+                    slotLabel={SLOT_LABELS[editorSlot] ?? editorSlot}
+                    equip={editingEquip}
+                    flames={editingFlames}
+                    onChange={(patch) => patchEquipped(editorSlot, patch)}
+                    onChangeItem={() =>
+                      setPanel({ kind: "picker", slot: editorSlot })
+                    }
+                    onUnequip={() => unequipSlot(editorSlot)}
+                    onClose={() => setPanel(null)}
+                  />
+                ) : (
+                  <p className="max-w-sm text-sm opacity-70">
+                    Click an empty slot to choose equipment, or a filled slot to
+                    edit Star Force, flames, and potential. Rings fill from the
+                    top slot; pendants fill pendant-1 then pendant-2.
+                  </p>
+                ))}
             </div>
 
-            <div className="flex w-full min-w-0 flex-col items-stretch gap-2 lg:ml-auto lg:max-w-md lg:shrink-0">
+            <div className="flex w-full min-w-0 flex-col items-stretch gap-2 lg:min-w-0">
               <div className="inline-flex max-w-full flex-wrap items-center justify-end gap-1.5">
                 <select
                   value={starterId}

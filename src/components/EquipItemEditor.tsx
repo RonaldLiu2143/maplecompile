@@ -112,7 +112,7 @@ export function EquipItemEditor({
 
   return (
     <div
-      className="flex w-full max-w-md flex-col overflow-hidden rounded-lg border border-[#555] bg-[#2a2a2a] shadow-sm"
+      className="flex w-full max-w-sm flex-col overflow-hidden rounded-lg border border-[#555] bg-[#2a2a2a] shadow-sm"
       role="region"
       aria-label={`Edit ${equip.name}`}
     >
