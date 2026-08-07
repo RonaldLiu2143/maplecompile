@@ -214,7 +214,7 @@ function EtaToLevelSection({
             >
               <span className="text-sm font-semibold">Lv. {lv}</span>
               {canEdit ? (
-                <label className="flex items-baseline gap-1.5 font-mono text-sm tabular-nums text-foreground/75">
+                <label className="flex items-center gap-1.5 font-mono text-sm tabular-nums text-foreground/75">
                   <span className="sr-only">Days to Lv. {lv}</span>
                   <input
                     type="text"
@@ -242,7 +242,7 @@ function EtaToLevelSection({
                         e.currentTarget.blur();
                       }
                     }}
-                    className="w-14 rounded border border-transparent bg-transparent px-1 py-0.5 text-right outline-none hover:border-border/50 focus:border-accent focus:bg-surface"
+                    className="w-14 rounded border border-border bg-background px-2 py-1 text-right outline-none focus:border-accent"
                     aria-label={`Days to reach level ${lv}`}
                   />
                   <span className="text-foreground/55">days</span>
