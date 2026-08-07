@@ -353,21 +353,19 @@ export function EquipmentSetupPanel({
     loadCatalog,
   ]);
 
-  const persistSetupToStorage = useCallback(
-    (next: EquipSetup, opts?: { allowEmpty?: boolean }) => {
-      // Never clobber a saved loadout with a transient empty React state
-      // (Strict Mode remount / class-change races).
-      if (
-        !opts?.allowEmpty &&
-        countFilledSlots(next) === 0 &&
-        countFilledSlots(storage.getEquipSetup()) > 0
-      ) {
-        return;
-      }
-      storage.setEquipSetup(next);
-    },
-    [],
-  );
+  const persistSetupToStorage = useCallback((next: EquipSetup) => {
+    // Only block empty writes during hydrate/reload races. Intentional empties
+    // (unequip last piece, Clear setup) must persist so Character Stats Save /
+    // gallery share / workspace do not keep stale gear.
+    if (
+      skipWorkspaceAutosave.current &&
+      countFilledSlots(next) === 0 &&
+      countFilledSlots(storage.getEquipSetup()) > 0
+    ) {
+      return;
+    }
+    storage.setEquipSetup(next);
+  }, []);
 
   useEffect(() => {
     if (!hydrated || skipWorkspaceAutosave.current) return;

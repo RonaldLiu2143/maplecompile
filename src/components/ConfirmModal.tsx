@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 type Props = {
   open: boolean;
@@ -13,6 +13,9 @@ type Props = {
   /** Optional id for aria-labelledby. */
   titleId?: string;
 };
+
+const FOCUSABLE =
+  'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 /**
  * Lightweight confirm dialog matching preset / manage-display modal chrome.
@@ -27,13 +30,57 @@ export function ConfirmModal({
   onCancel,
   titleId = "confirm-modal-title",
 }: Props) {
+  const panelRef = useRef<HTMLDivElement>(null);
+  const previouslyFocused = useRef<HTMLElement | null>(null);
+
   useEffect(() => {
     if (!open) return;
+    previouslyFocused.current =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
+
+    const panel = panelRef.current;
+    const focusables = panel
+      ? Array.from(panel.querySelectorAll<HTMLElement>(FOCUSABLE))
+      : [];
+    // Prefer Cancel so Enter on Confirm isn't the accidental default after open.
+    (focusables[0] ?? panel)?.focus();
+
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onCancel();
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onCancel();
+        return;
+      }
+      if (e.key !== "Tab" || !panel) return;
+      const nodes = Array.from(
+        panel.querySelectorAll<HTMLElement>(FOCUSABLE),
+      ).filter((el) => !el.hasAttribute("disabled"));
+      if (nodes.length === 0) {
+        e.preventDefault();
+        panel.focus();
+        return;
+      }
+      const first = nodes[0]!;
+      const last = nodes[nodes.length - 1]!;
+      const active = document.activeElement;
+      if (e.shiftKey) {
+        if (active === first || !panel.contains(active)) {
+          e.preventDefault();
+          last.focus();
+        }
+      } else if (active === last || !panel.contains(active)) {
+        e.preventDefault();
+        first.focus();
+      }
     };
+
     document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      previouslyFocused.current?.focus?.();
+    };
   }, [open, onCancel]);
 
   if (!open) return null;
@@ -48,7 +95,11 @@ export function ConfirmModal({
         if (e.target === e.currentTarget) onCancel();
       }}
     >
-      <div className="relative w-full max-w-md rounded-xl border border-border/60 bg-surface p-5 shadow-xl">
+      <div
+        ref={panelRef}
+        tabIndex={-1}
+        className="relative w-full max-w-md rounded-xl border border-border/60 bg-surface p-5 shadow-xl outline-none"
+      >
         <h2
           id={titleId}
           className="font-display text-xl font-bold tracking-tight"

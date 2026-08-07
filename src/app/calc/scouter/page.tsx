@@ -386,6 +386,12 @@ export default function ScouterPage() {
   const [pendingClassChange, setPendingClassChange] = useState<{
     jobType: JobType;
     charType: string;
+    /** Deferred “Use for stats” identity — applied only on confirm. */
+    applyIdentity?: {
+      name: string;
+      level?: number;
+      statsPairLabel: string;
+    };
   } | null>(null);
   const [draftReady, setDraftReady] = useState(false);
   const [showHexaEff, setShowHexaEff] = useState(false);
@@ -579,11 +585,12 @@ export default function ScouterPage() {
       persistLiveToWorkspace(activeCharacterKey());
     } else {
       ensureActiveWorkspaceLoaded();
-      // Linked Active Character preset wins over the workspace draft on open.
-      applyLinkedPresetForCharacter();
+      // Linked preset is NOT applied on every Scouter open — that would wipe an
+      // unsaved workspace draft. Auto-apply only on Active Character switch
+      // (handleActiveCharacterSwitched) or explicit “Load linked preset”.
+      // Prefer the live / workspace draft already restored above.
     }
     const last = storage.getScouterLast();
-    const linked = !fromShare ? getLinkedScouterPreset() : null;
     if (last?.input) {
       const job = last.input.jobType || DEFAULT_JOB;
       const char = last.input.charType || DEFAULT_CHAR;
@@ -616,12 +623,7 @@ export default function ScouterPage() {
     if (last?.links) setLinks(last.links);
     if (last?.hexa) setHexa(clampHexaForGms(last.hexa));
     // Gallery/share loads set draft name only — do not auto-save as a preset.
-    if (linked) {
-      setLoadedPresetId(linked.presetId);
-      setSelectedPresetId(linked.presetId);
-      setPresetName(linked.name);
-      setEquipReloadToken((n) => n + 1);
-    } else if (last?.name?.trim()) {
+    if (last?.name?.trim()) {
       setPresetName(last.name.trim());
     }
     setDraftReady(true);
@@ -830,6 +832,18 @@ export default function ScouterPage() {
         : false,
     }));
     setHexa(defaultHexaLevels());
+  };
+
+  const applyUseForStatsIdentity = (identity: {
+    name: string;
+    level?: number;
+    statsPairLabel: string;
+  }) => {
+    setPresetName(identity.name);
+    if (identity.level != null && identity.level > 0) {
+      setInput((prev) => ({ ...prev, level: identity.level! }));
+    }
+    setStatsPairLabel(identity.statsPairLabel);
   };
 
   const onClassChange = (value: string) => {
@@ -1124,23 +1138,37 @@ export default function ScouterPage() {
 
   /** Label / class this scouter draft with a looked-up IGN — does not change Active Character. */
   const handleUseForStats = (character: CharacterLookupResult): boolean => {
-    setPresetName(character.name);
     const mapped = classFromJobName(character.jobName);
-    if (mapped) {
-      // Same path as the Class dropdown so magic-attack / hexa / 1H sword update.
-      onClassChange(`${mapped.jobType}:${mapped.charType}`);
-    }
-    if (character.level > 0) {
-      setInput((prev) => ({ ...prev, level: character.level }));
-    }
     const classLabel = mapped
       ? getCharName(mapped.jobType, mapped.charType)
       : character.jobName?.trim() || null;
-    setStatsPairLabel(
-      classLabel
+    const identity = {
+      name: character.name,
+      level: character.level > 0 ? character.level : undefined,
+      statsPairLabel: classLabel
         ? `Paired with ${character.name} (${classLabel})`
         : `Paired with ${character.name}`,
-    );
+    };
+
+    if (mapped) {
+      const classChanged =
+        mapped.jobType !== input.jobType ||
+        mapped.charType !== input.charType;
+      if (classChanged) {
+        // Flush debounced gear writes so the filled-slot check is current.
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new Event("maplecompile-flush-equip"));
+        }
+        if (countFilledSlots(storage.getEquipSetup()) > 0) {
+          // Defer name/level/label until class confirm so Cancel leaves no mixed state.
+          setPendingClassChange({ ...mapped, applyIdentity: identity });
+          return true;
+        }
+        applyClassChange(mapped);
+      }
+    }
+
+    applyUseForStatsIdentity(identity);
     return true;
   };
 
@@ -1447,6 +1475,16 @@ export default function ScouterPage() {
         loadedPresetName={presetName}
         onApplied={({ action, presetId, presetName: pairedName }) => {
           if (action === "unlink") return;
+          // Pair is metadata-only — keep the unsaved form; just reflect the link.
+          if (action === "pair") {
+            if (presetId) {
+              setLoadedPresetId(presetId);
+              setSelectedPresetId(presetId);
+            }
+            if (pairedName?.trim()) setPresetName(pairedName.trim());
+            refreshPresets();
+            return;
+          }
           reloadDraftFromLiveStorage({
             loadedPresetId: presetId,
             loadedPresetName: pairedName,
@@ -2351,6 +2389,9 @@ export default function ScouterPage() {
           const next = pendingClassChange;
           setPendingClassChange(null);
           applyClassChange(next);
+          if (next.applyIdentity) {
+            applyUseForStatsIdentity(next.applyIdentity);
+          }
         }}
       />
 

@@ -146,13 +146,13 @@ export function ScouterActiveCharacterPresetPair({
       if (linked) {
         result = applyLinkedPresetForCharacter(key);
       } else if (suggested) {
-        const next = pairActiveCharacterWithPreset({
+        // Pair metadata first, then explicitly load the snapshot.
+        pairActiveCharacterWithPreset({
           scouterPresetId: suggested.id,
           scouterName: suggested.name,
           characterKey: key,
         });
-        setPairing(next);
-        result = { presetId: suggested.id, name: suggested.name };
+        result = applyLinkedPresetForCharacter(key);
       }
       if (!result) {
         flash("Preset not found");

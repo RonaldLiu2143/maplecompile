@@ -217,31 +217,64 @@ export function migrateGlobalsToPrimaryWorkspace(): void {
 }
 
 /**
- * Prefer scouter input class as the live job/char when present.
- * Gear-only workspace class is a fallback (standalone Equipment Setup).
- * Keeps Scouter Character Stats and embedded Equipment Setup lined up.
+ * Prefer live / workspace job+char (Equipment Setup + storage.setJobType) over
+ * scouterLast.input. Otherwise a stale Scouter draft class wins after Active
+ * Character switch and reverts class changes made on /calc/equips/setup.
+ * Scouter-driven flows still push class via Character Stats → setJobType.
  */
 export function resolveWorkspaceClass(workspace: CharacterWorkspace): {
   jobType: string;
   charType: string;
 } {
+  const fromLiveJob = workspace.jobType || "";
+  const fromLiveChar = workspace.charType || "";
+  if (fromLiveJob && fromLiveChar) {
+    return { jobType: fromLiveJob, charType: fromLiveChar };
+  }
   const fromScouterJob = workspace.scouterLast?.input?.jobType || "";
   const fromScouterChar = workspace.scouterLast?.input?.charType || "";
-  if (fromScouterJob && fromScouterChar) {
-    return { jobType: fromScouterJob, charType: fromScouterChar };
+  return {
+    jobType: fromLiveJob || fromScouterJob || "",
+    charType: fromLiveChar || fromScouterChar || "",
+  };
+}
+
+function syncScouterLastClass(
+  scouterLast: ScouterLastState | null,
+  jobType: string,
+  charType: string,
+): ScouterLastState | null {
+  if (!scouterLast?.input || !jobType || !charType) return scouterLast;
+  if (
+    scouterLast.input.jobType === jobType &&
+    scouterLast.input.charType === charType
+  ) {
+    return scouterLast;
   }
   return {
-    jobType: workspace.jobType || fromScouterJob || "",
-    charType: workspace.charType || fromScouterChar || "",
+    ...scouterLast,
+    input: {
+      ...scouterLast.input,
+      jobType: jobType as JobType,
+      charType,
+      useMagicAttack: jobType === "magician",
+    },
   };
 }
 
 /** Push a character workspace into the live Scouter / Equipment localStorage. */
 export function applyWorkspaceToLive(workspace: CharacterWorkspace): void {
-  if (workspace.scouterLast?.input) {
-    storage.setScouterLast(workspace.scouterLast);
-  }
   const { jobType, charType } = resolveWorkspaceClass(workspace);
+  // Keep scouter draft class aligned with resolved live class so Scouter open
+  // does not autosave the old class back over Equipment Setup.
+  const scouterLast = syncScouterLastClass(
+    workspace.scouterLast,
+    jobType,
+    charType,
+  );
+  if (scouterLast?.input) {
+    storage.setScouterLast(scouterLast);
+  }
   // Always write so a previous character's class cannot linger in live storage.
   storage.setJobType((jobType || "") as JobType | "");
   storage.setCharType(charType || "");
@@ -251,15 +284,22 @@ export function applyWorkspaceToLive(workspace: CharacterWorkspace): void {
 /** Snapshot live Scouter / Equipment into the given character workspace key. */
 export function persistLiveToWorkspace(key: string | null | undefined): void {
   if (!key) return;
-  const scouterLast = storage.getScouterLast();
   const equipSetup = storage.getEquipSetup();
-  const { jobType, charType } = resolveWorkspaceClass({
-    scouterLast,
-    equipSetup,
-    jobType: storage.getJobType() || "",
-    charType: storage.getCharType() || "",
-    updatedAt: Date.now(),
-  });
+  // Live storage class wins (Equipment Setup / Scouter both write these).
+  const jobType =
+    storage.getJobType() ||
+    storage.getScouterLast()?.input?.jobType ||
+    "";
+  const charType =
+    storage.getCharType() ||
+    storage.getScouterLast()?.input?.charType ||
+    "";
+  let scouterLast = storage.getScouterLast();
+  const synced = syncScouterLastClass(scouterLast, jobType, charType);
+  if (synced !== scouterLast) {
+    scouterLast = synced;
+    if (scouterLast) storage.setScouterLast(scouterLast);
+  }
   const prev = getWorkspace(key);
   patchWorkspace(key, {
     scouterLast,

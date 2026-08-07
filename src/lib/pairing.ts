@@ -439,8 +439,11 @@ export type PairActiveCharacterPresetArgs = {
 };
 
 /**
- * Link Active Character to a named Scouter preset (stats + gear snapshot).
- * Applies the preset once into live storage, then pairs by id/metadata only.
+ * Link Active Character to a named Scouter preset (id / metadata only).
+ * Does not re-apply the saved snapshot into the live form — use
+ * {@link applyLinkedPresetForCharacter} or “Load linked preset” for that.
+ * Current live draft stays intact; Pair just remembers which preset id belongs
+ * to this Active Character.
  */
 export function pairActiveCharacterWithPreset(
   args: PairActiveCharacterPresetArgs,
@@ -455,7 +458,7 @@ export function pairActiveCharacterWithPreset(
   }
 
   const key = resolvePairingKey(args.characterKey);
-  applyScouterPresetToLive(preset);
+  // Persist current live draft under the character (no preset overwrite).
   if (key) persistLiveToWorkspace(key);
 
   return pairScouterAndEquip({

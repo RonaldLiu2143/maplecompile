@@ -51,27 +51,24 @@ function SetBreakdownBlock({ b }: { b: SetBreakdown }) {
   const name = SET_DISPLAY_NAMES[b.set.setType] ?? b.set.setType;
   const tiers = b.set.effects ?? [];
   const headerId = `set-fx-${b.set.setType}`;
+  const panelId = `${headerId}-panel`;
 
   const toggle = () => setOpen((v) => !v);
 
   return (
     <div
-      role="button"
-      tabIndex={0}
-      id={headerId}
-      aria-expanded={open}
-      onClick={toggle}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          toggle();
-        }
-      }}
-      className={`flex w-full min-w-0 cursor-pointer flex-col rounded-md border border-border/40 bg-surface/80 px-1.5 py-1 text-left transition hover:border-border/70 hover:bg-surface-muted/40 ${
+      className={`flex w-full min-w-0 flex-col rounded-md border border-border/40 bg-surface/80 px-1.5 py-1 text-left ${
         open ? "h-full min-h-0" : "self-start"
       }`}
     >
-      <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+      <button
+        type="button"
+        id={headerId}
+        aria-expanded={open}
+        aria-controls={panelId}
+        onClick={toggle}
+        className="flex w-full min-w-0 cursor-pointer flex-wrap items-center gap-x-1.5 gap-y-0.5 rounded text-left transition hover:bg-surface-muted/40"
+      >
         <span
           className="inline-flex h-3.5 w-3.5 shrink-0 items-center justify-center text-[10px] opacity-60"
           aria-hidden
@@ -89,7 +86,7 @@ function SetBreakdownBlock({ b }: { b: SetBreakdown }) {
             <img
               key={item.id}
               src={item.imgUrl}
-              alt={item.name}
+              alt=""
               title={item.name}
               width={18}
               height={18}
@@ -97,9 +94,10 @@ function SetBreakdownBlock({ b }: { b: SetBreakdown }) {
             />
           ))}
         </div>
-      </div>
+      </button>
       {open && tiers.length > 0 ? (
         <ul
+          id={panelId}
           className="mt-0.5 min-h-0 flex-1 space-y-0 pl-5 text-[11px] leading-tight"
           aria-labelledby={headerId}
         >
