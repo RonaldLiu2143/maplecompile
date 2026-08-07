@@ -156,10 +156,10 @@ export function MiniScouterCharacterSearch({
             onClick={() => void handleUse()}
             disabled={using || isActive}
             aria-pressed={isActive}
-            className={`shrink-0 rounded px-2.5 py-1 text-xs font-semibold transition dark:text-zinc-900 ${
+            className={`shrink-0 rounded px-2.5 py-1 text-xs font-semibold transition ${
               isActive
-                ? "cursor-default border border-accent bg-accent text-white ring-2 ring-accent/40"
-                : "bg-accent text-white hover:opacity-90 disabled:opacity-50"
+                ? "cursor-not-allowed border border-border/50 bg-surface-muted text-foreground/45"
+                : "bg-accent text-white hover:opacity-90 disabled:opacity-50 dark:text-zinc-900"
             }`}
             title={
               isActive
