@@ -52,6 +52,7 @@ import {
   persistLiveToWorkspace,
 } from "@/lib/character-workspace";
 import { ActiveCharacterBar } from "@/components/ActiveCharacterBar";
+import { ConfirmModal } from "@/components/ConfirmModal";
 import { EquipmentSetupPanel } from "@/components/EquipmentSetupPanel";
 import { HexaEfficiencyPanel } from "./hexa-efficiency";
 import type { EquipSetup, FlameSetup, JobType } from "@/lib/types";
@@ -375,6 +376,11 @@ export default function ScouterPage() {
   } | null>(null);
   const [sharing, setSharing] = useState(false);
   const [presetModal, setPresetModal] = useState<PresetModalMode | null>(null);
+  /** Pending Character Stats class change that would wipe embedded gear. */
+  const [pendingClassChange, setPendingClassChange] = useState<{
+    jobType: JobType;
+    charType: string;
+  } | null>(null);
   const [draftReady, setDraftReady] = useState(false);
   const [showHexaEff, setShowHexaEff] = useState(false);
   const hexaEffRef = useRef<HTMLDivElement | null>(null);
@@ -759,9 +765,10 @@ export default function ScouterPage() {
       stats: { ...prev.stats, [key]: triple },
     }));
 
-  const onClassChange = (value: string) => {
-    const parsed = parseClassValue(value);
-    if (!parsed) return;
+  const applyClassChange = (parsed: {
+    jobType: JobType;
+    charType: string;
+  }) => {
     // Character Stats is source of truth — push live job/char so embedded
     // Equipment Setup catalogs/set effects stay lined up immediately.
     storage.setJobType(parsed.jobType);
@@ -776,6 +783,26 @@ export default function ScouterPage() {
         : false,
     }));
     setHexa(defaultHexaLevels());
+  };
+
+  const onClassChange = (value: string) => {
+    const parsed = parseClassValue(value);
+    if (!parsed) return;
+    if (
+      parsed.jobType === input.jobType &&
+      parsed.charType === input.charType
+    ) {
+      return;
+    }
+    // Flush debounced gear writes so the filled-slot check is current.
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event("maplecompile-flush-equip"));
+    }
+    if (countFilledSlots(storage.getEquipSetup()) > 0) {
+      setPendingClassChange(parsed);
+      return;
+    }
+    applyClassChange(parsed);
   };
 
   const allBuffsOn = BUFF_DEFS.filter((b) => !b.mutexGroup).every((b) =>
@@ -1054,8 +1081,6 @@ export default function ScouterPage() {
     if (mapped) {
       // Same path as the Class dropdown so magic-attack / hexa / 1H sword update.
       onClassChange(`${mapped.jobType}:${mapped.charType}`);
-      storage.setJobType(mapped.jobType);
-      storage.setCharType(mapped.charType);
     }
     if (character.level > 0) {
       setInput((prev) => ({ ...prev, level: character.level }));
@@ -2250,6 +2275,22 @@ export default function ScouterPage() {
         onSaveOverwrite={(id) => savePreset({ overwriteId: id })}
         onSaveAsNew={() => savePreset({ asNew: true })}
         onDelete={(id) => deletePresetById(id)}
+      />
+
+      <ConfirmModal
+        open={pendingClassChange != null}
+        title="Switch class?"
+        message="Switching class will clear your current gear setup. This cannot be undone from here."
+        confirmLabel="Switch class"
+        cancelLabel="Cancel"
+        titleId="scouter-class-change-confirm-title"
+        onCancel={() => setPendingClassChange(null)}
+        onConfirm={() => {
+          if (!pendingClassChange) return;
+          const next = pendingClassChange;
+          setPendingClassChange(null);
+          applyClassChange(next);
+        }}
       />
 
       <ShareGalleryModal

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { ConfirmModal } from "@/components/ConfirmModal";
 import { EquipGrid, slotEquip } from "@/components/EquipGrid";
 import {
   EquipItemEditor,
@@ -187,6 +188,11 @@ export function EquipmentSetupPanel({
   const [customPresetName, setCustomPresetName] = useState("");
   const [loadedCustomPresetId, setLoadedCustomPresetId] = useState("");
   const [presetNameTouched, setPresetNameTouched] = useState(false);
+  /** Pending local class change that would wipe a non-empty loadout. */
+  const [pendingClassChange, setPendingClassChange] = useState<{
+    jobType: JobType;
+    charType: string;
+  } | null>(null);
   const skipWorkspaceAutosave = useRef(false);
   const prevClassRef = useRef<string | null>(null);
 
@@ -410,24 +416,38 @@ export function EquipmentSetupPanel({
     [],
   );
 
+  const applyLocalClassChange = useCallback(
+    (parsed: { jobType: JobType; charType: string }, clearGear: boolean) => {
+      setLocalJobType(parsed.jobType);
+      setLocalCharType(parsed.charType);
+      prevClassRef.current = `${parsed.jobType}:${parsed.charType}`;
+      if (clearGear) {
+        setSetup({});
+        setFlameSetup({});
+        storage.clearSetup();
+        setPanel(null);
+        setLoadedCustomPresetId("");
+        setCustomPresetId("");
+        setPresetNameTouched(false);
+        setStarterMsg(null);
+      }
+      void loadCatalog(parsed.jobType, parsed.charType);
+    },
+    [loadCatalog],
+  );
+
   const onClassChange = (value: string) => {
     if (classControlled) return;
     const parsed = parseClassValue(value);
     if (!parsed) return;
     const changed =
       parsed.jobType !== localJobType || parsed.charType !== localCharType;
-    setLocalJobType(parsed.jobType);
-    setLocalCharType(parsed.charType);
-    prevClassRef.current = `${parsed.jobType}:${parsed.charType}`;
-    if (changed && clearSetupOnClassChange) {
-      setSetup({});
-      setFlameSetup({});
-      storage.clearSetup();
-      setPanel(null);
-      setLoadedCustomPresetId("");
-      setCustomPresetId("");
+    if (!changed) return;
+    if (clearSetupOnClassChange && countFilledSlots(setup) > 0) {
+      setPendingClassChange(parsed);
+      return;
     }
-    if (changed) void loadCatalog(parsed.jobType, parsed.charType);
+    applyLocalClassChange(parsed, clearSetupOnClassChange);
   };
 
   const onSlotClick = (slotId: string) => {
@@ -969,6 +989,22 @@ export function EquipmentSetupPanel({
           <SetEffectsBreakdown setup={setup} setList={setList} />
         )}
       </div>
+
+      <ConfirmModal
+        open={pendingClassChange != null}
+        title="Switch class?"
+        message="Switching class will clear your current gear setup. This cannot be undone from here."
+        confirmLabel="Switch class"
+        cancelLabel="Cancel"
+        titleId="equip-class-change-confirm-title"
+        onCancel={() => setPendingClassChange(null)}
+        onConfirm={() => {
+          if (!pendingClassChange) return;
+          const next = pendingClassChange;
+          setPendingClassChange(null);
+          applyLocalClassChange(next, true);
+        }}
+      />
     </div>
   );
 }
