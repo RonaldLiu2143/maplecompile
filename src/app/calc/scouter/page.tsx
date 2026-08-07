@@ -1421,11 +1421,6 @@ export default function ScouterPage() {
                   >
                     Save Preset
                   </button>
-                  {presetMsg ? (
-                    <span className="text-[11px] font-medium text-accent">
-                      {presetMsg}
-                    </span>
-                  ) : null}
                 </div>
                 <div className="flex flex-wrap items-center justify-end gap-1.5">
                   <button
@@ -1475,44 +1470,61 @@ export default function ScouterPage() {
                     Browse gallery
                   </Link>
                 </div>
-                <p className="text-[11px] opacity-55">
-                  {existingGalleryPost ? (
-                    <>
-                      Public post linked
-                      {existingGalleryPost.name
-                        ? ` · ${existingGalleryPost.name}`
-                        : ""}{" "}
-                      ·{" "}
-                      <Link
-                        href={`/calc/character/share/${existingGalleryPost.id}`}
-                        className="font-semibold text-accent underline-offset-2 hover:underline"
-                      >
-                        Open
-                      </Link>
-                    </>
-                  ) : (
-                    "Not posted publicly"
-                  )}
+                {/* Fixed-height status so flash / gallery text does not reflow Character Stats */}
+                <p
+                  className={`min-h-[1.125rem] text-right text-[11px] leading-[1.125rem] ${
+                    presetMsg
+                      ? "font-medium text-accent"
+                      : "opacity-55"
+                  }`}
+                  role={presetMsg ? "status" : undefined}
+                >
+                  {presetMsg
+                    ? presetMsg
+                    : existingGalleryPost
+                      ? (
+                          <>
+                            Public post linked
+                            {existingGalleryPost.name
+                              ? ` · ${existingGalleryPost.name}`
+                              : ""}{" "}
+                            ·{" "}
+                            <Link
+                              href={`/calc/character/share/${existingGalleryPost.id}`}
+                              className="font-semibold text-accent underline-offset-2 hover:underline"
+                            >
+                              Open
+                            </Link>
+                          </>
+                        )
+                      : (
+                        "Not posted publicly"
+                      )}
                 </p>
-                {shareUrl ? (
-                  <div className="flex flex-wrap items-center justify-end gap-1.5">
-                    <input
-                      type="text"
-                      readOnly
-                      value={shareUrl}
-                      className="min-w-0 flex-1 rounded border border-border/50 bg-background px-2.5 py-1.5 text-xs outline-none focus:border-accent sm:max-w-xs"
-                      aria-label="Share link"
-                      onFocus={(e) => e.currentTarget.select()}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => void copyShareUrl()}
-                      className="rounded border border-border/50 bg-background px-2.5 py-1.5 text-xs font-semibold transition hover:bg-surface-muted"
-                    >
-                      Copy link
-                    </button>
-                  </div>
-                ) : null}
+                <div
+                  className={`flex min-h-[2rem] flex-wrap items-center justify-end gap-1.5 ${
+                    shareUrl ? "" : "invisible"
+                  }`}
+                  aria-hidden={!shareUrl}
+                >
+                  <input
+                    type="text"
+                    readOnly
+                    value={shareUrl ?? ""}
+                    className="min-w-0 flex-1 rounded border border-border/50 bg-background px-2.5 py-1.5 text-xs outline-none focus:border-accent sm:max-w-xs"
+                    aria-label="Share link"
+                    onFocus={(e) => e.currentTarget.select()}
+                    tabIndex={shareUrl ? 0 : -1}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => void copyShareUrl()}
+                    disabled={!shareUrl}
+                    className="rounded border border-border/50 bg-background px-2.5 py-1.5 text-xs font-semibold transition hover:bg-surface-muted disabled:opacity-40"
+                  >
+                    Copy link
+                  </button>
+                </div>
               </div>
             </div>
 
