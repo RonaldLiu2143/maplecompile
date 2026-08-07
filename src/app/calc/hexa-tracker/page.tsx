@@ -1198,28 +1198,33 @@ export default function HexaTrackerPage() {
                 ) : null}
 
                 <div className="flex flex-wrap items-center gap-2">
-                  {priorityUndo.length > 0 ? (
-                    <button
-                      type="button"
-                      onClick={goBackPriority}
-                      className="inline-flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold transition hover:bg-surface-muted"
+                  <button
+                    type="button"
+                    onClick={goBackPriority}
+                    disabled={priorityUndo.length === 0}
+                    aria-disabled={priorityUndo.length === 0}
+                    title={
+                      priorityUndo.length === 0
+                        ? "Already at the first upgrade"
+                        : "Undo last priority upgrade"
+                    }
+                    className="inline-flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      className="h-3.5 w-3.5"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.25"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden
                     >
-                      <svg
-                        viewBox="0 0 24 24"
-                        className="h-3.5 w-3.5"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2.25"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        aria-hidden
-                      >
-                        <path d="M19 12H5" />
-                        <path d="m12 19-7-7 7-7" />
-                      </svg>
-                      Go back
-                    </button>
-                  ) : null}
+                      <path d="M19 12H5" />
+                      <path d="m12 19-7-7 7-7" />
+                    </svg>
+                    Go back
+                  </button>
                   <button
                     type="button"
                     onClick={applyNextPriority}
@@ -1229,7 +1234,7 @@ export default function HexaTrackerPage() {
                   </button>
                 </div>
               </div>
-            ) : priorityUndo.length > 0 ? (
+            ) : (
               <div className="mt-3 space-y-3">
                 <p className="text-sm opacity-65">
                   All nodes at target — nice work.
@@ -1237,7 +1242,14 @@ export default function HexaTrackerPage() {
                 <button
                   type="button"
                   onClick={goBackPriority}
-                  className="inline-flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold transition hover:bg-surface-muted"
+                  disabled={priorityUndo.length === 0}
+                  aria-disabled={priorityUndo.length === 0}
+                  title={
+                    priorityUndo.length === 0
+                      ? "Already at the first upgrade"
+                      : "Undo last priority upgrade"
+                  }
+                  className="inline-flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
                 >
                   <svg
                     viewBox="0 0 24 24"
@@ -1255,10 +1267,6 @@ export default function HexaTrackerPage() {
                   Go back
                 </button>
               </div>
-            ) : (
-              <p className="mt-2 text-sm opacity-65">
-                All nodes at target — nice work.
-              </p>
             )}
           </section>
 
