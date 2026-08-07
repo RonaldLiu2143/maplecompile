@@ -611,17 +611,6 @@ export default function SetupClient() {
 
   return (
     <div className="space-y-8">
-      <header className="border-l-[3px] border-accent pl-3">
-        <h1 className="font-display text-3xl font-bold tracking-tight">
-          Equipment Setup & Set Effects
-        </h1>
-        <p className="mt-2 max-w-2xl text-sm opacity-75">
-          Build your loadout, then click an equipped piece to set Star Force,
-          flames, and potential lines in one place. Pair with Scouter so tools
-          share the same character and gear grid.
-        </p>
-      </header>
-
       <ActiveCharacterBar onSwitched={reloadSetupFromLiveStorage} />
 
       <PairingBar compact />
@@ -646,10 +635,22 @@ export default function SetupClient() {
         </label>
       </section>
 
-      <section className="space-y-3">
-        <h2 className="border-l-2 border-accent pl-2 text-sm font-bold uppercase tracking-wide text-accent/90">
-          2) Your gear
-        </h2>
+      <div className="space-y-5 rounded-xl border border-border/50 bg-surface/50 p-4 sm:p-5">
+        <header className="border-l-[3px] border-accent pl-3">
+          <h1 className="font-display text-3xl font-bold tracking-tight">
+            Equipment Setup & Set Effects
+          </h1>
+          <p className="mt-2 max-w-2xl text-sm opacity-75">
+            Build your loadout, then click an equipped piece to set Star Force,
+            flames, and potential lines in one place. Pair with Scouter so tools
+            share the same character and gear grid.
+          </p>
+        </header>
+
+        <section className="space-y-3">
+          <h2 className="border-l-2 border-accent pl-2 text-sm font-bold uppercase tracking-wide text-accent/90">
+            2) Your gear
+          </h2>
 
         {starterMsg ? (
           <p className="text-xs font-medium text-accent">{starterMsg}</p>
@@ -843,11 +844,12 @@ export default function SetupClient() {
             </div>
           </div>
         </div>
-      </section>
+        </section>
 
-      {status === "ready" && (
-        <SetEffectsPanel setup={setup} setList={setList} />
-      )}
+        {status === "ready" && (
+          <SetEffectsPanel setup={setup} setList={setList} />
+        )}
+      </div>
     </div>
   );
 }
