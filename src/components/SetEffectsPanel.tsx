@@ -66,7 +66,11 @@ function SetBreakdownBlock({ b }: { b: SetBreakdown }) {
           toggle();
         }
       }}
-      className="w-full cursor-pointer rounded-md border border-border/40 bg-surface/80 px-1.5 py-1 text-left transition hover:border-border/70 hover:bg-surface-muted/40"
+      className={
+        open
+          ? "flex h-full min-h-0 w-full min-w-0 cursor-pointer flex-col rounded-md border border-border/40 bg-surface/80 px-1.5 py-1 text-left transition hover:border-border/70 hover:bg-surface-muted/40"
+          : "flex w-full min-w-0 cursor-pointer flex-col self-start rounded-md border border-border/40 bg-surface/80 px-1.5 py-1 text-left transition hover:border-border/70 hover:bg-surface-muted/40"
+      }
     >
       <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
         <span
@@ -97,7 +101,7 @@ function SetBreakdownBlock({ b }: { b: SetBreakdown }) {
       </div>
       {open && tiers.length > 0 ? (
         <ul
-          className="mt-0.5 space-y-0 pl-5 text-[11px] leading-tight"
+          className="mt-0.5 min-h-0 flex-1 space-y-0 pl-5 text-[11px] leading-tight"
           aria-labelledby={headerId}
         >
           {tiers.map((tier) => {
@@ -145,7 +149,7 @@ export function SetEffectsBreakdown({ setup, setList }: Props) {
       {activeSets.length === 0 ? (
         <p className="mt-0.5 text-xs opacity-60">— No active sets —</p>
       ) : (
-        <div className="mt-1 grid grid-cols-1 items-start gap-1 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="mt-1 grid grid-cols-1 items-stretch gap-1 sm:grid-cols-2 xl:grid-cols-3">
           {activeSets.map((b) => (
             <SetBreakdownBlock key={b.set.setType} b={b} />
           ))}
