@@ -40,6 +40,7 @@ import {
   CLASS_OPTIONS,
   DEFAULT_CHAR,
   DEFAULT_JOB,
+  classFromJobName,
   getCharName,
   parseClassValue,
 } from "@/lib/jobs";
@@ -62,15 +63,7 @@ import {
   type BossConvertedStatValues,
 } from "./boss-converted-stat-panel";
 import { countFilledSlots } from "@/lib/starter-loadouts";
-import {
-  addToRoster,
-  readRosterState,
-} from "@/lib/dashboard/roster";
-import {
-  isStickyActiveSwitchBlocked,
-  switchActiveCharacter,
-  UNLOCK_TO_CHANGE_ACTIVE_MSG,
-} from "@/lib/active-character";
+import { readRosterState } from "@/lib/dashboard/roster";
 import type { CharacterLookupResult } from "@/lib/character/lookup";
 import { parseUserNumber } from "@/lib/scouter/parse-number";
 import { filterDisplayText } from "@/lib/content-filter";
@@ -1020,22 +1013,23 @@ export default function ScouterPage() {
     }
   };
 
-  const handleUseActiveCharacter = (
-    character: CharacterLookupResult,
-  ): boolean => {
-    const target = { name: character.name, region: character.region };
-    if (isStickyActiveSwitchBlocked(target)) {
-      flashPresetMsg(UNLOCK_TO_CHANGE_ACTIVE_MSG);
-      return false;
-    }
-    const { entry } = addToRoster({
-      name: character.name,
-      region: character.region,
-    });
-    switchActiveCharacter(entry);
-    reloadDraftFromLiveStorage();
+  /** Label / class this scouter draft with a looked-up IGN — does not change Active Character. */
+  const handleUseForStats = (character: CharacterLookupResult): boolean => {
     setPresetName(character.name);
-    flashPresetMsg(`Active: ${character.name}`);
+    const mapped = classFromJobName(character.jobName);
+    if (mapped) {
+      setInput((prev) => ({
+        ...prev,
+        jobType: mapped.jobType,
+        charType: mapped.charType,
+        level: character.level > 0 ? character.level : prev.level,
+      }));
+      storage.setJobType(mapped.jobType);
+      storage.setCharType(mapped.charType);
+    } else if (character.level > 0) {
+      setInput((prev) => ({ ...prev, level: character.level }));
+    }
+    flashPresetMsg(`Paired scouter with ${character.name}`);
     return true;
   };
 
@@ -1511,7 +1505,7 @@ export default function ScouterPage() {
             </div>
 
             <MiniScouterCharacterSearch
-              onUseForStats={handleUseActiveCharacter}
+              onUseForStats={handleUseForStats}
             />
           </div>
 

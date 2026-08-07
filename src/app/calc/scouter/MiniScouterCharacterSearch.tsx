@@ -163,11 +163,11 @@ export function MiniScouterCharacterSearch({
             }`}
             title={
               isActive
-                ? "Active — this character is applied to stats"
-                : "Set as active character for pairing and this page’s draft"
+                ? "Paired — this IGN is linked to the current scouter"
+                : "Pair this IGN with the current scouter (does not change Active Character)"
             }
           >
-            {using ? "…" : isActive ? "Active" : "Use for stats"}
+            {using ? "…" : isActive ? "Paired" : "Use for stats"}
           </button>
         </div>
       ) : null}
