@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { calculateScouter, resolveMainSecondary } from "@/lib/scouter/calc";
+import { resolveMainSecondary } from "@/lib/scouter/calc";
 import {
   BUFF_DEFS,
   defaultBuffState,
@@ -127,32 +127,6 @@ function stackIed(current: number, add: number): number {
   const a = Math.min(Math.max(current, 0), 99.999) / 100;
   const b = Math.min(Math.max(add, 0), 99.999) / 100;
   return Math.min(99.999999, (1 - (1 - a) * (1 - b)) * 100);
-}
-
-/**
- * Additional Spec Sim CP metrics — in-game Combat Power formula (local), not
- * MapleScouter `combatPower` / `exchangePower*` (those are unreliable or ITEM
- * STAT damage indexes, which look massively inflated next to real CP).
- *
- * - Combat Power / Converted CP: skill-excluded in-game CP from the scouter input
- * - HEXA CP: same CP, scaled by Maple CALC_DMG hexa/item damage when available
- */
-function simCombatPowerMetrics(
-  input: ScouterInput,
-  maple: MapleScouterCalculatedData | null | undefined,
-): { combat: number; exchange: number; exchangeHexa: number } {
-  const combat = calculateScouter(input).combatPower;
-  const item = Number(maple?.exchangePower ?? 0);
-  const hexa = Number(maple?.exchangePowerHexa ?? 0);
-  const exchangeHexa =
-    item > 0 && Number.isFinite(hexa)
-      ? Math.floor(combat * (hexa / item))
-      : combat;
-  return {
-    combat,
-    exchange: combat,
-    exchangeHexa,
-  };
 }
 
 export function applySpecSimToInput(
@@ -606,12 +580,6 @@ export function AdditionalSpecSimulation({
         )
       : 0;
 
-    const baseCp = simCombatPowerMetrics(draftMeta.input, baseline);
-    const curCp =
-      applied && appliedInput
-        ? simCombatPowerMetrics(appliedInput, result)
-        : baseCp;
-
     return {
       fd300,
       fd380,
@@ -623,14 +591,8 @@ export function AdditionalSpecSimulation({
       dHexa300: hexa300 - hexa300Base,
       dItem380: item380 - item380Base,
       dHexa380: hexa380 - hexa380Base,
-      combat: curCp.combat,
-      dCombat: curCp.combat - baseCp.combat,
-      exchange: curCp.exchange,
-      dExchange: curCp.exchange - baseCp.exchange,
-      exchangeHexa: curCp.exchangeHexa,
-      dExchangeHexa: curCp.exchangeHexa - baseCp.exchangeHexa,
     };
-  }, [applied, appliedInput, baseline, draftMeta.input, result, simEnabled]);
+  }, [applied, baseline, result, simEnabled]);
 
   const onApply = async () => {
     setLoading(true);
@@ -713,7 +675,7 @@ export function AdditionalSpecSimulation({
         </label>
       </div>
 
-      <div className="mb-4 grid grid-cols-2 gap-2 lg:grid-cols-[minmax(0,8.5rem)_minmax(0,8.5rem)_minmax(0,1fr)]">
+      <div className="mb-4 grid grid-cols-2 gap-2">
         <div className="rounded-lg border border-border/40 bg-background/40 p-2">
           <p className="mb-1.5 text-xs font-semibold">Boss 300</p>
           <div className="flex flex-col gap-1">
@@ -776,41 +738,6 @@ export function AdditionalSpecSimulation({
                   : "0"
               }
               delta={applied ? formatSigned(Math.round(metrics.dHexa380)) : "—"}
-              emphasize
-            />
-          </div>
-        </div>
-        <div className="col-span-2 min-w-0 rounded-lg border border-border/40 bg-background/40 p-3 lg:col-span-1">
-          <p className="mb-2 text-sm font-semibold">Combat Power</p>
-          <div className="grid grid-cols-3 gap-2">
-            <SimMetric
-              label="Combat Power"
-              value={
-                applied ? Math.round(metrics.combat).toLocaleString() : "0"
-              }
-              delta={applied ? formatSigned(Math.round(metrics.dCombat)) : "—"}
-            />
-            <SimMetric
-              label="Converted CP"
-              value={
-                applied ? Math.round(metrics.exchange).toLocaleString() : "0"
-              }
-              delta={
-                applied ? formatSigned(Math.round(metrics.dExchange)) : "—"
-              }
-            />
-            <SimMetric
-              label="HEXA CP"
-              value={
-                applied
-                  ? Math.round(metrics.exchangeHexa).toLocaleString()
-                  : "0"
-              }
-              delta={
-                applied
-                  ? formatSigned(Math.round(metrics.dExchangeHexa))
-                  : "—"
-              }
               emphasize
             />
           </div>
