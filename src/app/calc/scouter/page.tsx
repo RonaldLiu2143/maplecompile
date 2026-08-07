@@ -1393,6 +1393,35 @@ export default function ScouterPage() {
 
               <div className="ml-auto min-w-0 max-w-full space-y-1.5 text-right">
                 <div className="flex flex-wrap items-center justify-end gap-1.5">
+                  <input
+                    type="text"
+                    placeholder="Preset name"
+                    value={presetName}
+                    onChange={(e) => setPresetName(e.target.value)}
+                    className="min-w-0 flex-1 rounded border border-border/50 bg-background px-2.5 py-1.5 text-xs outline-none focus:border-accent sm:max-w-[14rem]"
+                    aria-label="Preset name"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setPresetModal("recall")}
+                    className="rounded border border-border/50 bg-background px-2.5 py-1.5 text-xs font-semibold transition hover:bg-surface-muted"
+                  >
+                    Recall Saved Preset
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPresetModal("save")}
+                    className="rounded bg-accent px-2.5 py-1.5 text-xs font-semibold text-white transition hover:opacity-90 dark:text-zinc-900"
+                  >
+                    Save Preset
+                  </button>
+                  {presetMsg ? (
+                    <span className="text-[11px] font-medium text-accent">
+                      {presetMsg}
+                    </span>
+                  ) : null}
+                </div>
+                <div className="flex flex-wrap items-center justify-end gap-1.5">
                   <button
                     type="button"
                     onClick={() => void shareLoadout({ asPublic: false })}
@@ -1484,44 +1513,6 @@ export default function ScouterPage() {
             <MiniScouterCharacterSearch
               onUseForStats={handleUseActiveCharacter}
             />
-
-            {/* —— Presets —— */}
-            <div className="space-y-2 rounded-lg border border-border/40 bg-surface/70 p-2.5">
-              <div className="flex flex-wrap items-center justify-between gap-1">
-                <span className="text-[10px] font-semibold uppercase tracking-wide opacity-55">
-                  Presets
-                </span>
-                {presetMsg ? (
-                  <span className="text-[11px] font-medium text-accent">
-                    {presetMsg}
-                  </span>
-                ) : null}
-              </div>
-              <div className="flex flex-wrap items-center gap-1.5">
-                <input
-                  type="text"
-                  placeholder="Preset name"
-                  value={presetName}
-                  onChange={(e) => setPresetName(e.target.value)}
-                  className="min-w-0 flex-1 rounded border border-border/50 bg-background px-2.5 py-1.5 text-xs outline-none focus:border-accent sm:max-w-[14rem]"
-                  aria-label="Preset name"
-                />
-                <button
-                  type="button"
-                  onClick={() => setPresetModal("recall")}
-                  className="rounded border border-border/50 bg-background px-2.5 py-1.5 text-xs font-semibold transition hover:bg-surface-muted"
-                >
-                  Recall Saved Preset
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPresetModal("save")}
-                  className="rounded bg-accent px-2.5 py-1.5 text-xs font-semibold text-white transition hover:opacity-90 dark:text-zinc-900"
-                >
-                  Save Preset
-                </button>
-              </div>
-            </div>
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-4">
