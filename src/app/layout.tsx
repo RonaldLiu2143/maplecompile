@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import {
   IBM_Plex_Sans,
   JetBrains_Mono,
@@ -46,12 +47,12 @@ export default function RootLayout({
       data-backdrop="deep-night"
       suppressHydrationWarning
     >
-      <head>
-        <script
+      <body className="flex min-h-full flex-col" suppressHydrationWarning>
+        <Script
+          id="theme-boot"
+          strategy="beforeInteractive"
           dangerouslySetInnerHTML={{ __html: themeBootScript() }}
         />
-      </head>
-      <body className="flex min-h-full flex-col" suppressHydrationWarning>
         <SiteShell>{children}</SiteShell>
       </body>
     </html>

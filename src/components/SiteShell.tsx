@@ -23,9 +23,13 @@ type NavLink = {
   match?: "exact" | "prefix";
 };
 
-const PRIMARY_LINKS: NavLink[] = [
+/** Top-of-nav links — static module constants so SSR and client first paint match. */
+const TOP_LINKS: NavLink[] = [
   { href: "/dashboard", label: "Dashboard", match: "exact" },
   { href: "/calc/character", label: "Character Search", match: "exact" },
+];
+
+const SCOUTER_LINKS: NavLink[] = [
   { href: "/calc/scouter", label: "Scouter", match: "exact" },
   { href: "/calc/scouter/gallery", label: "Gallery" },
 ];
@@ -48,14 +52,20 @@ const EQUIPMENT_LINKS: NavLink[] = [
   { href: "/calc/equips/setup", label: "Equipment Setup" },
 ];
 
-const GUIDE_LINK: NavLink = {
-  href: "/onboarding",
-  label: "Guide",
-  match: "exact",
-};
+const GUIDE_LINKS: NavLink[] = [
+  { href: "/onboarding", label: "Guide", match: "exact" },
+];
 
 function linkActive(pathname: string, link: NavLink): boolean {
   if (link.match === "exact") {
+    // Character Search: highlight search + profile routes, not share posts.
+    if (link.href === "/calc/character") {
+      return (
+        pathname === "/calc/character" ||
+        (pathname.startsWith("/calc/character/") &&
+          !pathname.startsWith("/calc/character/share"))
+      );
+    }
     return (
       pathname === link.href ||
       pathname.startsWith(`${link.href}/result`) ||
@@ -116,10 +126,12 @@ function NavGroup({
   pathname: string;
 }) {
   const childActive = anyLinkActive(pathname, links);
-  const [expanded, setExpanded] = useState(childActive);
+  // null = follow route; boolean = user override. Avoids SSR/client first-paint drift.
+  const [userExpanded, setUserExpanded] = useState<boolean | null>(null);
+  const expanded = userExpanded ?? childActive;
 
   useEffect(() => {
-    if (childActive) setExpanded(true);
+    if (childActive) setUserExpanded(null);
   }, [childActive, pathname]);
 
   return (
@@ -127,7 +139,7 @@ function NavGroup({
       <button
         type="button"
         aria-expanded={expanded}
-        onClick={() => setExpanded((v) => !v)}
+        onClick={() => setUserExpanded(!(userExpanded ?? childActive))}
         className={[
           "flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm font-semibold transition-colors",
           childActive
@@ -344,16 +356,13 @@ export function SiteShell({ children }: { children: ReactNode }) {
               id="site-sidebar-nav"
               className="maple-scroll flex flex-1 flex-col gap-2 px-1 py-2"
             >
-              <NavSection
-                links={PRIMARY_LINKS.slice(0, 2)}
-                pathname={pathname}
-              />
+              <NavSection links={TOP_LINKS} pathname={pathname} />
               <NavGroup
                 title="Roster"
                 links={ROSTER_LINKS}
                 pathname={pathname}
               />
-              <NavSection links={PRIMARY_LINKS.slice(2)} pathname={pathname} />
+              <NavSection links={SCOUTER_LINKS} pathname={pathname} />
               <NavGroup
                 title="Calculators"
                 links={CALCULATOR_LINKS}
@@ -364,7 +373,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
                 links={EQUIPMENT_LINKS}
                 pathname={pathname}
               />
-              <NavSection links={[GUIDE_LINK]} pathname={pathname} />
+              <NavSection links={GUIDE_LINKS} pathname={pathname} />
             </nav>
             <ThemePicker />
           </>
