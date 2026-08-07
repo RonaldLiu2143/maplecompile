@@ -53,7 +53,9 @@ import {
 } from "@/lib/character-workspace";
 import { ActiveCharacterBar } from "@/components/ActiveCharacterBar";
 import { PairingBar } from "@/components/PairingBar";
+import { EquipmentSetupPanel } from "@/components/EquipmentSetupPanel";
 import { HexaEfficiencyPanel } from "./hexa-efficiency";
+import type { JobType } from "@/lib/types";
 import { ShareGalleryModal } from "./share-gallery-modal";
 import { MiniScouterCharacterSearch } from "./MiniScouterCharacterSearch";
 import { PresetModal, type PresetModalMode } from "./preset-modal";
@@ -392,6 +394,8 @@ export default function ScouterPage() {
   );
   /** Skip autosave while swapping active-character workspace into React state. */
   const skipWorkspaceAutosave = useRef(false);
+  /** Bump so embedded Equipment Setup reloads with Active character. */
+  const [equipReloadToken, setEquipReloadToken] = useState(0);
 
   useEffect(() => {
     if (!missingFields) return;
@@ -733,6 +737,7 @@ export default function ScouterPage() {
     else setHexa(defaultHexaLevels().map(() => 0));
     setPresetName(last?.name?.trim() || "");
     setLoadedPresetId("");
+    setEquipReloadToken((n) => n + 1);
     queueMicrotask(() => {
       skipWorkspaceAutosave.current = false;
     });
@@ -2183,6 +2188,18 @@ export default function ScouterPage() {
           </section>
         </div>
       </div>
+
+      {draftReady ? (
+        <section className="overflow-hidden rounded-lg border border-border/60 border-t-2 border-t-accent bg-surface/90 p-3 sm:p-4">
+          <EquipmentSetupPanel
+            variant="embedded"
+            showClassSelect={false}
+            jobType={(input.jobType || DEFAULT_JOB) as JobType}
+            charType={input.charType || DEFAULT_CHAR}
+            reloadToken={equipReloadToken}
+          />
+        </section>
+      ) : null}
 
       {showHexaEff ? (
         <div ref={hexaEffRef}>
