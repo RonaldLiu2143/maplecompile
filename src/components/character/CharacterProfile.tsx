@@ -362,9 +362,9 @@ function CompactCharacterProfile({
                     Heroic
                   </span>
                 ) : null}
-                {character.isMain ? (
+                {world ? (
                   <span className="rounded-md border border-border px-1.5 py-0.5 text-[0.65rem] font-semibold opacity-70">
-                    World main
+                    {world}
                   </span>
                 ) : null}
                 {dense ? (
@@ -536,9 +536,9 @@ function FullCharacterProfile({
                       Interactive
                     </span>
                   )}
-                  {character.isMain ? (
+                  {world ? (
                     <span className="rounded-md border border-border px-2 py-0.5 text-xs font-semibold opacity-70">
-                      World main
+                      {world}
                     </span>
                   ) : null}
                 </div>
