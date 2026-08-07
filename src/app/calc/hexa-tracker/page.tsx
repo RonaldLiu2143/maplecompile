@@ -49,6 +49,7 @@ import {
   HEXA_MAX_LEVEL,
   clearHexaScouterPairing,
   characterHasScouterDraft,
+  defaultHexaTrackerState,
   formatHexaPairingLabel,
   getHexaScouterPairing,
   importLevelsFromPairedScouter,
@@ -80,13 +81,6 @@ const SOL_ERDA_ICON =
   "https://cdn.maplehub.app/skill-images/sol_erda.webp";
 
 type ViewMode = "characters" | "preview";
-
-/** One applied Upgrade step that Prev can undo when the peek cursor is at 0. */
-type PriorityUndoStep = {
-  slotIndex: number | null;
-  fromLevel: number;
-  toLevel: number;
-};
 
 /** Resolve HEXA job class for a roster key without switching sticky primary. */
 function charTypeForRosterKey(
@@ -327,8 +321,7 @@ export default function HexaTrackerPage() {
   const [showUpgradePath, setShowUpgradePath] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
   const [bcsDraft, setBcsDraft] = useState(String(DEFAULT_BOSS_CONVERTED_STAT));
-  const [priorityUndo, setPriorityUndo] = useState<PriorityUndoStep[]>([]);
-  /** Peek index into the remaining priority path (0 = next Upgrade target). */
+  /** Peek index into the remaining priority path (0 = next recommended step). */
   const [priorityIndex, setPriorityIndex] = useState(0);
 
   const activeCharType =
@@ -442,7 +435,7 @@ export default function HexaTrackerPage() {
     }
     setRosterKey(key);
     setViewMode("characters");
-    setPriorityUndo([]);
+    setPriorityIndex(0);
     const tracker = loadHexaTracker(key || null);
     setState(tracker);
     setPairing(getHexaScouterPairing(key || null));
@@ -525,7 +518,7 @@ export default function HexaTrackerPage() {
     const key = entryKey(entry);
     setRosterKey(key);
     setViewMode("characters");
-    setPriorityUndo([]);
+    setPriorityIndex(0);
     setState(loadHexaTracker(key));
     setPairing(getHexaScouterPairing(key));
     setCharType(charTypeForRosterKey(key, entry));
@@ -581,7 +574,7 @@ export default function HexaTrackerPage() {
       ? 0
       : Math.min(priorityIndex, upgradePathSteps.length - 1);
 
-  /** Featured recommendation at the shared Prev/Next/Upgrade cursor. */
+  /** Featured recommendation at the shared Prev/Next peek cursor. */
   const featuredUp = useMemo(() => {
     if (!progress || upgradePathSteps.length === 0) return null;
     const levels = new Map(progress.nodes.map((n) => [n.id, n.current]));
@@ -634,7 +627,6 @@ export default function HexaTrackerPage() {
   }, [upgradePathSteps, upgradePathRuns, clampedPriorityIndex]);
 
   useEffect(() => {
-    setPriorityUndo([]);
     setPriorityIndex(0);
   }, [rosterKey, viewMode, activeCharType]);
 
@@ -646,69 +638,21 @@ export default function HexaTrackerPage() {
     );
   }, [upgradePathSteps.length]);
 
-  /** Apply the live next priority step (path[0]), then reset peek to 0. */
-  const applyPriorityUpgrade = () => {
-    if (!progress || !activeState || upgradePathSteps.length === 0) return;
-    const live = bestScoreNextUpgrade(
-      progress.nodes,
-      activeCharType,
-      bossConvertedStat,
-    );
-    if (!live) return;
-    setPriorityUndo((stack) => [
-      ...stack,
-      {
-        slotIndex: live.node.slotIndex,
-        fromLevel: live.node.current,
-        toLevel: live.nextLevel,
-      },
-    ]);
-    setPriorityIndex(0);
-    if (live.node.slotIndex != null) {
-      setLevel(live.node.slotIndex, live.nextLevel);
-    } else {
-      persist({
-        ...activeState,
-        hexaStatLevel: live.nextLevel,
-      });
-    }
+  /** Prev/Next only move the peek cursor — they never change skill levels. */
+  const prevPriorityPeek = () => {
+    if (clampedPriorityIndex <= 0) return;
+    setPriorityIndex((i) => Math.max(0, i - 1));
   };
 
-  /**
-   * Prev: retreat peek cursor, or undo the last Upgrade when already at the
-   * head of the remaining path.
-   */
-  const prevPriority = () => {
-    if (clampedPriorityIndex > 0) {
-      setPriorityIndex((i) => Math.max(0, i - 1));
-      return;
-    }
-    if (!activeState || priorityUndo.length === 0) return;
-    const step = priorityUndo[priorityUndo.length - 1]!;
-    setPriorityUndo((stack) => stack.slice(0, -1));
-    setPriorityIndex(0);
-    if (step.slotIndex != null) {
-      setLevel(step.slotIndex, step.fromLevel);
-    } else {
-      persist({
-        ...activeState,
-        hexaStatLevel: step.fromLevel,
-      });
-    }
-  };
-
-  /** Next: peek forward along the same priority sequence (no level change). */
   const nextPriorityPeek = () => {
     if (clampedPriorityIndex >= upgradePathSteps.length - 1) return;
     setPriorityIndex((i) => i + 1);
   };
 
-  const canPrev =
-    clampedPriorityIndex > 0 || priorityUndo.length > 0;
+  const canPrev = clampedPriorityIndex > 0;
   const canNext =
     upgradePathSteps.length > 0 &&
     clampedPriorityIndex < upgradePathSteps.length - 1;
-  const canUpgrade = upgradePathSteps.length > 0;
 
   const commitBossConvertedStat = (raw: string) => {
     if (!activeState) return;
@@ -1140,7 +1084,7 @@ export default function HexaTrackerPage() {
                 ). Rank is by highest path score (
                 <span className="font-semibold">1000 − order index</span>
                 ); fragment cost is the tiebreaker. Prev/Next peek along that
-                sequence; Upgrade applies the live next +1 and advances it.
+                sequence without changing skill levels.
               </p>
             ) : null}
             {featuredUp && featuredCost ? (
@@ -1287,15 +1231,13 @@ export default function HexaTrackerPage() {
                 <div className="flex flex-wrap items-center gap-2">
                   <button
                     type="button"
-                    onClick={prevPriority}
+                    onClick={prevPriorityPeek}
                     disabled={!canPrev}
                     aria-disabled={!canPrev}
                     title={
                       !canPrev
                         ? "Already at the first upgrade"
-                        : clampedPriorityIndex > 0
-                          ? "Previous priority step"
-                          : "Undo last upgrade"
+                        : "Previous priority step"
                     }
                     className="inline-flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
                   >
@@ -1341,51 +1283,12 @@ export default function HexaTrackerPage() {
                       <path d="m12 5 7 7-7 7" />
                     </svg>
                   </button>
-                  <button
-                    type="button"
-                    onClick={applyPriorityUpgrade}
-                    disabled={!canUpgrade}
-                    aria-disabled={!canUpgrade}
-                    title="Apply the live next priority upgrade (+1)"
-                    className="rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 dark:text-zinc-900"
-                  >
-                    Upgrade
-                  </button>
                 </div>
               </div>
             ) : (
-              <div className="mt-3 space-y-3">
-                <p className="text-sm opacity-65">
-                  All nodes at target — nice work.
-                </p>
-                <button
-                  type="button"
-                  onClick={prevPriority}
-                  disabled={!canPrev}
-                  aria-disabled={!canPrev}
-                  title={
-                    !canPrev
-                      ? "Already at the first upgrade"
-                      : "Undo last upgrade"
-                  }
-                  className="inline-flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
-                >
-                  <svg
-                    viewBox="0 0 24 24"
-                    className="h-3.5 w-3.5"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.25"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    aria-hidden
-                  >
-                    <path d="M19 12H5" />
-                    <path d="m12 19-7-7 7-7" />
-                  </svg>
-                  Prev
-                </button>
-              </div>
+              <p className="mt-3 text-sm opacity-65">
+                All nodes at target — nice work.
+              </p>
             )}
           </section>
 
@@ -1491,24 +1394,48 @@ export default function HexaTrackerPage() {
         <section className="rounded-xl border border-border/45 bg-surface/90 p-4">
           <div className="flex items-center justify-between gap-2">
             <h2 className="text-sm font-semibold">Skills Configuration</h2>
-            <button
-              type="button"
-              onClick={() => {
-                const targets = activeState.targets.map((t, i) =>
-                  (GMS_UNAVAILABLE_HEXA_INDICES as readonly number[]).includes(i)
-                    ? 0
-                    : HEXA_CORE_MAX_LEVEL,
-                );
-                persist({
-                  ...activeState,
-                  targets,
-                  hexaStatTarget: HEXA_STAT_MAX_LEVEL,
-                });
-              }}
-              className="text-xs font-semibold text-accent hover:underline"
-            >
-              Max all goals
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  const defaults = defaultHexaTrackerState(
+                    viewMode === "preview" ? null : rosterKey || null,
+                  );
+                  setPriorityIndex(0);
+                  persist({
+                    ...activeState,
+                    levels: defaults.levels,
+                    targets: defaults.targets,
+                    hexaStatLevel: defaults.hexaStatLevel,
+                    hexaStatTarget: defaults.hexaStatTarget,
+                  });
+                }}
+                className="text-xs font-semibold text-accent hover:underline"
+                title="Reset all skill levels and goals to defaults"
+              >
+                Reset
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const targets = activeState.targets.map((t, i) =>
+                    (GMS_UNAVAILABLE_HEXA_INDICES as readonly number[]).includes(
+                      i,
+                    )
+                      ? 0
+                      : HEXA_CORE_MAX_LEVEL,
+                  );
+                  persist({
+                    ...activeState,
+                    targets,
+                    hexaStatTarget: HEXA_STAT_MAX_LEVEL,
+                  });
+                }}
+                className="text-xs font-semibold text-accent hover:underline"
+              >
+                Max all goals
+              </button>
+            </div>
           </div>
 
           <div className="mt-3 space-y-4">
