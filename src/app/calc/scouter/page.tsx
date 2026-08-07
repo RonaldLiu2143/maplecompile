@@ -52,6 +52,7 @@ import {
   persistLiveToWorkspace,
 } from "@/lib/character-workspace";
 import { ActiveCharacterBar } from "@/components/ActiveCharacterBar";
+import { ScouterActiveCharacterPresetPair } from "@/components/ScouterActiveCharacterPresetPair";
 import { ConfirmModal } from "@/components/ConfirmModal";
 import { EquipmentSetupPanel } from "@/components/EquipmentSetupPanel";
 import { HexaEfficiencyPanel } from "./hexa-efficiency";
@@ -78,6 +79,11 @@ import {
   BOSS_CLEAR_FIGHT_MINUTES_DEFAULT,
   type BossClearFightMinutes,
 } from "@/lib/scouter/boss-cuts";
+import {
+  applyLinkedPresetForCharacter,
+  clearPairingsForDeletedPreset,
+  getLinkedScouterPreset,
+} from "@/lib/pairing";
 import type { MapleScouterCalculatedData } from "@/lib/scouter/to-user-stat";
 
 const cell =
@@ -573,8 +579,11 @@ export default function ScouterPage() {
       persistLiveToWorkspace(activeCharacterKey());
     } else {
       ensureActiveWorkspaceLoaded();
+      // Linked Active Character preset wins over the workspace draft on open.
+      applyLinkedPresetForCharacter();
     }
     const last = storage.getScouterLast();
+    const linked = !fromShare ? getLinkedScouterPreset() : null;
     if (last?.input) {
       const job = last.input.jobType || DEFAULT_JOB;
       const char = last.input.charType || DEFAULT_CHAR;
@@ -607,7 +616,14 @@ export default function ScouterPage() {
     if (last?.links) setLinks(last.links);
     if (last?.hexa) setHexa(clampHexaForGms(last.hexa));
     // Gallery/share loads set draft name only — do not auto-save as a preset.
-    if (last?.name?.trim()) setPresetName(last.name.trim());
+    if (linked) {
+      setLoadedPresetId(linked.presetId);
+      setSelectedPresetId(linked.presetId);
+      setPresetName(linked.name);
+      setEquipReloadToken((n) => n + 1);
+    } else if (last?.name?.trim()) {
+      setPresetName(last.name.trim());
+    }
     setDraftReady(true);
     if (fromShare) {
       // Drop the flag so refresh uses the normal workspace bind.
@@ -703,7 +719,11 @@ export default function ScouterPage() {
     };
   }, []);
 
-  const reloadDraftFromLiveStorage = () => {
+  const reloadDraftFromLiveStorage = (opts?: {
+    /** Keep / set the Character Stats preset id reflected in the form. */
+    loadedPresetId?: string | null;
+    loadedPresetName?: string | null;
+  }) => {
     skipWorkspaceAutosave.current = true;
     const last = storage.getScouterLast();
     if (last?.input) {
@@ -740,8 +760,6 @@ export default function ScouterPage() {
     else setLinks(defaultLinkState());
     if (last?.hexa) setHexa(clampHexaForGms(last.hexa));
     else setHexa(defaultHexaLevels().map(() => 0));
-    setPresetName(last?.name?.trim() || "");
-    setLoadedPresetId("");
     // Prefer Scouter class over workspace equip job/char so the embedded
     // Equipment Setup never shows a mismatched catalog after Active switch.
     if (last?.input) {
@@ -750,10 +768,39 @@ export default function ScouterPage() {
       );
       storage.setCharType(last.input.charType || DEFAULT_CHAR);
     }
+    const linkedId = opts?.loadedPresetId;
+    if (linkedId) {
+      setLoadedPresetId(linkedId);
+      setSelectedPresetId(linkedId);
+      setPresetName(
+        opts?.loadedPresetName?.trim() || last?.name?.trim() || "",
+      );
+    } else {
+      setPresetName(last?.name?.trim() || "");
+      setLoadedPresetId("");
+    }
     setEquipReloadToken((n) => n + 1);
     queueMicrotask(() => {
       skipWorkspaceAutosave.current = false;
     });
+  };
+
+  /**
+   * After Active Character switch: workspace is already live. If that character
+   * has a linked Scouter preset, recall it so stats/gear match the paired build.
+   */
+  const handleActiveCharacterSwitched = () => {
+    const linked = getLinkedScouterPreset();
+    if (linked) {
+      applyLinkedPresetForCharacter();
+      reloadDraftFromLiveStorage({
+        loadedPresetId: linked.presetId,
+        loadedPresetName: linked.name,
+      });
+      flashPresetMsg(`Loaded linked preset “${linked.name}”`);
+      return;
+    }
+    reloadDraftFromLiveStorage();
   };
 
   const patch = (partial: Partial<ScouterInput>) =>
@@ -1062,6 +1109,7 @@ export default function ScouterPage() {
         return;
       }
       storage.deleteScouterPreset(id);
+      clearPairingsForDeletedPreset(id);
       refreshPresets();
       if (selectedPresetId === id) setSelectedPresetId("");
       if (loadedPresetId === id) {
@@ -1392,7 +1440,20 @@ export default function ScouterPage() {
         </div>
       </header>
 
-      <ActiveCharacterBar onSwitched={reloadDraftFromLiveStorage} />
+      <ActiveCharacterBar onSwitched={handleActiveCharacterSwitched} />
+
+      <ScouterActiveCharacterPresetPair
+        loadedPresetId={loadedPresetId}
+        loadedPresetName={presetName}
+        onApplied={({ action, presetId, presetName: pairedName }) => {
+          if (action === "unlink") return;
+          reloadDraftFromLiveStorage({
+            loadedPresetId: presetId,
+            loadedPresetName: pairedName,
+          });
+          refreshPresets();
+        }}
+      />
 
       <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.95fr)]">
         {/* —— Left: Enter Directly —— */}

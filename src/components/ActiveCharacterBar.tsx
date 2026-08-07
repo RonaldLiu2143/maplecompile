@@ -20,6 +20,7 @@ import {
   type RosterPrimary,
 } from "@/lib/dashboard/roster";
 import { subscribeMapleDataReload } from "@/lib/maple-events";
+import { formatActivePresetLabel } from "@/lib/pairing";
 
 type Props = {
   /**
@@ -36,14 +37,19 @@ type BarState = {
   roster: RosterEntry[];
   primary: RosterPrimary | null;
   lock: RosterPrimary | null;
+  presetLabel: string | null;
 };
 
 function readBarState(): BarState {
   const state = readRosterState();
+  const primary = state.primary;
   return {
     roster: state.entries,
-    primary: state.primary,
+    primary,
     lock: readActiveCharacterLock(),
+    presetLabel: primary
+      ? formatActivePresetLabel(entryKey(primary))
+      : null,
   };
 }
 
@@ -89,6 +95,7 @@ export function ActiveCharacterBar({
     roster: [],
     primary: null,
     lock: null,
+    presetLabel: null,
   });
   const [ready, setReady] = useState(false);
   const [lockHint, setLockHint] = useState<string | null>(null);
@@ -120,7 +127,7 @@ export function ActiveCharacterBar({
 
   if (!ready) return null;
 
-  const { roster, primary, lock } = state;
+  const { roster, primary, lock, presetLabel } = state;
   const primaryKey = primary ? entryKey(primary) : "";
   const lockKey = lock ? entryKey(lock) : "";
   const locked = lock != null;
@@ -233,6 +240,11 @@ export function ActiveCharacterBar({
             ) : null}
           </p>
           <p className="truncate text-sm font-semibold">{displayName}</p>
+          {presetLabel ? (
+            <p className="truncate text-[0.65rem] text-accent opacity-85">
+              {presetLabel}
+            </p>
+          ) : null}
           {viewingTemporary ? (
             <p className="truncate text-[0.65rem] opacity-65">
               Default: {lockedLabel}

@@ -1,9 +1,13 @@
-import { activeCharacterKey, patchWorkspace } from "./character-workspace";
+import {
+  activeCharacterKey,
+  patchWorkspace,
+  persistLiveToWorkspace,
+} from "./character-workspace";
 import { getCharName } from "./jobs";
 import { notifyMapleDataChanged } from "./maple-events";
 import { storage, type ScouterLastState } from "./storage";
 import { countFilledSlots } from "./starter-loadouts";
-import type { EquipSetup } from "./types";
+import type { EquipSetup, JobType } from "./types";
 import type { ScouterInput } from "./scouter/types";
 import { defaultScouterInput } from "./scouter/types";
 import { getMissingRequiredScouterFields } from "./scouter/validate";
@@ -381,4 +385,186 @@ export function hasPrimaryLocked(): boolean {
   const primary = readRosterState().primary;
   if (!primary) return false;
   return isLockedActiveCharacter(primary);
+}
+
+/** Case-insensitive exact name match against saved Scouter presets. */
+export function findScouterPresetsMatchingName(name: string) {
+  const needle = name.trim().toLowerCase();
+  if (!needle) return [];
+  return storage
+    .listScouterPresets()
+    .filter((p) => p.name.trim().toLowerCase() === needle);
+}
+
+/**
+ * Linked Scouter preset for Active Character (or given key), if pairing
+ * points at a preset that still exists.
+ */
+export function getLinkedScouterPreset(characterKey?: string | null) {
+  const pairing = getPairing(characterKey);
+  if (!pairing || pairing.scouter.kind !== "preset") return null;
+  const preset = storage.getScouterPreset(pairing.scouter.presetId);
+  if (!preset) return null;
+  return {
+    pairing,
+    preset,
+    presetId: preset.id,
+    name: pairing.scouter.name || preset.name,
+  };
+}
+
+/** Short label for Active Character ↔ preset status. */
+export function formatActivePresetLabel(
+  characterKey?: string | null,
+): string | null {
+  const linked = getLinkedScouterPreset(characterKey);
+  if (linked) return `Preset · ${linked.name}`;
+  const pairing = getPairing(characterKey);
+  if (pairing?.scouter.kind === "draft") {
+    return `Draft · ${pairing.scouter.name}`;
+  }
+  return null;
+}
+
+export type PairActiveCharacterPresetArgs = {
+  /** Required: saved Character Stats preset id. */
+  scouterPresetId: string;
+  scouterName?: string;
+  /** Push this live state into scouter-last before pairing (optional). */
+  scouterState?: ScouterLastState;
+  characterKey?: string | null;
+  /**
+   * When true (default), apply the preset snapshot into live storage +
+   * the character workspace so tools see stats/gear immediately.
+   */
+  applyPreset?: boolean;
+};
+
+/**
+ * Link Active Character to a named Scouter preset (stats + gear snapshot).
+ * Also refreshes the scouter↔equip pairing used by planners.
+ */
+export function pairActiveCharacterWithPreset(
+  args: PairActiveCharacterPresetArgs,
+): ScouterEquipPairing {
+  const presetId = args.scouterPresetId.trim();
+  if (!presetId) {
+    throw new Error("Save or recall a Character Stats preset first");
+  }
+  const preset = storage.getScouterPreset(presetId);
+  if (!preset) {
+    throw new Error("Preset not found");
+  }
+
+  const key = resolvePairingKey(args.characterKey);
+  const apply = args.applyPreset !== false;
+
+  if (apply) {
+    applyScouterPresetToLive(preset);
+    if (key) persistLiveToWorkspace(key);
+  } else if (args.scouterState) {
+    storage.setScouterLast(args.scouterState);
+    if (key) persistLiveToWorkspace(key);
+  }
+
+  return pairScouterAndEquip({
+    scouterPresetId: presetId,
+    scouterName: args.scouterName?.trim() || preset.name,
+    characterKey: key,
+    scouterState: apply
+      ? {
+          input: structuredClone(preset.input),
+          buffs: structuredClone(preset.buffs),
+          links: structuredClone(preset.links),
+          hexa: structuredClone(preset.hexa),
+          name: preset.name,
+          equipSetup: preset.equipSetup
+            ? structuredClone(preset.equipSetup)
+            : undefined,
+          flameSetup: preset.flameSetup
+            ? structuredClone(preset.flameSetup)
+            : undefined,
+        }
+      : args.scouterState,
+  });
+}
+
+/** Write a Scouter preset snapshot into live scouter / equip storage. */
+export function applyScouterPresetToLive(
+  preset: NonNullable<ReturnType<typeof storage.getScouterPreset>>,
+) {
+  storage.setScouterLast({
+    input: structuredClone(preset.input),
+    buffs: structuredClone(preset.buffs),
+    links: structuredClone(preset.links),
+    hexa: structuredClone(preset.hexa),
+    name: preset.name,
+    equipSetup: preset.equipSetup
+      ? structuredClone(preset.equipSetup)
+      : undefined,
+    flameSetup: preset.flameSetup
+      ? structuredClone(preset.flameSetup)
+      : undefined,
+  });
+  if (preset.input?.jobType) {
+    storage.setJobType(preset.input.jobType as JobType);
+  }
+  if (preset.input?.charType) {
+    storage.setCharType(preset.input.charType);
+  }
+  // Named presets may include gear; legacy ones omit it — leave live gear alone.
+  if (preset.equipSetup !== undefined) {
+    storage.setEquipSetup(structuredClone(preset.equipSetup));
+    storage.setFlameSetup(structuredClone(preset.flameSetup ?? {}));
+  }
+}
+
+/**
+ * Apply the Active Character's linked preset into live storage + workspace.
+ * Returns null when unpaired or the preset was deleted.
+ */
+export function applyLinkedPresetForCharacter(
+  characterKey?: string | null,
+): { presetId: string; name: string } | null {
+  const linked = getLinkedScouterPreset(characterKey);
+  if (!linked) return null;
+  const key = resolvePairingKey(characterKey);
+  applyScouterPresetToLive(linked.preset);
+  if (key) persistLiveToWorkspace(key);
+  return { presetId: linked.presetId, name: linked.name };
+}
+
+/**
+ * Drop pairing refs that pointed at a deleted Scouter preset.
+ * Call after `storage.deleteScouterPreset`.
+ */
+export function clearPairingsForDeletedPreset(presetId: string) {
+  if (!presetId) return;
+  migrateLegacyPairing();
+  const map = readPairingMap();
+  let changed = false;
+  for (const [key, pairing] of Object.entries(map)) {
+    if (
+      pairing.scouter.kind === "preset" &&
+      pairing.scouter.presetId === presetId
+    ) {
+      delete map[key];
+      patchWorkspace(key, { pairedAt: undefined });
+      changed = true;
+    }
+  }
+  if (changed) {
+    writePairingMap(map);
+  }
+  const legacy = readLegacyPairing();
+  if (
+    legacy?.scouter.kind === "preset" &&
+    legacy.scouter.presetId === presetId
+  ) {
+    if (typeof window !== "undefined") {
+      localStorage.removeItem(PAIRING_KEY);
+    }
+    changed = true;
+  }
+  if (changed) notifyMapleDataChanged("pairing");
 }

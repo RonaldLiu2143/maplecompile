@@ -57,9 +57,9 @@ const STEPS: StepDef[] = [
   {
     id: "pair",
     n: 5,
-    title: "Optional: pair for planners",
-    kid: "Damage-calc pair",
-    body: "Optional. Pair Scouter + gear so planners use one build. Gallery posting does not need this.",
+    title: "Optional: pair preset",
+    kid: "Active Character build",
+    body: "Optional. On Scouter, pair a Character Stats preset with Active Character so switching characters recalls that build. Gallery posting does not need this.",
   },
 ];
 
