@@ -1,16 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState, type FormEvent } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import { CharacterProfile } from "@/components/character/CharacterProfile";
 import { useSavedCharacters } from "@/hooks/useSavedCharacters";
 import {
   CHARACTER_LOOKUP_NETWORK_ERROR,
-  characterProfileHref,
   fetchCharacterLookup,
 } from "@/lib/character/client";
 import {
   CHARACTER_NAME_REGEX,
+  normalizeRegion,
+  type CharacterLookupResult,
   type NexonRegion,
 } from "@/lib/character/lookup";
 import type { SavedCharacter } from "@/lib/character/saved";
@@ -18,6 +20,15 @@ import { entryKey } from "@/lib/dashboard/roster";
 
 const inputClass =
   "rounded border border-border bg-background px-3 py-2 text-sm outline-none focus:border-accent";
+
+function lookupKey(region: NexonRegion, name: string) {
+  return `${region}:${name.trim().toLowerCase()}`;
+}
+
+function characterQueryHref(name: string, region: NexonRegion) {
+  const qs = new URLSearchParams({ name, region });
+  return `/calc/character?${qs.toString()}`;
+}
 
 function StarIcon({ filled }: { filled?: boolean }) {
   return (
@@ -39,15 +50,29 @@ function StarIcon({ filled }: { filled?: boolean }) {
 
 function SavedRow({
   entry,
+  active,
+  onSelect,
   onRemove,
 }: {
   entry: SavedCharacter;
+  active?: boolean;
+  onSelect: () => void;
   onRemove: () => void;
 }) {
-  const href = characterProfileHref(entry);
   return (
-    <li className="group flex items-center gap-2.5 rounded-xl border border-border/50 bg-surface/80 p-2.5 transition hover:border-border hover:bg-surface">
-      <Link href={href} className="flex min-w-0 flex-1 items-center gap-2.5">
+    <li
+      className={[
+        "group flex items-center gap-2.5 rounded-xl border p-2.5 transition",
+        active
+          ? "border-accent/50 bg-accent-soft/40"
+          : "border-border/50 bg-surface/80 hover:border-border hover:bg-surface",
+      ].join(" ")}
+    >
+      <button
+        type="button"
+        onClick={onSelect}
+        className="flex min-w-0 flex-1 items-center gap-2.5 text-left"
+      >
         {entry.characterImgURL ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -73,7 +98,7 @@ function SavedRow({
             {` · ${entry.region.toUpperCase()}`}
           </p>
         </div>
-      </Link>
+      </button>
       <button
         type="button"
         onClick={onRemove}
@@ -89,15 +114,25 @@ function SavedRow({
 
 export function CharacterSearchPage() {
   const router = useRouter();
-  const { hydrated, saved, unsave } = useSavedCharacters();
+  const searchParams = useSearchParams();
+  const { hydrated, saved, unsave, isSaved, toggle, syncSnapshot } =
+    useSavedCharacters();
+
   const [name, setName] = useState("");
   const [region, setRegion] = useState<NexonRegion>("na");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [result, setResult] = useState<CharacterLookupResult | null>(null);
 
-  async function onSubmit(e: FormEvent) {
-    e.preventDefault();
-    const trimmed = name.trim();
+  const loadedKeyRef = useRef<string | null>(null);
+  const requestIdRef = useRef(0);
+
+  async function loadCharacter(
+    rawName: string,
+    rawRegion: NexonRegion,
+    opts?: { syncUrl?: boolean },
+  ) {
+    const trimmed = rawName.trim();
     if (!trimmed) {
       setError("Enter a character name.");
       return;
@@ -107,17 +142,76 @@ export function CharacterSearchPage() {
       return;
     }
 
+    const key = lookupKey(rawRegion, trimmed);
+    const requestId = ++requestIdRef.current;
+    loadedKeyRef.current = key;
     setPending(true);
     setError(null);
+    setName(trimmed);
+    setRegion(rawRegion);
+
     try {
-      const character = await fetchCharacterLookup(trimmed, region);
-      router.push(characterProfileHref(character));
+      const character = await fetchCharacterLookup(trimmed, rawRegion);
+      if (requestId !== requestIdRef.current) return;
+      setResult(character);
+      setName(character.name);
+      setRegion(character.region);
+      loadedKeyRef.current = lookupKey(character.region, character.name);
+      if (opts?.syncUrl !== false) {
+        router.replace(characterQueryHref(character.name, character.region), {
+          scroll: false,
+        });
+      }
     } catch (err) {
+      if (requestId !== requestIdRef.current) return;
       setError(
         err instanceof Error ? err.message : CHARACTER_LOOKUP_NETWORK_ERROR,
       );
-      setPending(false);
+    } finally {
+      if (requestId === requestIdRef.current) setPending(false);
     }
+  }
+
+  useEffect(() => {
+    const qName = searchParams.get("name")?.trim() ?? "";
+    const qRegion = normalizeRegion(searchParams.get("region")) ?? "na";
+    if (!qName) return;
+    const key = lookupKey(qRegion, qName);
+    if (loadedKeyRef.current === key) return;
+    void loadCharacter(qName, qRegion, { syncUrl: false });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- URL-driven load only
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (!result || !hydrated) return;
+    syncSnapshot({
+      name: result.name,
+      region: result.region,
+      level: result.level,
+      jobName: result.jobName,
+      worldName: result.worldName,
+      characterImgURL: result.characterImgURL,
+    });
+  }, [result, hydrated, syncSnapshot]);
+
+  async function onSubmit(e: FormEvent) {
+    e.preventDefault();
+    await loadCharacter(name, region);
+  }
+
+  const activeKey = result ? lookupKey(result.region, result.name) : null;
+  const profileSaved = result ? isSaved(result) : false;
+
+  function handleToggleSave() {
+    if (!result) return;
+    toggle({
+      name: result.name,
+      region: result.region,
+      level: result.level,
+      jobName: result.jobName,
+      worldName: result.worldName,
+      characterImgURL: result.characterImgURL,
+    });
   }
 
   return (
@@ -186,17 +280,53 @@ export function CharacterSearchPage() {
             </div>
           ) : null}
 
-          <p className="text-xs text-foreground/45">
-            Tip: from a profile, tap the star to bookmark it here. Roster /
-            Active Character for tools stays under{" "}
-            <Link href="/roster" className="font-semibold text-accent underline-offset-2 hover:underline">
-              Manager
-            </Link>
-            .
-          </p>
+          {pending && !result ? (
+            <div className="rounded-2xl border border-border/50 bg-surface/80 px-4 py-16 text-center text-sm opacity-70">
+              Looking up {name.trim()}…
+            </div>
+          ) : null}
+
+          {result ? (
+            <div className={pending ? "opacity-60 transition-opacity" : undefined}>
+              <CharacterProfile
+                character={result}
+                embedded
+                actions={
+                  hydrated ? (
+                    <button
+                      type="button"
+                      onClick={handleToggleSave}
+                      className={[
+                        "inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm font-semibold transition",
+                        profileSaved
+                          ? "border-accent/50 bg-accent-soft text-accent"
+                          : "border-border hover:bg-surface-muted",
+                      ].join(" ")}
+                      aria-pressed={profileSaved}
+                    >
+                      <StarIcon filled={profileSaved} />
+                      {profileSaved ? "Saved" : "Save"}
+                    </button>
+                  ) : null
+                }
+              />
+            </div>
+          ) : !pending ? (
+            <p className="text-xs text-foreground/45">
+              Tip: from a profile, tap the star to bookmark it here. Roster /
+              Active Character for tools stays under{" "}
+              <Link
+                href="/roster"
+                className="font-semibold text-accent underline-offset-2 hover:underline"
+              >
+                Manager
+              </Link>
+              .
+            </p>
+          ) : null}
         </section>
 
-        <aside className="rounded-2xl border border-border/55 bg-surface/90 p-4">
+        <aside className="rounded-2xl border border-border/55 bg-surface/90 p-4 lg:sticky lg:top-4">
           <div className="flex items-center justify-between gap-2">
             <h2 className="font-display text-[0.7rem] font-bold uppercase tracking-[0.14em] text-accent">
               Saved
@@ -215,7 +345,7 @@ export function CharacterSearchPage() {
             <p className="mt-4 text-sm opacity-60">Loading…</p>
           ) : saved.length === 0 ? (
             <p className="mt-4 rounded-xl border border-dashed border-border/50 bg-surface-muted/30 px-3 py-6 text-center text-sm text-foreground/55">
-              No saved characters yet. Open a profile and tap Save.
+              No saved characters yet. Search a character and tap Save.
             </p>
           ) : (
             <ul className="mt-3 flex flex-col gap-2">
@@ -223,6 +353,10 @@ export function CharacterSearchPage() {
                 <SavedRow
                   key={entryKey(entry)}
                   entry={entry}
+                  active={activeKey === lookupKey(entry.region, entry.name)}
+                  onSelect={() => {
+                    void loadCharacter(entry.name, entry.region);
+                  }}
                   onRemove={() => unsave(entry)}
                 />
               ))}

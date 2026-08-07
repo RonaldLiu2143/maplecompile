@@ -34,7 +34,11 @@ const SESSION_PREFIX = "maplecompile-char:";
 export function characterProfileHref(
   character: Pick<CharacterLookupResult, "name" | "region">,
 ): string {
-  return `/calc/character/${encodeURIComponent(character.name)}?region=${character.region}`;
+  const qs = new URLSearchParams({
+    name: character.name,
+    region: character.region,
+  });
+  return `/calc/character?${qs.toString()}`;
 }
 
 /** Same key shape as server cache / roster entryKey: region:lowercaseName */
