@@ -1407,6 +1407,14 @@ export default function ScouterPage() {
                 ) : null}
               </div>
               <div className="flex flex-wrap items-center gap-1.5">
+                <input
+                  type="text"
+                  placeholder="Preset name"
+                  value={presetName}
+                  onChange={(e) => setPresetName(e.target.value)}
+                  className="min-w-0 flex-1 rounded border border-border/50 bg-background px-2.5 py-1.5 text-xs outline-none focus:border-accent"
+                  aria-label="Preset name"
+                />
                 <button
                   type="button"
                   onClick={() => setPresetModal("recall")}
@@ -1421,14 +1429,6 @@ export default function ScouterPage() {
                 >
                   Save Preset
                 </button>
-                <input
-                  type="text"
-                  placeholder="Preset name"
-                  value={presetName}
-                  onChange={(e) => setPresetName(e.target.value)}
-                  className="min-w-0 flex-1 rounded border border-border/50 bg-background px-2.5 py-1.5 text-xs outline-none focus:border-accent"
-                  aria-label="Preset name"
-                />
               </div>
 
               <div className="space-y-1.5 border-t border-border/30 pt-2">
