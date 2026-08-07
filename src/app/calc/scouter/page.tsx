@@ -2197,7 +2197,7 @@ export default function ScouterPage() {
           <EquipmentSetupPanel
             variant="embedded"
             showClassSelect={false}
-            clearSetupOnClassChange={false}
+            clearSetupOnClassChange
             jobType={(input.jobType || DEFAULT_JOB) as JobType}
             charType={input.charType || DEFAULT_CHAR}
             reloadToken={equipReloadToken}

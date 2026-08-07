@@ -307,15 +307,31 @@ export function EquipmentSetupPanel({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- reloadToken / controlled class drive re-hydrate
   }, [reloadToken]);
 
-  // Controlled class from Scouter: refresh catalog only — never clear gear.
+  // Controlled class from Scouter: soft-refresh catalog; clear loadout on class change.
   useEffect(() => {
     if (!hydrated || !classControlled) return;
     const key = `${jobType}:${charType}`;
     if (prevClassRef.current === key) return;
     prevClassRef.current = key;
+    if (clearSetupOnClassChange) {
+      setSetup({});
+      setFlameSetup({});
+      storage.clearSetup();
+      setLoadedCustomPresetId("");
+      setCustomPresetId("");
+      setPresetNameTouched(false);
+      setStarterMsg(null);
+    }
     setPanel(null);
     void loadCatalog(jobType, charType, { keepVisible: true });
-  }, [hydrated, classControlled, jobType, charType, loadCatalog]);
+  }, [
+    hydrated,
+    classControlled,
+    jobType,
+    charType,
+    clearSetupOnClassChange,
+    loadCatalog,
+  ]);
 
   const persistSetupToStorage = useCallback(
     (next: EquipSetup, opts?: { allowEmpty?: boolean }) => {
