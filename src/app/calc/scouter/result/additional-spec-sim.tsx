@@ -264,14 +264,16 @@ function LevelInput({
           : (e) => {
               const raw = e.target.value;
               if (raw !== "" && !/^\d*$/.test(raw.trim())) return;
-              setDraft(raw);
               if (raw.trim() === "") {
+                setDraft(raw);
                 onChange(0);
                 return;
               }
               const parsed = Number(raw);
               if (Number.isFinite(parsed)) {
-                onChange(Math.min(Math.max(min, parsed), max));
+                const clamped = Math.min(Math.max(min, parsed), max);
+                setDraft(String(clamped));
+                onChange(clamped);
               }
             }
       }
