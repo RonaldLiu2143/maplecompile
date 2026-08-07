@@ -31,6 +31,7 @@ import {
   defaultPotentialTier,
   type PlannerOverrides,
 } from "@/lib/planner";
+import { calculateSetEffects } from "@/lib/set-effects";
 import {
   equipTypeToSlotId,
   SLOT_CAPACITY,
@@ -301,6 +302,23 @@ export function EquipmentSetupPanel({
     });
   }, [classControlled, loadCatalog, refreshCustomPresets]);
 
+  const clearLoadout = useCallback(
+    (opts?: { resetPresetName?: boolean }) => {
+      setSetup({});
+      setFlameSetup({});
+      storage.clearSetup();
+      setPanel(null);
+      setLoadedCustomPresetId("");
+      setCustomPresetId("");
+      setPresetNameTouched(false);
+      setStarterMsg(null);
+      if (opts?.resetPresetName) {
+        setCustomPresetName(classDisplayName);
+      }
+    },
+    [classDisplayName],
+  );
+
   // Initial hydrate + reload when Active character switches.
   useEffect(() => {
     const savedJob = (storage.getJobType() || DEFAULT_JOB) as JobType;
@@ -320,15 +338,10 @@ export function EquipmentSetupPanel({
     if (prevClassRef.current === key) return;
     prevClassRef.current = key;
     if (clearSetupOnClassChange) {
-      setSetup({});
-      setFlameSetup({});
-      storage.clearSetup();
-      setLoadedCustomPresetId("");
-      setCustomPresetId("");
-      setPresetNameTouched(false);
-      setStarterMsg(null);
+      clearLoadout();
+    } else {
+      setPanel(null);
     }
-    setPanel(null);
     void loadCatalog(jobType, charType, { keepVisible: true });
   }, [
     hydrated,
@@ -336,6 +349,7 @@ export function EquipmentSetupPanel({
     jobType,
     charType,
     clearSetupOnClassChange,
+    clearLoadout,
     loadCatalog,
   ]);
 
@@ -422,18 +436,11 @@ export function EquipmentSetupPanel({
       setLocalCharType(parsed.charType);
       prevClassRef.current = `${parsed.jobType}:${parsed.charType}`;
       if (clearGear) {
-        setSetup({});
-        setFlameSetup({});
-        storage.clearSetup();
-        setPanel(null);
-        setLoadedCustomPresetId("");
-        setCustomPresetId("");
-        setPresetNameTouched(false);
-        setStarterMsg(null);
+        clearLoadout();
       }
       void loadCatalog(parsed.jobType, parsed.charType);
     },
-    [loadCatalog],
+    [clearLoadout, loadCatalog],
   );
 
   const onClassChange = (value: string) => {
@@ -714,6 +721,11 @@ export function EquipmentSetupPanel({
   };
 
   const embedded = variant === "embedded";
+  const showSetEffects =
+    status === "ready" || (status === "loading" && setList.length > 0);
+  const setEffects = showSetEffects
+    ? calculateSetEffects(setup, setList)
+    : { totals: {}, breakdown: [] };
 
   return (
     <div className={className || undefined}>
@@ -879,17 +891,7 @@ export function EquipmentSetupPanel({
                 </button>
                 <button
                   type="button"
-                  onClick={() => {
-                    setSetup({});
-                    setFlameSetup({});
-                    storage.clearSetup();
-                    setPanel(null);
-                    setStarterMsg(null);
-                    setLoadedCustomPresetId("");
-                    setCustomPresetId("");
-                    setPresetNameTouched(false);
-                    setCustomPresetName(classDisplayName);
-                  }}
+                  onClick={() => clearLoadout({ resetPresetName: true })}
                   className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold hover:bg-surface-muted"
                 >
                   Clear setup
@@ -978,17 +980,15 @@ export function EquipmentSetupPanel({
                 </div>
               ) : null}
 
-              {(status === "ready" ||
-                (status === "loading" && setList.length > 0)) && (
-                <TotalSetEffects setup={setup} setList={setList} />
+              {showSetEffects && (
+                <TotalSetEffects totals={setEffects.totals} />
               )}
             </div>
           </div>
         </section>
 
-        {(status === "ready" ||
-          (status === "loading" && setList.length > 0)) && (
-          <SetEffectsBreakdown setup={setup} setList={setList} />
+        {showSetEffects && (
+          <SetEffectsBreakdown breakdown={setEffects.breakdown} />
         )}
       </div>
 

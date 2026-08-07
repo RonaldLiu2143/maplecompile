@@ -113,7 +113,6 @@ export function ScouterActiveCharacterPresetPair({
           suggested?.name ||
           undefined,
         characterKey: key,
-        applyPreset: true,
       });
       setPairing(next);
       const name =
@@ -151,7 +150,6 @@ export function ScouterActiveCharacterPresetPair({
           scouterPresetId: suggested.id,
           scouterName: suggested.name,
           characterKey: key,
-          applyPreset: true,
         });
         setPairing(next);
         result = { presetId: suggested.id, name: suggested.name };

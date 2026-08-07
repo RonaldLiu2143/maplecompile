@@ -417,10 +417,14 @@ export function getLinkedScouterPreset(characterKey?: string | null) {
 export function formatActivePresetLabel(
   characterKey?: string | null,
 ): string | null {
-  const linked = getLinkedScouterPreset(characterKey);
-  if (linked) return `Preset · ${linked.name}`;
   const pairing = getPairing(characterKey);
-  if (pairing?.scouter.kind === "draft") {
+  if (!pairing) return null;
+  if (pairing.scouter.kind === "preset") {
+    const preset = storage.getScouterPreset(pairing.scouter.presetId);
+    if (!preset) return null;
+    return `Preset · ${pairing.scouter.name || preset.name}`;
+  }
+  if (pairing.scouter.kind === "draft") {
     return `Draft · ${pairing.scouter.name}`;
   }
   return null;
@@ -430,19 +434,13 @@ export type PairActiveCharacterPresetArgs = {
   /** Required: saved Character Stats preset id. */
   scouterPresetId: string;
   scouterName?: string;
-  /** Push this live state into scouter-last before pairing (optional). */
-  scouterState?: ScouterLastState;
+  /** Explicit character key (defaults to active/primary). */
   characterKey?: string | null;
-  /**
-   * When true (default), apply the preset snapshot into live storage +
-   * the character workspace so tools see stats/gear immediately.
-   */
-  applyPreset?: boolean;
 };
 
 /**
  * Link Active Character to a named Scouter preset (stats + gear snapshot).
- * Also refreshes the scouter↔equip pairing used by planners.
+ * Applies the preset once into live storage, then pairs by id/metadata only.
  */
 export function pairActiveCharacterWithPreset(
   args: PairActiveCharacterPresetArgs,
@@ -457,35 +455,13 @@ export function pairActiveCharacterWithPreset(
   }
 
   const key = resolvePairingKey(args.characterKey);
-  const apply = args.applyPreset !== false;
-
-  if (apply) {
-    applyScouterPresetToLive(preset);
-    if (key) persistLiveToWorkspace(key);
-  } else if (args.scouterState) {
-    storage.setScouterLast(args.scouterState);
-    if (key) persistLiveToWorkspace(key);
-  }
+  applyScouterPresetToLive(preset);
+  if (key) persistLiveToWorkspace(key);
 
   return pairScouterAndEquip({
     scouterPresetId: presetId,
     scouterName: args.scouterName?.trim() || preset.name,
     characterKey: key,
-    scouterState: apply
-      ? {
-          input: structuredClone(preset.input),
-          buffs: structuredClone(preset.buffs),
-          links: structuredClone(preset.links),
-          hexa: structuredClone(preset.hexa),
-          name: preset.name,
-          equipSetup: preset.equipSetup
-            ? structuredClone(preset.equipSetup)
-            : undefined,
-          flameSetup: preset.flameSetup
-            ? structuredClone(preset.flameSetup)
-            : undefined,
-        }
-      : args.scouterState,
   });
 }
 

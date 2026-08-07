@@ -2,23 +2,24 @@
 
 import { useState } from "react";
 import {
-  calculateSetEffects,
   formatStatValue,
   normalizeStatId,
   SET_DISPLAY_NAMES,
   STAT_DISPLAY_ORDER,
   STAT_LABELS,
   type SetBreakdown,
+  type TotalsMap,
 } from "@/lib/set-effects";
-import type { EquipSetup, SetEffect } from "@/lib/types";
 
-type Props = {
-  setup: EquipSetup;
-  setList: SetEffect[];
+type TotalProps = {
+  totals: TotalsMap;
 };
 
-export function TotalSetEffects({ setup, setList }: Props) {
-  const { totals } = calculateSetEffects(setup, setList);
+type BreakdownProps = {
+  breakdown: SetBreakdown[];
+};
+
+export function TotalSetEffects({ totals }: TotalProps) {
   const activeStats = STAT_DISPLAY_ORDER.filter((id) => (totals[id] ?? 0) !== 0);
 
   return (
@@ -66,11 +67,9 @@ function SetBreakdownBlock({ b }: { b: SetBreakdown }) {
           toggle();
         }
       }}
-      className={
-        open
-          ? "flex h-full min-h-0 w-full min-w-0 cursor-pointer flex-col rounded-md border border-border/40 bg-surface/80 px-1.5 py-1 text-left transition hover:border-border/70 hover:bg-surface-muted/40"
-          : "flex w-full min-w-0 cursor-pointer flex-col self-start rounded-md border border-border/40 bg-surface/80 px-1.5 py-1 text-left transition hover:border-border/70 hover:bg-surface-muted/40"
-      }
+      className={`flex w-full min-w-0 cursor-pointer flex-col rounded-md border border-border/40 bg-surface/80 px-1.5 py-1 text-left transition hover:border-border/70 hover:bg-surface-muted/40 ${
+        open ? "h-full min-h-0" : "self-start"
+      }`}
     >
       <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
         <span
@@ -137,8 +136,7 @@ function SetBreakdownBlock({ b }: { b: SetBreakdown }) {
   );
 }
 
-export function SetEffectsBreakdown({ setup, setList }: Props) {
-  const { breakdown } = calculateSetEffects(setup, setList);
+export function SetEffectsBreakdown({ breakdown }: BreakdownProps) {
   const activeSets = breakdown.filter((b) => b.numEquipped > 0);
 
   return (
@@ -156,15 +154,5 @@ export function SetEffectsBreakdown({ setup, setList }: Props) {
         </div>
       )}
     </section>
-  );
-}
-
-/** Full panel (totals + breakdown). Prefer the split exports when placing in layout. */
-export function SetEffectsPanel({ setup, setList }: Props) {
-  return (
-    <div className="space-y-4">
-      <TotalSetEffects setup={setup} setList={setList} />
-      <SetEffectsBreakdown setup={setup} setList={setList} />
-    </div>
   );
 }
