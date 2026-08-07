@@ -145,7 +145,7 @@ export function SetEffectsBreakdown({ setup, setList }: Props) {
       {activeSets.length === 0 ? (
         <p className="mt-0.5 text-xs opacity-60">— No active sets —</p>
       ) : (
-        <div className="mt-1 space-y-1">
+        <div className="mt-1 grid grid-cols-1 items-start gap-1 sm:grid-cols-2 xl:grid-cols-3">
           {activeSets.map((b) => (
             <SetBreakdownBlock key={b.set.setType} b={b} />
           ))}
