@@ -81,7 +81,7 @@ const SOL_ERDA_ICON =
 
 type ViewMode = "characters" | "preview";
 
-/** One applied "Next" step that Go back can undo. */
+/** One applied Upgrade step that Prev can undo when the peek cursor is at 0. */
 type PriorityUndoStep = {
   slotIndex: number | null;
   fromLevel: number;
@@ -328,6 +328,8 @@ export default function HexaTrackerPage() {
   const [infoOpen, setInfoOpen] = useState(false);
   const [bcsDraft, setBcsDraft] = useState(String(DEFAULT_BOSS_CONVERTED_STAT));
   const [priorityUndo, setPriorityUndo] = useState<PriorityUndoStep[]>([]);
+  /** Peek index into the remaining priority path (0 = next Upgrade target). */
+  const [priorityIndex, setPriorityIndex] = useState(0);
 
   const activeCharType =
     viewMode === "preview" ? previewCharType : charType;
@@ -560,66 +562,131 @@ export default function HexaTrackerPage() {
     setBcsDraft(String(activeState.bossConvertedStat));
   }, [activeState?.bossConvertedStat, rosterKey, viewMode, activeCharType]);
 
-  const nextUp = progress
-    ? bestScoreNextUpgrade(
-        progress.nodes,
-        activeCharType,
-        bossConvertedStat,
-      )
-    : null;
-  const nextUpIcon =
-    nextUp == null
-      ? ""
-      : nextUp.node.slotIndex != null
-        ? iconUrl(slotsHexa[nextUp.node.slotIndex]?.iconSuffix ?? null)
-        : HEXA_STAT_ICON_URL;
-  const nextCost =
-    nextUp != null
-      ? {
-          fragments: nextUp.fragments,
-          solErda: nextUp.solErda,
-        }
-      : null;
-
-  const upgradePathRuns = useMemo(() => {
+  const upgradePathSteps = useMemo(() => {
     if (!progress) return [];
-    return groupConsecutiveUpgradeRuns(
-      buildScoreUpgradePath(
-        progress.nodes,
-        activeCharType,
-        bossConvertedStat,
-      ),
+    return buildScoreUpgradePath(
+      progress.nodes,
+      activeCharType,
+      bossConvertedStat,
     );
   }, [progress, activeCharType, bossConvertedStat]);
 
+  const upgradePathRuns = useMemo(
+    () => groupConsecutiveUpgradeRuns(upgradePathSteps),
+    [upgradePathSteps],
+  );
+
+  const clampedPriorityIndex =
+    upgradePathSteps.length === 0
+      ? 0
+      : Math.min(priorityIndex, upgradePathSteps.length - 1);
+
+  /** Featured recommendation at the shared Prev/Next/Upgrade cursor. */
+  const featuredUp = useMemo(() => {
+    if (!progress || upgradePathSteps.length === 0) return null;
+    const levels = new Map(progress.nodes.map((n) => [n.id, n.current]));
+    for (let i = 0; i < clampedPriorityIndex; i++) {
+      const step = upgradePathSteps[i]!;
+      levels.set(step.nodeId, step.toLevel);
+    }
+    const simulated = progress.nodes.map((n) => ({
+      ...n,
+      current: levels.get(n.id) ?? n.current,
+    }));
+    return bestScoreNextUpgrade(
+      simulated,
+      activeCharType,
+      bossConvertedStat,
+    );
+  }, [
+    progress,
+    upgradePathSteps,
+    clampedPriorityIndex,
+    activeCharType,
+    bossConvertedStat,
+  ]);
+
+  const featuredIcon =
+    featuredUp == null
+      ? ""
+      : featuredUp.node.slotIndex != null
+        ? iconUrl(slotsHexa[featuredUp.node.slotIndex]?.iconSuffix ?? null)
+        : HEXA_STAT_ICON_URL;
+  const featuredCost =
+    featuredUp != null
+      ? {
+          fragments: featuredUp.fragments,
+          solErda: featuredUp.solErda,
+        }
+      : null;
+
+  /** Which grouped "Show all" run contains the current cursor step. */
+  const activePathRunIndex = useMemo(() => {
+    if (upgradePathSteps.length === 0) return 0;
+    let consumed = 0;
+    for (let r = 0; r < upgradePathRuns.length; r++) {
+      const run = upgradePathRuns[r]!;
+      const len = Math.max(0, run.toLevel - run.fromLevel);
+      if (clampedPriorityIndex < consumed + len) return r;
+      consumed += len;
+    }
+    return Math.max(0, upgradePathRuns.length - 1);
+  }, [upgradePathSteps, upgradePathRuns, clampedPriorityIndex]);
+
   useEffect(() => {
     setPriorityUndo([]);
+    setPriorityIndex(0);
   }, [rosterKey, viewMode, activeCharType]);
 
-  const applyNextPriority = () => {
-    if (!nextUp || !activeState) return;
+  useEffect(() => {
+    setPriorityIndex((i) =>
+      upgradePathSteps.length === 0
+        ? 0
+        : Math.min(i, upgradePathSteps.length - 1),
+    );
+  }, [upgradePathSteps.length]);
+
+  /** Apply the live next priority step (path[0]), then reset peek to 0. */
+  const applyPriorityUpgrade = () => {
+    if (!progress || !activeState || upgradePathSteps.length === 0) return;
+    const live = bestScoreNextUpgrade(
+      progress.nodes,
+      activeCharType,
+      bossConvertedStat,
+    );
+    if (!live) return;
     setPriorityUndo((stack) => [
       ...stack,
       {
-        slotIndex: nextUp.node.slotIndex,
-        fromLevel: nextUp.node.current,
-        toLevel: nextUp.nextLevel,
+        slotIndex: live.node.slotIndex,
+        fromLevel: live.node.current,
+        toLevel: live.nextLevel,
       },
     ]);
-    if (nextUp.node.slotIndex != null) {
-      setLevel(nextUp.node.slotIndex, nextUp.nextLevel);
+    setPriorityIndex(0);
+    if (live.node.slotIndex != null) {
+      setLevel(live.node.slotIndex, live.nextLevel);
     } else {
       persist({
         ...activeState,
-        hexaStatLevel: nextUp.nextLevel,
+        hexaStatLevel: live.nextLevel,
       });
     }
   };
 
-  const goBackPriority = () => {
+  /**
+   * Prev: retreat peek cursor, or undo the last Upgrade when already at the
+   * head of the remaining path.
+   */
+  const prevPriority = () => {
+    if (clampedPriorityIndex > 0) {
+      setPriorityIndex((i) => Math.max(0, i - 1));
+      return;
+    }
     if (!activeState || priorityUndo.length === 0) return;
     const step = priorityUndo[priorityUndo.length - 1]!;
     setPriorityUndo((stack) => stack.slice(0, -1));
+    setPriorityIndex(0);
     if (step.slotIndex != null) {
       setLevel(step.slotIndex, step.fromLevel);
     } else {
@@ -629,6 +696,19 @@ export default function HexaTrackerPage() {
       });
     }
   };
+
+  /** Next: peek forward along the same priority sequence (no level change). */
+  const nextPriorityPeek = () => {
+    if (clampedPriorityIndex >= upgradePathSteps.length - 1) return;
+    setPriorityIndex((i) => i + 1);
+  };
+
+  const canPrev =
+    clampedPriorityIndex > 0 || priorityUndo.length > 0;
+  const canNext =
+    upgradePathSteps.length > 0 &&
+    clampedPriorityIndex < upgradePathSteps.length - 1;
+  const canUpgrade = upgradePathSteps.length > 0;
 
   const commitBossConvertedStat = (raw: string) => {
     if (!activeState) return;
@@ -1059,18 +1139,18 @@ export default function HexaTrackerPage() {
                 {DEFAULT_BOSS_CONVERTED_STAT.toLocaleString()}
                 ). Rank is by highest path score (
                 <span className="font-semibold">1000 − order index</span>
-                ); fragment cost is the tiebreaker. Next raises the recommended
-                skill by one level and shows that single upgrade's cost.
+                ); fragment cost is the tiebreaker. Prev/Next peek along that
+                sequence; Upgrade applies the live next +1 and advances it.
               </p>
             ) : null}
-            {nextUp && nextCost ? (
+            {featuredUp && featuredCost ? (
               <div className="mt-3 space-y-3">
                 <div className="flex items-start gap-3">
                   <div className="relative shrink-0">
-                    {nextUpIcon ? (
+                    {featuredIcon ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
-                        src={nextUpIcon}
+                        src={featuredIcon}
                         alt=""
                         width={36}
                         height={36}
@@ -1080,38 +1160,45 @@ export default function HexaTrackerPage() {
                       <div className="h-9 w-9 rounded border border-border/50 bg-surface-muted" />
                     )}
                     <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 text-[10px] font-bold leading-none text-white dark:text-zinc-900">
-                      {nextUp.node.current}
+                      {featuredUp.node.current}
                     </span>
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-start justify-between gap-2">
                       <div className="min-w-0">
                         <p className="truncate text-sm font-semibold">
-                          {nextUp.node.label}
+                          {featuredUp.node.label}
                         </p>
                         <p className="text-xs opacity-60">
-                          Level {nextUp.node.current} → {nextUp.nextLevel}
+                          Level {featuredUp.node.current} →{" "}
+                          {featuredUp.nextLevel}
+                          {clampedPriorityIndex > 0 ? (
+                            <span className="ml-1 opacity-50">
+                              (peek {clampedPriorityIndex + 1}/
+                              {upgradePathSteps.length})
+                            </span>
+                          ) : null}
                         </p>
                       </div>
-                      {nextUp.score > 0 ? (
+                      {featuredUp.score > 0 ? (
                         <span
                           className="shrink-0 rounded-md bg-accent-soft/50 px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-accent"
                           title="MapleHub path priority score (1000 − order index)"
                         >
-                          +{nextUp.score}
+                          +{featuredUp.score}
                         </span>
                       ) : null}
                     </div>
                     <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 text-xs">
                       <ResourceCost
                         kind="fragment"
-                        amount={nextCost.fragments}
+                        amount={featuredCost.fragments}
                         className="font-semibold text-accent"
                       />
-                      {nextCost.solErda > 0 ? (
+                      {featuredCost.solErda > 0 ? (
                         <ResourceCost
                           kind="erda"
-                          amount={nextCost.solErda}
+                          amount={featuredCost.solErda}
                           className="font-semibold"
                         />
                       ) : null}
@@ -1179,7 +1266,7 @@ export default function HexaTrackerPage() {
                                   <span className="absolute -right-1 -top-1 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-accent px-0.5 text-[9px] font-bold leading-none text-white dark:text-zinc-900">
                                     {run.toLevel}
                                   </span>
-                                  {idx === 0 ? (
+                                  {idx === activePathRunIndex ? (
                                     <span className="absolute -left-1 -top-1 h-2.5 w-2.5 rounded-full border border-background bg-accent" />
                                   ) : null}
                                 </div>
@@ -1200,13 +1287,15 @@ export default function HexaTrackerPage() {
                 <div className="flex flex-wrap items-center gap-2">
                   <button
                     type="button"
-                    onClick={goBackPriority}
-                    disabled={priorityUndo.length === 0}
-                    aria-disabled={priorityUndo.length === 0}
+                    onClick={prevPriority}
+                    disabled={!canPrev}
+                    aria-disabled={!canPrev}
                     title={
-                      priorityUndo.length === 0
+                      !canPrev
                         ? "Already at the first upgrade"
-                        : "Undo last priority upgrade"
+                        : clampedPriorityIndex > 0
+                          ? "Previous priority step"
+                          : "Undo last upgrade"
                     }
                     className="inline-flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
                   >
@@ -1223,14 +1312,44 @@ export default function HexaTrackerPage() {
                       <path d="M19 12H5" />
                       <path d="m12 19-7-7 7-7" />
                     </svg>
-                    Go back
+                    Prev
                   </button>
                   <button
                     type="button"
-                    onClick={applyNextPriority}
-                    className="rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-white transition hover:opacity-90 dark:text-zinc-900"
+                    onClick={nextPriorityPeek}
+                    disabled={!canNext}
+                    aria-disabled={!canNext}
+                    title={
+                      !canNext
+                        ? "Already at the last planned upgrade"
+                        : "Peek next priority step"
+                    }
+                    className="inline-flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
                   >
                     Next
+                    <svg
+                      viewBox="0 0 24 24"
+                      className="h-3.5 w-3.5"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.25"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden
+                    >
+                      <path d="M5 12h14" />
+                      <path d="m12 5 7 7-7 7" />
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={applyPriorityUpgrade}
+                    disabled={!canUpgrade}
+                    aria-disabled={!canUpgrade}
+                    title="Apply the live next priority upgrade (+1)"
+                    className="rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 dark:text-zinc-900"
+                  >
+                    Upgrade
                   </button>
                 </div>
               </div>
@@ -1241,13 +1360,13 @@ export default function HexaTrackerPage() {
                 </p>
                 <button
                   type="button"
-                  onClick={goBackPriority}
-                  disabled={priorityUndo.length === 0}
-                  aria-disabled={priorityUndo.length === 0}
+                  onClick={prevPriority}
+                  disabled={!canPrev}
+                  aria-disabled={!canPrev}
                   title={
-                    priorityUndo.length === 0
+                    !canPrev
                       ? "Already at the first upgrade"
-                      : "Undo last priority upgrade"
+                      : "Undo last upgrade"
                   }
                   className="inline-flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
                 >
@@ -1264,7 +1383,7 @@ export default function HexaTrackerPage() {
                     <path d="M19 12H5" />
                     <path d="m12 19-7-7 7-7" />
                   </svg>
-                  Go back
+                  Prev
                 </button>
               </div>
             )}
