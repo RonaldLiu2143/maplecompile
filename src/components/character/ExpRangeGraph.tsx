@@ -108,12 +108,16 @@ function valueLabelClass(count: number, compact: boolean): string {
   if (count <= 7) {
     return compact
       ? "text-[0.5rem] sm:text-[0.55rem]"
-      : "text-[0.55rem] sm:text-[0.62rem]";
+      : "text-[0.65rem] sm:text-[0.72rem]";
   }
   if (count <= 14) {
-    return compact ? "text-[0.45rem]" : "text-[0.5rem] sm:text-[0.55rem]";
+    return compact
+      ? "text-[0.45rem]"
+      : "text-[0.55rem] sm:text-[0.62rem]";
   }
-  return "text-[0.45rem] sm:text-[0.5rem]";
+  return compact
+    ? "text-[0.45rem] sm:text-[0.5rem]"
+    : "text-[0.5rem] sm:text-[0.58rem]";
 }
 
 function SparkBars({
@@ -141,17 +145,35 @@ function SparkBars({
   const n = values.length;
   const step = axisStep(n, isCompact);
   const hasAxis = Boolean(labels?.length);
-  const plotH = isCompact ? "h-28" : "h-44";
-  const labelPad = isCompact ? "h-3.5" : "h-4";
+  const plotH = isCompact ? "h-28" : "h-56 sm:h-64";
+  const labelPad = isCompact ? "h-3.5" : "h-5";
   const gap = barGapClass(n, isCompact);
   const barW = barWidthClass(n);
   const labelCls = valueLabelClass(n, isCompact);
   const dateRotate = n > 14;
+  const yAxisW = isCompact ? "w-8 sm:w-10" : "w-10 sm:w-12";
+  const yLabelCls = isCompact
+    ? "text-[0.55rem] sm:text-[0.6rem]"
+    : "text-[0.65rem] sm:text-[0.72rem]";
+  const xLabelCls = isCompact
+    ? dateRotate
+      ? "origin-top-left -translate-x-1/2 rotate-[-35deg] text-[0.5rem]"
+      : "-translate-x-1/2 text-center text-[0.6rem]"
+    : dateRotate
+      ? "origin-top-left -translate-x-1/2 rotate-[-35deg] text-[0.58rem] sm:text-[0.62rem]"
+      : "-translate-x-1/2 text-center text-[0.68rem] sm:text-[0.75rem]";
+  const xAxisH = dateRotate
+    ? isCompact
+      ? "h-7"
+      : "h-9 sm:h-10"
+    : isCompact
+      ? "h-3.5"
+      : "h-5";
 
   return (
-    <div className="flex gap-1.5 sm:gap-2">
+    <div className={`flex ${isCompact ? "gap-1.5 sm:gap-2" : "gap-2 sm:gap-3"}`}>
       <div
-        className={`relative flex w-8 shrink-0 flex-col sm:w-10 ${plotH}`}
+        className={`relative flex shrink-0 flex-col ${yAxisW} ${plotH}`}
         aria-hidden
       >
         <div className={`shrink-0 ${labelPad}`} />
@@ -167,7 +189,7 @@ function SparkBars({
             return (
               <span
                 key={tick}
-                className={`absolute right-1.5 font-mono text-[0.55rem] leading-none tabular-nums text-foreground/55 sm:right-2 sm:text-[0.6rem] ${edge}`}
+                className={`absolute right-1.5 font-mono leading-none tabular-nums text-foreground/55 sm:right-2 ${yLabelCls} ${edge}`}
                 style={{ bottom: `${pct}%` }}
               >
                 {formatTickLabel(tick)}
@@ -235,28 +257,13 @@ function SparkBars({
         </div>
 
         {hasAxis ? (
-          <div
-            className={`relative mt-1.5 ${
-              dateRotate
-                ? isCompact
-                  ? "h-7"
-                  : "h-8"
-                : isCompact
-                  ? "h-3.5"
-                  : "h-4"
-            }`}
-            aria-hidden
-          >
+          <div className={`relative mt-1.5 ${xAxisH}`} aria-hidden>
             {labels!.map((label, i) => {
               if (!shouldShowAxisLabel(i, n, step)) return null;
               return (
                 <span
                   key={i}
-                  className={`absolute top-0 font-mono text-[0.6rem] tabular-nums leading-none text-foreground/55 ${
-                    dateRotate
-                      ? "origin-top-left -translate-x-1/2 rotate-[-35deg] text-[0.5rem]"
-                      : "-translate-x-1/2 text-center"
-                  }`}
+                  className={`absolute top-0 font-mono tabular-nums leading-none text-foreground/55 ${xLabelCls}`}
                   style={{ left: `${((i + 0.5) / n) * 100}%` }}
                 >
                   {label}
@@ -296,13 +303,19 @@ export function ExpRangeGraph({
   const hasBars = slice.length > 0;
 
   return (
-    <div className={compact ? "mt-3 border-t border-border/40 pt-3" : "mt-4"}>
+    <div className={compact ? "mt-3 border-t border-border/40 pt-3" : "mt-5"}>
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-[0.65rem] font-semibold uppercase tracking-wider opacity-55">
+        <p
+          className={`font-semibold uppercase tracking-wider opacity-55 ${
+            compact ? "text-[0.65rem]" : "text-[0.75rem] sm:text-sm"
+          }`}
+        >
           {compact ? "Daily EXP" : `${days}d chart`}
         </p>
         <div
-          className="inline-flex rounded-lg border border-border/60 bg-surface-muted/40 p-0.5"
+          className={`inline-flex rounded-lg border border-border/60 bg-surface-muted/40 ${
+            compact ? "p-0.5" : "p-1"
+          }`}
           role="group"
           aria-label="EXP history range"
         >
@@ -313,7 +326,11 @@ export function ExpRangeGraph({
                 key={r}
                 type="button"
                 onClick={() => setDays(r)}
-                className={`rounded-md px-2 py-0.5 text-[0.7rem] font-semibold tabular-nums transition ${
+                className={`rounded-md font-semibold tabular-nums transition ${
+                  compact
+                    ? "px-2 py-0.5 text-[0.7rem]"
+                    : "px-2.5 py-1 text-xs sm:text-sm"
+                } ${
                   active
                     ? "bg-accent text-white dark:text-zinc-900"
                     : "opacity-70 hover:bg-surface-muted hover:opacity-100"
@@ -335,7 +352,11 @@ export function ExpRangeGraph({
           {avg}
         </p>
       ) : hasBars ? (
-        <p className="mt-1.5 text-[0.65rem] font-semibold uppercase tracking-wider opacity-55">
+        <p
+          className={`mt-1.5 font-semibold uppercase tracking-wider opacity-55 ${
+            compact ? "text-[0.65rem]" : "text-[0.7rem] sm:text-xs"
+          }`}
+        >
           Last {days} days
           {slice.length < days ? ` (${slice.length} avail.)` : ""}
         </p>
@@ -343,7 +364,9 @@ export function ExpRangeGraph({
 
       <div
         className={`mt-2 rounded-xl border border-border/55 bg-surface-muted/25 ${
-          compact ? "px-2 py-2.5 sm:px-2.5" : "px-3 py-3 sm:px-4 sm:py-3.5"
+          compact
+            ? "px-2 py-2.5 sm:px-2.5"
+            : "px-3.5 py-4 sm:px-5 sm:py-5"
         }`}
       >
         {hasBars ? (
@@ -351,7 +374,7 @@ export function ExpRangeGraph({
         ) : (
           <p
             className={`flex items-center justify-center text-xs opacity-55 ${
-              compact ? "h-28" : "h-44"
+              compact ? "h-28" : "h-56 sm:h-64"
             }`}
           >
             No daily EXP history for this window
@@ -415,11 +438,29 @@ function LevelProgressSpark({
   const plotMax = yMax + pad;
   const yTicks = buildLevelYTicks(plotMin, plotMax);
   const isCompact = Boolean(compact);
-  const plotH = isCompact ? "h-24" : "h-40";
+  const plotH = isCompact ? "h-24" : "h-52 sm:h-60";
   const step = axisStep(n, isCompact);
   const hasAxis = Boolean(labels?.length);
   const dateRotate = n > 14;
   const tipIdx = hover;
+  const yAxisW = isCompact ? "w-8 sm:w-10" : "w-10 sm:w-12";
+  const yLabelCls = isCompact
+    ? "text-[0.55rem] sm:text-[0.6rem]"
+    : "text-[0.65rem] sm:text-[0.72rem]";
+  const xLabelCls = isCompact
+    ? dateRotate
+      ? "origin-top-left -translate-x-1/2 rotate-[-35deg] text-[0.5rem]"
+      : "-translate-x-1/2 text-center text-[0.6rem]"
+    : dateRotate
+      ? "origin-top-left -translate-x-1/2 rotate-[-35deg] text-[0.58rem] sm:text-[0.62rem]"
+      : "-translate-x-1/2 text-center text-[0.68rem] sm:text-[0.75rem]";
+  const xAxisH = dateRotate
+    ? isCompact
+      ? "h-7"
+      : "h-9 sm:h-10"
+    : isCompact
+      ? "h-3.5"
+      : "h-5";
 
   const W = 1000;
   const H = 100;
@@ -458,9 +499,9 @@ function LevelProgressSpark({
     tipIdx != null ? (labels?.[tipIdx] ?? `Day ${tipIdx + 1}`) : null;
 
   return (
-    <div className="flex gap-1.5 sm:gap-2">
+    <div className={`flex ${isCompact ? "gap-1.5 sm:gap-2" : "gap-2 sm:gap-3"}`}>
       <div
-        className={`relative flex w-8 shrink-0 flex-col sm:w-10 ${plotH}`}
+        className={`relative flex shrink-0 flex-col ${yAxisW} ${plotH}`}
         aria-hidden
       >
         <div className="relative min-h-0 flex-1 border-r border-border/70">
@@ -478,7 +519,7 @@ function LevelProgressSpark({
             return (
               <span
                 key={tick}
-                className={`absolute right-1.5 font-mono text-[0.55rem] leading-none tabular-nums text-foreground/55 sm:right-2 sm:text-[0.6rem] ${edge}`}
+                className={`absolute right-1.5 font-mono leading-none tabular-nums text-foreground/55 sm:right-2 ${yLabelCls} ${edge}`}
                 style={{ bottom: `${pct}%` }}
               >
                 {tick}
@@ -519,7 +560,7 @@ function LevelProgressSpark({
                 d={seg.d}
                 fill="none"
                 stroke={seg.leveled ? "var(--accent)" : "currentColor"}
-                strokeWidth={seg.leveled ? 2.4 : 1.8}
+                strokeWidth={seg.leveled ? (isCompact ? 2.4 : 3) : isCompact ? 1.8 : 2.4}
                 strokeLinejoin="round"
                 strokeLinecap="round"
                 vectorEffect="non-scaling-stroke"
@@ -550,28 +591,13 @@ function LevelProgressSpark({
         </div>
 
         {hasAxis ? (
-          <div
-            className={`relative mt-1.5 ${
-              dateRotate
-                ? isCompact
-                  ? "h-7"
-                  : "h-8"
-                : isCompact
-                  ? "h-3.5"
-                  : "h-4"
-            }`}
-            aria-hidden
-          >
+          <div className={`relative mt-1.5 ${xAxisH}`} aria-hidden>
             {labels!.map((label, i) => {
               if (!shouldShowAxisLabel(i, n, step)) return null;
               return (
                 <span
                   key={i}
-                  className={`absolute top-0 font-mono text-[0.6rem] tabular-nums leading-none text-foreground/55 ${
-                    dateRotate
-                      ? "origin-top-left -translate-x-1/2 rotate-[-35deg] text-[0.5rem]"
-                      : "-translate-x-1/2 text-center"
-                  }`}
+                  className={`absolute top-0 font-mono tabular-nums leading-none text-foreground/55 ${xLabelCls}`}
                   style={{ left: `${((i + 0.5) / n) * 100}%` }}
                 >
                   {label}
@@ -608,14 +634,29 @@ export function LevelProgressGraph({
   const labelSlice =
     labels.length === levels.length ? labels.slice(-days) : undefined;
 
+  const lastLevel = slice[slice.length - 1];
+  const lastExpInLevel = expSlice[expSlice.length - 1];
+  const lastPct =
+    lastLevel != null &&
+    lastExpInLevel != null &&
+    Number.isFinite(lastExpInLevel)
+      ? expPercent(lastLevel, lastExpInLevel)
+      : null;
+
   return (
     <div className={compact ? "mt-3 border-t border-border/40 pt-3" : "mt-5"}>
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-[0.65rem] font-semibold uppercase tracking-wider opacity-55">
+        <p
+          className={`font-semibold uppercase tracking-wider opacity-55 ${
+            compact ? "text-[0.65rem]" : "text-[0.75rem] sm:text-sm"
+          }`}
+        >
           {compact ? "Level progress" : `${days}d chart`}
         </p>
         <div
-          className="inline-flex rounded-lg border border-border/60 bg-surface-muted/40 p-0.5"
+          className={`inline-flex rounded-lg border border-border/60 bg-surface-muted/40 ${
+            compact ? "p-0.5" : "p-1"
+          }`}
           role="group"
           aria-label="Level progress range"
         >
@@ -626,7 +667,11 @@ export function LevelProgressGraph({
                 key={r}
                 type="button"
                 onClick={() => setDays(r)}
-                className={`rounded-md px-2 py-0.5 text-[0.7rem] font-semibold tabular-nums transition ${
+                className={`rounded-md font-semibold tabular-nums transition ${
+                  compact
+                    ? "px-2 py-0.5 text-[0.7rem]"
+                    : "px-2.5 py-1 text-xs sm:text-sm"
+                } ${
                   active
                     ? "bg-accent text-white dark:text-zinc-900"
                     : "opacity-70 hover:bg-surface-muted hover:opacity-100"
@@ -642,15 +687,56 @@ export function LevelProgressGraph({
 
       <div
         className={`mt-2 rounded-xl border border-border/55 bg-surface-muted/25 ${
-          compact ? "px-2 py-2.5 sm:px-2.5" : "px-3 py-3 sm:px-4 sm:py-3.5"
+          compact
+            ? "px-2 py-2.5 sm:px-2.5"
+            : "px-3.5 py-4 sm:px-5 sm:py-5"
         }`}
       >
-        <LevelProgressSpark
-          levels={slice}
-          cumulativeExp={expSlice}
-          labels={labelSlice}
-          compact={compact}
-        />
+        <div
+          className={`flex items-stretch ${
+            compact ? "gap-2" : "gap-3 sm:gap-4"
+          }`}
+        >
+          {lastLevel != null ? (
+            <div
+              className={`flex shrink-0 flex-col justify-center border-r border-border/55 ${
+                compact
+                  ? "min-w-[3.25rem] pr-2"
+                  : "min-w-[4.5rem] pr-3 sm:min-w-[5.25rem] sm:pr-4"
+              }`}
+              aria-label={
+                lastPct != null
+                  ? `Level ${lastLevel}, ${lastPct.toFixed(2)} percent`
+                  : `Level ${lastLevel}`
+              }
+            >
+              <p
+                className={`font-display font-bold tabular-nums leading-none tracking-tight ${
+                  compact
+                    ? "text-sm"
+                    : "text-xl sm:text-2xl"
+                }`}
+              >
+                Lv. {lastLevel}
+              </p>
+              <p
+                className={`mt-1.5 font-mono font-semibold tabular-nums text-accent ${
+                  compact ? "text-[0.7rem]" : "text-sm sm:text-base"
+                }`}
+              >
+                {lastPct != null ? `${lastPct.toFixed(2)}%` : "—"}
+              </p>
+            </div>
+          ) : null}
+          <div className="min-w-0 flex-1">
+            <LevelProgressSpark
+              levels={slice}
+              cumulativeExp={expSlice}
+              labels={labelSlice}
+              compact={compact}
+            />
+          </div>
+        </div>
       </div>
     </div>
   );

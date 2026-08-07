@@ -4,10 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { CharacterProfile } from "@/components/character/CharacterProfile";
-import {
-  LevelExpBar,
-  LevelProgressGraph,
-} from "@/components/character/ExpRangeGraph";
+import { LevelExpBar } from "@/components/character/ExpRangeGraph";
 import { useSavedCharacters } from "@/hooks/useSavedCharacters";
 import {
   CHARACTER_LOOKUP_NETWORK_ERROR,
@@ -64,14 +61,11 @@ function StarIcon({ filled }: { filled?: boolean }) {
 function SavedRow({
   entry,
   active,
-  activeGraph,
   onSelect,
   onRemove,
 }: {
   entry: SavedCharacter;
   active?: boolean;
-  /** When this card is the open profile, show compact Level Progress. */
-  activeGraph?: CharacterLookupResult["graph"];
   onSelect: () => void;
   onRemove: () => void;
 }) {
@@ -86,7 +80,7 @@ function SavedRow({
   return (
     <li
       className={[
-        "overflow-hidden rounded-xl border transition",
+        "w-[15.5rem] shrink-0 overflow-hidden rounded-xl border transition sm:w-[16.5rem]",
         active
           ? "border-accent/55 bg-accent-soft/35"
           : "border-border/50 bg-surface/80 hover:border-border hover:bg-surface",
@@ -157,11 +151,6 @@ function SavedRow({
           <StarIcon filled />
         </button>
       </div>
-      {active && activeGraph?.levels?.length ? (
-        <div className="border-t border-border/40 px-2.5 pb-2.5">
-          <LevelProgressGraph graph={activeGraph} compact />
-        </div>
-      ) : null}
     </li>
   );
 }
@@ -280,7 +269,63 @@ export function CharacterSearchPage() {
         </p>
       </header>
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(17rem,22rem)] lg:items-start">
+      <div className="flex flex-col gap-5">
+        <aside className="rounded-2xl border border-border/55 bg-surface/90 p-4 sm:p-5">
+          <div className="flex flex-wrap items-end justify-between gap-2">
+            <div>
+              <h2 className="font-display text-[0.7rem] font-bold uppercase tracking-[0.14em] text-accent">
+                Saved Characters
+              </h2>
+              <p className="mt-1 text-[0.7rem] text-foreground/50">
+                Bookmarks only — not your roster.
+              </p>
+            </div>
+            {hydrated && saved.length > 0 ? (
+              <span className="font-mono text-[0.65rem] tabular-nums text-foreground/50">
+                {saved.length}
+              </span>
+            ) : null}
+          </div>
+
+          {!hydrated ? (
+            <p className="mt-3 text-sm opacity-60">Loading…</p>
+          ) : saved.length === 0 ? (
+            <p className="mt-3 rounded-xl border border-dashed border-border/50 bg-surface-muted/30 px-3 py-5 text-center text-sm text-foreground/55">
+              Add characters to your saved list to get started!
+            </p>
+          ) : (
+            <ul className="mt-3 flex gap-2.5 overflow-x-auto pb-1">
+              {saved.map((entry) => {
+                const key = entryKey(entry);
+                const isActive = activeKey === key;
+                return (
+                  <SavedRow
+                    key={key}
+                    entry={
+                      isActive && result
+                        ? {
+                            ...entry,
+                            level: result.level,
+                            exp: result.exp,
+                            jobName: result.jobName,
+                            worldName: result.worldName ?? entry.worldName,
+                            characterImgURL:
+                              result.characterImgURL ?? entry.characterImgURL,
+                          }
+                        : entry
+                    }
+                    active={isActive}
+                    onSelect={() => {
+                      void loadCharacter(entry.name, entry.region);
+                    }}
+                    onRemove={() => unsave(entry)}
+                  />
+                );
+              })}
+            </ul>
+          )}
+        </aside>
+
         <section className="space-y-3">
           <form
             onSubmit={(e) => void onSubmit(e)}
@@ -374,61 +419,6 @@ export function CharacterSearchPage() {
             </p>
           ) : null}
         </section>
-
-        <aside className="self-start rounded-2xl border border-border/55 bg-surface/90 p-4 lg:sticky lg:top-14 lg:max-h-[calc(100dvh-5rem)] lg:overflow-y-auto">
-          <div className="flex items-center justify-between gap-2">
-            <h2 className="font-display text-[0.7rem] font-bold uppercase tracking-[0.14em] text-accent">
-              Saved Characters
-            </h2>
-            {hydrated && saved.length > 0 ? (
-              <span className="font-mono text-[0.65rem] tabular-nums text-foreground/50">
-                {saved.length}
-              </span>
-            ) : null}
-          </div>
-          <p className="mt-1 text-[0.7rem] text-foreground/50">
-            Bookmarks only — not your roster.
-          </p>
-
-          {!hydrated ? (
-            <p className="mt-4 text-sm opacity-60">Loading…</p>
-          ) : saved.length === 0 ? (
-            <p className="mt-4 rounded-xl border border-dashed border-border/50 bg-surface-muted/30 px-3 py-6 text-center text-sm text-foreground/55">
-              Add characters to your saved list to get started!
-            </p>
-          ) : (
-            <ul className="mt-3 flex flex-col gap-2">
-              {saved.map((entry) => {
-                const key = entryKey(entry);
-                const isActive = activeKey === key;
-                return (
-                  <SavedRow
-                    key={key}
-                    entry={
-                      isActive && result
-                        ? {
-                            ...entry,
-                            level: result.level,
-                            exp: result.exp,
-                            jobName: result.jobName,
-                            worldName: result.worldName ?? entry.worldName,
-                            characterImgURL:
-                              result.characterImgURL ?? entry.characterImgURL,
-                          }
-                        : entry
-                    }
-                    active={isActive}
-                    activeGraph={isActive ? result?.graph : undefined}
-                    onSelect={() => {
-                      void loadCharacter(entry.name, entry.region);
-                    }}
-                    onRemove={() => unsave(entry)}
-                  />
-                );
-              })}
-            </ul>
-          )}
-        </aside>
       </div>
     </div>
   );

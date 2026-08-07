@@ -85,24 +85,24 @@ function MetricCard({
   total: string;
 }) {
   return (
-    <div className="rounded-xl border border-border/45 bg-surface-muted/35 px-3 py-2.5">
-      <p className="text-[0.65rem] font-semibold uppercase tracking-wider text-foreground/50">
+    <div className="rounded-xl border border-border/45 bg-surface-muted/35 px-3.5 py-3 sm:px-4 sm:py-3.5">
+      <p className="text-[0.7rem] font-semibold uppercase tracking-wider text-foreground/50">
         {label}
       </p>
-      <dl className="mt-1.5 space-y-1">
+      <dl className="mt-2 space-y-1.5">
         <div className="flex items-baseline justify-between gap-2">
-          <dt className="text-[0.7rem] text-foreground/55">Daily avg</dt>
-          <dd className="font-mono text-sm font-bold tabular-nums">{avg}</dd>
+          <dt className="text-[0.75rem] text-foreground/55">Daily avg</dt>
+          <dd className="font-mono text-base font-bold tabular-nums">{avg}</dd>
         </div>
         <div className="flex items-baseline justify-between gap-2">
-          <dt className="text-[0.7rem] text-foreground/55">Daily %</dt>
-          <dd className="font-mono text-sm font-semibold tabular-nums">
+          <dt className="text-[0.75rem] text-foreground/55">Daily %</dt>
+          <dd className="font-mono text-base font-semibold tabular-nums">
             {dailyPct}
           </dd>
         </div>
         <div className="flex items-baseline justify-between gap-2">
-          <dt className="text-[0.7rem] text-foreground/55">Total</dt>
-          <dd className="font-mono text-sm font-semibold tabular-nums">
+          <dt className="text-[0.75rem] text-foreground/55">Total</dt>
+          <dd className="font-mono text-base font-semibold tabular-nums">
             {total}
           </dd>
         </div>
@@ -687,18 +687,18 @@ function FullCharacterProfile({
 
         <div className="flex min-w-0 flex-col gap-4">
           {dailyExp.length || character.expAverages ? (
-            <section className="rounded-2xl border border-border/60 bg-surface/90 p-4 sm:p-5">
+            <section className="min-h-[22rem] rounded-2xl border border-border/60 bg-surface/90 p-5 sm:min-h-[26rem] sm:p-6">
               <div className="flex flex-wrap items-end justify-between gap-2">
-                <h3 className="font-display text-sm font-bold uppercase tracking-[0.14em] text-accent">
+                <h3 className="font-display text-base font-bold uppercase tracking-[0.14em] text-accent sm:text-lg">
                   Daily Exp Gained
                 </h3>
-                <p className="text-[0.7rem] text-foreground/50">
+                <p className="text-xs text-foreground/50">
                   Tracked history (MapleHub)
                 </p>
               </div>
 
               {character.expAverages ? (
-                <div className="mt-4 grid grid-cols-2 gap-2.5 lg:grid-cols-4">
+                <div className="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
                   {metric("7d", avg7, 7)}
                   {metric("14d", avg14, 14)}
                   {metric("30d", avg30, 30)}
@@ -725,12 +725,12 @@ function FullCharacterProfile({
           ) : null}
 
           {hasLevelProgress ? (
-            <section className="rounded-2xl border border-border/60 bg-surface/90 p-4 sm:p-5">
+            <section className="min-h-[18rem] rounded-2xl border border-border/60 bg-surface/90 p-5 sm:min-h-[22rem] sm:p-6">
               <div className="flex flex-wrap items-end justify-between gap-2">
-                <h3 className="font-display text-sm font-bold uppercase tracking-[0.14em] text-accent">
+                <h3 className="font-display text-base font-bold uppercase tracking-[0.14em] text-accent sm:text-lg">
                   Level Progress
                 </h3>
-                <p className="text-[0.7rem] text-foreground/50">
+                <p className="text-xs text-foreground/50">
                   Tracked history (MapleHub)
                 </p>
               </div>
