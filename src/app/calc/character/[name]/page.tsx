@@ -13,7 +13,13 @@ export default async function CharacterNameRedirectPage({
   const sp = await searchParams;
   const regionRaw = Array.isArray(sp.region) ? sp.region[0] : sp.region;
   const region = normalizeRegion(regionRaw) ?? "na";
-  const name = decodeURIComponent(raw ?? "").trim();
+  let name: string;
+  try {
+    name = decodeURIComponent(raw ?? "").trim();
+  } catch {
+    // Malformed % sequences throw URIError — fall back to raw segment.
+    name = (raw ?? "").trim();
+  }
   if (!name) {
     redirect("/calc/character");
   }

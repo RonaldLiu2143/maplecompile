@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { ExpRangeGraph } from "@/components/character/ExpRangeGraph";
 import type { LiberationTagFlags } from "@/lib/dashboard/roster-status";
@@ -14,6 +15,10 @@ import {
 } from "@/lib/character/exp";
 import { formatOptionalInt, formatRank } from "@/lib/character/format";
 import type { CharacterLookupResult } from "@/lib/character/lookup";
+import {
+  applyCharacterLookupToScouter,
+  SCOUTER_FROM_LOOKUP_HREF,
+} from "@/lib/character/open-in-scouter";
 import { entryKey } from "@/lib/dashboard/roster";
 import { readLiberationFlags } from "@/lib/dashboard/roster-status";
 import { useMapleDataReload } from "@/hooks/useMapleDataReload";
@@ -457,6 +462,7 @@ function FullCharacterProfile({
   character: CharacterLookupResult;
   actions?: ReactNode;
 }) {
+  const router = useRouter();
   const pct = character.expPercent;
   const regionLabel = character.region.toUpperCase();
   const job = character.jobName;
@@ -734,12 +740,16 @@ function FullCharacterProfile({
       </div>
 
       <div className="flex flex-wrap gap-2.5 text-sm">
-        <Link
-          href="/calc/scouter"
+        <button
+          type="button"
+          onClick={() => {
+            applyCharacterLookupToScouter(character);
+            router.push(SCOUTER_FROM_LOOKUP_HREF);
+          }}
           className="rounded-lg border border-border px-3 py-1.5 font-semibold transition hover:bg-surface-muted"
         >
           Open in Scouter
-        </Link>
+        </button>
         <a
           href={`https://mapleranks.com/u/${character.region === "eu" ? "eu/" : ""}${encodeURIComponent(character.name)}`}
           target="_blank"

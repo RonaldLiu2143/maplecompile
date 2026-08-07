@@ -141,18 +141,21 @@ export function CharacterSearchPage() {
     const trimmed = rawName.trim();
     if (!trimmed) {
       setError("Enter a character name.");
+      setResult(null);
+      loadedKeyRef.current = null;
       return;
     }
     if (!CHARACTER_NAME_REGEX.test(trimmed)) {
       setError("Invalid name. Use 2–13 letters or numbers.");
+      setResult(null);
+      loadedKeyRef.current = null;
       return;
     }
 
-    const key = entryKey({ region: rawRegion, name: trimmed });
     const requestId = ++requestIdRef.current;
-    loadedKeyRef.current = key;
     setPending(true);
     setError(null);
+    setResult(null);
     setName(trimmed);
     setRegion(rawRegion);
 
@@ -170,6 +173,8 @@ export function CharacterSearchPage() {
       }
     } catch (err) {
       if (requestId !== requestIdRef.current) return;
+      setResult(null);
+      loadedKeyRef.current = null;
       setError(
         err instanceof Error ? err.message : CHARACTER_LOOKUP_NETWORK_ERROR,
       );
@@ -181,7 +186,12 @@ export function CharacterSearchPage() {
   useEffect(() => {
     const qName = searchParams.get("name")?.trim() ?? "";
     const qRegion = normalizeRegion(searchParams.get("region")) ?? "na";
-    if (!qName) return;
+    if (!qName) {
+      setResult(null);
+      setError(null);
+      loadedKeyRef.current = null;
+      return;
+    }
     const key = entryKey({ region: qRegion, name: qName });
     if (loadedKeyRef.current === key) return;
     void loadCharacter(qName, qRegion, { syncUrl: false });

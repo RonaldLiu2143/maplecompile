@@ -7,6 +7,7 @@ import {
   CHARACTER_NAME_REGEX,
   type NexonRegion,
 } from "@/lib/character/lookup";
+import { sanitizeAvatarUrl } from "@/lib/character/maplehub";
 import { entryKey } from "@/lib/dashboard/roster";
 
 export const SAVED_CHARACTERS_KEY = "maplecompile-saved-characters";
@@ -57,7 +58,7 @@ function normalizeSaved(
     typeof raw.characterImgURL === "string" &&
     raw.characterImgURL.trim()
   ) {
-    entry.characterImgURL = raw.characterImgURL.trim();
+    entry.characterImgURL = sanitizeAvatarUrl(raw.characterImgURL);
   }
   return entry;
 }
@@ -79,10 +80,15 @@ function parseList(parsed: unknown): SavedCharacter[] {
   return entries;
 }
 
-function writeList(entries: SavedCharacter[]): SavedCharacter[] {
+/** Persist list; returns sorted list on success, or `false` if storage write fails. */
+function writeList(entries: SavedCharacter[]): SavedCharacter[] | false {
   const sorted = [...entries].sort((a, b) => b.savedAt - a.savedAt);
-  localStorage.setItem(SAVED_CHARACTERS_KEY, JSON.stringify(sorted));
-  return sorted;
+  try {
+    localStorage.setItem(SAVED_CHARACTERS_KEY, JSON.stringify(sorted));
+    return sorted;
+  } catch {
+    return false;
+  }
 }
 
 export function readSavedCharacters(): SavedCharacter[] {
@@ -120,15 +126,22 @@ export function addSavedCharacter(
   if (current.some((e) => entryKey(e) === entryKey(next))) {
     return { list: current, added: false, entry: next };
   }
-  return { list: writeList([next, ...current]), added: true, entry: next };
+  const written = writeList([next, ...current]);
+  if (written === false) {
+    return { list: current, added: false, entry: next };
+  }
+  return { list: written, added: true, entry: next };
 }
 
 export function removeSavedCharacter(
   target: SavedCharacterTarget,
 ): SavedCharacter[] {
+  const current = readSavedCharacters();
   const key = entryKey(target);
-  const next = readSavedCharacters().filter((e) => entryKey(e) !== key);
-  return writeList(next);
+  const next = current.filter((e) => entryKey(e) !== key);
+  if (next.length === current.length) return current;
+  const written = writeList(next);
+  return written === false ? current : written;
 }
 
 export function toggleSavedCharacter(
@@ -164,5 +177,6 @@ export function updateSavedCharacterSnapshot(
     };
   });
   if (!changed) return current;
-  return writeList(next);
+  const written = writeList(next);
+  return written === false ? current : written;
 }
