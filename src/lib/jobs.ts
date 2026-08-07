@@ -131,8 +131,40 @@ export function classFromJobName(
   jobName: string | null | undefined,
 ): { jobType: JobType; charType: string } | null {
   if (!jobName?.trim()) return null;
-  const needle = jobName.trim().toLowerCase();
-  const hit = CLASS_OPTIONS.find((o) => o.name.toLowerCase() === needle);
-  if (!hit) return null;
-  return { jobType: hit.jobType, charType: hit.charType };
+  const needle = jobName.trim().toLowerCase().replace(/\s+/g, " ");
+  const exact = CLASS_OPTIONS.find((o) => o.name.toLowerCase() === needle);
+  if (exact) return { jobType: exact.jobType, charType: exact.charType };
+
+  // Nexon often uses longer labels (e.g. "Arch Mage (Ice, Lightning)").
+  const fuzzy = CLASS_OPTIONS.find((o) => {
+    const n = o.name.toLowerCase();
+    return needle.includes(n) || n.includes(needle);
+  });
+  if (fuzzy) return { jobType: fuzzy.jobType, charType: fuzzy.charType };
+
+  // Common aliases
+  const aliases: Record<string, string> = {
+    "arch mage (fp)": "ArchMage F/P",
+    "arch mage (f/p)": "ArchMage F/P",
+    "arch mage (fire, poison)": "ArchMage F/P",
+    "archmage fp": "ArchMage F/P",
+    "arch mage (il)": "ArchMage I/L",
+    "arch mage (i/l)": "ArchMage I/L",
+    "arch mage (ice, lightning)": "ArchMage I/L",
+    "archmage il": "ArchMage I/L",
+    "flame wizard": "Blaze Wizard",
+    "night walker": "Night Walker",
+    "dawn warrior": "Soul Master",
+    "thunder breaker": "Thunder Breaker",
+  };
+  const aliasName = aliases[needle];
+  if (aliasName) {
+    const viaAlias = CLASS_OPTIONS.find(
+      (o) => o.name.toLowerCase() === aliasName.toLowerCase(),
+    );
+    if (viaAlias)
+      return { jobType: viaAlias.jobType, charType: viaAlias.charType };
+  }
+
+  return null;
 }

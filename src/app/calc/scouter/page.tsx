@@ -1018,18 +1018,19 @@ export default function ScouterPage() {
     setPresetName(character.name);
     const mapped = classFromJobName(character.jobName);
     if (mapped) {
-      setInput((prev) => ({
-        ...prev,
-        jobType: mapped.jobType,
-        charType: mapped.charType,
-        level: character.level > 0 ? character.level : prev.level,
-      }));
+      // Same path as the Class dropdown so magic-attack / hexa / 1H sword update.
+      onClassChange(`${mapped.jobType}:${mapped.charType}`);
       storage.setJobType(mapped.jobType);
       storage.setCharType(mapped.charType);
-    } else if (character.level > 0) {
+    }
+    if (character.level > 0) {
       setInput((prev) => ({ ...prev, level: character.level }));
     }
-    flashPresetMsg(`Paired scouter with ${character.name}`);
+    flashPresetMsg(
+      mapped
+        ? `Paired scouter with ${character.name} (${getCharName(mapped.jobType, mapped.charType)})`
+        : `Paired scouter with ${character.name}`,
+    );
     return true;
   };
 
