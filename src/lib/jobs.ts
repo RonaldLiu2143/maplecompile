@@ -17,7 +17,7 @@ export const JOBS: JobOption[] = [
       { id: "mihile", name: "Mihile" },
       { id: "kaiser", name: "Kaiser" },
       { id: "paladin", name: "Paladin" },
-      { id: "sm", name: "Soul Master" },
+      { id: "sm", name: "Dawn Warrior" },
       { id: "zero", name: "Zero" },
     ],
   },
@@ -154,7 +154,8 @@ export function classFromJobName(
     "archmage il": "ArchMage I/L",
     "flame wizard": "Blaze Wizard",
     "night walker": "Night Walker",
-    "dawn warrior": "Soul Master",
+    "dawn warrior": "Dawn Warrior",
+    "soul master": "Dawn Warrior",
     "thunder breaker": "Thunder Breaker",
   };
   const aliasName = aliases[needle];
