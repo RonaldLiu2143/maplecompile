@@ -744,21 +744,6 @@ function FullCharacterProfile({
               watches at Lv. 215+).
             </section>
           ) : null}
-
-          <section className="rounded-xl border border-dashed border-border/45 bg-surface/40 p-4">
-            <h3 className="font-display text-[0.7rem] font-bold uppercase tracking-[0.14em] text-foreground/55">
-              Not available yet
-            </h3>
-            <ul className="mt-2 space-y-1.5 text-xs text-foreground/55">
-              <li>Nearby mini-leaderboards — MapleRanks-only historical board</li>
-              <li>Fashion history — {character.stubs.fashion}</li>
-              <li>Gear / set — {character.stubs.gear}</li>
-              <li>Combat power — {character.stubs.combatPower}</li>
-              <li>
-                Achievement history — {character.stubs.achievementHistory}
-              </li>
-            </ul>
-          </section>
         </div>
       </div>
 
