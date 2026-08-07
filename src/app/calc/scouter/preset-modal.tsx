@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { getCharName } from "@/lib/jobs";
 import type { ScouterPreset } from "@/lib/storage";
+import { countFilledSlots } from "@/lib/starter-loadouts";
 
 export type PresetModalMode = "recall" | "save";
 
@@ -78,10 +79,10 @@ export function PresetModal({
             </h2>
             <p className="mt-1 text-xs opacity-65">
               {isRecall
-                ? "Click a preset to load it into the form."
+                ? "Click a preset to load stats and equipment into Scouter."
                 : trimmedDraft
-                  ? `Save current stats as “${trimmedDraft}”, or overwrite an existing slot.`
-                  : "Enter a preset name above, then save as new or overwrite a slot."}
+                  ? `Save current stats + gear as “${trimmedDraft}”, or overwrite an existing slot.`
+                  : "Enter a preset name above, then save as new or overwrite a slot (includes equipment)."}
             </p>
           </div>
           <button
@@ -140,6 +141,10 @@ export function PresetModal({
                   trimmedDraft &&
                     p.name.toLowerCase() === trimmedDraft.toLowerCase(),
                 );
+              const gearPieces =
+                p.equipSetup !== undefined
+                  ? countFilledSlots(p.equipSetup)
+                  : null;
               return (
                 <li key={p.id} className="relative">
                   <button
@@ -169,6 +174,9 @@ export function PresetModal({
                     <span className="truncate text-[11px] opacity-60">
                       {classLabelFor(p)}
                       {p.input?.level != null ? ` · Lv.${p.input.level}` : ""}
+                      {gearPieces != null
+                        ? ` · ${gearPieces} gear`
+                        : ""}
                     </span>
                     {active ? (
                       <span className="text-[10px] font-semibold text-accent">

@@ -23,6 +23,19 @@ export const STAT_LABELS: Record<string, string> = {
   jump: "Jump",
 };
 
+/** Map data-file / legacy aliases onto canonical display ids. */
+const STAT_ID_ALIASES: Record<string, string> = {
+  critDmgPercent: "critDamagePercent",
+  critDmg: "critDamagePercent",
+  critDamage: "critDamagePercent",
+  criticalDamagePercent: "critDamagePercent",
+  criticalDmgPercent: "critDamagePercent",
+};
+
+export function normalizeStatId(statId: string): string {
+  return STAT_ID_ALIASES[statId] ?? statId;
+}
+
 export const STAT_DISPLAY_ORDER = [
   "str",
   "dex",
@@ -55,7 +68,8 @@ const PERCENT_STATS = new Set([
 ]);
 
 export function formatStatValue(statId: string, val: number): string {
-  if (PERCENT_STATS.has(statId)) return `+${val}%`;
+  const id = normalizeStatId(statId);
+  if (PERCENT_STATS.has(id)) return `+${val}%`;
   return `+${val}`;
 }
 
@@ -152,10 +166,11 @@ export function calculateSetEffects(
 
   for (const b of breakdown) {
     for (const stat of b.activeEffects) {
-      if (stat.statId === "iedPercent") {
+      const statId = normalizeStatId(stat.statId);
+      if (statId === "iedPercent") {
         iedProduct *= 1 - stat.val / 100;
       } else {
-        totals[stat.statId] = (totals[stat.statId] ?? 0) + stat.val;
+        totals[statId] = (totals[statId] ?? 0) + stat.val;
       }
     }
   }

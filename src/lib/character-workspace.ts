@@ -217,9 +217,9 @@ export function migrateGlobalsToPrimaryWorkspace(): void {
 }
 
 /**
- * Resolve job/char for a workspace.
- * Prefer equip-stored class when gear exists; otherwise prefer scouter input
- * (avoids stale jobType bleed when a character only configured class in Scouter).
+ * Prefer scouter input class as the live job/char when present.
+ * Gear-only workspace class is a fallback (standalone Equipment Setup).
+ * Keeps Scouter Character Stats and embedded Equipment Setup lined up.
  */
 export function resolveWorkspaceClass(workspace: CharacterWorkspace): {
   jobType: string;
@@ -227,16 +227,12 @@ export function resolveWorkspaceClass(workspace: CharacterWorkspace): {
 } {
   const fromScouterJob = workspace.scouterLast?.input?.jobType || "";
   const fromScouterChar = workspace.scouterLast?.input?.charType || "";
-  const hasEquip = countFilledSlots(workspace.equipSetup) > 0;
-  if (hasEquip) {
-    return {
-      jobType: workspace.jobType || fromScouterJob || "",
-      charType: workspace.charType || fromScouterChar || "",
-    };
+  if (fromScouterJob && fromScouterChar) {
+    return { jobType: fromScouterJob, charType: fromScouterChar };
   }
   return {
-    jobType: fromScouterJob || workspace.jobType || "",
-    charType: fromScouterChar || workspace.charType || "",
+    jobType: workspace.jobType || fromScouterJob || "",
+    charType: workspace.charType || fromScouterChar || "",
   };
 }
 

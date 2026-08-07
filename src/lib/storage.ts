@@ -28,6 +28,13 @@ export type ScouterLastState = {
   hexa: number[];
   /** Draft preset name (e.g. from a gallery share) — not auto-saved as a preset. */
   name?: string;
+  /**
+   * Equipment Setup grid snapshot (named Scouter presets).
+   * Omitted on legacy presets and on draft `scouter-last` autosaves.
+   */
+  equipSetup?: EquipSetup;
+  /** Flame lines keyed with the equip snapshot. */
+  flameSetup?: FlameSetup;
 };
 
 export type ScouterPreset = ScouterLastState & {

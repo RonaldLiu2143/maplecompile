@@ -52,7 +52,7 @@ const STEPS: StepDef[] = [
     n: 4,
     title: "Fill Equipment",
     kid: "Your gear",
-    body: "On the same Scouter page, pick gear and review set effects. Saving a preset is optional.",
+    body: "On the same Scouter page, pick gear and review set effects. Gear is included when you save a Character Stats preset.",
   },
   {
     id: "pair",

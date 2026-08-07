@@ -208,54 +208,65 @@ export function EquipmentSetupPanel({
   const classValue = `${jobType}:${charType}`;
   const activeSlot = panel?.slot ?? null;
 
-  const loadCatalog = useCallback(async (job: JobType, char: string) => {
-    if (!job || !char) return;
-    setStatus("loading");
-    setError("");
-    try {
-      const [equipsRes, setsRes] = await Promise.all([
-        fetch(`/api/equips/${job}/${char}`),
-        fetch(`/api/set-effects/${job}`),
-      ]);
-      if (!equipsRes.ok) {
-        throw new Error(
-          (await equipsRes.json().catch(() => ({}))).error ||
-            "Failed to load equips",
-        );
+  const loadCatalog = useCallback(
+    async (
+      job: JobType,
+      char: string,
+      opts?: { keepVisible?: boolean },
+    ) => {
+      if (!job || !char) return;
+      // Soft refresh (class change): keep the gear grid mounted so switching
+      // Character Stats class never looks like a wiped setup.
+      if (!opts?.keepVisible) {
+        setStatus("loading");
       }
-      if (!setsRes.ok) {
-        throw new Error(
-          (await setsRes.json().catch(() => ({}))).error ||
-            "Failed to load set effects",
-        );
+      setError("");
+      try {
+        const [equipsRes, setsRes] = await Promise.all([
+          fetch(`/api/equips/${job}/${char}`),
+          fetch(`/api/set-effects/${job}`),
+        ]);
+        if (!equipsRes.ok) {
+          throw new Error(
+            (await equipsRes.json().catch(() => ({}))).error ||
+              "Failed to load equips",
+          );
+        }
+        if (!setsRes.ok) {
+          throw new Error(
+            (await setsRes.json().catch(() => ({}))).error ||
+              "Failed to load set effects",
+          );
+        }
+        const equips = (await equipsRes.json()) as EquipsResponse;
+        const sets = (await setsRes.json()) as SetEffectsResponse;
+
+        const merged: SetEffect[] = (sets.list ?? []).map((s) => ({
+          ...s,
+          items: equips.equipBySetName?.[s.setType] ?? [],
+        }));
+
+        const typed: EquipsResponse["equipByType"] = {};
+        for (const [key, bucket] of Object.entries(equips.equipByType ?? {})) {
+          typed[key] = {
+            ...bucket,
+            equips: bucket.equips.map((e) => ({
+              ...e,
+              isNormalFlame: inferNormalFlame(e),
+            })),
+          };
+        }
+
+        setEquipByType(typed);
+        setSetList(merged);
+        setStatus("ready");
+      } catch (e) {
+        setStatus("error");
+        setError(e instanceof Error ? e.message : "Load failed");
       }
-      const equips = (await equipsRes.json()) as EquipsResponse;
-      const sets = (await setsRes.json()) as SetEffectsResponse;
-
-      const merged: SetEffect[] = (sets.list ?? []).map((s) => ({
-        ...s,
-        items: equips.equipBySetName?.[s.setType] ?? [],
-      }));
-
-      const typed: EquipsResponse["equipByType"] = {};
-      for (const [key, bucket] of Object.entries(equips.equipByType ?? {})) {
-        typed[key] = {
-          ...bucket,
-          equips: bucket.equips.map((e) => ({
-            ...e,
-            isNormalFlame: inferNormalFlame(e),
-          })),
-        };
-      }
-
-      setEquipByType(typed);
-      setSetList(merged);
-      setStatus("ready");
-    } catch (e) {
-      setStatus("error");
-      setError(e instanceof Error ? e.message : "Load failed");
-    }
-  }, []);
+    },
+    [],
+  );
 
   const loadSetupFromStorage = useCallback((job: JobType, char: string) => {
     skipWorkspaceAutosave.current = true;
@@ -292,15 +303,31 @@ export function EquipmentSetupPanel({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- reloadToken / controlled class drive re-hydrate
   }, [reloadToken]);
 
-  // Controlled class from Scouter: refresh catalog when class changes (keep gear).
+  // Controlled class from Scouter: refresh catalog only — never clear gear.
   useEffect(() => {
     if (!hydrated || !classControlled) return;
     const key = `${jobType}:${charType}`;
     if (prevClassRef.current === key) return;
     prevClassRef.current = key;
     setPanel(null);
-    void loadCatalog(jobType, charType);
+    void loadCatalog(jobType, charType, { keepVisible: true });
   }, [hydrated, classControlled, jobType, charType, loadCatalog]);
+
+  const persistSetupToStorage = useCallback(
+    (next: EquipSetup, opts?: { allowEmpty?: boolean }) => {
+      // Never clobber a saved loadout with a transient empty React state
+      // (Strict Mode remount / class-change races).
+      if (
+        !opts?.allowEmpty &&
+        countFilledSlots(next) === 0 &&
+        countFilledSlots(storage.getEquipSetup()) > 0
+      ) {
+        return;
+      }
+      storage.setEquipSetup(next);
+    },
+    [],
+  );
 
   useEffect(() => {
     if (!hydrated || skipWorkspaceAutosave.current) return;
@@ -308,11 +335,11 @@ export function EquipmentSetupPanel({
       if (skipWorkspaceAutosave.current) return;
       storage.setJobType(jobType);
       storage.setCharType(charType);
-      storage.setEquipSetup(setup);
+      persistSetupToStorage(setup);
       persistLiveToWorkspace(activeCharacterKey());
     }, 250);
     return () => clearTimeout(timer);
-  }, [jobType, charType, setup, hydrated]);
+  }, [jobType, charType, setup, hydrated, persistSetupToStorage]);
 
   const equipAutosaveRef = useRef({
     hydrated: false,
@@ -328,15 +355,18 @@ export function EquipmentSetupPanel({
       if (!snap.hydrated || skipWorkspaceAutosave.current) return;
       storage.setJobType(snap.jobType);
       storage.setCharType(snap.charType);
-      storage.setEquipSetup(snap.setup);
+      persistSetupToStorage(snap.setup);
       persistLiveToWorkspace(activeCharacterKey());
     };
     window.addEventListener("pagehide", flush);
+    // Scouter Character Stats Save/Recall flushes before snapshotting gear.
+    window.addEventListener("maplecompile-flush-equip", flush);
     return () => {
       window.removeEventListener("pagehide", flush);
+      window.removeEventListener("maplecompile-flush-equip", flush);
       flush();
     };
-  }, []);
+  }, [persistSetupToStorage]);
 
   const syncPlannerOverride = useCallback(
     (slotId: string, equip: Equip) => {
@@ -696,7 +726,10 @@ export function EquipmentSetupPanel({
                 Equipment Setup & Set Effects
               </h2>
               <p className="text-[11px] opacity-55">
-                Uses Scouter class · shared with{" "}
+                {classDisplayName
+                  ? `${classDisplayName} · follows Character Stats`
+                  : "Follows Character Stats class"}{" "}
+                · shared with{" "}
                 <a
                   href="/calc/equips/setup"
                   className="font-semibold text-accent underline-offset-2 hover:underline"
@@ -715,8 +748,9 @@ export function EquipmentSetupPanel({
             <p className="text-xs font-medium text-accent">{starterMsg}</p>
           ) : (
             <p className="text-xs opacity-60">
-              Click empty slots to pick gear. Presets are optional — save a named
-              loadout anytime. Tier presets can auto-fill matching pieces.
+              {embedded
+                ? "Click empty slots to pick gear. Equipment is saved with Character Stats presets (Save / Recall above). Tier presets can auto-fill matching pieces."
+                : "Click empty slots to pick gear. Presets are optional — save a named loadout anytime. Tier presets can auto-fill matching pieces."}
             </p>
           )}
           {status === "loading" && (
@@ -728,13 +762,13 @@ export function EquipmentSetupPanel({
 
           <div className="flex w-full flex-col items-start gap-4 lg:flex-row lg:items-start lg:justify-between lg:gap-6">
             <div className="flex w-full min-w-0 flex-col items-start gap-4 lg:w-auto lg:flex-row lg:items-start lg:gap-4">
-              {status === "ready" && (
+              {hydrated && (status === "ready" || status === "loading") && (
                 <EquipGrid
                   setup={setup}
                   flameSetup={flameSetup}
-                  onSlotClick={onSlotClick}
+                  onSlotClick={status === "ready" ? onSlotClick : undefined}
                   charLabel={getCharName(jobType, charType)}
-                  activeSlot={activeSlot}
+                  activeSlot={status === "ready" ? activeSlot : null}
                 />
               )}
 
@@ -820,90 +854,93 @@ export function EquipmentSetupPanel({
                 </button>
               </div>
 
-              <div className="flex max-w-full flex-col items-stretch gap-1 rounded-md border border-border/50 bg-surface/50 px-1.5 py-1">
-                <div className="inline-flex max-w-full flex-wrap items-center justify-end gap-1">
-                  <span className="px-0.5 text-[9px] font-bold uppercase tracking-wide opacity-55">
-                    My presets
-                  </span>
-                  <input
-                    type="text"
-                    value={customPresetName}
-                    onChange={(e) => {
-                      setPresetNameTouched(true);
-                      setCustomPresetName(e.target.value);
-                    }}
-                    placeholder={classDisplayName || "Preset name"}
-                    className="w-[7.5rem] rounded border border-border bg-surface px-1.5 py-1 text-[11px] outline-none focus:border-accent sm:w-[9rem]"
-                    aria-label="Custom preset name"
-                    disabled={status !== "ready"}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => saveCustomPreset(false)}
-                    disabled={
-                      status !== "ready" ||
-                      (!customPresetName.trim() && !loadedCustomPresetId)
-                    }
-                    className="rounded bg-accent px-2 py-1 text-[11px] font-semibold text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
-                    title={
-                      loadedCustomPresetId
-                        ? "Overwrite the loaded preset"
-                        : "Save current setup as a new named preset"
-                    }
-                  >
-                    {loadedCustomPresetId ? "Update" : "Save"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => saveCustomPreset(true)}
-                    disabled={status !== "ready" || !customPresetName.trim()}
-                    className="rounded border border-border px-2 py-1 text-[11px] font-semibold hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
-                    title="Keep the current preset and save a copy under this name"
-                  >
-                    Save as new
-                  </button>
+              {!embedded ? (
+                <div className="flex max-w-full flex-col items-stretch gap-1 rounded-md border border-border/50 bg-surface/50 px-1.5 py-1">
+                  <div className="inline-flex max-w-full flex-wrap items-center justify-end gap-1">
+                    <span className="px-0.5 text-[9px] font-bold uppercase tracking-wide opacity-55">
+                      My presets
+                    </span>
+                    <input
+                      type="text"
+                      value={customPresetName}
+                      onChange={(e) => {
+                        setPresetNameTouched(true);
+                        setCustomPresetName(e.target.value);
+                      }}
+                      placeholder={classDisplayName || "Preset name"}
+                      className="w-[7.5rem] rounded border border-border bg-surface px-1.5 py-1 text-[11px] outline-none focus:border-accent sm:w-[9rem]"
+                      aria-label="Custom preset name"
+                      disabled={status !== "ready"}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => saveCustomPreset(false)}
+                      disabled={
+                        status !== "ready" ||
+                        (!customPresetName.trim() && !loadedCustomPresetId)
+                      }
+                      className="rounded bg-accent px-2 py-1 text-[11px] font-semibold text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+                      title={
+                        loadedCustomPresetId
+                          ? "Overwrite the loaded preset"
+                          : "Save current setup as a new named preset"
+                      }
+                    >
+                      {loadedCustomPresetId ? "Update" : "Save"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => saveCustomPreset(true)}
+                      disabled={status !== "ready" || !customPresetName.trim()}
+                      className="rounded border border-border px-2 py-1 text-[11px] font-semibold hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
+                      title="Keep the current preset and save a copy under this name"
+                    >
+                      Save as new
+                    </button>
+                  </div>
+                  <div className="inline-flex max-w-full flex-wrap items-center justify-end gap-1">
+                    <select
+                      value={customPresetId}
+                      onChange={(e) => setCustomPresetId(e.target.value)}
+                      className="max-w-[9rem] rounded border border-border bg-surface px-1.5 py-1 text-[11px] font-semibold outline-none focus:border-accent"
+                      aria-label="Saved custom presets"
+                      disabled={status !== "ready"}
+                    >
+                      <option value="">Saved…</option>
+                      {customPresets.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.name}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={() => loadCustomPreset(customPresetId)}
+                      disabled={status !== "ready" || !customPresetId}
+                      className="rounded border border-border px-2 py-1 text-[11px] font-semibold hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      Load
+                    </button>
+                    <button
+                      type="button"
+                      onClick={deleteCustomPreset}
+                      disabled={
+                        status !== "ready" ||
+                        !(customPresetId || loadedCustomPresetId)
+                      }
+                      className="rounded border border-border px-2 py-1 text-[11px] font-semibold text-danger hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </div>
-                <div className="inline-flex max-w-full flex-wrap items-center justify-end gap-1">
-                  <select
-                    value={customPresetId}
-                    onChange={(e) => setCustomPresetId(e.target.value)}
-                    className="max-w-[9rem] rounded border border-border bg-surface px-1.5 py-1 text-[11px] font-semibold outline-none focus:border-accent"
-                    aria-label="Saved custom presets"
-                    disabled={status !== "ready"}
-                  >
-                    <option value="">Saved…</option>
-                    {customPresets.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.name}
-                      </option>
-                    ))}
-                  </select>
-                  <button
-                    type="button"
-                    onClick={() => loadCustomPreset(customPresetId)}
-                    disabled={status !== "ready" || !customPresetId}
-                    className="rounded border border-border px-2 py-1 text-[11px] font-semibold hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
-                  >
-                    Load
-                  </button>
-                  <button
-                    type="button"
-                    onClick={deleteCustomPreset}
-                    disabled={
-                      status !== "ready" ||
-                      !(customPresetId || loadedCustomPresetId)
-                    }
-                    className="rounded border border-border px-2 py-1 text-[11px] font-semibold text-danger hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
-                  >
-                    Delete
-                  </button>
-                </div>
-              </div>
+              ) : null}
             </div>
           </div>
         </section>
 
-        {status === "ready" && (
+        {(status === "ready" ||
+          (status === "loading" && setList.length > 0)) && (
           <SetEffectsPanel setup={setup} setList={setList} />
         )}
       </div>

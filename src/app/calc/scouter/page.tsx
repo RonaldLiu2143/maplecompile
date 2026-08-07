@@ -54,7 +54,7 @@ import {
 import { ActiveCharacterBar } from "@/components/ActiveCharacterBar";
 import { EquipmentSetupPanel } from "@/components/EquipmentSetupPanel";
 import { HexaEfficiencyPanel } from "./hexa-efficiency";
-import type { JobType } from "@/lib/types";
+import type { EquipSetup, FlameSetup, JobType } from "@/lib/types";
 import { ShareGalleryModal } from "./share-gallery-modal";
 import { MiniScouterCharacterSearch } from "./MiniScouterCharacterSearch";
 import { PresetModal, type PresetModalMode } from "./preset-modal";
@@ -736,6 +736,14 @@ export default function ScouterPage() {
     else setHexa(defaultHexaLevels().map(() => 0));
     setPresetName(last?.name?.trim() || "");
     setLoadedPresetId("");
+    // Prefer Scouter class over workspace equip job/char so the embedded
+    // Equipment Setup never shows a mismatched catalog after Active switch.
+    if (last?.input) {
+      storage.setJobType(
+        (last.input.jobType || DEFAULT_JOB) as typeof DEFAULT_JOB,
+      );
+      storage.setCharType(last.input.charType || DEFAULT_CHAR);
+    }
     setEquipReloadToken((n) => n + 1);
     queueMicrotask(() => {
       skipWorkspaceAutosave.current = false;
@@ -754,6 +762,10 @@ export default function ScouterPage() {
   const onClassChange = (value: string) => {
     const parsed = parseClassValue(value);
     if (!parsed) return;
+    // Character Stats is source of truth — push live job/char so embedded
+    // Equipment Setup catalogs/set effects stay lined up immediately.
+    storage.setJobType(parsed.jobType);
+    storage.setCharType(parsed.charType);
     setInput((prev) => ({
       ...prev,
       jobType: parsed.jobType,
@@ -854,6 +866,8 @@ export default function ScouterPage() {
     buffs?: BuffState;
     links?: LinkState;
     hexa?: number[];
+    equipSetup?: EquipSetup;
+    flameSetup?: FlameSetup;
   }) => {
     if (data.input) {
       const job = data.input.jobType || DEFAULT_JOB;
@@ -888,6 +902,15 @@ export default function ScouterPage() {
     if (data.buffs) setBuffs(structuredClone(data.buffs));
     if (data.links) setLinks(structuredClone(data.links));
     if (data.hexa) setHexa(clampHexaForGms(structuredClone(data.hexa)));
+    // Legacy presets omit equipSetup — leave the live gear grid alone.
+    if (data.equipSetup !== undefined) {
+      storage.setEquipSetup(structuredClone(data.equipSetup));
+      storage.setFlameSetup(
+        structuredClone(data.flameSetup ?? {}),
+      );
+      persistLiveToWorkspace(activeCharacterKey());
+      setEquipReloadToken((n) => n + 1);
+    }
   };
 
   const loadPresetById = (id: string, announce = true) => {
@@ -938,6 +961,9 @@ export default function ScouterPage() {
         flashPresetMsg(nameCheck.error);
         return;
       }
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("maplecompile-flush-equip"));
+      }
       const saved = storage.saveScouterPreset({
         id: targetId,
         name: nameCheck.value,
@@ -946,6 +972,8 @@ export default function ScouterPage() {
           buffs: structuredClone(buffs),
           links: structuredClone(links),
           hexa: clampHexaForGms(hexa),
+          equipSetup: structuredClone(storage.getEquipSetup()),
+          flameSetup: structuredClone(storage.getFlameSetup()),
         },
       });
       refreshPresets();
@@ -1372,7 +1400,7 @@ export default function ScouterPage() {
                 ) : (
                   <p className="mt-0.5 text-xs opacity-60">
                     Enter values from your character window. Save presets
-                    locally, or share a link.
+                    (stats + gear) locally, or share a link.
                   </p>
                 )}
               </div>
@@ -2169,6 +2197,7 @@ export default function ScouterPage() {
           <EquipmentSetupPanel
             variant="embedded"
             showClassSelect={false}
+            clearSetupOnClassChange={false}
             jobType={(input.jobType || DEFAULT_JOB) as JobType}
             charType={input.charType || DEFAULT_CHAR}
             reloadToken={equipReloadToken}

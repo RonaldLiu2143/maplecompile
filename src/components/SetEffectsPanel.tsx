@@ -3,6 +3,7 @@
 import {
   calculateSetEffects,
   formatStatValue,
+  normalizeStatId,
   SET_DISPLAY_NAMES,
   STAT_DISPLAY_ORDER,
   STAT_LABELS,
@@ -90,10 +91,10 @@ export function SetEffectsPanel({ setup, setList }: Props) {
                             {tier.numEquipped}:
                           </span>{" "}
                           {tier.list
-                            .map(
-                              (s) =>
-                                `${STAT_LABELS[s.statId] ?? s.statId} ${formatStatValue(s.statId, s.val)}`,
-                            )
+                            .map((s) => {
+                              const id = normalizeStatId(s.statId);
+                              return `${STAT_LABELS[id] ?? id} ${formatStatValue(id, s.val)}`;
+                            })
                             .join(" · ")}
                         </li>
                       ))}
