@@ -213,6 +213,72 @@ export type SpecSimOverlay = {
   authenticForce: number;
 };
 
+function LevelInput({
+  value,
+  onChange,
+  min = 0,
+  max,
+  title,
+  className = "",
+  disabled,
+}: {
+  value: number;
+  onChange: (n: number) => void;
+  min?: number;
+  max: number;
+  title?: string;
+  className?: string;
+  disabled?: boolean;
+}) {
+  const n = Number.isFinite(value) ? value : 0;
+  const [draft, setDraft] = useState<string | null>(null);
+  const display = draft !== null ? draft : n === 0 ? "" : String(n);
+
+  return (
+    <input
+      type="text"
+      inputMode="numeric"
+      title={title}
+      placeholder="0"
+      disabled={disabled}
+      readOnly={disabled}
+      className={`w-full rounded border border-border/40 bg-background px-0 py-0 text-center text-[10px] tabular-nums outline-none placeholder:text-foreground/30 focus:border-accent disabled:cursor-not-allowed disabled:opacity-70 ${className}`}
+      value={display}
+      onFocus={
+        disabled ? undefined : () => setDraft(n === 0 ? "" : String(n))
+      }
+      onBlur={
+        disabled
+          ? undefined
+          : () => {
+              if (draft !== null) {
+                const raw = Number(draft) || 0;
+                onChange(Math.min(Math.max(min, raw), max));
+              }
+              setDraft(null);
+            }
+      }
+      onChange={
+        disabled
+          ? undefined
+          : (e) => {
+              const raw = e.target.value;
+              if (raw !== "" && !/^\d*$/.test(raw.trim())) return;
+              setDraft(raw);
+              if (raw.trim() === "") {
+                onChange(0);
+                return;
+              }
+              const parsed = Number(raw);
+              if (Number.isFinite(parsed)) {
+                onChange(Math.min(Math.max(min, parsed), max));
+              }
+            }
+      }
+    />
+  );
+}
+
 function CdnIcon({
   src,
   alt,
@@ -881,24 +947,20 @@ export function AdditionalSpecSimulation({
                         fallback={slot.label.slice(0, 3)}
                         size={24}
                       />
-                      <input
-                        type="number"
-                        min={0}
-                        max={HEXA_MAX_LEVEL}
-                        disabled={locked}
-                        readOnly={locked}
-                        className="w-full rounded border border-border/40 bg-background px-0 py-0 text-center text-[10px] tabular-nums outline-none focus:border-accent disabled:cursor-not-allowed disabled:opacity-70"
+                      <LevelInput
                         value={locked ? 0 : (simHexa[i] ?? 0)}
-                        onChange={(e) => {
+                        max={HEXA_MAX_LEVEL}
+                        title={
+                          locked
+                            ? `${slot.label} (not available in GMS)`
+                            : slot.label
+                        }
+                        disabled={locked}
+                        onChange={(level) => {
                           if (locked) return;
-                          const raw = Number(e.target.value) || 0;
-                          const capped = Math.min(
-                            Math.max(0, raw),
-                            HEXA_MAX_LEVEL,
-                          );
                           setSimHexa((prev) => {
                             const next = [...prev];
-                            next[i] = capped;
+                            next[i] = level;
                             return clampHexaForGms(next);
                           });
                         }}
