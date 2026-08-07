@@ -187,11 +187,7 @@ export function MiniScouterCharacterSearch({
               {using ? "…" : isActive ? "Active" : "Use for stats"}
             </button>
           </>
-        ) : (
-          <p className="w-full text-center text-[11px] opacity-40">
-            Search an IGN to pair with these stats
-          </p>
-        )}
+        ) : null}
       </div>
     </div>
   );
