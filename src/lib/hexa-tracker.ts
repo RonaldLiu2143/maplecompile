@@ -21,8 +21,13 @@ import {
   DEFAULT_BOSS_CONVERTED_STAT,
   normalizeBossConvertedStat,
 } from "./hexa-priority";
-import { storage } from "./storage";
-import { activeCharacterKey } from "./character-workspace";
+import { storage, type ScouterLastState } from "./storage";
+import {
+  activeCharacterKey,
+  getWorkspace,
+  patchWorkspace,
+  persistLiveToWorkspace,
+} from "./character-workspace";
 import { entryKey, readRosterState } from "./dashboard/roster";
 
 export const HEXA_TRACKER_KEY = "maplecompile-hexa-tracker-v1";
@@ -438,17 +443,86 @@ export function formatHexaPairingLabel(pairing: HexaScouterPairing): string {
   return `Paired: ${pairing.hexaName} ↔ ${pairing.scouter.name}${roster}`;
 }
 
+function levelsHaveProgress(levels: number[] | null | undefined): boolean {
+  return Boolean(levels?.some((n) => n > 0));
+}
+
+/**
+ * Resolve the scouter draft that belongs to a roster character:
+ * workspace first, then live storage when that character is active.
+ */
+export function resolveScouterDraftForCharacter(
+  characterKey?: string | null,
+): ScouterLastState | null {
+  const key = characterKey || null;
+  if (key && key !== "__local__") {
+    const ws = getWorkspace(key);
+    if (ws?.scouterLast?.input) return ws.scouterLast;
+    if (key === activeCharacterKey()) {
+      const live = storage.getScouterLast();
+      return live?.input ? live : null;
+    }
+    return null;
+  }
+  const live = storage.getScouterLast();
+  return live?.input ? live : null;
+}
+
+/** True when the character (or live draft) has scouter stats to pair with. */
+export function characterHasScouterDraft(
+  characterKey?: string | null,
+): boolean {
+  if (resolveScouterDraftForCharacter(characterKey)) return true;
+  if (!characterKey) return hasScouterStats();
+  return false;
+}
+
+/**
+ * Write hexa levels into the character's scouter draft (workspace + live when
+ * that character is active). Never touches another character's draft.
+ */
+export function writeScouterHexaForCharacter(
+  characterKey: string | null | undefined,
+  levels: number[],
+  base?: ScouterLastState | null,
+): boolean {
+  const normalized = normalizeLevels(levels);
+  const key =
+    characterKey && characterKey !== "__local__" ? characterKey : null;
+  const draft = base ?? resolveScouterDraftForCharacter(key);
+  if (!draft?.input) return false;
+
+  const next: ScouterLastState = { ...draft, hexa: normalized };
+  const active = activeCharacterKey();
+
+  if (!key || key === active) {
+    storage.setScouterLast(next);
+    persistLiveToWorkspace(key || active);
+    return true;
+  }
+
+  patchWorkspace(key, { scouterLast: next });
+  return true;
+}
+
 export type PairHexaArgs = {
   scouterPresetId?: string | null;
   scouterName?: string;
   /** Prefer linking primary roster character when set. */
   rosterKey?: string | null;
-  /** Push tracker levels into scouter-last hexa on pair. */
+  /**
+   * Sync levels on pair (default true):
+   * - tracker has progress → push into that character's scouter draft
+   * - tracker empty + scouter has progress → leave scouter alone (import separately)
+   * Never wipe scouter hexa with an empty tracker.
+   */
   syncLevelsToScouter?: boolean;
 };
 
 /**
  * Link current HEXA tracker progress with a scouter draft or saved preset.
+ * Pairing is stored per roster character and syncs into that character's
+ * workspace scouter — not only the ephemeral live `scouter-last` blob.
  */
 export function pairHexaWithScouter(args: PairHexaArgs = {}): HexaScouterPairing {
   const rosterKey =
@@ -456,14 +530,7 @@ export function pairHexaWithScouter(args: PairHexaArgs = {}): HexaScouterPairing
       ? args.rosterKey
       : primaryRosterKey();
   const tracker = loadHexaTracker(rosterKey);
-  const last = storage.getScouterLast();
-
-  if (args.syncLevelsToScouter && last?.input) {
-    storage.setScouterLast({
-      ...last,
-      hexa: normalizeLevels(tracker.levels),
-    });
-  }
+  const draft = resolveScouterDraftForCharacter(rosterKey);
 
   let scouter: PairedScouterRef;
   const presetId = args.scouterPresetId?.trim() || "";
@@ -475,13 +542,22 @@ export function pairHexaWithScouter(args: PairHexaArgs = {}): HexaScouterPairing
       name: args.scouterName?.trim() || preset?.name || "Saved preset",
     };
   } else {
-    if (!hasScouterStats() && !last?.input) {
-      throw new Error("Enter scouter stats or pick a preset first");
+    if (!draft?.input) {
+      throw new Error(
+        rosterKey
+          ? "Open Scouter for this character (or pick a preset) first"
+          : "Enter scouter stats or pick a preset first",
+      );
     }
     scouter = {
       kind: "draft",
       name: args.scouterName?.trim() || "Current scouter",
     };
+  }
+
+  const shouldSync = args.syncLevelsToScouter !== false;
+  if (shouldSync && draft?.input && levelsHaveProgress(tracker.levels)) {
+    writeScouterHexaForCharacter(rosterKey, tracker.levels, draft);
   }
 
   const pairing: HexaScouterPairing = {
@@ -499,7 +575,7 @@ export function pairHexaWithScouter(args: PairHexaArgs = {}): HexaScouterPairing
   return pairing;
 }
 
-/** Pull hexa levels from paired scouter (last, else preset snapshot). */
+/** Pull hexa levels from the paired character's scouter (workspace/draft, else preset). */
 export function importLevelsFromPairedScouter(
   characterKey?: string | null,
 ): HexaTrackerState | null {
@@ -508,12 +584,14 @@ export function importLevelsFromPairedScouter(
   if (!pairing) return null;
 
   let levels: number[] | null = null;
-  const last = storage.getScouterLast();
-  if (last?.hexa) {
-    levels = normalizeLevels(last.hexa);
-  } else if (pairing.scouter.kind === "preset") {
+  if (pairing.scouter.kind === "preset") {
     const preset = storage.getScouterPreset(pairing.scouter.presetId);
     if (preset?.hexa) levels = normalizeLevels(preset.hexa);
+  } else {
+    const draft = resolveScouterDraftForCharacter(
+      pairing.rosterKey ?? (key === "__local__" ? null : key),
+    );
+    if (draft?.hexa) levels = normalizeLevels(draft.hexa);
   }
   if (!levels) return null;
 
@@ -525,6 +603,25 @@ export function importLevelsFromPairedScouter(
       rosterKey: pairing.rosterKey ?? tracker.rosterKey,
     },
     key,
+  );
+}
+
+/**
+ * While paired to a draft scouter, push tracker levels into that character's
+ * scouter workspace (and live storage when active).
+ */
+export function syncTrackerLevelsToPairedScouter(
+  characterKey?: string | null,
+  levels?: number[],
+): boolean {
+  const key = resolveHexaKey(characterKey);
+  const pairing = getHexaScouterPairing(key);
+  if (!pairing || pairing.scouter.kind !== "draft") return false;
+  const tracker = loadHexaTracker(key);
+  const nextLevels = levels ?? tracker.levels;
+  return writeScouterHexaForCharacter(
+    pairing.rosterKey ?? (key === "__local__" ? null : key),
+    nextLevels,
   );
 }
 

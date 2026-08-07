@@ -48,6 +48,7 @@ import { hexaSlotLabels } from "@/lib/hexa-skill-labels";
 import {
   HEXA_MAX_LEVEL,
   clearHexaScouterPairing,
+  characterHasScouterDraft,
   formatHexaPairingLabel,
   getHexaScouterPairing,
   importLevelsFromPairedScouter,
@@ -56,11 +57,11 @@ import {
   pairHexaWithScouter,
   primaryRosterKey,
   saveHexaTracker,
+  syncTrackerLevelsToPairedScouter,
   type HexaScouterPairing,
   type HexaTrackerState,
 } from "@/lib/hexa-tracker";
 import { CLASS_OPTIONS, classFromJobName } from "@/lib/jobs";
-import { hasScouterStats } from "@/lib/pairing";
 import {
   GMS_UNAVAILABLE_HEXA_INDICES,
   SCOUTER_CDN,
@@ -79,6 +80,13 @@ const SOL_ERDA_ICON =
   "https://cdn.maplehub.app/skill-images/sol_erda.webp";
 
 type ViewMode = "characters" | "preview";
+
+/** One applied "Next" step that Go back can undo. */
+type PriorityUndoStep = {
+  slotIndex: number | null;
+  fromLevel: number;
+  toLevel: number;
+};
 
 /** Resolve HEXA job class for a roster key without switching sticky primary. */
 function charTypeForRosterKey(
@@ -319,6 +327,7 @@ export default function HexaTrackerPage() {
   const [showUpgradePath, setShowUpgradePath] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
   const [bcsDraft, setBcsDraft] = useState(String(DEFAULT_BOSS_CONVERTED_STAT));
+  const [priorityUndo, setPriorityUndo] = useState<PriorityUndoStep[]>([]);
 
   const activeCharType =
     viewMode === "preview" ? previewCharType : charType;
@@ -393,6 +402,8 @@ export default function HexaTrackerPage() {
     }
     const saved = saveHexaTracker(next, key || null);
     setState(saved);
+    // Keep paired scouter draft hexa in sync for this character.
+    syncTrackerLevelsToPairedScouter(key || null, saved.levels);
   };
 
   const setLevel = (index: number, level: number) => {
@@ -429,6 +440,7 @@ export default function HexaTrackerPage() {
     }
     setRosterKey(key);
     setViewMode("characters");
+    setPriorityUndo([]);
     const tracker = loadHexaTracker(key || null);
     setState(tracker);
     setPairing(getHexaScouterPairing(key || null));
@@ -455,16 +467,30 @@ export default function HexaTrackerPage() {
 
   const onPair = () => {
     try {
-      if (!selectedPresetId && !hasScouterStats()) {
-        flash("Enter scouter stats or pick a preset first");
+      if (!selectedPresetId && !characterHasScouterDraft(rosterKey || null)) {
+        flash(
+          rosterKey
+            ? "Open Scouter for this character (or pick a preset) first"
+            : "Enter scouter stats or pick a preset first",
+        );
         return;
       }
+      const trackerEmpty = !(activeState?.levels.some((n) => n > 0));
       const next = pairHexaWithScouter({
         scouterPresetId: selectedPresetId || null,
         rosterKey: rosterKey || null,
         syncLevelsToScouter: true,
       });
       setPairing(next);
+      if (trackerEmpty) {
+        const imported = importLevelsFromPairedScouter(rosterKey || null);
+        if (imported?.levels.some((n) => n > 0)) {
+          setState(imported);
+          flash("Paired — imported HEXA levels from Scouter");
+          refresh();
+          return;
+        }
+      }
       flash("Paired HEXA ↔ Scouter");
       refresh();
     } catch (err) {
@@ -497,6 +523,7 @@ export default function HexaTrackerPage() {
     const key = entryKey(entry);
     setRosterKey(key);
     setViewMode("characters");
+    setPriorityUndo([]);
     setState(loadHexaTracker(key));
     setPairing(getHexaScouterPairing(key));
     setCharType(charTypeForRosterKey(key, entry));
@@ -564,6 +591,44 @@ export default function HexaTrackerPage() {
       ),
     );
   }, [progress, activeCharType, bossConvertedStat]);
+
+  useEffect(() => {
+    setPriorityUndo([]);
+  }, [rosterKey, viewMode, activeCharType]);
+
+  const applyNextPriority = () => {
+    if (!nextUp || !activeState) return;
+    setPriorityUndo((stack) => [
+      ...stack,
+      {
+        slotIndex: nextUp.node.slotIndex,
+        fromLevel: nextUp.node.current,
+        toLevel: nextUp.nextLevel,
+      },
+    ]);
+    if (nextUp.node.slotIndex != null) {
+      setLevel(nextUp.node.slotIndex, nextUp.nextLevel);
+    } else {
+      persist({
+        ...activeState,
+        hexaStatLevel: nextUp.nextLevel,
+      });
+    }
+  };
+
+  const goBackPriority = () => {
+    if (!activeState || priorityUndo.length === 0) return;
+    const step = priorityUndo[priorityUndo.length - 1]!;
+    setPriorityUndo((stack) => stack.slice(0, -1));
+    if (step.slotIndex != null) {
+      setLevel(step.slotIndex, step.fromLevel);
+    } else {
+      persist({
+        ...activeState,
+        hexaStatLevel: step.fromLevel,
+      });
+    }
+  };
 
   const commitBossConvertedStat = (raw: string) => {
     if (!activeState) return;
@@ -1132,21 +1197,62 @@ export default function HexaTrackerPage() {
                   </div>
                 ) : null}
 
+                <div className="flex flex-wrap items-center gap-2">
+                  {priorityUndo.length > 0 ? (
+                    <button
+                      type="button"
+                      onClick={goBackPriority}
+                      className="inline-flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold transition hover:bg-surface-muted"
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        className="h-3.5 w-3.5"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.25"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden
+                      >
+                        <path d="M19 12H5" />
+                        <path d="m12 19-7-7 7-7" />
+                      </svg>
+                      Go back
+                    </button>
+                  ) : null}
+                  <button
+                    type="button"
+                    onClick={applyNextPriority}
+                    className="rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-white transition hover:opacity-90 dark:text-zinc-900"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            ) : priorityUndo.length > 0 ? (
+              <div className="mt-3 space-y-3">
+                <p className="text-sm opacity-65">
+                  All nodes at target — nice work.
+                </p>
                 <button
                   type="button"
-                  onClick={() => {
-                    if (nextUp.node.slotIndex != null) {
-                      setLevel(nextUp.node.slotIndex, nextUp.nextLevel);
-                    } else {
-                      persist({
-                        ...activeState,
-                        hexaStatLevel: nextUp.nextLevel,
-                      });
-                    }
-                  }}
-                  className="rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-white transition hover:opacity-90 dark:text-zinc-900"
+                  onClick={goBackPriority}
+                  className="inline-flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold transition hover:bg-surface-muted"
                 >
-                  Next
+                  <svg
+                    viewBox="0 0 24 24"
+                    className="h-3.5 w-3.5"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.25"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden
+                  >
+                    <path d="M19 12H5" />
+                    <path d="m12 19-7-7 7-7" />
+                  </svg>
+                  Go back
                 </button>
               </div>
             ) : (
