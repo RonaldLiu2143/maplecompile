@@ -725,15 +725,7 @@ function FullCharacterProfile({
           ) : null}
 
           {hasLevelProgress ? (
-            <section className="min-h-[18rem] rounded-2xl border border-border/60 bg-surface/90 p-5 sm:min-h-[22rem] sm:p-6">
-              <div className="flex flex-wrap items-end justify-between gap-2">
-                <h3 className="font-display text-base font-bold uppercase tracking-[0.14em] text-accent sm:text-lg">
-                  Level Progress
-                </h3>
-                <p className="text-xs text-foreground/50">
-                  Tracked history (MapleHub)
-                </p>
-              </div>
+            <section className="rounded-2xl border border-border/60 bg-surface/90 p-3 sm:p-4">
               <LevelProgressGraph graph={character.graph} />
             </section>
           ) : null}

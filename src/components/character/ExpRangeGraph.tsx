@@ -402,18 +402,40 @@ function fractionalLevel(level: number, expInLevel: number | undefined): number 
   return level + frac;
 }
 
-function buildLevelYTicks(min: number, max: number): number[] {
-  const lo = Math.floor(min);
-  const hi = Math.ceil(max);
-  if (hi <= lo) return [lo];
-  const span = hi - lo;
-  const step =
-    span <= 2 ? 1 : span <= 6 ? 1 : span <= 12 ? 2 : Math.ceil(span / 6);
+/** MapleRanks y-tick: `295 70%` (level + floor of within-level %). */
+function formatLevelTick(v: number): string {
+  const lv = Math.floor(v);
+  const p = Math.floor((v - lv) * 100);
+  return p > 0 ? `${lv} ${p}%` : `${lv} 0%`;
+}
+
+/** Evenly spaced fractional ticks across the visible level range. */
+function buildLevelYTicks(
+  min: number,
+  max: number,
+  targetCount: number,
+): number[] {
+  const span = Math.max(max - min, 0.02);
+  const step = niceStep(span / Math.max(targetCount - 1, 1));
+  const lo = Math.floor(min / step) * step;
   const ticks: number[] = [];
-  for (let v = lo; v <= hi; v += step) ticks.push(v);
-  if (ticks[ticks.length - 1] !== hi) ticks.push(hi);
+  for (let v = lo; v <= max + step * 1e-9; v += step) {
+    if (v < min - step * 0.05 || v > max + step * 0.05) continue;
+    ticks.push(Number(v.toFixed(10)));
+  }
+  if (!ticks.length) {
+    ticks.push(min);
+    if (max - min > 1e-6) ticks.push(max);
+  }
   return ticks;
 }
+
+/** MapleRanks Chart.js palette: even-level blue / odd-level green. */
+const LEVEL_LINE_EVEN = "rgba(54, 162, 235, 0.85)";
+const LEVEL_LINE_ODD = "rgba(153, 217, 140, 0.85)";
+const LEVEL_POINT = "rgba(54, 162, 235, 0.95)";
+
+const LEVEL_RANGES: ExpRangeDays[] = [7, 14, 30, 90];
 
 function LevelProgressSpark({
   levels,
@@ -433,78 +455,74 @@ function LevelProgressSpark({
   const points = levels.map((lv, i) => fractionalLevel(lv, cumulativeExp[i]));
   const yMin = Math.min(...points);
   const yMax = Math.max(...points);
-  const pad = yMax - yMin < 0.05 ? 0.05 : (yMax - yMin) * 0.08;
+  const pad = yMax - yMin < 0.05 ? 0.05 : (yMax - yMin) * 0.12;
   const plotMin = yMin - pad;
   const plotMax = yMax + pad;
-  const yTicks = buildLevelYTicks(plotMin, plotMax);
   const isCompact = Boolean(compact);
-  const plotH = isCompact ? "h-24" : "h-52 sm:h-60";
+  const yTicks = buildLevelYTicks(plotMin, plotMax, isCompact ? 4 : 6);
+  // MapleRanks canvas ~680×170 — wide, short chart.
+  const plotH = isCompact ? "h-[6.5rem]" : "h-[10.5rem] sm:h-[11.5rem]";
   const step = axisStep(n, isCompact);
   const hasAxis = Boolean(labels?.length);
   const dateRotate = n > 14;
   const tipIdx = hover;
-  const yAxisW = isCompact ? "w-8 sm:w-10" : "w-10 sm:w-12";
+  const yAxisW = isCompact ? "w-[3.4rem] sm:w-16" : "w-[4.25rem] sm:w-[4.75rem]";
   const yLabelCls = isCompact
-    ? "text-[0.55rem] sm:text-[0.6rem]"
-    : "text-[0.65rem] sm:text-[0.72rem]";
+    ? "text-[0.5rem] sm:text-[0.55rem]"
+    : "text-[0.58rem] sm:text-[0.65rem]";
   const xLabelCls = isCompact
     ? dateRotate
       ? "origin-top-left -translate-x-1/2 rotate-[-35deg] text-[0.5rem]"
-      : "-translate-x-1/2 text-center text-[0.6rem]"
+      : "-translate-x-1/2 text-center text-[0.55rem]"
     : dateRotate
-      ? "origin-top-left -translate-x-1/2 rotate-[-35deg] text-[0.58rem] sm:text-[0.62rem]"
-      : "-translate-x-1/2 text-center text-[0.68rem] sm:text-[0.75rem]";
+      ? "origin-top-left -translate-x-1/2 rotate-[-35deg] text-[0.55rem] sm:text-[0.6rem]"
+      : "-translate-x-1/2 text-center text-[0.62rem] sm:text-[0.68rem]";
   const xAxisH = dateRotate
     ? isCompact
       ? "h-7"
-      : "h-9 sm:h-10"
+      : "h-8 sm:h-9"
     : isCompact
       ? "h-3.5"
-      : "h-5";
+      : "h-4";
 
   const W = 1000;
-  const H = 100;
-  const pathFor = (from: number, to: number) => {
-    const coords: string[] = [];
-    for (let i = from; i <= to; i++) {
-      const x = n === 1 ? W / 2 : (i / (n - 1)) * W;
-      const y =
-        plotMax === plotMin
-          ? H / 2
-          : H - ((points[i]! - plotMin) / (plotMax - plotMin)) * H;
-      coords.push(`${i === from ? "M" : "L"}${x.toFixed(1)},${y.toFixed(1)}`);
-    }
-    return coords.join(" ");
+  const H = 250;
+  const xy = (i: number) => {
+    const x = n === 1 ? W / 2 : (i / (n - 1)) * W;
+    const y =
+      plotMax === plotMin
+        ? H / 2
+        : H - ((points[i]! - plotMin) / (plotMax - plotMin)) * H;
+    return { x, y };
   };
 
-  /** Split the polyline when level integer changes (MapleRanks color cue). */
-  const segments: { d: string; leveled: boolean }[] = [];
-  let segStart = 0;
+  /** One stroke per day-to-day segment; color by starting level parity (MR). */
+  const segments: { d: string; even: boolean }[] = [];
   for (let i = 1; i < n; i++) {
-    if (Math.floor(levels[i]!) > Math.floor(levels[i - 1]!)) {
-      segments.push({ d: pathFor(segStart, i - 1), leveled: false });
-      segments.push({ d: pathFor(i - 1, i), leveled: true });
-      segStart = i;
-    }
+    const a = xy(i - 1);
+    const b = xy(i);
+    segments.push({
+      d: `M${a.x.toFixed(1)},${a.y.toFixed(1)} L${b.x.toFixed(1)},${b.y.toFixed(1)}`,
+      even: Math.floor(points[i - 1]!) % 2 === 0,
+    });
   }
-  segments.push({ d: pathFor(segStart, n - 1), leveled: false });
 
-  const tipLevel = tipIdx != null ? levels[tipIdx] : null;
   const tipFrac = tipIdx != null ? points[tipIdx] : null;
+  const tipLv = tipFrac != null ? Math.floor(tipFrac) : null;
   const tipPct =
-    tipLevel != null && tipFrac != null
-      ? ((tipFrac - tipLevel) * 100).toFixed(2)
-      : null;
+    tipFrac != null ? ((tipFrac - Math.floor(tipFrac)) * 100).toFixed(1) : null;
   const tipLabel =
     tipIdx != null ? (labels?.[tipIdx] ?? `Day ${tipIdx + 1}`) : null;
+  const tipLeftPct =
+    tipIdx == null ? 0 : n <= 1 ? 50 : (tipIdx / (n - 1)) * 100;
 
   return (
-    <div className={`flex ${isCompact ? "gap-1.5 sm:gap-2" : "gap-2 sm:gap-3"}`}>
+    <div className={`flex ${isCompact ? "gap-1" : "gap-1.5 sm:gap-2"}`}>
       <div
         className={`relative flex shrink-0 flex-col ${yAxisW} ${plotH}`}
         aria-hidden
       >
-        <div className="relative min-h-0 flex-1 border-r border-border/70">
+        <div className="relative min-h-0 flex-1">
           {yTicks.map((tick) => {
             const pct =
               plotMax === plotMin
@@ -519,10 +537,10 @@ function LevelProgressSpark({
             return (
               <span
                 key={tick}
-                className={`absolute right-1.5 font-mono leading-none tabular-nums text-foreground/55 sm:right-2 ${yLabelCls} ${edge}`}
+                className={`absolute right-1 font-mono leading-none tabular-nums text-foreground/50 sm:right-1.5 ${yLabelCls} ${edge}`}
                 style={{ bottom: `${pct}%` }}
               >
-                {tick}
+                {formatLevelTick(tick)}
               </span>
             );
           })}
@@ -530,16 +548,15 @@ function LevelProgressSpark({
       </div>
 
       <div className="relative min-w-0 flex-1">
-        {tipIdx != null && tipLabel != null && tipLevel != null ? (
+        {tipIdx != null && tipLabel != null && tipLv != null ? (
           <div
-            className="pointer-events-none absolute bottom-full z-10 mb-1.5 -translate-x-1/2 whitespace-nowrap rounded-md border border-border bg-surface px-2 py-1 text-center shadow-sm"
-            style={{ left: `${((tipIdx + 0.5) / n) * 100}%` }}
+            className="pointer-events-none absolute bottom-full z-10 mb-1 -translate-x-1/2 whitespace-nowrap rounded border border-border bg-surface px-2 py-0.5 text-center shadow-sm"
+            style={{ left: `${tipLeftPct}%` }}
             role="tooltip"
           >
-            <p className="text-[0.65rem] font-semibold opacity-65">{tipLabel}</p>
-            <p className="font-mono text-xs font-bold tabular-nums">
-              Lv. {tipLevel}
-              {tipPct != null ? ` (${tipPct}%)` : ""}
+            <p className="text-[0.6rem] font-semibold opacity-60">{tipLabel}</p>
+            <p className="font-mono text-[0.7rem] font-bold tabular-nums sm:text-xs">
+              Lv. {tipLv} {tipPct}%
             </p>
           </div>
         ) : null}
@@ -554,51 +571,96 @@ function LevelProgressSpark({
             preserveAspectRatio="none"
             className="absolute inset-0 h-full w-full overflow-visible"
           >
+            {yTicks.map((tick) => {
+              const y =
+                plotMax === plotMin
+                  ? H / 2
+                  : H - ((tick - plotMin) / (plotMax - plotMin)) * H;
+              return (
+                <line
+                  key={`g-${tick}`}
+                  x1={0}
+                  x2={W}
+                  y1={y}
+                  y2={y}
+                  stroke="currentColor"
+                  strokeWidth={1}
+                  vectorEffect="non-scaling-stroke"
+                  className="text-foreground/10"
+                />
+              );
+            })}
             {segments.map((seg, i) => (
               <path
                 key={i}
                 d={seg.d}
                 fill="none"
-                stroke={seg.leveled ? "var(--accent)" : "currentColor"}
-                strokeWidth={seg.leveled ? (isCompact ? 2.4 : 3) : isCompact ? 1.8 : 2.4}
+                stroke={seg.even ? LEVEL_LINE_EVEN : LEVEL_LINE_ODD}
+                strokeWidth={isCompact ? 1.6 : 2}
                 strokeLinejoin="round"
                 strokeLinecap="round"
                 vectorEffect="non-scaling-stroke"
-                className={seg.leveled ? "" : "text-accent/70"}
               />
             ))}
+            {points.map((_, i) => {
+              const { x, y } = xy(i);
+              const r = isCompact ? 2.2 : 3.2;
+              const active = tipIdx === i;
+              return (
+                <circle
+                  key={`pt-${i}`}
+                  cx={x}
+                  cy={y}
+                  r={active ? r + 1.2 : r}
+                  fill={LEVEL_POINT}
+                  stroke="var(--surface, #fff)"
+                  strokeWidth={isCompact ? 1 : 1.4}
+                  vectorEffect="non-scaling-stroke"
+                />
+              );
+            })}
           </svg>
-          <div className="absolute inset-0 flex">
-            {points.map((_, i) => (
-              <div
-                key={i}
-                className="min-w-0 flex-1 cursor-default"
-                onMouseEnter={() => setHover(i)}
-                onMouseLeave={() => setHover(null)}
-                onFocus={() => setHover(i)}
-                onBlur={() => setHover(null)}
-                tabIndex={0}
-                aria-label={`${labels?.[i] ?? `Day ${i + 1}`}: Lv. ${levels[i]}`}
-              />
-            ))}
+          <div className="absolute inset-0">
+            {points.map((_, i) => {
+              const left = n <= 1 ? 0 : (i / (n - 1)) * 100;
+              const half =
+                n <= 1 ? 50 : (0.5 / Math.max(n - 1, 1)) * 100;
+              return (
+                <div
+                  key={i}
+                  className="absolute top-0 h-full cursor-default"
+                  style={{
+                    left: `${Math.max(0, left - half)}%`,
+                    width: `${Math.min(100, half * 2)}%`,
+                  }}
+                  onMouseEnter={() => setHover(i)}
+                  onMouseLeave={() => setHover(null)}
+                  onFocus={() => setHover(i)}
+                  onBlur={() => setHover(null)}
+                  tabIndex={0}
+                  aria-label={`${labels?.[i] ?? `Day ${i + 1}`}: Lv. ${Math.floor(points[i]!)} ${((points[i]! % 1) * 100).toFixed(1)}%`}
+                />
+              );
+            })}
           </div>
           {tipIdx != null ? (
             <div
-              className="pointer-events-none absolute top-0 h-full w-px bg-accent/50"
-              style={{ left: `${((tipIdx + 0.5) / n) * 100}%` }}
+              className="pointer-events-none absolute top-0 h-full w-px bg-[rgba(54,162,235,0.45)]"
+              style={{ left: `${tipLeftPct}%` }}
             />
           ) : null}
         </div>
 
         {hasAxis ? (
-          <div className={`relative mt-1.5 ${xAxisH}`} aria-hidden>
+          <div className={`relative mt-1 ${xAxisH}`} aria-hidden>
             {labels!.map((label, i) => {
               if (!shouldShowAxisLabel(i, n, step)) return null;
+              const left = n <= 1 ? 50 : (i / (n - 1)) * 100;
               return (
                 <span
                   key={i}
-                  className={`absolute top-0 font-mono tabular-nums leading-none text-foreground/55 ${xLabelCls}`}
-                  style={{ left: `${((i + 0.5) / n) * 100}%` }}
+                  className={`absolute top-0 font-mono tabular-nums leading-none text-foreground/50 ${xLabelCls}`}
+                  style={{ left: `${left}%` }}
                 >
                   {label}
                 </span>
@@ -634,47 +696,43 @@ export function LevelProgressGraph({
   const labelSlice =
     labels.length === levels.length ? labels.slice(-days) : undefined;
 
-  const lastLevel = slice[slice.length - 1];
-  const lastExpInLevel = expSlice[expSlice.length - 1];
-  const lastPct =
-    lastLevel != null &&
-    lastExpInLevel != null &&
-    Number.isFinite(lastExpInLevel)
-      ? expPercent(lastLevel, lastExpInLevel)
-      : null;
-
   return (
-    <div className={compact ? "mt-3 border-t border-border/40 pt-3" : "mt-5"}>
-      <div className="flex flex-wrap items-center justify-between gap-2">
+    <div className={compact ? "mt-3 border-t border-border/40 pt-3" : ""}>
+      {/* MapleRanks card-header: centered title + absolute-right range links */}
+      <div
+        className={`relative flex items-center ${
+          compact ? "justify-between gap-2" : "justify-center py-1"
+        }`}
+      >
         <p
-          className={`font-semibold uppercase tracking-wider opacity-55 ${
-            compact ? "text-[0.65rem]" : "text-[0.75rem] sm:text-sm"
+          className={`font-semibold tracking-wide ${
+            compact
+              ? "text-[0.65rem] uppercase tracking-wider opacity-55"
+              : "font-display text-sm font-bold sm:text-base"
           }`}
         >
-          {compact ? "Level progress" : `${days}d chart`}
+          {compact ? "Level progress" : "Level Progress"}
         </p>
         <div
-          className={`inline-flex rounded-lg border border-border/60 bg-surface-muted/40 ${
-            compact ? "p-0.5" : "p-1"
+          className={`${
+            compact
+              ? "inline-flex items-center gap-2 text-[0.7rem]"
+              : "absolute right-0 bottom-1 inline-flex items-center gap-2.5 text-xs sm:text-sm"
           }`}
           role="group"
           aria-label="Level progress range"
         >
-          {RANGES.map((r) => {
+          {LEVEL_RANGES.map((r) => {
             const active = days === r;
             return (
               <button
                 key={r}
                 type="button"
                 onClick={() => setDays(r)}
-                className={`rounded-md font-semibold tabular-nums transition ${
-                  compact
-                    ? "px-2 py-0.5 text-[0.7rem]"
-                    : "px-2.5 py-1 text-xs sm:text-sm"
-                } ${
+                className={`tabular-nums transition ${
                   active
-                    ? "bg-accent text-white dark:text-zinc-900"
-                    : "opacity-70 hover:bg-surface-muted hover:opacity-100"
+                    ? "font-bold text-foreground no-underline"
+                    : "font-medium text-foreground/55 underline decoration-foreground/25 underline-offset-2 hover:text-foreground/80"
                 }`}
                 aria-pressed={active}
               >
@@ -686,57 +744,16 @@ export function LevelProgressGraph({
       </div>
 
       <div
-        className={`mt-2 rounded-xl border border-border/55 bg-surface-muted/25 ${
-          compact
-            ? "px-2 py-2.5 sm:px-2.5"
-            : "px-3.5 py-4 sm:px-5 sm:py-5"
+        className={`mt-2 rounded-xl border border-border/55 bg-surface-muted/20 ${
+          compact ? "px-2 py-2 sm:px-2.5" : "px-2.5 py-2.5 sm:px-3 sm:py-3"
         }`}
       >
-        <div
-          className={`flex items-stretch ${
-            compact ? "gap-2" : "gap-3 sm:gap-4"
-          }`}
-        >
-          {lastLevel != null ? (
-            <div
-              className={`flex shrink-0 flex-col justify-center border-r border-border/55 ${
-                compact
-                  ? "min-w-[3.25rem] pr-2"
-                  : "min-w-[4.5rem] pr-3 sm:min-w-[5.25rem] sm:pr-4"
-              }`}
-              aria-label={
-                lastPct != null
-                  ? `Level ${lastLevel}, ${lastPct.toFixed(2)} percent`
-                  : `Level ${lastLevel}`
-              }
-            >
-              <p
-                className={`font-display font-bold tabular-nums leading-none tracking-tight ${
-                  compact
-                    ? "text-sm"
-                    : "text-xl sm:text-2xl"
-                }`}
-              >
-                Lv. {lastLevel}
-              </p>
-              <p
-                className={`mt-1.5 font-mono font-semibold tabular-nums text-accent ${
-                  compact ? "text-[0.7rem]" : "text-sm sm:text-base"
-                }`}
-              >
-                {lastPct != null ? `${lastPct.toFixed(2)}%` : "—"}
-              </p>
-            </div>
-          ) : null}
-          <div className="min-w-0 flex-1">
-            <LevelProgressSpark
-              levels={slice}
-              cumulativeExp={expSlice}
-              labels={labelSlice}
-              compact={compact}
-            />
-          </div>
-        </div>
+        <LevelProgressSpark
+          levels={slice}
+          cumulativeExp={expSlice}
+          labels={labelSlice}
+          compact={compact}
+        />
       </div>
     </div>
   );
