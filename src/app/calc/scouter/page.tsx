@@ -1406,123 +1406,121 @@ export default function ScouterPage() {
                   </span>
                 ) : null}
               </div>
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
-                <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
-                  <input
-                    type="text"
-                    placeholder="Preset name"
-                    value={presetName}
-                    onChange={(e) => setPresetName(e.target.value)}
-                    className="min-w-0 flex-1 rounded border border-border/50 bg-background px-2.5 py-1.5 text-xs outline-none focus:border-accent sm:max-w-[14rem]"
-                    aria-label="Preset name"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setPresetModal("recall")}
-                    className="rounded border border-border/50 bg-background px-2.5 py-1.5 text-xs font-semibold transition hover:bg-surface-muted"
-                  >
-                    Recall Saved Preset
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setPresetModal("save")}
-                    className="rounded bg-accent px-2.5 py-1.5 text-xs font-semibold text-white transition hover:opacity-90 dark:text-zinc-900"
-                  >
-                    Save Preset
-                  </button>
-                </div>
+              <div className="flex flex-wrap items-center gap-1.5">
+                <input
+                  type="text"
+                  placeholder="Preset name"
+                  value={presetName}
+                  onChange={(e) => setPresetName(e.target.value)}
+                  className="min-w-0 flex-1 rounded border border-border/50 bg-background px-2.5 py-1.5 text-xs outline-none focus:border-accent"
+                  aria-label="Preset name"
+                />
+                <button
+                  type="button"
+                  onClick={() => setPresetModal("recall")}
+                  className="rounded border border-border/50 bg-background px-2.5 py-1.5 text-xs font-semibold transition hover:bg-surface-muted"
+                >
+                  Recall Saved Preset
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPresetModal("save")}
+                  className="rounded bg-accent px-2.5 py-1.5 text-xs font-semibold text-white transition hover:opacity-90 dark:text-zinc-900"
+                >
+                  Save Preset
+                </button>
+              </div>
 
-                <div className="min-w-0 space-y-1.5 border-t border-border/30 pt-2 sm:border-t-0 sm:pt-0 sm:text-right">
-                  <span className="block text-[10px] font-semibold uppercase tracking-wide opacity-55 sm:text-right">
-                    Share
-                  </span>
-                  <div className="flex flex-wrap items-center gap-1.5 sm:justify-end">
+              <div className="space-y-1.5 border-t border-border/30 pt-2">
+                <span className="text-[10px] font-semibold uppercase tracking-wide opacity-55">
+                  Share
+                </span>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => void shareLoadout({ asPublic: false })}
+                    disabled={sharing}
+                    className="rounded border border-border/50 bg-background px-2.5 py-1.5 text-xs font-semibold transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
+                    title="Create a private link anyone can open if they have it"
+                  >
+                    {sharing && !galleryModalOpen
+                      ? "Sharing…"
+                      : "Copy private link"}
+                  </button>
+                  {existingGalleryPost ? (
                     <button
                       type="button"
-                      onClick={() => void shareLoadout({ asPublic: false })}
+                      onClick={openGalleryShareModal}
+                      disabled={sharing}
+                      className="rounded bg-accent px-2.5 py-1.5 text-xs font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 dark:text-zinc-900"
+                      title="Update the public gallery post linked to this preset"
+                    >
+                      {sharing && galleryModalOpen
+                        ? "Updating…"
+                        : "Update public post"}
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={openGalleryShareModal}
                       disabled={sharing}
                       className="rounded border border-border/50 bg-background px-2.5 py-1.5 text-xs font-semibold transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
-                      title="Create a private link anyone can open if they have it"
+                      title={
+                        getMissingRequiredScouterFields(input).length
+                          ? "Fill required character stats before posting"
+                          : "Review and post to the public gallery"
+                      }
                     >
-                      {sharing && !galleryModalOpen
-                        ? "Sharing…"
-                        : "Copy private link"}
+                      {sharing && galleryModalOpen
+                        ? "Posting…"
+                        : "Post to gallery"}
                     </button>
-                    {existingGalleryPost ? (
-                      <button
-                        type="button"
-                        onClick={openGalleryShareModal}
-                        disabled={sharing}
-                        className="rounded bg-accent px-2.5 py-1.5 text-xs font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 dark:text-zinc-900"
-                        title="Update the public gallery post linked to this preset"
+                  )}
+                  <Link
+                    href="/calc/scouter/gallery"
+                    className="rounded border border-border/50 bg-background px-2.5 py-1.5 text-xs font-semibold transition hover:bg-surface-muted"
+                  >
+                    Browse gallery
+                  </Link>
+                </div>
+                <p className="text-[11px] opacity-55">
+                  {existingGalleryPost ? (
+                    <>
+                      Public post linked
+                      {existingGalleryPost.name
+                        ? ` · ${existingGalleryPost.name}`
+                        : ""}{" "}
+                      ·{" "}
+                      <Link
+                        href={`/calc/character/share/${existingGalleryPost.id}`}
+                        className="font-semibold text-accent underline-offset-2 hover:underline"
                       >
-                        {sharing && galleryModalOpen
-                          ? "Updating…"
-                          : "Update public post"}
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={openGalleryShareModal}
-                        disabled={sharing}
-                        className="rounded border border-border/50 bg-background px-2.5 py-1.5 text-xs font-semibold transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
-                        title={
-                          getMissingRequiredScouterFields(input).length
-                            ? "Fill required character stats before posting"
-                            : "Review and post to the public gallery"
-                        }
-                      >
-                        {sharing && galleryModalOpen
-                          ? "Posting…"
-                          : "Post to gallery"}
-                      </button>
-                    )}
-                    <Link
-                      href="/calc/scouter/gallery"
+                        Open
+                      </Link>
+                    </>
+                  ) : (
+                    "Not posted publicly"
+                  )}
+                </p>
+                {shareUrl ? (
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <input
+                      type="text"
+                      readOnly
+                      value={shareUrl}
+                      className="min-w-0 flex-1 rounded border border-border/50 bg-background px-2.5 py-1.5 text-xs outline-none focus:border-accent"
+                      aria-label="Share link"
+                      onFocus={(e) => e.currentTarget.select()}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => void copyShareUrl()}
                       className="rounded border border-border/50 bg-background px-2.5 py-1.5 text-xs font-semibold transition hover:bg-surface-muted"
                     >
-                      Browse gallery
-                    </Link>
+                      Copy link
+                    </button>
                   </div>
-                  <p className="text-[11px] opacity-55 sm:text-right">
-                    {existingGalleryPost ? (
-                      <>
-                        Public post linked
-                        {existingGalleryPost.name
-                          ? ` · ${existingGalleryPost.name}`
-                          : ""}{" "}
-                        ·{" "}
-                        <Link
-                          href={`/calc/character/share/${existingGalleryPost.id}`}
-                          className="font-semibold text-accent underline-offset-2 hover:underline"
-                        >
-                          Open
-                        </Link>
-                      </>
-                    ) : (
-                      "Not posted publicly"
-                    )}
-                  </p>
-                  {shareUrl ? (
-                    <div className="flex flex-wrap items-center gap-1.5 sm:justify-end">
-                      <input
-                        type="text"
-                        readOnly
-                        value={shareUrl}
-                        className="min-w-0 flex-1 rounded border border-border/50 bg-background px-2.5 py-1.5 text-xs outline-none focus:border-accent sm:max-w-xs"
-                        aria-label="Share link"
-                        onFocus={(e) => e.currentTarget.select()}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => void copyShareUrl()}
-                        className="rounded border border-border/50 bg-background px-2.5 py-1.5 text-xs font-semibold transition hover:bg-surface-muted"
-                      >
-                        Copy link
-                      </button>
-                    </div>
-                  ) : null}
-                </div>
+                ) : null}
               </div>
             </div>
           </div>
