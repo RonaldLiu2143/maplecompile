@@ -21,6 +21,7 @@ function characterKey(c: Pick<CharacterLookupResult, "name" | "region">): string
 /**
  * Compact IGN search for Scouter: sprite + class + level + world, then
  * “Use for stats” to set active character for pairing / this draft.
+ * Result/error slots keep fixed height so Character Stats does not jump.
  */
 export function MiniScouterCharacterSearch({
   onUseForStats,
@@ -38,7 +39,7 @@ export function MiniScouterCharacterSearch({
   /** Key of the character last successfully applied to stats. */
   const [usedKey, setUsedKey] = useState<string | null>(null);
 
-  const isUsingForStats = Boolean(
+  const isActive = Boolean(
     result && usedKey && usedKey === characterKey(result),
   );
 
@@ -47,18 +48,16 @@ export function MiniScouterCharacterSearch({
     const trimmed = name.trim();
     if (!trimmed) {
       setError("Enter a character name.");
-      setResult(null);
       return;
     }
     if (!CHARACTER_NAME_REGEX.test(trimmed)) {
       setError("Invalid name. Use 2–13 letters or numbers.");
-      setResult(null);
       return;
     }
 
     setPending(true);
     setError(null);
-    setResult(null);
+    // Keep previous result visible while loading to avoid layout jump.
     try {
       const character = await fetchCharacterLookup(trimmed, region);
       setResult(character);
@@ -73,7 +72,7 @@ export function MiniScouterCharacterSearch({
   }
 
   async function handleUse() {
-    if (!result || isUsingForStats) return;
+    if (!result || isActive) return;
     setUsing(true);
     setError(null);
     try {
@@ -95,7 +94,7 @@ export function MiniScouterCharacterSearch({
         <span className="text-[10px] font-semibold uppercase tracking-wide opacity-55">
           Character
         </span>
-        <span className="text-[10px] opacity-45">
+        <span className="truncate text-[10px] opacity-45">
           Pair this loadout with an IGN
         </span>
       </div>
@@ -134,56 +133,66 @@ export function MiniScouterCharacterSearch({
         </button>
       </form>
 
-      {error ? (
-        <p role="alert" className="text-[11px] text-red-600 dark:text-red-400">
-          {error}
-        </p>
-      ) : null}
+      {/* Fixed-height slots so Character Stats does not shift when text appears. */}
+      <p
+        role={error ? "alert" : undefined}
+        className={`min-h-[1rem] text-[11px] leading-4 ${
+          error ? "text-red-600 dark:text-red-400" : "invisible"
+        }`}
+      >
+        {error ?? "\u00a0"}
+      </p>
 
-      {result ? (
-        <div className="flex flex-wrap items-center gap-2 rounded border border-border/40 bg-background/80 px-2 py-1.5">
-          {result.characterImgURL ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={result.characterImgURL}
-              alt=""
-              width={40}
-              height={40}
-              className="h-10 w-10 shrink-0 object-contain"
-            />
-          ) : (
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded bg-surface-muted text-[0.55rem] opacity-50">
-              —
+      <div className="flex min-h-[3.25rem] flex-wrap items-center gap-2 rounded border border-border/40 bg-background/80 px-2 py-1.5">
+        {result ? (
+          <>
+            {result.characterImgURL ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={result.characterImgURL}
+                alt=""
+                width={40}
+                height={40}
+                className="h-10 w-10 shrink-0 object-contain"
+              />
+            ) : (
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded bg-surface-muted text-[0.55rem] opacity-50">
+                —
+              </div>
+            )}
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-xs font-semibold">{result.name}</p>
+              <p className="truncate text-[11px] opacity-65">
+                Lv. {result.level}
+                {result.jobName ? ` · ${result.jobName}` : ""}
+                {result.worldName ? ` · ${result.worldName}` : ""}
+              </p>
             </div>
-          )}
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-xs font-semibold">{result.name}</p>
-            <p className="truncate text-[11px] opacity-65">
-              Lv. {result.level}
-              {result.jobName ? ` · ${result.jobName}` : ""}
-              {result.worldName ? ` · ${result.worldName}` : ""}
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => void handleUse()}
-            disabled={using || isUsingForStats}
-            aria-pressed={isUsingForStats}
-            className={`shrink-0 rounded px-2.5 py-1 text-xs font-semibold transition disabled:cursor-default dark:text-zinc-900 ${
-              isUsingForStats
-                ? "border border-accent bg-accent/90 text-white opacity-90"
-                : "bg-accent text-white hover:opacity-90 disabled:opacity-50"
-            }`}
-            title={
-              isUsingForStats
-                ? "This character is already applied to stats"
-                : "Set as active character for pairing and this page’s draft"
-            }
-          >
-            {using ? "…" : isUsingForStats ? "✓ Using for stats" : "Use for stats"}
-          </button>
-        </div>
-      ) : null}
+            <button
+              type="button"
+              onClick={() => void handleUse()}
+              disabled={using || isActive}
+              aria-pressed={isActive}
+              className={`shrink-0 rounded px-2.5 py-1 text-xs font-semibold transition dark:text-zinc-900 ${
+                isActive
+                  ? "cursor-default border border-accent bg-accent text-white ring-2 ring-accent/40"
+                  : "bg-accent text-white hover:opacity-90 disabled:opacity-50"
+              }`}
+              title={
+                isActive
+                  ? "Active — this character is applied to stats"
+                  : "Set as active character for pairing and this page’s draft"
+              }
+            >
+              {using ? "…" : isActive ? "Active" : "Use for stats"}
+            </button>
+          </>
+        ) : (
+          <p className="w-full text-center text-[11px] opacity-40">
+            Search an IGN to pair with these stats
+          </p>
+        )}
+      </div>
     </div>
   );
 }
