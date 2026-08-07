@@ -358,6 +358,8 @@ export default function ScouterPage() {
   const [links, setLinks] = useState<LinkState>(() => defaultLinkState());
   const [hexa, setHexa] = useState<number[]>(() => defaultHexaLevels());
   const [presetMsg, setPresetMsg] = useState<string | null>(null);
+  /** Last IGN paired via Use for stats — shown under Character Stats. */
+  const [statsPairLabel, setStatsPairLabel] = useState<string | null>(null);
   const [presets, setPresets] = useState<ScouterPreset[]>([]);
   const [selectedPresetId, setSelectedPresetId] = useState("");
   /** Preset id currently reflected in the form — Overwrite only writes here. */
@@ -1026,10 +1028,13 @@ export default function ScouterPage() {
     if (character.level > 0) {
       setInput((prev) => ({ ...prev, level: character.level }));
     }
-    flashPresetMsg(
-      mapped
-        ? `Paired scouter with ${character.name} (${getCharName(mapped.jobType, mapped.charType)})`
-        : `Paired scouter with ${character.name}`,
+    const classLabel = mapped
+      ? getCharName(mapped.jobType, mapped.charType)
+      : character.jobName?.trim() || null;
+    setStatsPairLabel(
+      classLabel
+        ? `Paired with ${character.name} (${classLabel})`
+        : `Paired with ${character.name}`,
     );
     return true;
   };
@@ -1380,10 +1385,16 @@ export default function ScouterPage() {
                     </span>
                   )}
                 </div>
-                <p className="mt-0.5 text-xs opacity-60">
-                  Enter values from your character window. Save presets locally,
-                  or share a link.
-                </p>
+                {statsPairLabel ? (
+                  <p className="mt-0.5 text-xs font-medium text-accent">
+                    {statsPairLabel}
+                  </p>
+                ) : (
+                  <p className="mt-0.5 text-xs opacity-60">
+                    Enter values from your character window. Save presets
+                    locally, or share a link.
+                  </p>
+                )}
               </div>
 
               <div className="ml-auto min-w-0 max-w-full space-y-1.5 text-right">
