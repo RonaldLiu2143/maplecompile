@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { resolveMainSecondary } from "@/lib/scouter/calc";
+import { calculateScouter, resolveMainSecondary } from "@/lib/scouter/calc";
 import {
   BUFF_DEFS,
   defaultBuffState,
@@ -127,6 +127,32 @@ function stackIed(current: number, add: number): number {
   const a = Math.min(Math.max(current, 0), 99.999) / 100;
   const b = Math.min(Math.max(add, 0), 99.999) / 100;
   return Math.min(99.999999, (1 - (1 - a) * (1 - b)) * 100);
+}
+
+/**
+ * Additional Spec Sim CP metrics — in-game Combat Power formula (local), not
+ * MapleScouter `combatPower` / `exchangePower*` (those are unreliable or ITEM
+ * STAT damage indexes, which look massively inflated next to real CP).
+ *
+ * - Combat Power / Converted CP: skill-excluded in-game CP from the scouter input
+ * - HEXA CP: same CP, scaled by Maple CALC_DMG hexa/item damage when available
+ */
+function simCombatPowerMetrics(
+  input: ScouterInput,
+  maple: MapleScouterCalculatedData | null | undefined,
+): { combat: number; exchange: number; exchangeHexa: number } {
+  const combat = calculateScouter(input).combatPower;
+  const item = Number(maple?.exchangePower ?? 0);
+  const hexa = Number(maple?.exchangePowerHexa ?? 0);
+  const exchangeHexa =
+    item > 0 && Number.isFinite(hexa)
+      ? Math.floor(combat * (hexa / item))
+      : combat;
+  return {
+    combat,
+    exchange: combat,
+    exchangeHexa,
+  };
 }
 
 export function applySpecSimToInput(
@@ -449,6 +475,8 @@ export function AdditionalSpecSimulation({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<MapleScouterCalculatedData | null>(null);
+  /** Input last sent to Apply — used for local in-game CP (not Maple damage indexes). */
+  const [appliedInput, setAppliedInput] = useState<ScouterInput | null>(null);
 
   const notifyParent = (
     nextResult: MapleScouterCalculatedData | null,
@@ -535,7 +563,7 @@ export function AdditionalSpecSimulation({
     setSimOz((prev) => ({ ...prev, [field]: capped }));
   };
 
-  const applied = simEnabled && result != null;
+  const applied = simEnabled && result != null && appliedInput != null;
 
   const metrics = useMemo(() => {
     const base = baseline;
@@ -578,6 +606,12 @@ export function AdditionalSpecSimulation({
         )
       : 0;
 
+    const baseCp = simCombatPowerMetrics(draftMeta.input, baseline);
+    const curCp =
+      applied && appliedInput
+        ? simCombatPowerMetrics(appliedInput, result)
+        : baseCp;
+
     return {
       fd300,
       fd380,
@@ -589,17 +623,14 @@ export function AdditionalSpecSimulation({
       dHexa300: hexa300 - hexa300Base,
       dItem380: item380 - item380Base,
       dHexa380: hexa380 - hexa380Base,
-      combat: Number(cur.combatPower ?? 0),
-      dCombat: Number(cur.combatPower ?? 0) - Number(base.combatPower ?? 0),
-      exchange: Number(cur.exchangePower ?? 0),
-      dExchange:
-        Number(cur.exchangePower ?? 0) - Number(base.exchangePower ?? 0),
-      exchangeHexa: Number(cur.exchangePowerHexa ?? 0),
-      dExchangeHexa:
-        Number(cur.exchangePowerHexa ?? 0) -
-        Number(base.exchangePowerHexa ?? 0),
+      combat: curCp.combat,
+      dCombat: curCp.combat - baseCp.combat,
+      exchange: curCp.exchange,
+      dExchange: curCp.exchange - baseCp.exchange,
+      exchangeHexa: curCp.exchangeHexa,
+      dExchangeHexa: curCp.exchangeHexa - baseCp.exchangeHexa,
     };
-  }, [applied, baseline, result, simEnabled]);
+  }, [applied, appliedInput, baseline, draftMeta.input, result, simEnabled]);
 
   const onApply = async () => {
     setLoading(true);
@@ -634,6 +665,7 @@ export function AdditionalSpecSimulation({
         throw new Error(json.error || `Request failed (${res.status})`);
       }
       setResult(json.calculatedData);
+      setAppliedInput(input);
       setSimEnabled(true);
       notifyParent(json.calculatedData, true, input);
     } catch (err) {
@@ -649,6 +681,7 @@ export function AdditionalSpecSimulation({
     setSimHexa([...draftMeta.hexa]);
     setSimOz(ozFromInput(draftMeta.input));
     setResult(null);
+    setAppliedInput(null);
     setError(null);
     notifyParent(null, false);
   };
