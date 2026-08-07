@@ -20,9 +20,12 @@ import { useMapleDataReload } from "@/hooks/useMapleDataReload";
 
 function RankChip({ label, value }: { label: string; value: string }) {
   return (
-    <span className="flex min-w-0 items-center justify-between gap-2 rounded-md border border-border/70 bg-surface-muted/50 px-2 py-1 text-[0.65rem] font-semibold leading-tight">
-      <span className="min-w-0 truncate text-foreground/70">{label}</span>
-      <span className="shrink-0 tabular-nums">{value}</span>
+    <span className="inline-flex max-w-full items-center rounded-md border border-border/70 bg-surface-muted/50 px-1.5 py-0.5 text-[0.65rem] font-semibold leading-tight tabular-nums">
+      <span className="text-foreground/70">{label}</span>
+      <span className="mx-1 text-foreground/35" aria-hidden>
+        ·
+      </span>
+      <span>{value}</span>
     </span>
   );
 }
@@ -586,7 +589,7 @@ function FullCharacterProfile({
                   </div>
                 </div>
 
-                <div className="mt-4 grid gap-1">
+                <div className="mt-4 flex flex-wrap gap-1">
                   <RankChip
                     label={job ?? "Class"}
                     value={formatRank(ranking?.jobRank)}
