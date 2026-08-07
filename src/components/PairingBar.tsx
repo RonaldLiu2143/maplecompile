@@ -86,15 +86,15 @@ function statusCopy(
     return { title: "Finish Scouter stats first" };
   }
   if (!readiness.scouterReady && !readiness.equipReady) {
-    return { title: "Add Scouter stats and equipment to link them" };
+    return { title: "Add Scouter stats and gear to pair for calc" };
   }
   if (!readiness.scouterReady) {
     return { title: "Scouter missing — open Scouter" };
   }
   if (!readiness.equipReady) {
-    return { title: "Equipment missing — open Equipment Setup" };
+    return { title: "Equipment missing — add gear in Scouter" };
   }
-  return { title: "Ready to link" };
+  return { title: "Ready to pair for damage calc" };
 }
 
 function primaryCta(
@@ -106,9 +106,9 @@ function primaryCta(
     return { label: "Open Scouter", action: "pair" };
   }
   if (!readiness.equipReady) {
-    return { label: "Open Equipment Setup", action: "pair" };
+    return { label: "Open Scouter (gear)", action: "pair" };
   }
-  return { label: "Link them", action: "pair" };
+  return { label: "Pair for calc", action: "pair" };
 }
 
 export function PairingBar({
@@ -159,8 +159,8 @@ export function PairingBar({
     }
 
     if (!hasEquipSetup()) {
-      flash("Build an equipment setup first");
-      router.push("/calc/equips/setup");
+      flash("Add gear in Scouter first");
+      router.push("/calc/scouter");
       return;
     }
 
@@ -168,7 +168,7 @@ export function PairingBar({
     setPairingState(next);
     setDataTick((n) => n + 1);
     onChange?.(next);
-    flash("Linked! Scouter + equipment work together");
+    flash("Paired for damage calc");
   };
 
   const onPair = () => {

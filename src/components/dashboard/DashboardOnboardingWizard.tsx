@@ -45,21 +45,21 @@ const STEPS: StepDef[] = [
     n: 3,
     title: "Fill Scouter",
     kid: "Your damage numbers",
-    body: "Only main, sub, and attack are required to get started.",
+    body: "Enter character-window stats. Only main, sub, and attack are required to get started.",
   },
   {
     id: "equip",
     n: 4,
     title: "Fill Equipment",
     kid: "Your gear",
-    body: "Put on your items. Saving a preset is optional.",
+    body: "On the same Scouter page, pick gear and review set effects. Saving a preset is optional.",
   },
   {
     id: "pair",
     n: 5,
-    title: "Pair them",
-    kid: "Link them together",
-    body: "Connect Scouter + Equipment so planners share one build.",
+    title: "Optional: pair for planners",
+    kid: "Damage-calc pair",
+    body: "Optional. Pair Scouter + gear so planners use one build. Gallery posting does not need this.",
   },
 ];
 
@@ -170,7 +170,7 @@ export function DashboardOnboardingWizard({
       return;
     }
     pairScouterAndEquip();
-    showFlash("Linked! Scouter ↔ Equipment");
+    showFlash("Paired for damage calc");
     refresh();
   };
 
@@ -189,7 +189,7 @@ export function DashboardOnboardingWizard({
           </h2>
           <p className="mt-1 text-sm opacity-75">
             {allDone
-              ? "Scouter, gear, and pairing are ready. You can hide this tip."
+              ? "Scouter stats and gear are ready. You can hide this tip."
               : `${doneCount} of ${STEPS.length} done — one step at a time.`}
           </p>
         </div>
@@ -296,10 +296,10 @@ export function DashboardOnboardingWizard({
 
             {current.id === "equip" ? (
               <Link
-                href="/calc/equips/setup"
+                href="/calc/scouter"
                 className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white hover:opacity-90 dark:text-zinc-900"
               >
-                {progress.equip ? "Open Equipment" : "Go fill gear"}
+                {progress.equip ? "Open Scouter (gear)" : "Go fill gear"}
               </Link>
             ) : null}
 
@@ -309,7 +309,7 @@ export function DashboardOnboardingWizard({
                 className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white hover:opacity-90 dark:text-zinc-900"
                 onClick={handlePair}
               >
-                {progress.pair ? "Already linked ✓" : "Link them together"}
+                {progress.pair ? "Already paired ✓" : "Pair for damage calc"}
               </button>
             ) : null}
           </div>

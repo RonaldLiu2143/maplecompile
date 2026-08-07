@@ -52,7 +52,6 @@ import {
   persistLiveToWorkspace,
 } from "@/lib/character-workspace";
 import { ActiveCharacterBar } from "@/components/ActiveCharacterBar";
-import { PairingBar } from "@/components/PairingBar";
 import { EquipmentSetupPanel } from "@/components/EquipmentSetupPanel";
 import { HexaEfficiencyPanel } from "./hexa-efficiency";
 import type { JobType } from "@/lib/types";
@@ -1342,30 +1341,6 @@ export default function ScouterPage() {
 
       <ActiveCharacterBar onSwitched={reloadDraftFromLiveStorage} />
 
-      <div className="space-y-1">
-        <PairingBar
-          compact
-          beforePair={(proceed) => runIfStatsReady(proceed)}
-          pairArgs={{
-            scouterPresetId: loadedPresetId || null,
-            scouterName:
-              presetName.trim() ||
-              presets.find((p) => p.id === loadedPresetId)?.name ||
-              undefined,
-            scouterState: {
-              input,
-              buffs,
-              links,
-              hexa: clampHexaForGms(hexa),
-            },
-          }}
-        />
-        <p className="text-[11px] opacity-50">
-          Equipment pairing links Scouter ↔ gear for damage calc — not gallery
-          sharing.
-        </p>
-      </div>
-
       <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.95fr)]">
         {/* —— Left: Enter Directly —— */}
         <section className="overflow-hidden rounded-lg border border-border/60 border-t-2 border-t-accent bg-surface/90">
@@ -2312,7 +2287,7 @@ export default function ScouterPage() {
                   </h2>
                   <p className="mt-0.5 text-xs opacity-65">
                     Fill these character-window stats before calculating,
-                    sharing publicly, pairing, or checking boss clear rates.
+                    sharing publicly, or checking boss clear rates.
                   </p>
                 </div>
                 <button

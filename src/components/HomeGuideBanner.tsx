@@ -24,8 +24,8 @@ export function HomeGuideBanner() {
             5 easy steps on the Dashboard
           </p>
           <p className="mt-1 text-sm opacity-75">
-            Find your character → lock your main → fill damage numbers → fill
-            gear → link them together.
+            Find your character → lock your main → fill Scouter stats and gear
+            → post to the gallery when you&apos;re ready.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">

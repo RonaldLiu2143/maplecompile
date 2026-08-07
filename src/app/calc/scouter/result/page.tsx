@@ -38,7 +38,6 @@ import {
   getCharName,
 } from "@/lib/jobs";
 import { storage } from "@/lib/storage";
-import { PairingBar } from "@/components/PairingBar";
 import type { MapleScouterCalculatedData } from "@/lib/scouter/to-user-stat";
 import {
   AdditionalSpecSimulation,
@@ -866,16 +865,8 @@ export default function ScouterDetailedResultPage() {
           >
             {loading ? "Calculating…" : "Recalculate"}
           </button>
-          <Link
-            href="/calc/equips/setup"
-            className="rounded-md border-2 border-border bg-surface px-4 py-2 text-sm font-semibold transition hover:bg-surface-muted"
-          >
-            Pair with Equipment
-          </Link>
         </div>
       </div>
-
-      <PairingBar compact />
 
       {loading ? (
         <p className="rounded-xl border border-border/50 bg-surface/80 py-16 text-center text-sm opacity-70">
