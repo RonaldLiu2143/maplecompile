@@ -7,7 +7,10 @@ import {
   type EquipItemPatch,
 } from "@/components/EquipItemEditor";
 import { EquipPicker } from "@/components/EquipPicker";
-import { SetEffectsPanel } from "@/components/SetEffectsPanel";
+import {
+  SetEffectsBreakdown,
+  TotalSetEffects,
+} from "@/components/SetEffectsPanel";
 import {
   CLASS_OPTIONS,
   DEFAULT_CHAR,
@@ -127,15 +130,16 @@ function clampSetupStarForce(setup: EquipSetup): EquipSetup {
 export type EquipmentSetupPanelProps = {
   /**
    * Controlled class (e.g. from Scouter). When both are set, the panel follows
-   * them and does not clear gear on class change (parent owns that decision).
+   * Character Stats and syncs job/char from the parent.
    */
   jobType?: JobType;
   charType?: string;
   /** Show the class dropdown. Defaults to true when class is uncontrolled. */
   showClassSelect?: boolean;
   /**
-   * When class is uncontrolled and the user picks a new class, clear the setup
-   * (Equipment Setup page behavior). Ignored when class is controlled.
+   * When the class (job/char) changes to a different class, clear the loadout.
+   * Applies to both controlled (Scouter) and uncontrolled (Equipment Setup page)
+   * class sources — mismatched gear must not carry over.
    */
   clearSetupOnClassChange?: boolean;
   /** Visual shell — page matches /calc/equips/setup; embedded fits Scouter. */
@@ -215,8 +219,8 @@ export function EquipmentSetupPanel({
       opts?: { keepVisible?: boolean },
     ) => {
       if (!job || !char) return;
-      // Soft refresh (class change): keep the gear grid mounted so switching
-      // Character Stats class never looks like a wiped setup.
+      // Soft refresh (class change): keep the grid mounted (no loading flash)
+      // while the catalog swaps; loadout clear is handled separately.
       if (!opts?.keepVisible) {
         setStatus("loading");
       }
@@ -806,7 +810,7 @@ export function EquipmentSetupPanel({
               </div>
             </div>
 
-            <div className="flex w-full min-w-0 flex-col items-end gap-1.5 lg:ml-auto lg:max-w-sm lg:shrink-0">
+            <div className="flex w-full min-w-0 flex-col items-stretch gap-2 lg:ml-auto lg:max-w-md lg:shrink-0">
               <div className="inline-flex max-w-full flex-wrap items-center justify-end gap-1.5">
                 <select
                   value={starterId}
@@ -855,7 +859,7 @@ export function EquipmentSetupPanel({
               </div>
 
               {!embedded ? (
-                <div className="flex max-w-full flex-col items-stretch gap-1 rounded-md border border-border/50 bg-surface/50 px-1.5 py-1">
+                <div className="flex max-w-full flex-col items-stretch gap-1 self-end rounded-md border border-border/50 bg-surface/50 px-1.5 py-1">
                   <div className="inline-flex max-w-full flex-wrap items-center justify-end gap-1">
                     <span className="px-0.5 text-[9px] font-bold uppercase tracking-wide opacity-55">
                       My presets
@@ -935,13 +939,18 @@ export function EquipmentSetupPanel({
                   </div>
                 </div>
               ) : null}
+
+              {(status === "ready" ||
+                (status === "loading" && setList.length > 0)) && (
+                <TotalSetEffects setup={setup} setList={setList} />
+              )}
             </div>
           </div>
         </section>
 
         {(status === "ready" ||
           (status === "loading" && setList.length > 0)) && (
-          <SetEffectsPanel setup={setup} setList={setList} />
+          <SetEffectsBreakdown setup={setup} setList={setList} />
         )}
       </div>
     </div>
