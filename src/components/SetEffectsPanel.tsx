@@ -51,27 +51,36 @@ function SetBreakdownBlock({ b }: { b: SetBreakdown }) {
   const tiers = b.set.effects ?? [];
   const headerId = `set-fx-${b.set.setType}`;
 
+  const toggle = () => setOpen((v) => !v);
+
   return (
-    <div className="rounded-lg border border-border/40 bg-surface/80 px-2.5 py-2">
-      <button
-        type="button"
-        id={headerId}
-        aria-expanded={open}
-        onClick={() => setOpen((v) => !v)}
-        className="flex w-full flex-wrap items-center gap-2 text-left"
-      >
+    <div
+      role="button"
+      tabIndex={0}
+      id={headerId}
+      aria-expanded={open}
+      onClick={toggle}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          toggle();
+        }
+      }}
+      className="w-full cursor-pointer rounded-md border border-border/40 bg-surface/80 px-1.5 py-1 text-left transition hover:border-border/70 hover:bg-surface-muted/40"
+    >
+      <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
         <span
-          className="inline-flex h-4 w-4 shrink-0 items-center justify-center text-[10px] opacity-60"
+          className="inline-flex h-3.5 w-3.5 shrink-0 items-center justify-center text-[10px] opacity-60"
           aria-hidden
         >
           {open ? "▾" : "▸"}
         </span>
-        <span className="text-sm font-semibold">{name}</span>
-        <span className="text-[11px] opacity-60">
+        <span className="text-[13px] font-semibold leading-tight">{name}</span>
+        <span className="text-[10px] leading-tight opacity-60">
           {b.numEquipped} eq
           {b.luckyApplied ? " · lucky" : ""}
         </span>
-        <div className="flex flex-wrap gap-0.5">
+        <div className="flex flex-wrap gap-px">
           {b.equippedItems.map((item) => (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -79,16 +88,16 @@ function SetBreakdownBlock({ b }: { b: SetBreakdown }) {
               src={item.imgUrl}
               alt={item.name}
               title={item.name}
-              width={20}
-              height={20}
-              className="h-5 w-5 object-contain"
+              width={18}
+              height={18}
+              className="h-[18px] w-[18px] object-contain"
             />
           ))}
         </div>
-      </button>
+      </div>
       {open && tiers.length > 0 ? (
         <ul
-          className="mt-1 space-y-0.5 text-[11px] leading-snug"
+          className="mt-0.5 space-y-0 pl-5 text-[11px] leading-tight"
           aria-labelledby={headerId}
         >
           {tiers.map((tier) => {
@@ -130,13 +139,13 @@ export function SetEffectsBreakdown({ setup, setList }: Props) {
 
   return (
     <section>
-      <h2 className="font-display text-base font-semibold">
+      <h2 className="font-display text-sm font-semibold">
         Set Effects Breakdown
       </h2>
       {activeSets.length === 0 ? (
-        <p className="mt-1 text-xs opacity-60">— No active sets —</p>
+        <p className="mt-0.5 text-xs opacity-60">— No active sets —</p>
       ) : (
-        <div className="mt-2 space-y-2">
+        <div className="mt-1 space-y-1">
           {activeSets.map((b) => (
             <SetBreakdownBlock key={b.set.setType} b={b} />
           ))}
