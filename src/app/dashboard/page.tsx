@@ -73,7 +73,7 @@ function DashboardInner() {
           ) : null}
         </div>
         {hydrated && hasRoster ? (
-          <div className="hidden sm:block">
+          <div className="hidden rounded-lg border border-border/40 bg-surface/70 px-2 py-1.5 sm:block">
             <DashboardToolShortcuts quiet />
           </div>
         ) : null}
@@ -113,7 +113,7 @@ function DashboardInner() {
       )}
 
       {hydrated && hasRoster ? (
-        <div className="sm:hidden">
+        <div className="rounded-lg border border-border/40 bg-surface/70 px-2 py-1.5 sm:hidden">
           <DashboardToolShortcuts quiet />
         </div>
       ) : null}
