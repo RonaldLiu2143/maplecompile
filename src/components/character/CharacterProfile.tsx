@@ -452,11 +452,9 @@ function CompactCharacterProfile({
 
 function FullCharacterProfile({
   character,
-  embedded,
   actions,
 }: {
   character: CharacterLookupResult;
-  embedded?: boolean;
   actions?: ReactNode;
 }) {
   const pct = character.expPercent;
@@ -758,14 +756,6 @@ function FullCharacterProfile({
         >
           Open on MapleHub ↗
         </a>
-        {!embedded ? (
-          <Link
-            href="/calc/character"
-            className="rounded-lg border border-border px-3 py-1.5 font-semibold transition hover:bg-surface-muted"
-          >
-            Back to Character Search
-          </Link>
-        ) : null}
       </div>
 
       <p className="text-xs text-foreground/45">{character.note}</p>
@@ -775,14 +765,11 @@ function FullCharacterProfile({
 
 export function CharacterProfile({
   character,
-  embedded,
   compact = false,
   dense = false,
   actions,
 }: {
   character: CharacterLookupResult;
-  /** Hide standalone-page chrome (e.g. Back to Character Search) when shown inline. */
-  embedded?: boolean;
   /**
    * Dense roster / search preview: avatar, ranks, EXP bar, compact Daily EXP
    * spark. Full MapleRanks layout remains the default for dedicated pages.
@@ -808,7 +795,6 @@ export function CharacterProfile({
   return (
     <FullCharacterProfile
       character={character}
-      embedded={embedded}
       actions={actions}
     />
   );

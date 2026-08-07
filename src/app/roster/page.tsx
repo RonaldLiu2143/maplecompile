@@ -224,7 +224,6 @@ export default function RosterPage() {
                 <div className="[&>article]:border-0 [&>article]:bg-transparent">
                   <CharacterProfile
                     character={profile}
-                    embedded
                     compact
                     actions={
                       <Link

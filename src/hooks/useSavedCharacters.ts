@@ -2,7 +2,6 @@
 
 import { useEffect, useEffectEvent, useState } from "react";
 import {
-  addSavedCharacter,
   isCharacterSaved,
   readSavedCharacters,
   removeSavedCharacter,
@@ -10,6 +9,7 @@ import {
   toggleSavedCharacter,
   updateSavedCharacterSnapshot,
   type SavedCharacter,
+  type SavedCharacterInput,
   type SavedCharacterTarget,
 } from "@/lib/character/saved";
 
@@ -30,32 +30,20 @@ export function useSavedCharacters() {
     return () => window.removeEventListener("storage", onStorage);
   }, []);
 
-  function refresh() {
-    setSaved(readSavedCharacters());
-  }
-
-  function save(entry: Omit<SavedCharacter, "savedAt"> & { savedAt?: number }) {
-    const { list, added } = addSavedCharacter(entry);
-    setSaved(list);
-    return added;
-  }
-
   function unsave(target: SavedCharacterTarget) {
     setSaved(removeSavedCharacter(target));
   }
 
-  function toggle(entry: Omit<SavedCharacter, "savedAt"> & { savedAt?: number }) {
+  function toggle(entry: SavedCharacterInput) {
     const result = toggleSavedCharacter(entry);
     setSaved(result.list);
     return result.saved;
   }
 
-  const syncSnapshot = useEffectEvent(
-    (snapshot: Omit<SavedCharacter, "savedAt"> & { savedAt?: number }) => {
-      if (!isCharacterSaved(snapshot)) return;
-      setSaved(updateSavedCharacterSnapshot(snapshot));
-    },
-  );
+  const syncSnapshot = useEffectEvent((snapshot: SavedCharacterInput) => {
+    if (!isCharacterSaved(snapshot, saved)) return;
+    setSaved(updateSavedCharacterSnapshot(snapshot));
+  });
 
   function isSaved(target: SavedCharacterTarget) {
     return isCharacterSaved(target, saved);
@@ -65,10 +53,8 @@ export function useSavedCharacters() {
     hydrated,
     saved,
     isSaved,
-    save,
     unsave,
     toggle,
     syncSnapshot,
-    refresh,
   };
 }

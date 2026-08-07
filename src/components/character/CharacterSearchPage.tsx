@@ -7,6 +7,7 @@ import { CharacterProfile } from "@/components/character/CharacterProfile";
 import { useSavedCharacters } from "@/hooks/useSavedCharacters";
 import {
   CHARACTER_LOOKUP_NETWORK_ERROR,
+  characterProfileHref,
   fetchCharacterLookup,
 } from "@/lib/character/client";
 import {
@@ -15,19 +16,24 @@ import {
   type CharacterLookupResult,
   type NexonRegion,
 } from "@/lib/character/lookup";
-import type { SavedCharacter } from "@/lib/character/saved";
+import type {
+  SavedCharacter,
+  SavedCharacterInput,
+} from "@/lib/character/saved";
 import { entryKey } from "@/lib/dashboard/roster";
 
 const inputClass =
   "rounded border border-border bg-background px-3 py-2 text-sm outline-none focus:border-accent";
 
-function lookupKey(region: NexonRegion, name: string) {
-  return `${region}:${name.trim().toLowerCase()}`;
-}
-
-function characterQueryHref(name: string, region: NexonRegion) {
-  const qs = new URLSearchParams({ name, region });
-  return `/calc/character?${qs.toString()}`;
+function toSavedFields(result: CharacterLookupResult): SavedCharacterInput {
+  return {
+    name: result.name,
+    region: result.region,
+    level: result.level,
+    jobName: result.jobName,
+    worldName: result.worldName,
+    characterImgURL: result.characterImgURL,
+  };
 }
 
 function StarIcon({ filled }: { filled?: boolean }) {
@@ -142,7 +148,7 @@ export function CharacterSearchPage() {
       return;
     }
 
-    const key = lookupKey(rawRegion, trimmed);
+    const key = entryKey({ region: rawRegion, name: trimmed });
     const requestId = ++requestIdRef.current;
     loadedKeyRef.current = key;
     setPending(true);
@@ -156,9 +162,9 @@ export function CharacterSearchPage() {
       setResult(character);
       setName(character.name);
       setRegion(character.region);
-      loadedKeyRef.current = lookupKey(character.region, character.name);
+      loadedKeyRef.current = entryKey(character);
       if (opts?.syncUrl !== false) {
-        router.replace(characterQueryHref(character.name, character.region), {
+        router.replace(characterProfileHref(character), {
           scroll: false,
         });
       }
@@ -176,7 +182,7 @@ export function CharacterSearchPage() {
     const qName = searchParams.get("name")?.trim() ?? "";
     const qRegion = normalizeRegion(searchParams.get("region")) ?? "na";
     if (!qName) return;
-    const key = lookupKey(qRegion, qName);
+    const key = entryKey({ region: qRegion, name: qName });
     if (loadedKeyRef.current === key) return;
     void loadCharacter(qName, qRegion, { syncUrl: false });
     // eslint-disable-next-line react-hooks/exhaustive-deps -- URL-driven load only
@@ -184,14 +190,7 @@ export function CharacterSearchPage() {
 
   useEffect(() => {
     if (!result || !hydrated) return;
-    syncSnapshot({
-      name: result.name,
-      region: result.region,
-      level: result.level,
-      jobName: result.jobName,
-      worldName: result.worldName,
-      characterImgURL: result.characterImgURL,
-    });
+    syncSnapshot(toSavedFields(result));
   }, [result, hydrated, syncSnapshot]);
 
   async function onSubmit(e: FormEvent) {
@@ -199,19 +198,12 @@ export function CharacterSearchPage() {
     await loadCharacter(name, region);
   }
 
-  const activeKey = result ? lookupKey(result.region, result.name) : null;
+  const activeKey = result ? entryKey(result) : null;
   const profileSaved = result ? isSaved(result) : false;
 
   function handleToggleSave() {
     if (!result) return;
-    toggle({
-      name: result.name,
-      region: result.region,
-      level: result.level,
-      jobName: result.jobName,
-      worldName: result.worldName,
-      characterImgURL: result.characterImgURL,
-    });
+    toggle(toSavedFields(result));
   }
 
   return (
@@ -290,7 +282,6 @@ export function CharacterSearchPage() {
             <div className={pending ? "opacity-60 transition-opacity" : undefined}>
               <CharacterProfile
                 character={result}
-                embedded
                 actions={
                   hydrated ? (
                     <button
@@ -353,7 +344,7 @@ export function CharacterSearchPage() {
                 <SavedRow
                   key={entryKey(entry)}
                   entry={entry}
-                  active={activeKey === lookupKey(entry.region, entry.name)}
+                  active={activeKey === entryKey(entry)}
                   onSelect={() => {
                     void loadCharacter(entry.name, entry.region);
                   }}

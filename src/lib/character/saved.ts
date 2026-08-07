@@ -24,6 +24,11 @@ export type SavedCharacter = {
 
 export type SavedCharacterTarget = Pick<SavedCharacter, "name" | "region">;
 
+/** Input for add/toggle/sync — `savedAt` optional (defaults to now). */
+export type SavedCharacterInput = Omit<SavedCharacter, "savedAt"> & {
+  savedAt?: number;
+};
+
 function normalizeSaved(
   raw: Partial<SavedCharacter> | null | undefined,
 ): SavedCharacter | null {
@@ -100,7 +105,7 @@ export function isCharacterSaved(
 }
 
 export function addSavedCharacter(
-  entry: Omit<SavedCharacter, "savedAt"> & { savedAt?: number },
+  entry: SavedCharacterInput,
 ): { list: SavedCharacter[]; added: boolean; entry: SavedCharacter } {
   const next: SavedCharacter = {
     name: entry.name.trim(),
@@ -127,7 +132,7 @@ export function removeSavedCharacter(
 }
 
 export function toggleSavedCharacter(
-  entry: Omit<SavedCharacter, "savedAt"> & { savedAt?: number },
+  entry: SavedCharacterInput,
 ): { list: SavedCharacter[]; saved: boolean } {
   if (isCharacterSaved(entry)) {
     return { list: removeSavedCharacter(entry), saved: false };
@@ -138,7 +143,7 @@ export function toggleSavedCharacter(
 
 /** Refresh snapshot fields when opening a saved profile (keeps list cards current). */
 export function updateSavedCharacterSnapshot(
-  snapshot: Omit<SavedCharacter, "savedAt"> & { savedAt?: number },
+  snapshot: SavedCharacterInput,
 ): SavedCharacter[] {
   const current = readSavedCharacters();
   const key = entryKey(snapshot);
@@ -161,5 +166,3 @@ export function updateSavedCharacterSnapshot(
   if (!changed) return current;
   return writeList(next);
 }
-
-export { entryKey as savedCharacterKey };

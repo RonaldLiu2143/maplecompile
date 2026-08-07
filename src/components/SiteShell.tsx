@@ -20,12 +20,12 @@ const STORAGE_KEY = "maplecompile-sidebar-open";
 type NavLink = {
   href: string;
   label: string;
-  match?: "exact" | "prefix" | "character";
+  match?: "exact" | "prefix";
 };
 
 const PRIMARY_LINKS: NavLink[] = [
   { href: "/dashboard", label: "Dashboard", match: "exact" },
-  { href: "/calc/character", label: "Character Search", match: "character" },
+  { href: "/calc/character", label: "Character Search", match: "exact" },
   { href: "/calc/scouter", label: "Scouter", match: "exact" },
   { href: "/calc/scouter/gallery", label: "Gallery" },
 ];
@@ -55,14 +55,6 @@ const GUIDE_LINK: NavLink = {
 };
 
 function linkActive(pathname: string, link: NavLink): boolean {
-  if (link.match === "character") {
-    // Highlight search + profile pages, not share gallery posts.
-    return (
-      pathname === "/calc/character" ||
-      (pathname.startsWith("/calc/character/") &&
-        !pathname.startsWith("/calc/character/share"))
-    );
-  }
   if (link.match === "exact") {
     return (
       pathname === link.href ||
