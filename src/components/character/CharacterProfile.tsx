@@ -449,9 +449,11 @@ function CompactCharacterProfile({
 function FullCharacterProfile({
   character,
   embedded,
+  actions,
 }: {
   character: CharacterLookupResult;
   embedded?: boolean;
+  actions?: ReactNode;
 }) {
   const pct = character.expPercent;
   const regionLabel = character.region.toUpperCase();
@@ -523,23 +525,30 @@ function FullCharacterProfile({
               </div>
 
               <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <h2 className="font-display text-3xl font-bold tracking-tight sm:text-4xl">
-                    {character.name}
-                  </h2>
-                  {character.isHeroic ? (
-                    <span className="rounded-md bg-accent-soft px-2 py-0.5 text-xs font-semibold text-accent">
-                      Heroic
-                    </span>
-                  ) : (
-                    <span className="rounded-md bg-surface-muted px-2 py-0.5 text-xs font-semibold opacity-70">
-                      Interactive
-                    </span>
-                  )}
-                  {world ? (
-                    <span className="rounded-md border border-border px-2 py-0.5 text-xs font-semibold opacity-70">
-                      {world}
-                    </span>
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div className="flex min-w-0 flex-wrap items-center gap-2">
+                    <h2 className="font-display text-3xl font-bold tracking-tight sm:text-4xl">
+                      {character.name}
+                    </h2>
+                    {character.isHeroic ? (
+                      <span className="rounded-md bg-accent-soft px-2 py-0.5 text-xs font-semibold text-accent">
+                        Heroic
+                      </span>
+                    ) : (
+                      <span className="rounded-md bg-surface-muted px-2 py-0.5 text-xs font-semibold opacity-70">
+                        Interactive
+                      </span>
+                    )}
+                    {world ? (
+                      <span className="rounded-md border border-border px-2 py-0.5 text-xs font-semibold opacity-70">
+                        {world}
+                      </span>
+                    ) : null}
+                  </div>
+                  {actions ? (
+                    <div className="flex flex-wrap items-center gap-2">
+                      {actions}
+                    </div>
                   ) : null}
                 </div>
 
@@ -720,6 +729,12 @@ function FullCharacterProfile({
       </div>
 
       <div className="flex flex-wrap gap-2.5 text-sm">
+        <Link
+          href="/calc/scouter"
+          className="rounded-lg border border-border px-3 py-1.5 font-semibold transition hover:bg-surface-muted"
+        >
+          Open in Scouter
+        </Link>
         <a
           href={`https://mapleranks.com/u/${character.region === "eu" ? "eu/" : ""}${encodeURIComponent(character.name)}`}
           target="_blank"
@@ -738,10 +753,10 @@ function FullCharacterProfile({
         </a>
         {!embedded ? (
           <Link
-            href="/roster"
+            href="/calc/character"
             className="rounded-lg border border-border px-3 py-1.5 font-semibold transition hover:bg-surface-muted"
           >
-            Back to Manager
+            Back to Character Search
           </Link>
         ) : null}
       </div>
@@ -759,7 +774,7 @@ export function CharacterProfile({
   actions,
 }: {
   character: CharacterLookupResult;
-  /** Hide standalone-page chrome (e.g. Back to Roster) when shown inline. */
+  /** Hide standalone-page chrome (e.g. Back to Character Search) when shown inline. */
   embedded?: boolean;
   /**
    * Dense roster / search preview: avatar, ranks, EXP bar, compact Daily EXP
@@ -771,7 +786,7 @@ export function CharacterProfile({
    * EXP bar, and compact Daily EXP graph.
    */
   dense?: boolean;
-  /** Optional action buttons (e.g. Add to roster) for compact search results. */
+  /** Optional action buttons (Save, Add to roster, etc.). */
   actions?: ReactNode;
 }) {
   if (compact || dense) {
@@ -783,7 +798,13 @@ export function CharacterProfile({
       />
     );
   }
-  return <FullCharacterProfile character={character} embedded={embedded} />;
+  return (
+    <FullCharacterProfile
+      character={character}
+      embedded={embedded}
+      actions={actions}
+    />
+  );
 }
 
 /** Search-result actions for compact profile (View + Add, optional Use as active). */

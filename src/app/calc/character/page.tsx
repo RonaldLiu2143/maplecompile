@@ -1,6 +1,5 @@
-import { redirect } from "next/navigation";
+import { CharacterSearchPage } from "@/components/character/CharacterSearchPage";
 
-/** Standalone Character Lookup is redundant with Roster search. */
-export default function CharacterLookupRedirect() {
-  redirect("/roster");
+export default function CharacterLookupPage() {
+  return <CharacterSearchPage />;
 }

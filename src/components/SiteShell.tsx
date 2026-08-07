@@ -17,10 +17,15 @@ import { runStorageCleanupOnce } from "@/lib/storage-cleanup";
 
 const STORAGE_KEY = "maplecompile-sidebar-open";
 
-type NavLink = { href: string; label: string; match?: "exact" | "prefix" };
+type NavLink = {
+  href: string;
+  label: string;
+  match?: "exact" | "prefix" | "character";
+};
 
 const PRIMARY_LINKS: NavLink[] = [
   { href: "/dashboard", label: "Dashboard", match: "exact" },
+  { href: "/calc/character", label: "Character Search", match: "character" },
   { href: "/calc/scouter", label: "Scouter", match: "exact" },
   { href: "/calc/scouter/gallery", label: "Gallery" },
 ];
@@ -50,6 +55,14 @@ const GUIDE_LINK: NavLink = {
 };
 
 function linkActive(pathname: string, link: NavLink): boolean {
+  if (link.match === "character") {
+    // Highlight search + profile pages, not share gallery posts.
+    return (
+      pathname === "/calc/character" ||
+      (pathname.startsWith("/calc/character/") &&
+        !pathname.startsWith("/calc/character/share"))
+    );
+  }
   if (link.match === "exact") {
     return (
       pathname === link.href ||
@@ -340,7 +353,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
               className="maple-scroll flex flex-1 flex-col gap-2 px-1 py-2"
             >
               <NavSection
-                links={PRIMARY_LINKS.slice(0, 1)}
+                links={PRIMARY_LINKS.slice(0, 2)}
                 pathname={pathname}
               />
               <NavGroup
@@ -348,7 +361,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
                 links={ROSTER_LINKS}
                 pathname={pathname}
               />
-              <NavSection links={PRIMARY_LINKS.slice(1)} pathname={pathname} />
+              <NavSection links={PRIMARY_LINKS.slice(2)} pathname={pathname} />
               <NavGroup
                 title="Calculators"
                 links={CALCULATOR_LINKS}
