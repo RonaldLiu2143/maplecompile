@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { AnonymousShareAvatar } from "@/components/character/AnonymousShareAvatar";
 import { getCharName } from "@/lib/jobs";
 import {
   clampHexaForGms,
@@ -266,15 +267,18 @@ export function ShareGalleryModal({
           </fieldset>
 
           {identity === "anonymous" ? (
-            <div className="rounded border border-border/40 bg-background/80 px-3 py-2">
-              <p className="text-xs font-semibold opacity-70">
-                Anonymous display name
-              </p>
-              <p className="mt-0.5 font-medium tabular-nums">{anonPreview}</p>
-              <p className="mt-1 text-[10px] opacity-55">
-                Example format — your unique code is assigned when you post (
-                {classLabel}· + share id).
-              </p>
+            <div className="flex items-start gap-3 rounded border border-border/40 bg-background/80 px-3 py-2">
+              <AnonymousShareAvatar size={48} className="rounded-lg" />
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-semibold opacity-70">
+                  Anonymous display name
+                </p>
+                <p className="mt-0.5 font-medium tabular-nums">{anonPreview}</p>
+                <p className="mt-1 text-[10px] opacity-55">
+                  Uses a placeholder icon (not your character sprite). Unique
+                  code is assigned when you post ({classLabel}· + share id).
+                </p>
+              </div>
             </div>
           ) : (
             <label className="block">

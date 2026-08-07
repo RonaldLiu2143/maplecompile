@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import { AnonymousShareAvatar } from "@/components/character/AnonymousShareAvatar";
 import { CharacterSprite } from "@/components/character/CharacterSprite";
 import { EquipGrid } from "@/components/EquipGrid";
 import { useFlashMessage } from "@/hooks/useFlashMessage";
@@ -128,10 +129,11 @@ export default function CharacterShareProfilePage() {
   }, [id]);
 
   const record = load.status === "ready" ? load.record : null;
-  const pairedCharacter = record?.character;
+  const isAnonymous = record?.identity === "anonymous";
+  const pairedCharacter = isAnonymous ? undefined : record?.character;
 
   useEffect(() => {
-    if (!pairedCharacter?.name || !pairedCharacter.region) {
+    if (isAnonymous || !pairedCharacter?.name || !pairedCharacter.region) {
       setAvatarUrl(null);
       return;
     }
@@ -167,7 +169,11 @@ export default function CharacterShareProfilePage() {
     return () => {
       cancelled = true;
     };
-  }, [pairedCharacter?.name, pairedCharacter?.region]);
+  }, [
+    isAnonymous,
+    pairedCharacter?.name,
+    pairedCharacter?.region,
+  ]);
   const input = record?.state.input;
   const buffs = record?.state.buffs ?? defaultBuffState();
   const links = record?.state.links ?? defaultLinkState();
@@ -423,7 +429,9 @@ export default function CharacterShareProfilePage() {
     <div className="mx-auto max-w-5xl space-y-8 px-4 py-8">
       <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
         <div className="flex min-w-0 flex-1 items-start gap-3">
-          {pairedCharacter ? (
+          {isAnonymous ? (
+            <AnonymousShareAvatar size={96} className="rounded-lg" />
+          ) : pairedCharacter ? (
             <CharacterSprite
               src={avatarUrl}
               alt={`${pairedCharacter.name} avatar`}
@@ -442,9 +450,11 @@ export default function CharacterShareProfilePage() {
             <p className="mt-0.5 text-xs opacity-75">
               {className}
               {input.level ? ` · Lv. ${input.level}` : ""}
-              {record.character
+              {!isAnonymous && record.character
                 ? ` · ${record.character.name} (${record.character.region.toUpperCase()})`
-                : ""}
+                : isAnonymous
+                  ? " · Anonymous"
+                  : ""}
               {record.public === false ? " · Private link" : ""}
               {equipCount > 0 ? ` · ${equipCount} equips` : ""}
             </p>

@@ -55,6 +55,7 @@ import { PairingBar } from "@/components/PairingBar";
 import { HexaEfficiencyPanel } from "./hexa-efficiency";
 import { ShareGalleryModal } from "./share-gallery-modal";
 import { MiniScouterCharacterSearch } from "./MiniScouterCharacterSearch";
+import { PresetModal, type PresetModalMode } from "./preset-modal";
 import {
   BossConvertedStatPanel,
   bossConvertedFromMaple,
@@ -377,8 +378,7 @@ export default function ScouterPage() {
     name: string;
   } | null>(null);
   const [sharing, setSharing] = useState(false);
-  const [presetMenuOpen, setPresetMenuOpen] = useState(false);
-  const presetMenuRef = useRef<HTMLDivElement | null>(null);
+  const [presetModal, setPresetModal] = useState<PresetModalMode | null>(null);
   const [draftReady, setDraftReady] = useState(false);
   const [showHexaEff, setShowHexaEff] = useState(false);
   const hexaEffRef = useRef<HTMLDivElement | null>(null);
@@ -424,24 +424,6 @@ export default function ScouterPage() {
       existing ? { id: existing.id, name: existing.name } : null,
     );
   }, [loadedPresetId]);
-
-  useEffect(() => {
-    if (!presetMenuOpen) return;
-    const onPointerDown = (e: MouseEvent) => {
-      if (!presetMenuRef.current?.contains(e.target as Node)) {
-        setPresetMenuOpen(false);
-      }
-    };
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setPresetMenuOpen(false);
-    };
-    document.addEventListener("mousedown", onPointerDown);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("mousedown", onPointerDown);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [presetMenuOpen]);
 
   const classValue = `${input.jobType}:${input.charType}`;
   const { mainKeys, secondaryKeys, isXenon, isDa } = useMemo(
@@ -931,10 +913,22 @@ export default function ScouterPage() {
     if (announce) flashPresetMsg(`Loaded “${data.name}”`);
   };
 
-  const savePreset = (asNew: boolean) => {
+  /**
+   * Persist current form.
+   * - `overwriteId`: update that preset slot (Save modal pick)
+   * - `asNew: true`: always create a new preset under the typed name
+   */
+  const savePreset = (opts?: { overwriteId?: string; asNew?: boolean }) => {
     try {
+      const targetId = opts?.asNew
+        ? undefined
+        : opts?.overwriteId || undefined;
+      const slotName = opts?.overwriteId
+        ? presets.find((p) => p.id === opts.overwriteId)?.name
+        : undefined;
       const requested =
         presetName.trim() ||
+        slotName ||
         presets.find((p) => p.id === selectedPresetId)?.name ||
         "Untitled";
       const nameCheck = filterDisplayText(requested, {
@@ -945,13 +939,8 @@ export default function ScouterPage() {
         flashPresetMsg(nameCheck.error);
         return;
       }
-      // Never overwrite a preset that isn't what's on screen (e.g. dropdown
-      // changed but Load wasn't used) — that was leaking Attack/Magic Att.
-      const overwriteId = asNew
-        ? undefined
-        : loadedPresetId || undefined;
       const saved = storage.saveScouterPreset({
-        id: overwriteId,
+        id: targetId,
         name: nameCheck.value,
         state: {
           input: structuredClone(input),
@@ -964,8 +953,9 @@ export default function ScouterPage() {
       setSelectedPresetId(saved.id);
       setLoadedPresetId(saved.id);
       setPresetName(saved.name);
+      setPresetModal(null);
       const renamed = saved.name !== nameCheck.value && nameCheck.value !== "";
-      if (asNew || !overwriteId) {
+      if (!targetId) {
         flashPresetMsg(
           renamed
             ? `Saved as “${saved.name}” (name already used)`
@@ -1004,36 +994,39 @@ export default function ScouterPage() {
     action();
   };
 
-  const deletePreset = () => {
+  const deletePresetById = (id: string) => {
     try {
-      if (!selectedPresetId) {
+      if (!id) {
         flashPresetMsg("Select a preset");
         return;
       }
-      const name =
-        presets.find((p) => p.id === selectedPresetId)?.name ?? "preset";
+      const name = presets.find((p) => p.id === id)?.name ?? "preset";
       if (
         typeof window !== "undefined" &&
         !window.confirm(`Delete preset “${name}”? This cannot be undone.`)
       ) {
         return;
       }
-      storage.deleteScouterPreset(selectedPresetId);
+      storage.deleteScouterPreset(id);
       refreshPresets();
-      setSelectedPresetId("");
-      setLoadedPresetId("");
-      setPresetName("");
+      if (selectedPresetId === id) setSelectedPresetId("");
+      if (loadedPresetId === id) {
+        setLoadedPresetId("");
+        setPresetName("");
+      }
       flashPresetMsg(`Deleted “${name}”`);
     } catch {
       flashPresetMsg("Could not delete");
     }
   };
 
-  const handleUseActiveCharacter = (character: CharacterLookupResult) => {
+  const handleUseActiveCharacter = (
+    character: CharacterLookupResult,
+  ): boolean => {
     const target = { name: character.name, region: character.region };
     if (isStickyActiveSwitchBlocked(target)) {
       flashPresetMsg(UNLOCK_TO_CHANGE_ACTIVE_MSG);
-      return;
+      return false;
     }
     const { entry } = addToRoster({
       name: character.name,
@@ -1041,7 +1034,9 @@ export default function ScouterPage() {
     });
     switchActiveCharacter(entry);
     reloadDraftFromLiveStorage();
+    setPresetName(character.name);
     flashPresetMsg(`Active: ${character.name}`);
+    return true;
   };
 
   const shareLoadout = async (args: {
@@ -1093,9 +1088,13 @@ export default function ScouterPage() {
             }
           : undefined;
       const primary = readRosterState().primary;
-      const character = primary
-        ? { region: primary.region, name: primary.name }
-        : undefined;
+      // Anonymous gallery posts: no roster character → no Nexon sprite on cards.
+      const character =
+        args.asPublic && identity === "anonymous"
+          ? undefined
+          : primary
+            ? { region: primary.region, name: primary.name }
+            : undefined;
 
       const shareState = {
         input: structuredClone(input),
@@ -1132,7 +1131,7 @@ export default function ScouterPage() {
                     ? args.boss380HexaStat
                     : undefined,
                 state: shareState,
-                character: character ?? null,
+                character: character ?? null, // null clears character when switching to anon
                 equipment: equipment ?? null,
               }),
             },
@@ -1408,92 +1407,21 @@ export default function ScouterPage() {
                     </span>
                   ) : null}
                 </div>
-                <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center">
-                  <div ref={presetMenuRef} className="relative min-w-0 flex-1">
-                    <button
-                      type="button"
-                      className="flex w-full min-w-0 items-center justify-between gap-2 rounded border border-border/50 bg-background px-2.5 py-1.5 text-left text-xs outline-none focus:border-accent"
-                      aria-label="Saved presets"
-                      aria-haspopup="listbox"
-                      aria-expanded={presetMenuOpen}
-                      onClick={() => setPresetMenuOpen((o) => !o)}
-                    >
-                      <span className="min-w-0 truncate">
-                        {(() => {
-                          if (!selectedPresetId) {
-                            return presets.length
-                              ? `Clear selection (${presets.length} saved)…`
-                              : "No saved presets yet";
-                          }
-                          const selected = presets.find(
-                            (p) => p.id === selectedPresetId,
-                          );
-                          const name =
-                            selected?.name || presetName.trim() || "Preset";
-                          const classLabel = getCharName(
-                            selected?.input?.jobType || input.jobType || "",
-                            selected?.input?.charType || input.charType || "",
-                          );
-                          return `${name}(${classLabel})`;
-                        })()}
-                      </span>
-                      <span className="shrink-0 opacity-50" aria-hidden>
-                        ▾
-                      </span>
-                    </button>
-                    {presetMenuOpen ? (
-                      <ul
-                        role="listbox"
-                        className="absolute z-30 mt-1 max-h-56 w-full overflow-auto rounded border border-border/50 bg-background py-1 shadow-lg"
-                      >
-                        <li>
-                          <button
-                            type="button"
-                            role="option"
-                            aria-selected={!selectedPresetId}
-                            className="w-full px-2.5 py-1.5 text-left text-xs opacity-70 hover:bg-surface-muted"
-                            title="Clear selection keeps your form values as an unsaved draft"
-                            onClick={() => {
-                              setSelectedPresetId("");
-                              setLoadedPresetId("");
-                              setPresetName("");
-                              setPresetMenuOpen(false);
-                            }}
-                          >
-                            {presets.length
-                              ? "Clear selection…"
-                              : "No saved presets yet"}
-                          </button>
-                        </li>
-                        {presets.map((p) => {
-                          const classLabel = getCharName(
-                            p.input?.jobType || "",
-                            p.input?.charType || "",
-                          );
-                          return (
-                            <li key={p.id}>
-                              <button
-                                type="button"
-                                role="option"
-                                aria-selected={selectedPresetId === p.id}
-                                className={`w-full px-2.5 py-1.5 text-left text-xs hover:bg-surface-muted ${
-                                  selectedPresetId === p.id
-                                    ? "bg-accent-soft/40 font-semibold text-accent"
-                                    : ""
-                                }`}
-                                onClick={() => {
-                                  loadPresetById(p.id);
-                                  setPresetMenuOpen(false);
-                                }}
-                              >
-                                {p.name}({classLabel})
-                              </button>
-                            </li>
-                          );
-                        })}
-                      </ul>
-                    ) : null}
-                  </div>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setPresetModal("recall")}
+                    className="rounded border border-border/50 bg-background px-2.5 py-1.5 text-xs font-semibold transition hover:bg-surface-muted"
+                  >
+                    Recall Saved Preset
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPresetModal("save")}
+                    className="rounded bg-accent px-2.5 py-1.5 text-xs font-semibold text-white transition hover:opacity-90 dark:text-zinc-900"
+                  >
+                    Save Preset
+                  </button>
                   <input
                     type="text"
                     placeholder="Preset name"
@@ -1502,38 +1430,6 @@ export default function ScouterPage() {
                     className="min-w-0 flex-1 rounded border border-border/50 bg-background px-2.5 py-1.5 text-xs outline-none focus:border-accent"
                     aria-label="Preset name"
                   />
-                </div>
-                <div className="flex flex-wrap items-center gap-1.5">
-                  <button
-                    type="button"
-                    onClick={() => savePreset(false)}
-                    disabled={loadedPresetId ? false : !presetName.trim()}
-                    className="rounded bg-accent px-2.5 py-1.5 text-xs font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 dark:text-zinc-900"
-                    title={
-                      loadedPresetId
-                        ? "Update the loaded preset with current stats"
-                        : "Save current stats as a new preset"
-                    }
-                  >
-                    {loadedPresetId ? "Update preset" : "Save preset"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => savePreset(true)}
-                    disabled={!presetName.trim()}
-                    className="rounded border border-border/50 bg-background px-2.5 py-1.5 text-xs font-semibold transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
-                    title="Keep the current preset and save a copy under this name"
-                  >
-                    Save as new
-                  </button>
-                  <button
-                    type="button"
-                    onClick={deletePreset}
-                    disabled={!selectedPresetId}
-                    className="rounded border border-border/50 bg-background px-2.5 py-1.5 text-xs font-semibold text-red-700 transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40 dark:text-red-400"
-                  >
-                    Delete
-                  </button>
                 </div>
               </div>
 
@@ -2313,6 +2209,22 @@ export default function ScouterPage() {
         </a>
         . Buff / link / HEXA icons load from their CDN for visual parity.
       </p>
+
+      <PresetModal
+        open={presetModal != null}
+        mode={presetModal ?? "recall"}
+        onClose={() => setPresetModal(null)}
+        presets={presets}
+        loadedPresetId={loadedPresetId}
+        draftName={presetName}
+        onRecall={(id) => {
+          loadPresetById(id);
+          setPresetModal(null);
+        }}
+        onSaveOverwrite={(id) => savePreset({ overwriteId: id })}
+        onSaveAsNew={() => savePreset({ asNew: true })}
+        onDelete={(id) => deletePresetById(id)}
+      />
 
       <ShareGalleryModal
         open={galleryModalOpen}

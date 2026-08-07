@@ -14,6 +14,10 @@ import {
 const inputClass =
   "rounded border border-border/50 bg-background px-2 py-1 text-xs outline-none focus:border-accent";
 
+function characterKey(c: Pick<CharacterLookupResult, "name" | "region">): string {
+  return `${c.region}:${c.name.toLowerCase()}`;
+}
+
 /**
  * Compact IGN search for Scouter: sprite + class + level + world, then
  * “Use for stats” to set active character for pairing / this draft.
@@ -21,7 +25,9 @@ const inputClass =
 export function MiniScouterCharacterSearch({
   onUseForStats,
 }: {
-  onUseForStats: (character: CharacterLookupResult) => void | Promise<void>;
+  onUseForStats: (
+    character: CharacterLookupResult,
+  ) => boolean | void | Promise<boolean | void>;
 }) {
   const [name, setName] = useState("");
   const [region, setRegion] = useState<NexonRegion>("na");
@@ -29,6 +35,12 @@ export function MiniScouterCharacterSearch({
   const [pending, setPending] = useState(false);
   const [result, setResult] = useState<CharacterLookupResult | null>(null);
   const [using, setUsing] = useState(false);
+  /** Key of the character last successfully applied to stats. */
+  const [usedKey, setUsedKey] = useState<string | null>(null);
+
+  const isUsingForStats = Boolean(
+    result && usedKey && usedKey === characterKey(result),
+  );
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -61,11 +73,13 @@ export function MiniScouterCharacterSearch({
   }
 
   async function handleUse() {
-    if (!result) return;
+    if (!result || isUsingForStats) return;
     setUsing(true);
     setError(null);
     try {
-      await onUseForStats(result);
+      const ok = await onUseForStats(result);
+      if (ok === false) return;
+      setUsedKey(characterKey(result));
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Could not set active character.",
@@ -153,11 +167,20 @@ export function MiniScouterCharacterSearch({
           <button
             type="button"
             onClick={() => void handleUse()}
-            disabled={using}
-            className="shrink-0 rounded bg-accent px-2.5 py-1 text-xs font-semibold text-white transition hover:opacity-90 disabled:opacity-50 dark:text-zinc-900"
-            title="Set as active character for pairing and this page’s draft"
+            disabled={using || isUsingForStats}
+            aria-pressed={isUsingForStats}
+            className={`shrink-0 rounded px-2.5 py-1 text-xs font-semibold transition disabled:cursor-default dark:text-zinc-900 ${
+              isUsingForStats
+                ? "border border-accent bg-accent/90 text-white opacity-90"
+                : "bg-accent text-white hover:opacity-90 disabled:opacity-50"
+            }`}
+            title={
+              isUsingForStats
+                ? "This character is already applied to stats"
+                : "Set as active character for pairing and this page’s draft"
+            }
           >
-            {using ? "…" : "Use for stats"}
+            {using ? "…" : isUsingForStats ? "✓ Using for stats" : "Use for stats"}
           </button>
         </div>
       ) : null}

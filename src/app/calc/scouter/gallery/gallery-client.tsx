@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { AnonymousShareAvatar } from "@/components/character/AnonymousShareAvatar";
 import { CharacterSprite } from "@/components/character/CharacterSprite";
 import {
   characterAvatarKey,
@@ -132,7 +133,9 @@ export function GalleryClient({
   const avatarRefs = useMemo(
     () =>
       items.flatMap((item) =>
-        item.characterName && item.characterRegion
+        item.identity !== "anonymous" &&
+        item.characterName &&
+        item.characterRegion
           ? [
               {
                 name: item.characterName,
@@ -254,7 +257,9 @@ export function GalleryClient({
     const canRemoveOwned = Boolean(owned[item.id]?.deleteToken);
     const canRemove = canRemoveOwned || localAdmin;
     const paired =
-      item.characterName && item.characterRegion
+      item.identity !== "anonymous" &&
+      item.characterName &&
+      item.characterRegion
         ? {
             name: item.characterName,
             region: item.characterRegion,
@@ -279,7 +284,9 @@ export function GalleryClient({
         ) : null}
         <td className="px-3 py-2.5 font-medium">
           <span className="inline-flex flex-wrap items-center gap-2">
-            {paired ? (
+            {item.identity === "anonymous" ? (
+              <AnonymousShareAvatar size={40} className="rounded-lg" />
+            ) : paired ? (
               <CharacterSprite
                 src={avatarUrl}
                 alt=""

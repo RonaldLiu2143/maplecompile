@@ -326,6 +326,10 @@ export async function createShare(args: {
     name = (args.name ?? "").trim() || "Untitled";
   }
 
+  // Anonymous gallery posts must not attach roster identity (no character sprite).
+  const characterForRecord =
+    isPublic && identity === "anonymous" ? undefined : character;
+
   const recordDraft = {
     name,
     public: isPublic,
@@ -336,7 +340,7 @@ export async function createShare(args: {
     ...(boss380HexaStat != null ? { boss380HexaStat } : {}),
     views: 0,
     state,
-    ...(character ? { character } : {}),
+    ...(characterForRecord ? { character: characterForRecord } : {}),
     ...(equipment ? { equipment } : {}),
     hasEquipment,
   };
@@ -394,7 +398,7 @@ export async function createShare(args: {
     ...(boss380HexaStat != null ? { boss380HexaStat } : {}),
     views: 0,
     state,
-    ...(character ? { character } : {}),
+    ...(characterForRecord ? { character: characterForRecord } : {}),
     ...(equipment ? { equipment } : {}),
     hasEquipment,
   };
@@ -440,8 +444,12 @@ export async function getShare(
     0,
     Number(viewsRaw ?? raw.views ?? 0) || 0,
   );
-  const character = normalizeShareCharacter(raw.character);
   const equipment = normalizeShareEquipment(raw.equipment);
+  const identity = resolveShareIdentity(raw);
+  const character =
+    identity === "anonymous" && raw.public !== false
+      ? undefined
+      : normalizeShareCharacter(raw.character);
   const hasEquipment =
     raw.hasEquipment === true || Boolean(equipment);
 
@@ -460,7 +468,7 @@ export async function getShare(
   return {
     ...raw,
     id: raw.id || id,
-    identity: resolveShareIdentity(raw),
+    identity,
     views,
     state: normalizeShareState(raw.state),
     ...(boss300HexaStat != null ? { boss300HexaStat } : {}),
@@ -542,6 +550,10 @@ export async function updateShare(args: {
     character = normalizeShareCharacter(args.character);
   } else {
     character = normalizeShareCharacter(raw.character);
+  }
+  // Anonymous public posts never keep a roster character (sprite / IGN leak).
+  if (isPublic && identity === "anonymous") {
+    character = undefined;
   }
 
   let equipment: ShareEquipmentPayload | undefined;
@@ -831,13 +843,18 @@ export async function listPublicShares(): Promise<ScouterGalleryItem[]> {
       : Math.max(0, Number(raw.views) || 0);
     const input = raw.state.input;
     const equipment = normalizeShareEquipment(raw.equipment);
-    const character = normalizeShareCharacter(raw.character);
+    const identity = resolveShareIdentity(raw);
+    // Never expose roster character on anonymous gallery rows (legacy cleanup).
+    const character =
+      identity === "anonymous"
+        ? undefined
+        : normalizeShareCharacter(raw.character);
     const hasEquipment =
       raw.hasEquipment === true || Boolean(equipment);
     items.push({
       id: raw.id || id,
       name: (raw.name || "Untitled").trim() || "Untitled",
-      identity: resolveShareIdentity(raw),
+      identity,
       createdAt: Number(raw.createdAt) || 0,
       level: Number(input.level) || 0,
       jobType: String(input.jobType || ""),
