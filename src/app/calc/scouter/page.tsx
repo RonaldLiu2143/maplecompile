@@ -51,10 +51,10 @@ import {
   persistLiveToWorkspace,
 } from "@/lib/character-workspace";
 import { ActiveCharacterBar } from "@/components/ActiveCharacterBar";
-import { CharacterSearchBar } from "@/components/dashboard/CharacterSearchBar";
 import { PairingBar } from "@/components/PairingBar";
 import { HexaEfficiencyPanel } from "./hexa-efficiency";
 import { ShareGalleryModal } from "./share-gallery-modal";
+import { MiniScouterCharacterSearch } from "./MiniScouterCharacterSearch";
 import {
   BossConvertedStatPanel,
   bossConvertedFromMaple,
@@ -64,7 +64,6 @@ import { countFilledSlots } from "@/lib/starter-loadouts";
 import {
   addToRoster,
   readRosterState,
-  type RosterEntry,
 } from "@/lib/dashboard/roster";
 import {
   isStickyActiveSwitchBlocked,
@@ -84,7 +83,6 @@ import {
   type BossClearFightMinutes,
 } from "@/lib/scouter/boss-cuts";
 import type { MapleScouterCalculatedData } from "@/lib/scouter/to-user-stat";
-import { useMapleDataReload } from "@/hooks/useMapleDataReload";
 
 const cell =
   "border border-border/50 bg-background px-2 py-1.5 text-sm outline-none focus:relative focus:z-10 focus:border-accent";
@@ -426,14 +424,6 @@ export default function ScouterPage() {
       existing ? { id: existing.id, name: existing.name } : null,
     );
   }, [loadedPresetId]);
-
-  const [rosterEntries, setRosterEntries] = useState<RosterEntry[]>([]);
-  useEffect(() => {
-    setRosterEntries(readRosterState().entries);
-  }, []);
-  useMapleDataReload(() => {
-    setRosterEntries(readRosterState().entries);
-  });
 
   useEffect(() => {
     if (!presetMenuOpen) return;
@@ -1049,10 +1039,8 @@ export default function ScouterPage() {
       name: character.name,
       region: character.region,
     });
-    setRosterEntries(readRosterState().entries);
     switchActiveCharacter(entry);
     reloadDraftFromLiveStorage();
-    setRosterEntries(readRosterState().entries);
     flashPresetMsg(`Active: ${character.name}`);
   };
 
@@ -1350,14 +1338,6 @@ export default function ScouterPage() {
 
       <ActiveCharacterBar onSwitched={reloadDraftFromLiveStorage} />
 
-      <CharacterSearchBar
-        roster={rosterEntries}
-        compactPanel
-        hint="Sets the active character for pairing and this page’s draft."
-        onAdded={(state) => setRosterEntries(state.entries)}
-        onUseActive={handleUseActiveCharacter}
-      />
-
       <div className="space-y-1">
         <PairingBar
           compact
@@ -1410,6 +1390,10 @@ export default function ScouterPage() {
                 </span>
               )}
             </div>
+
+            <MiniScouterCharacterSearch
+              onUseForStats={handleUseActiveCharacter}
+            />
 
             <div className="grid gap-2 lg:grid-cols-2">
               {/* —— Local presets —— */}
