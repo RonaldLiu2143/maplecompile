@@ -51,7 +51,7 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: themeBootScript() }}
         />
       </head>
-      <body className="flex min-h-full flex-col">
+      <body className="flex min-h-full flex-col" suppressHydrationWarning>
         <SiteShell>{children}</SiteShell>
       </body>
     </html>
