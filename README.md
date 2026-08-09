@@ -1,6 +1,28 @@
 # MapleCompile
 
-Equipment Setup + Flame Calculator for MapleStory (inspired by WhackyBeanz).
+Free MapleStory GMS tools — character lookup, combat power scouter, equipment & flames, boss income, liberation, HEXA fragments, and a local roster dashboard.
+
+**Live:** [https://maplecompile.vercel.app](https://maplecompile.vercel.app)
+
+## Features
+
+| Area | Route | Notes |
+|------|--------|--------|
+| Dashboard | `/dashboard` | Active Character, dailies / weeklies, tool shortcuts |
+| Character Search | `/calc/character` | MapleRanks-style profile (inline), Saved bookmarks (separate from roster) |
+| Scouter | `/calc/scouter` | Combat power, presets, equipment setup, gallery share |
+| Scouter Gallery | `/calc/scouter/gallery` | Public shared loadouts |
+| Equipment Setup | `/calc/equips/setup` | Gear grid + set effects (also embedded on Scouter) |
+| Flames | `/calc/equips/flames` | Flame tables & probabilities |
+| Cubing | `/calc/cubing` | Cube / meso odds for lines |
+| Upgrade Planner | `/calc/planner` | Progression planning |
+| Boss Income | `/calc/bosses` | Crystal / boss income |
+| Liberation | `/calc/liberation` | Liberation tracker |
+| HEXA / Fragments | `/calc/hexa-tracker` | HEXA levels & fragment tracking (per character) |
+| Diary | `/calc/diary` | Drop / progress diary |
+| Roster | `/roster` | Multi-character manager |
+
+Most progress is stored in the browser (`localStorage`). Active Character links tools across the site; Character Search **Saved** is a separate bookmark list from the roster.
 
 ## Setup
 
@@ -10,67 +32,57 @@ npm run seed   # pull equips / set-effects into data/
 npm run dev
 ```
 
-**Live:** [https://maplecompile.vercel.app](https://maplecompile.vercel.app)
+Local: [http://localhost:3000](http://localhost:3000)
 
-Local: [http://localhost:3000](http://localhost:3000).
+### Environment (optional)
 
-### Scouter share (Upstash Redis)
-
-Shareable scouter loadouts need a free [Upstash Redis](https://upstash.com/) database:
-
-1. Create a Redis database in the Upstash console.
-2. Copy the REST URL and token into `.env.local` (local) and your Vercel project env (production):
+**Scouter share / gallery** needs [Upstash Redis](https://upstash.com/):
 
 ```bash
 UPSTASH_REDIS_REST_URL=https://….upstash.io
 UPSTASH_REDIS_REST_TOKEN=…
 ```
 
-3. Redeploy on Vercel after adding the env vars.
+Set these in `.env.local` and Vercel. Without them, local presets still work; Share returns a clear “not configured” error.
 
-Until these are set, the Share button returns a clear “sharing not configured” error. Local presets still work without Redis.
+Optional site URL for SEO / canonicals (defaults to the Vercel production host):
 
-## Pages
-
-- `/calc/equips/setup` — job/character select, equip grid, set-effect totals
-- `/calc/equips/flames` — flame tables, saved lines, better-flame probability
-- `/calc/cubing` — cubing probability (cubes / mesos for desired lines)
-- `/calc/scouter` — character scouter: range, expected damage, converted main stat
-- `/calc/scouter/gallery` — public shared scouter loadouts
-- `/calc/scouter/s/[id]` — open a shared scouter loadout by id
-- `/calc/character` — GMS character search
-- `/calc/character/[name]?region=na|eu` — character profile
-
-Setup is stored in `localStorage` and shared with the flame page. Shared loadouts are stored in Upstash Redis.
-
-### Character lookup (GMS)
-
-No Nexon Open API key is required. MapleCompile merges two public sources server-side:
-
-1. **Nexon rankings** (avatar, world, job, level, EXP, overall rank, fame):
-
-```
-GET https://www.nexon.com/api/maplestory/no-auth/ranking/v2/{na|eu}
-  ?type=overall|fame&id=legendary&reboot_index=0|1&page_index=1&character_name=…
+```bash
+NEXT_PUBLIC_SITE_URL=https://maplecompile.vercel.app
 ```
 
-2. **MapleHub public character JSON** (legion, class/world ranks, EXP averages / graphs), proxied with `X-MapleHub-Request: true`:
+> **Deploy note:** `vercel.json` disables Git-triggered deploys. Ship production with  
+> `npx vercel deploy --prod --yes --scope <your-team-scope>`.
 
-```
-GET https://maplehub.app/api/character/?characterName=…&region=na|eu
-```
+## Character lookup (GMS)
 
-App route: `GET /api/character?name=IGN&region=na|eu`
+No Nexon Open API key. Server merges public sources:
 
-Profile UI: `/calc/character/[name]?region=na|eu`
+1. **Nexon rankings** — avatar, world, job, level, EXP, ranks, fame  
+2. **MapleHub** — legion, class/world ranks, EXP graphs (when tracked)
 
-Ranked / tracked characters only. Not live online status. Gear, combat power, and fashion stay stubbed without Open API.
+App API: `GET /api/character?name=IGN&region=na|eu`
+
+UI: search and profile on `/calc/character?name=…&region=na|eu`  
+(Legacy `/calc/character/[name]` redirects to the query form.)
+
+Ranked / MapleHub-tracked characters only. Gear and combat power from Open API remain unavailable without a key.
 
 ## Data
 
-`npm run seed` downloads from WhackyBeanz public APIs into:
+`npm run seed` downloads equip / set-effect JSON (WhackyBeanz-style public APIs) into:
 
 - `data/equips/{jobType}/{charType}.json`
 - `data/set-effects/{jobType}.json`
 
-Local routes: `/api/equips/[jobType]/[charType]`, `/api/set-effects/[jobType]`.
+Served by `/api/equips/[jobType]/[charType]` and `/api/set-effects/[jobType]`.
+
+## Stack
+
+- Next.js 16 (App Router) + React 19 + TypeScript  
+- Tailwind CSS 4  
+- Upstash Redis (optional, for shares)
+
+## License / credits
+
+Community tools inspired by MapleHub, MapleRanks, MapleScouter, and WhackyBeanz-style equipment data. MapleStory is © Nexon.
