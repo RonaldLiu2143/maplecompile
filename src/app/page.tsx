@@ -9,10 +9,21 @@ import {
   routeMetadata,
 } from "@/lib/seo";
 
+const homeTitle = `${SITE_NAME} — MapleStory Calculators`;
+const homeMeta = routeMetadata("/");
+
 export const metadata: Metadata = {
-  ...routeMetadata("/"),
+  ...homeMeta,
   title: {
-    absolute: `${SITE_NAME} — MapleStory Calculators`,
+    absolute: homeTitle,
+  },
+  openGraph: {
+    ...homeMeta.openGraph,
+    title: homeTitle,
+  },
+  twitter: {
+    ...homeMeta.twitter,
+    title: homeTitle,
   },
 };
 
