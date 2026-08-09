@@ -40,7 +40,11 @@ export function HomeHero() {
           className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_70%_0%,var(--accent-soft),transparent_55%)] opacity-80"
         />
         <div className="relative mx-auto flex max-w-2xl flex-col items-center text-center">
-          <BrandWordmark markSize={36} textClassName="text-4xl sm:text-5xl" />
+          <BrandWordmark
+            as="h1"
+            markSize={36}
+            textClassName="text-4xl sm:text-5xl"
+          />
           <p className="mt-3 max-w-md text-sm opacity-75 sm:text-base">
             Look up a GMS character, pin a primary, then jump into scouter and
             gear tools.

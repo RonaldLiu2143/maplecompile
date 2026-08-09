@@ -41,13 +41,16 @@ export function BrandWordmark({
   className,
   markSize = 26,
   textClassName,
+  as: Tag = "span",
 }: {
   className?: string;
   markSize?: number;
   textClassName?: string;
+  /** Use `h1` on the home hero for a single document heading. */
+  as?: "span" | "h1";
 }) {
   return (
-    <span className={["inline-flex items-center gap-2", className].join(" ")}>
+    <Tag className={["inline-flex items-center gap-2", className].join(" ")}>
       <BrandMark size={markSize} className="shrink-0 text-accent" />
       <span
         className={[
@@ -59,6 +62,6 @@ export function BrandWordmark({
       >
         MapleCompile
       </span>
-    </span>
+    </Tag>
   );
 }
