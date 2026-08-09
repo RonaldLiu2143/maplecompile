@@ -62,6 +62,9 @@ export const metadata: Metadata = {
     title: `${SITE_NAME} — MapleStory Calculators`,
     description: SITE_DESCRIPTION,
   },
+  verification: {
+    google: "AnzeZ16E6StQCXOpCHjuj_i6RGwJ5TslzI0882L19Oc",
+  },
   robots: {
     index: true,
     follow: true,
