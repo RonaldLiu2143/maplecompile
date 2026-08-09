@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ActiveCharacterBar } from "@/components/ActiveCharacterBar";
 import {
   ManageDisplayButton,
@@ -16,7 +16,7 @@ import {
 } from "@/lib/active-character";
 import { getWorkspace } from "@/lib/character-workspace";
 import { readSessionCharacter } from "@/lib/character/client";
-import { entryKey, isPrimary } from "@/lib/dashboard/roster";
+import { entryKey, isPrimary, readRosterState } from "@/lib/dashboard/roster";
 import {
   readHexaDisplay,
   resolveVisibleIds,
@@ -323,6 +323,9 @@ export default function HexaTrackerPage() {
   const [bcsDraft, setBcsDraft] = useState(String(DEFAULT_BOSS_CONVERTED_STAT));
   /** Peek index into the remaining priority path (0 = next recommended step). */
   const [priorityIndex, setPriorityIndex] = useState(0);
+  /** Preserve My Characters focus across save-triggered reloads. */
+  const rosterKeyRef = useRef("");
+  const lastPrimaryKeyRef = useRef<string | null>(null);
 
   const activeCharType =
     viewMode === "preview" ? previewCharType : charType;
@@ -355,26 +358,44 @@ export default function HexaTrackerPage() {
     return rosterOptions.filter((o) => set.has(o.key));
   }, [rosterOptions, visibleIds]);
 
+  rosterKeyRef.current = rosterKey;
+
   const refresh = useCallback(() => {
     const options = listRosterOptions();
     setRosterOptions(options);
     setPresets(
       storage.listScouterPresets().map((p) => ({ id: p.id, name: p.name })),
     );
-    const ct = storage.getCharType() || "adele";
-    setCharType(ct);
-    setPreviewCharType((prev) => prev || ct);
+    const liveCharType = storage.getCharType() || "adele";
+    setPreviewCharType((prev) => prev || liveCharType);
     const prefs = readHexaDisplay();
     setDisplayPrefs(prefs);
     const available = options.map((o) => o.key);
     const shown = resolveVisibleIds(prefs, available);
-    const preferred =
-      primaryRosterKey() || shown[0] || available[0] || "";
+    const primaryKey = primaryRosterKey();
+    const preferred = primaryKey || shown[0] || available[0] || "";
+    const current = rosterKeyRef.current;
+    const prevPrimary = lastPrimaryKeyRef.current;
+    // Follow Active Character when it changes elsewhere; otherwise keep an
+    // intentional My Characters pick (esp. while Active Character is locked).
+    const primaryChanged =
+      prevPrimary != null &&
+      primaryKey != null &&
+      prevPrimary !== primaryKey;
+    lastPrimaryKeyRef.current = primaryKey;
     const key =
-      preferred && shown.includes(preferred)
+      primaryChanged && preferred && shown.includes(preferred)
         ? preferred
-        : shown[0] || preferred || "";
+        : current && shown.includes(current)
+          ? current
+          : preferred && shown.includes(preferred)
+            ? preferred
+            : shown[0] || preferred || "";
     setRosterKey(key);
+    rosterKeyRef.current = key;
+    const { entries } = readRosterState();
+    const entry = entries.find((e) => entryKey(e) === key);
+    setCharType(charTypeForRosterKey(key, entry));
     const tracker = loadHexaTracker(key || null);
     setState(tracker);
     setPairing(getHexaScouterPairing(key || null));
