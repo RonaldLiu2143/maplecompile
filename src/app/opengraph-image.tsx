@@ -38,11 +38,14 @@ export default function OpenGraphImage() {
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              fontSize: 40,
+              fontSize: 42,
+              fontWeight: 700,
               color: "#e85d4a",
+              fontFamily:
+                "ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif",
             }}
           >
-            ❋
+            M
           </div>
           <div
             style={{

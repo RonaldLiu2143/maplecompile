@@ -17,9 +17,11 @@ export default function AppleIcon() {
           color: "#e85d4a",
           fontSize: 96,
           fontWeight: 700,
+          fontFamily:
+            "ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif",
         }}
       >
-        ❋
+        M
       </div>
     ),
     { ...size },

@@ -16,11 +16,13 @@ export default function Icon() {
           background: "#0b1220",
           borderRadius: 8,
           color: "#e85d4a",
-          fontSize: 20,
+          fontSize: 18,
           fontWeight: 700,
+          fontFamily:
+            "ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif",
         }}
       >
-        ❋
+        M
       </div>
     ),
     { ...size },
