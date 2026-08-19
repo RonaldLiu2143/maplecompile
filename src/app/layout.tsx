@@ -5,7 +5,10 @@ import {
   JetBrains_Mono,
   Source_Serif_4,
 } from "next/font/google";
+import { GoogleAnalytics } from "@/components/GoogleAnalytics";
+import { SiteFooter } from "@/components/SiteFooter";
 import { SiteShell } from "@/components/SiteShell";
+import { SkipToContent } from "@/components/SkipToContent";
 import { themeBootScript } from "@/lib/theme";
 import {
   SITE_DESCRIPTION,
@@ -112,7 +115,9 @@ export default function RootLayout({
           strategy="beforeInteractive"
           dangerouslySetInnerHTML={{ __html: themeBootScript() }}
         />
-        <SiteShell>{children}</SiteShell>
+        <SkipToContent />
+        <GoogleAnalytics />
+        <SiteShell footer={<SiteFooter />}>{children}</SiteShell>
       </body>
     </html>
   );

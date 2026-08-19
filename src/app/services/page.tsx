@@ -1,0 +1,85 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { InfoPage } from "@/components/InfoPage";
+import { routeMetadata } from "@/lib/seo";
+
+export const metadata: Metadata = routeMetadata("/services");
+
+const SERVICES = [
+  {
+    href: "/calc/character",
+    title: "Character Search",
+    body: "Look up a GMS IGN for level, job, world, ranks, and EXP graphs. Save bookmarks separately from your roster.",
+  },
+  {
+    href: "/calc/scouter",
+    title: "Combat Power Scouter",
+    body: "Enter stats, pair equipment, save presets, and optionally post a public gallery build.",
+  },
+  {
+    href: "/calc/equips/setup",
+    title: "Equipment Setup",
+    body: "Star Force, potentials, and set effects on a full gear grid — also embedded in Scouter.",
+  },
+  {
+    href: "/calc/equips/flames",
+    title: "Flame Calculator",
+    body: "Flame tables and expected costs for gear upgrades.",
+  },
+  {
+    href: "/calc/cubing",
+    title: "Cubing Calculator",
+    body: "Odds and meso estimates for potential lines.",
+  },
+  {
+    href: "/calc/bosses",
+    title: "Boss Income",
+    body: "Weekly crystal meso income for your roster’s boss list.",
+  },
+  {
+    href: "/calc/liberation",
+    title: "Liberation Tracker",
+    body: "Genesis and Destiny weapon liberation progress.",
+  },
+  {
+    href: "/calc/hexa-tracker",
+    title: "HEXA / Fragment Tracker",
+    body: "HEXA matrix levels and Sol Erda fragment tracking per character.",
+  },
+  {
+    href: "/roster",
+    title: "Roster Manager",
+    body: "Multi-character roster with an Active Character that other tools can follow.",
+  },
+] as const;
+
+export default function ServicesPage() {
+  return (
+    <InfoPage
+      title="Tools & services"
+      lede="Everything MapleCompile offers for MapleStory GMS — pick a tool and start from your browser."
+    >
+      <p>
+        <Link
+          href="/calc/character"
+          className="inline-flex min-h-11 items-center rounded-lg bg-accent px-4 py-2 font-semibold text-white no-underline hover:opacity-90 dark:text-zinc-900"
+        >
+          Look up a character
+        </Link>
+      </p>
+      <ul className="!list-none !pl-0 mt-2 flex flex-col gap-4">
+        {SERVICES.map((item) => (
+          <li
+            key={item.href}
+            className="rounded-xl border border-border/50 bg-surface/70 px-4 py-3"
+          >
+            <Link href={item.href} className="font-display text-base font-bold">
+              {item.title}
+            </Link>
+            <p className="mt-1 text-sm text-muted">{item.body}</p>
+          </li>
+        ))}
+      </ul>
+    </InfoPage>
+  );
+}

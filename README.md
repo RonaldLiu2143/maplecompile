@@ -21,6 +21,12 @@ Free MapleStory GMS tools — character lookup, combat power scouter, equipment 
 | HEXA / Fragments | `/calc/hexa-tracker` | HEXA levels & fragment tracking (per character) |
 | Diary | `/calc/diary` | Drop / progress diary |
 | Roster | `/roster` | Multi-character manager |
+| About | `/about` | Project, local-first storage, affiliation |
+| Tools | `/services` | Directory of every calculator |
+| FAQ | `/faq` | Common questions |
+| Privacy | `/privacy` | Privacy policy |
+| Terms | `/terms` | Terms and conditions |
+| Accessibility | `/accessibility` | Accessibility statement |
 
 Most progress is stored in the browser (`localStorage`). Active Character links tools across the site; Character Search **Saved** is a separate bookmark list from the roster.
 
@@ -45,10 +51,16 @@ UPSTASH_REDIS_REST_TOKEN=…
 
 Set these in `.env.local` and Vercel. Without them, local presets still work; Share returns a clear “not configured” error.
 
-Optional site URL for SEO / canonicals (defaults to the Vercel production host):
+Optional site URL for SEO / canonicals (defaults to the Vercel production host). Point this at your **custom domain** once DNS is attached in Vercel:
 
 ```bash
 NEXT_PUBLIC_SITE_URL=https://maplecompile.vercel.app
+```
+
+Optional **Google Analytics 4** (omit to keep the site analytics-free):
+
+```bash
+NEXT_PUBLIC_GA_MEASUREMENT_ID=G-XXXXXXXXXX
 ```
 
 > **Deploy note:** `vercel.json` disables Git-triggered deploys. Ship production with  

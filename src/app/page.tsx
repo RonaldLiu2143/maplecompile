@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { HomeGuideBanner } from "@/components/HomeGuideBanner";
 import { HomeHero } from "@/components/HomeHero";
 import { JsonLd } from "@/components/JsonLd";
+import { FAQ_ITEMS } from "@/lib/faq";
 import {
   SITE_DESCRIPTION,
   SITE_NAME,
@@ -58,11 +59,25 @@ const appJsonLd = {
   },
 };
 
+const faqJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: FAQ_ITEMS.map((item) => ({
+    "@type": "Question",
+    name: item.question,
+    acceptedAnswer: {
+      "@type": "Answer",
+      text: item.answer,
+    },
+  })),
+};
+
 export default function Home() {
   return (
     <div className="flex flex-col gap-8 py-6 sm:py-8">
       <JsonLd data={websiteJsonLd} />
       <JsonLd data={appJsonLd} />
+      <JsonLd data={faqJsonLd} />
       <HomeGuideBanner />
       <HomeHero />
     </div>

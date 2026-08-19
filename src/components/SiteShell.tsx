@@ -54,6 +54,8 @@ const EQUIPMENT_LINKS: NavLink[] = [
 
 const GUIDE_LINKS: NavLink[] = [
   { href: "/onboarding", label: "Guide", match: "exact" },
+  { href: "/about", label: "About", match: "exact" },
+  { href: "/faq", label: "FAQ", match: "exact" },
 ];
 
 function linkActive(pathname: string, link: NavLink): boolean {
@@ -222,7 +224,13 @@ function MenuIcon({ open }: { open: boolean }) {
   );
 }
 
-export function SiteShell({ children }: { children: ReactNode }) {
+export function SiteShell({
+  children,
+  footer,
+}: {
+  children: ReactNode;
+  footer?: ReactNode;
+}) {
   const pathname = usePathname();
   const [open, setOpen] = useState(true);
   const [ready, setReady] = useState(false);
@@ -408,12 +416,13 @@ export function SiteShell({ children }: { children: ReactNode }) {
           <WeeklyResetBar />
         </div>
 
-        <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6">
+        <main
+          id="main-content"
+          className="mx-auto w-full max-w-7xl flex-1 px-4 py-6"
+        >
           {children}
         </main>
-        <footer className="border-t border-border/40 px-4 py-4 text-center text-sm text-muted">
-          MapleCompile calculators — equipment, flames, cubing, and scouter
-        </footer>
+        {footer}
       </div>
     </div>
   );

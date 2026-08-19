@@ -45,13 +45,34 @@ export function HomeHero() {
             markSize={36}
             textClassName="text-4xl sm:text-5xl"
           />
+          <p className="sr-only">
+            MapleStory GMS calculators, character search, and combat power
+            scouter
+          </p>
           <p className="mt-3 max-w-md text-sm opacity-75 sm:text-base">
             Look up a GMS character, pin a primary, then jump into scouter and
-            gear tools.
+            gear tools. Free, no account required.
           </p>
+          <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+            <a
+              href="#character-search"
+              className="inline-flex min-h-11 items-center rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90 dark:text-zinc-900"
+            >
+              Look up a character
+            </a>
+            <Link
+              href="/calc/scouter"
+              className="inline-flex min-h-11 items-center rounded-lg border border-border px-4 py-2 text-sm font-semibold transition hover:bg-accent-soft"
+            >
+              Open Scouter
+            </Link>
+          </div>
         </div>
 
-        <div className="relative mx-auto mt-6 max-w-2xl text-left">
+        <div
+          id="character-search"
+          className="relative mx-auto mt-6 max-w-2xl scroll-mt-24 text-left"
+        >
           {hydrated ? (
             <CharacterSearchBar roster={roster} onAdded={handleRosterAdded} />
           ) : (

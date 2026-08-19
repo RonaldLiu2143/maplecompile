@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { NextResponse } from "next/server";
+import { prettyJson } from "@/lib/http-json";
 
 export async function GET(
   _req: Request,
@@ -10,7 +11,7 @@ export async function GET(
   const file = path.join(process.cwd(), "data", "set-effects", `${jobType}.json`);
   try {
     const raw = await readFile(file, "utf8");
-    return NextResponse.json(JSON.parse(raw));
+    return prettyJson(JSON.parse(raw));
   } catch {
     return NextResponse.json(
       { error: `No set-effect data for ${jobType}. Run npm run seed.` },

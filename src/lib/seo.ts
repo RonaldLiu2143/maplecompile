@@ -154,6 +154,54 @@ export const PUBLIC_ROUTES: PublicRoute[] = [
     changeFrequency: "monthly",
     priority: 0.55,
   },
+  {
+    path: "/about",
+    title: "About",
+    description:
+      "MapleCompile is a free unofficial MapleStory GMS toolkit — scouter, character search, equipment, and roster tools that run in your browser.",
+    changeFrequency: "monthly",
+    priority: 0.6,
+  },
+  {
+    path: "/services",
+    title: "Tools & services",
+    description:
+      "All MapleCompile MapleStory GMS tools: character search, combat power scouter, equipment, flames, cubing, boss income, liberation, and HEXA tracking.",
+    changeFrequency: "monthly",
+    priority: 0.7,
+  },
+  {
+    path: "/faq",
+    title: "FAQ",
+    description:
+      "Answers about MapleCompile storage, character lookup, scouter sharing, and whether the site is affiliated with Nexon.",
+    changeFrequency: "monthly",
+    priority: 0.55,
+  },
+  {
+    path: "/privacy",
+    title: "Privacy policy",
+    description:
+      "How MapleCompile handles localStorage, optional shared builds, analytics, and third-party character data.",
+    changeFrequency: "yearly",
+    priority: 0.3,
+  },
+  {
+    path: "/terms",
+    title: "Terms and conditions",
+    description:
+      "Terms for using MapleCompile unofficial MapleStory calculators, gallery shares, and game-data estimates.",
+    changeFrequency: "yearly",
+    priority: 0.3,
+  },
+  {
+    path: "/accessibility",
+    title: "Accessibility statement",
+    description:
+      "MapleCompile accessibility statement — keyboard navigation, themes, skip links, and how to report barriers.",
+    changeFrequency: "yearly",
+    priority: 0.3,
+  },
 ];
 
 export function absoluteUrl(path = "/"): string {
