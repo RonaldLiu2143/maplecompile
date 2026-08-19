@@ -54,7 +54,7 @@ export function BrandWordmark({
       <BrandMark size={markSize} className="shrink-0 text-accent" />
       <span
         className={[
-          "font-display font-bold tracking-tight text-accent",
+          "font-display font-bold text-accent",
           textClassName,
         ]
           .filter(Boolean)

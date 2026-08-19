@@ -289,7 +289,7 @@ export function LogDropModal({
                   type="button"
                   onClick={submit}
                   disabled={!char || !item}
-                  className="rounded-lg bg-accent px-3 py-1.5 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50 dark:text-zinc-900"
+                  className="rounded-lg bg-accent px-3 py-1.5 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
                 >
                   Log Drop
                 </button>

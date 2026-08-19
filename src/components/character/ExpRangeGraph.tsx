@@ -332,7 +332,7 @@ export function ExpRangeGraph({
                     : "px-2.5 py-1 text-xs sm:text-sm"
                 } ${
                   active
-                    ? "bg-accent text-white dark:text-zinc-900"
+                    ? "bg-accent text-primary-foreground"
                     : "opacity-70 hover:bg-surface-muted hover:opacity-100"
                 }`}
                 aria-pressed={active}

@@ -168,7 +168,7 @@ export default function DiaryPage() {
           <button
             type="button"
             onClick={() => setLogOpen(true)}
-            className="rounded-lg bg-accent px-3 py-1.5 text-sm font-semibold text-white hover:opacity-90 dark:text-zinc-900"
+            className="rounded-lg bg-accent px-3 py-1.5 text-sm font-semibold text-primary-foreground hover:opacity-90"
           >
             + Log Drop
           </button>

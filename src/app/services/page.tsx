@@ -62,7 +62,7 @@ export default function ServicesPage() {
       <p>
         <Link
           href="/calc/character"
-          className="inline-flex min-h-11 items-center rounded-lg bg-accent px-4 py-2 font-semibold text-white no-underline hover:opacity-90 dark:text-zinc-900"
+          className="inline-flex min-h-11 items-center rounded-lg bg-accent px-4 py-2 font-semibold text-primary-foreground no-underline hover:opacity-90"
         >
           Look up a character
         </Link>

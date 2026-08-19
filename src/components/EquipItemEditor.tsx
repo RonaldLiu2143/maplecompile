@@ -288,7 +288,7 @@ export function EquipItemEditor({
                     potentialTier: Number(e.target.value) as 0 | 1 | 2 | 3,
                   })
                 }
-                className="rounded border border-[#555] bg-[#1f1f1f] px-2 py-1.5 text-sm font-semibold text-zinc-100 outline-none focus:border-sky-500"
+                className="rounded border border-[#555] bg-[#1f1f1f] px-2 py-1.5 text-sm font-semibold text-zinc-100 outline-none focus:border-accent"
               >
                 {POTENTIAL_TIER_LABELS.map((label, i) => (
                   <option key={label} value={i}>
@@ -307,7 +307,7 @@ export function EquipItemEditor({
                   <select
                     value={line ? lineOptionKey(line) : ""}
                     onChange={(e) => setPotLine(i, e.target.value)}
-                    className="rounded border border-[#555] bg-[#1f1f1f] px-2 py-1.5 text-sm text-zinc-100 outline-none focus:border-sky-500"
+                    className="rounded border border-[#555] bg-[#1f1f1f] px-2 py-1.5 text-sm text-zinc-100 outline-none focus:border-accent"
                   >
                     {potOptions.map((opt) => (
                       <option

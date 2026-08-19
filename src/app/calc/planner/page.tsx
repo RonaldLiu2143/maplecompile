@@ -220,7 +220,7 @@ export default function UpgradePlannerPage() {
             type="button"
             onClick={() => void runRank()}
             disabled={pending || !canRun}
-            className="rounded-md bg-accent px-2.5 py-1 text-xs font-semibold text-white transition hover:opacity-90 disabled:opacity-40 dark:text-zinc-900"
+            className="rounded-md bg-accent px-2.5 py-1 text-xs font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-40"
           >
             {pending ? "Ranking…" : "Re-rank"}
           </button>

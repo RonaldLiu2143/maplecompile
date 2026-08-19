@@ -759,7 +759,7 @@ export default function HexaTrackerPage() {
               className={[
                 "rounded-md px-3 py-1.5 text-xs font-semibold transition",
                 viewMode === id
-                  ? "bg-accent text-white dark:text-zinc-900"
+                  ? "bg-accent text-primary-foreground"
                   : "opacity-70 hover:opacity-100",
               ].join(" ")}
             >
@@ -1124,7 +1124,7 @@ export default function HexaTrackerPage() {
                     ) : (
                       <div className="h-9 w-9 rounded border border-border/50 bg-surface-muted" />
                     )}
-                    <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 text-[10px] font-bold leading-none text-white dark:text-zinc-900">
+                    <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 text-[10px] font-bold leading-none text-primary-foreground">
                       {featuredUp.node.current}
                     </span>
                   </div>
@@ -1228,7 +1228,7 @@ export default function HexaTrackerPage() {
                                   ) : (
                                     <div className="h-8 w-8 rounded border border-border/50 bg-surface-muted" />
                                   )}
-                                  <span className="absolute -right-1 -top-1 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-accent px-0.5 text-[9px] font-bold leading-none text-white dark:text-zinc-900">
+                                  <span className="absolute -right-1 -top-1 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-accent px-0.5 text-[9px] font-bold leading-none text-primary-foreground">
                                     {run.toLevel}
                                   </span>
                                   {idx === activePathRunIndex ? (
@@ -1356,7 +1356,7 @@ export default function HexaTrackerPage() {
                       <button
                         type="button"
                         onClick={onPair}
-                        className="rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90 dark:text-zinc-900"
+                        className="rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:opacity-90"
                       >
                         Pair with Scouter
                       </button>

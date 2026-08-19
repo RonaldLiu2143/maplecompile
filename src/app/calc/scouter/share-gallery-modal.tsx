@@ -395,7 +395,7 @@ export function ShareGalleryModal({
             type="button"
             disabled={!canSubmit}
             onClick={submit}
-            className="rounded bg-accent px-3 py-1.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+            className="rounded bg-accent px-3 py-1.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
           >
             {submitting
               ? isReplace

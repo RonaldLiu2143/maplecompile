@@ -835,7 +835,7 @@ export function CharacterSearchActions({
           type="button"
           onClick={onUseActive}
           disabled={usingActive}
-          className="rounded-lg bg-accent px-3 py-1.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50 dark:text-zinc-900"
+          className="rounded-lg bg-accent px-3 py-1.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-50"
         >
           {usingActive ? "Switching…" : "Use as active"}
         </button>

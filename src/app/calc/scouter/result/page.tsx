@@ -84,7 +84,7 @@ function fdTone(fd: number): { message: string; className: string } {
   }
   return {
     message: `Receiving a ${fd.toFixed(2)}% FD bonus from Level/Force.`,
-    className: "text-sky-400",
+    className: "text-primary",
   };
 }
 
@@ -268,7 +268,7 @@ function BossHoverTooltipBody({
               {drop.amount > 1 ? (
                 <span
                   className={`absolute -bottom-1 -right-1 min-w-[1.1rem] rounded-full border border-black bg-white px-0.5 text-center text-[9px] font-bold leading-4 ${
-                    drop.personal ? "text-rose-600" : "text-sky-700"
+                    drop.personal ? "text-rose-600" : "text-amber-800"
                   }`}
                 >
                   {drop.amount}
@@ -509,7 +509,7 @@ function BossClearCard({
 
   const pctColor =
     row.clearPercent >= 200
-      ? "text-sky-700 dark:text-sky-300"
+      ? "text-primary"
       : row.clearPercent >= 100
         ? "text-emerald-700 dark:text-emerald-300"
         : row.clearPercent >= 90
@@ -541,7 +541,7 @@ function BossClearCard({
       {tip && typeof document !== "undefined"
         ? createPortal(
             <div
-              className="pointer-events-none z-[9999] rounded-xl border border-border/60 bg-zinc-950 px-3 py-2.5 text-left text-white shadow-2xl"
+              className="pointer-events-none z-[9999] rounded-xl border border-border/60 bg-popover px-3 py-2.5 text-left text-popover-foreground shadow-2xl"
               style={tip.style}
               role="tooltip"
             >
@@ -649,7 +649,7 @@ function ConvertedStatCell({
         {label}
       </p>
       <p
-        className={`mt-0.5 font-display font-bold tabular-nums ${
+        className={`mt-0.5 font-bold tabular-nums ${
           compact
             ? emphasize
               ? "text-lg text-accent"
@@ -859,7 +859,7 @@ export default function ScouterDetailedResultPage() {
           </Link>
           <button
             type="button"
-            className="rounded-md bg-accent px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
+            className="rounded-md bg-accent px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-60"
             disabled={loading}
             onClick={() => window.location.reload()}
           >
@@ -892,7 +892,7 @@ export default function ScouterDetailedResultPage() {
                     type="button"
                     className={`px-3 py-1.5 font-semibold transition ${
                       fightMinutes === 20
-                        ? "bg-accent text-white"
+                        ? "bg-accent text-primary-foreground"
                         : "bg-surface hover:bg-surface-muted"
                     }`}
                     onClick={() => setFightMinutes(20)}
@@ -904,7 +904,7 @@ export default function ScouterDetailedResultPage() {
                     type="button"
                     className={`px-3 py-1.5 font-semibold transition ${
                       fightMinutes === 30
-                        ? "bg-accent text-white"
+                        ? "bg-accent text-primary-foreground"
                         : "bg-surface hover:bg-surface-muted"
                     }`}
                     onClick={() => setFightMinutes(30)}
@@ -1014,7 +1014,7 @@ export default function ScouterDetailedResultPage() {
                     type="button"
                     className={`rounded-full px-3 py-1.5 font-semibold transition ${
                       relevantOnly
-                        ? "bg-accent text-white"
+                        ? "bg-accent text-primary-foreground"
                         : "border border-border/50 bg-surface hover:bg-surface-muted"
                     }`}
                     onClick={() => setRelevantOnly(true)}
@@ -1025,7 +1025,7 @@ export default function ScouterDetailedResultPage() {
                     type="button"
                     className={`rounded-full px-3 py-1.5 font-semibold transition ${
                       !relevantOnly
-                        ? "bg-accent text-white"
+                        ? "bg-accent text-primary-foreground"
                         : "border border-border/50 bg-surface hover:bg-surface-muted"
                     }`}
                     onClick={() => setRelevantOnly(false)}

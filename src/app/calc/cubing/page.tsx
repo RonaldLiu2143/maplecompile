@@ -301,7 +301,7 @@ export default function CubingCalculatorPage() {
             type="button"
             onClick={() => void calculate()}
             disabled={pending || !canCalculate}
-            className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50 dark:text-zinc-900"
+            className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-50"
           >
             {pending ? "Calculating…" : "Calculate"}
           </button>

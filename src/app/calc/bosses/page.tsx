@@ -511,7 +511,7 @@ function Stat({
       </p>
       <p
         className={[
-          "mt-1 font-display text-xl font-semibold tabular-nums",
+          "mt-1 text-xl font-semibold tabular-nums",
           warn ? "text-red-500" : "",
         ].join(" ")}
       >
@@ -663,7 +663,7 @@ function CharacterBossCard({
               {hasBosses ? (
                 <span
                   className={[
-                    "inline-flex shrink-0 items-center rounded-full px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-white dark:text-zinc-900",
+                    "inline-flex shrink-0 items-center rounded-full px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-primary-foreground",
                     clearedCount === rows.length
                       ? "bg-emerald-600 dark:bg-emerald-400"
                       : "bg-accent",

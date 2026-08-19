@@ -179,7 +179,7 @@ export function StarForcePicker({
             value={stars}
             aria-label={`${label} amount`}
             onChange={(e) => commit(Number(e.target.value) || 0)}
-            className="w-16 rounded border border-[#555] bg-[#1f1f1f] px-2 py-1 text-sm font-semibold tabular-nums text-zinc-100 outline-none focus:border-sky-500"
+            className="w-16 rounded border border-[#555] bg-[#1f1f1f] px-2 py-1 text-sm font-semibold tabular-nums text-zinc-100 outline-none focus:border-accent"
           />
           <span className="text-xs text-zinc-500">/ {max}</span>
         </label>

@@ -1673,7 +1673,7 @@ export function labelTone(label: BossClearLabel): string {
       return "text-emerald-600 dark:text-emerald-400";
     case "Possible":
     case "[Newbie] Solo":
-      return "text-sky-600 dark:text-sky-400";
+      return "text-primary";
     case "Solo Min":
       return "text-amber-600 dark:text-amber-400";
     case "Party-able":

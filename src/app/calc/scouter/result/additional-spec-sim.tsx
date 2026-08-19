@@ -351,7 +351,7 @@ function SimMetric({
         {label}
       </p>
       <p
-        className={`mt-0.5 font-display font-bold tabular-nums leading-tight ${
+        className={`mt-0.5 font-bold tabular-nums leading-tight ${
           compact ? "text-sm" : "text-base"
         } ${emphasize ? "text-accent" : ""}`}
       >
@@ -743,7 +743,7 @@ export function AdditionalSpecSimulation({
         </div>
       </div>
 
-      <p className="mb-3 text-xs text-sky-700 dark:text-sky-300">
+      <p className="mb-3 text-xs text-muted-foreground">
         ※ Turn on Show simulation and press Apply to update Boss Converted
         Stat, Destiny & Champion, Boss Clear (Cut), and the FD cards above.
       </p>
@@ -1037,7 +1037,7 @@ export function AdditionalSpecSimulation({
         <div className="flex flex-wrap gap-2 pt-1">
           <button
             type="button"
-            className="rounded-md bg-accent px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
+            className="rounded-md bg-accent px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-60"
             disabled={loading}
             onClick={() => void onApply()}
           >

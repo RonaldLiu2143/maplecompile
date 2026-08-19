@@ -103,7 +103,7 @@ export function DashboardDiarySection({
           <button
             type="button"
             onClick={() => setLogOpen(true)}
-            className="rounded-md bg-accent px-3 py-1.5 text-xs font-semibold text-white transition hover:opacity-90 dark:text-zinc-900"
+            className="rounded-md bg-accent px-3 py-1.5 text-xs font-semibold text-primary-foreground transition hover:opacity-90"
           >
             + Log Drop
           </button>

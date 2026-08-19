@@ -357,7 +357,7 @@ export function AddBossesModal({
               type="button"
               onClick={openApplyMulti}
               disabled={!selectedPreset || applyTargets.length === 0}
-              className="rounded-lg bg-accent px-2.5 py-1.5 text-xs font-semibold text-white transition hover:opacity-90 disabled:opacity-40 dark:text-zinc-900"
+              className="rounded-lg bg-accent px-2.5 py-1.5 text-xs font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-40"
             >
               Apply to characters…
             </button>
@@ -431,7 +431,7 @@ export function AddBossesModal({
                       className="absolute top-2 right-2 z-10 rounded-full p-1 transition-colors disabled:cursor-not-allowed"
                     >
                       {enabled ? (
-                        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-accent text-white dark:text-zinc-900">
+                        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-accent text-primary-foreground">
                           <svg
                             className="h-3.5 w-3.5"
                             viewBox="0 0 20 20"
@@ -647,7 +647,7 @@ export function AddBossesModal({
                 type="button"
                 disabled={applyKeys.length === 0}
                 onClick={confirmApplyMulti}
-                className="rounded-lg bg-accent px-3 py-1.5 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-40 dark:text-zinc-900"
+                className="rounded-lg bg-accent px-3 py-1.5 text-sm font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-40"
               >
                 Apply ({applyKeys.length})
               </button>

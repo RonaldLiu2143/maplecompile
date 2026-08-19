@@ -33,8 +33,8 @@ const CORE_META: Record<
   },
   R: {
     label: "Enhancement",
-    border: "border-sky-500",
-    badge: "bg-sky-600",
+    border: "border-orange-500",
+    badge: "bg-orange-600",
   },
   G: {
     label: "Common",
@@ -72,7 +72,7 @@ function TabButton({
       onClick={onClick}
       className={`rounded-md px-2.5 py-1 text-xs font-semibold transition ${
         active
-          ? "bg-accent text-white"
+          ? "bg-accent text-primary-foreground"
           : "border border-border/60 bg-background hover:bg-surface-muted"
       }`}
     >

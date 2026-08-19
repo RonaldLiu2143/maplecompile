@@ -24,23 +24,23 @@ export const THEME_PRESETS: readonly ThemePreset[] = [
   {
     id: "compile",
     name: "Compile",
-    description: "Neutral zinc stack, sky accent only on actions.",
+    description: "Warm ink layers, maple gold only on actions.",
     scheme: "dark",
-    defaultAccent: "#38bdf8",
+    defaultAccent: "#c9a227",
   },
   {
     id: "contrast",
     name: "Contrast",
-    description: "Near-black canvas, bright text, crisp cyan for max clarity.",
+    description: "Near-black ink, brighter gold, maximum clarity.",
     scheme: "dark",
-    defaultAccent: "#22d3ee",
+    defaultAccent: "#e8c547",
   },
   {
     id: "light",
     name: "Light",
-    description: "Cool gray canvas, white cards, darker sky buttons.",
+    description: "Warm paper canvas, white-warm cards, darker gold buttons.",
     scheme: "light",
-    defaultAccent: "#0ea5e9",
+    defaultAccent: "#7a5610",
   },
 ] as const;
 
@@ -68,19 +68,19 @@ export const BACKDROP_PRESETS: readonly BackdropPreset[] = [
   {
     id: "none",
     name: "None",
-    preview: "#18181b",
+    preview: "#120e0c",
   },
   {
     id: "deep-night",
     name: "Deep Night",
     preview:
-      "radial-gradient(circle at 20% 20%, #1e3a5f 0%, transparent 45%), linear-gradient(160deg, #0b1220, #18181b 55%, #0f172a)",
+      "radial-gradient(circle at 20% 20%, #5c3a12 0%, transparent 45%), linear-gradient(160deg, #120e0c, #1a1410 55%, #0c0a08)",
   },
   {
     id: "teal-aurora",
     name: "Teal Aurora",
     preview:
-      "radial-gradient(ellipse at 30% 0%, #0d9488aa, transparent 55%), radial-gradient(ellipse at 90% 20%, #38bdf866, transparent 50%), #0c1a1f",
+      "radial-gradient(ellipse at 30% 0%, #c9a22766, transparent 55%), radial-gradient(ellipse at 90% 20%, #b4530944, transparent 50%), #1a1410",
   },
   {
     id: "amber-ember",
@@ -92,19 +92,19 @@ export const BACKDROP_PRESETS: readonly BackdropPreset[] = [
     id: "forest-mist",
     name: "Forest Mist",
     preview:
-      "radial-gradient(ellipse at 50% 0%, #14532d88, transparent 55%), linear-gradient(180deg, #0a1f18, #102820 60%, #0c1a14)",
+      "radial-gradient(ellipse at 50% 0%, #3d2a1477, transparent 55%), linear-gradient(180deg, #120e0c, #1a1410 60%, #0c0a08)",
   },
   {
     id: "horizon",
     name: "Horizon",
     preview:
-      "linear-gradient(185deg, #0ea5e966 0%, transparent 40%), linear-gradient(0deg, #f59e0b44 0%, transparent 35%), #0f172a",
+      "linear-gradient(185deg, #c9a22766 0%, transparent 40%), linear-gradient(0deg, #b4530944 0%, transparent 35%), #1a1410",
   },
   {
     id: "slate-mesh",
     name: "Slate Mesh",
     preview:
-      "radial-gradient(at 0% 0%, #33415588 0, transparent 50%), radial-gradient(at 100% 0%, #1e293b88 0, transparent 45%), radial-gradient(at 50% 100%, #0f766e55 0, transparent 50%), #111827",
+      "radial-gradient(at 0% 0%, #5c3a1277 0, transparent 50%), radial-gradient(at 100% 0%, #3a302888 0, transparent 45%), radial-gradient(at 50% 100%, #7a4a1244 0, transparent 50%), #1a1410",
   },
 ] as const;
 
@@ -129,7 +129,7 @@ export const FONT_PRESETS: readonly FontPreset[] = [
   {
     id: "sans",
     name: "Plex Sans",
-    description: "IBM Plex Sans throughout — site default.",
+    description: "IBM Plex for UI; Source Serif on titles — site default.",
   },
   {
     id: "serif",
@@ -188,17 +188,17 @@ export const DEFAULT_THEME_PREFS: ThemePrefs = {
 };
 
 /**
- * Named accent picks — sky stays Compile default; Maple is the warm orange option.
+ * Named accent picks — maple gold is Compile default.
  * Hex list kept for ThemePicker swatches + parse checks.
  */
 export const THEME_ACCENT_PRESETS = [
-  { hex: "#38bdf8", name: "Sky" },
-  { hex: "#22d3ee", name: "Cyan" },
+  { hex: "#c9a227", name: "Maple Gold" },
   { hex: "#ea580c", name: "Maple" },
   { hex: "#f59e0b", name: "Amber" },
   { hex: "#fb7185", name: "Rose" },
   { hex: "#34d399", name: "Emerald" },
   { hex: "#a78bfa", name: "Grape" },
+  { hex: "#38bdf8", name: "Sky" },
 ] as const;
 
 export const THEME_ACCENT_SWATCHES: readonly string[] =

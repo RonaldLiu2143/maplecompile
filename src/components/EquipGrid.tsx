@@ -152,7 +152,7 @@ function EquipSlot({
           readOnly ? "cursor-default" : ""
         } ${
           active
-            ? "border-sky-400 bg-[#3a4a5c] ring-1 ring-sky-400/60"
+            ? "border-accent bg-[#3a4a5c] ring-1 ring-accent/60"
             : filled
               ? "border-[#6CFF6C] bg-[#454545]"
               : "border-[#999] bg-[#5c5c5c] hover:border-[#ccc] hover:bg-[#686868]"

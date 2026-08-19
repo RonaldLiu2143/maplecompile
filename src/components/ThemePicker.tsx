@@ -172,7 +172,7 @@ export function ThemePicker({
   const applyCustomAccent = (raw?: string) => {
     const parsed = parseAccentHex(raw ?? accentDraft);
     if (!parsed) {
-      setAccentError("Use a hex color like #38bdf8.");
+      setAccentError("Use a hex color like #c9a227.");
       return;
     }
     setAccentError(null);
@@ -281,7 +281,7 @@ export function ThemePicker({
                   className={[
                     "rounded-lg px-2.5 py-2 text-left transition-colors",
                     active
-                      ? "bg-accent text-white dark:text-zinc-900"
+                      ? "bg-accent text-primary-foreground"
                       : "hover:bg-accent-soft hover:text-accent",
                   ].join(" ")}
                 >
@@ -289,7 +289,7 @@ export function ThemePicker({
                   <span
                     className={[
                       "mt-0.5 block text-[11px] leading-snug",
-                      active ? "text-white/90 dark:text-zinc-900/85" : "text-muted-foreground",
+                      active ? "text-primary-foreground/90" : "text-muted-foreground",
                     ].join(" ")}
                   >
                     {p.description}
@@ -315,7 +315,7 @@ export function ThemePicker({
                   className={[
                     "rounded-lg px-2.5 py-2 text-left transition-colors",
                     active
-                      ? "bg-accent text-white dark:text-zinc-900"
+                      ? "bg-accent text-primary-foreground"
                       : "hover:bg-accent-soft hover:text-accent",
                   ].join(" ")}
                 >
@@ -323,7 +323,7 @@ export function ThemePicker({
                   <span
                     className={[
                       "mt-0.5 block text-[11px] leading-snug",
-                      active ? "text-white/90 dark:text-zinc-900/85" : "text-muted-foreground",
+                      active ? "text-primary-foreground/90" : "text-muted-foreground",
                     ].join(" ")}
                   >
                     {p.description}
@@ -407,7 +407,7 @@ export function ThemePicker({
               autoComplete="off"
               spellCheck={false}
               aria-label="Custom accent hex"
-              placeholder="#38bdf8"
+              placeholder="#c9a227"
               value={accentDraft}
               onChange={(e) => {
                 setAccentDraft(e.target.value);
@@ -419,7 +419,7 @@ export function ThemePicker({
                 if (parsed && parsed !== (prefs.accent ?? "").toLowerCase()) {
                   applyCustomAccent(parsed);
                 } else if (accentDraft.trim() && !parsed) {
-                  setAccentError("Use a hex color like #38bdf8.");
+                  setAccentError("Use a hex color like #c9a227.");
                 }
               }}
               onKeyDown={(e) => {

@@ -344,7 +344,7 @@ export function GalleryClient({
           <div className="inline-flex flex-wrap items-center justify-end gap-1.5">
             <Link
               href={`/calc/character/share/${item.id}`}
-              className="inline-block rounded bg-accent px-2.5 py-1 text-xs font-semibold text-white transition hover:opacity-90"
+              className="inline-block rounded bg-accent px-2.5 py-1 text-xs font-semibold text-primary-foreground transition hover:opacity-90"
             >
               Open
             </Link>
@@ -446,7 +446,7 @@ export function GalleryClient({
               onClick={() => setMode(id)}
               className={`rounded px-3 py-1.5 text-sm font-semibold transition ${
                 mode === id
-                  ? "bg-accent text-white"
+                  ? "bg-accent text-primary-foreground"
                   : "opacity-70 hover:bg-surface-muted hover:opacity-100"
               }`}
             >

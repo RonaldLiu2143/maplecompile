@@ -346,7 +346,7 @@ export default function LiberationPage() {
               className={[
                 "rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-45",
                 mode === "characters"
-                  ? "bg-accent text-white dark:text-zinc-900"
+                  ? "bg-accent text-primary-foreground"
                   : "border border-border/50 hover:bg-accent-soft hover:text-accent",
               ].join(" ")}
             >
@@ -358,7 +358,7 @@ export default function LiberationPage() {
               className={[
                 "rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors",
                 mode === "preview"
-                  ? "bg-accent text-white dark:text-zinc-900"
+                  ? "bg-accent text-primary-foreground"
                   : "border border-border/50 hover:bg-accent-soft hover:text-accent",
               ].join(" ")}
             >
@@ -499,7 +499,7 @@ export default function LiberationPage() {
           {/* Progress */}
           <section className="space-y-4 rounded-xl border border-border/40 bg-surface/80 p-4">
             <div className="text-center">
-              <p className="font-display text-2xl font-bold tabular-nums tracking-tight sm:text-3xl">
+              <p className="text-2xl font-bold tabular-nums sm:text-3xl">
                 {liberated
                   ? "Liberated!"
                   : achieved
@@ -600,7 +600,7 @@ export default function LiberationPage() {
                     className={[
                       "rounded-md px-4 py-2 text-xs font-bold tracking-wide transition-colors",
                       type === id
-                        ? "bg-accent text-white shadow-sm dark:text-zinc-900"
+                        ? "bg-accent text-primary-foreground shadow-sm"
                         : "text-muted-foreground hover:bg-accent-soft/50 hover:text-accent",
                     ].join(" ")}
                   >
@@ -616,7 +616,7 @@ export default function LiberationPage() {
                   className={[
                     "rounded-md border px-3 py-2 text-xs font-semibold transition-colors",
                     liberated
-                      ? "border-accent bg-accent text-white dark:text-zinc-900"
+                      ? "border-accent bg-accent text-primary-foreground"
                       : "border-border/50 bg-surface-muted/60 opacity-80 hover:border-accent/50 hover:text-accent",
                   ].join(" ")}
                   title={
@@ -928,7 +928,7 @@ export default function LiberationPage() {
                         "rounded-md border px-2.5 py-2 text-center text-xs font-semibold transition-colors",
                         CLEAR_CHIP_WIDTH,
                         sel.cleared
-                          ? "border-accent bg-accent text-white dark:text-zinc-900"
+                          ? "border-accent bg-accent text-primary-foreground"
                           : "border-border/50 bg-surface-muted/60 opacity-80",
                       ].join(" ")}
                     >

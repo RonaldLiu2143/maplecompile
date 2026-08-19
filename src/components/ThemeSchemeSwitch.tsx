@@ -52,7 +52,7 @@ export function ThemeSchemeSwitch({ className }: { className?: string }) {
         onClick={() => setLight(true)}
         className={`rounded-md px-2 py-0.5 text-[0.65rem] font-semibold transition sm:text-[0.7rem] ${
           light
-            ? "bg-accent text-white dark:text-zinc-900"
+            ? "bg-accent text-primary-foreground"
             : "text-foreground/65 hover:bg-surface-muted hover:text-foreground"
         }`}
         aria-pressed={light}
@@ -64,7 +64,7 @@ export function ThemeSchemeSwitch({ className }: { className?: string }) {
         onClick={() => setLight(false)}
         className={`rounded-md px-2 py-0.5 text-[0.65rem] font-semibold transition sm:text-[0.7rem] ${
           !light
-            ? "bg-accent text-white dark:text-zinc-900"
+            ? "bg-accent text-primary-foreground"
             : "text-foreground/65 hover:bg-surface-muted hover:text-foreground"
         }`}
         aria-pressed={!light}

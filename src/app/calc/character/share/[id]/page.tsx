@@ -492,7 +492,7 @@ export default function CharacterShareProfilePage() {
               disabled={busy === "import"}
               onClick={importToRoster}
               title="Add this IGN to your roster and save Scouter + Equipment into that character’s workspace"
-              className="rounded-md bg-accent px-3 py-1.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-40"
+              className="rounded-md bg-accent px-3 py-1.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-40"
             >
               {busy === "import" ? "Importing…" : "Import to roster"}
             </button>
@@ -585,7 +585,7 @@ export default function CharacterShareProfilePage() {
               type="button"
               disabled={busy === "update"}
               onClick={() => void updateShare()}
-              className="rounded bg-accent px-3 py-1.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-40"
+              className="rounded bg-accent px-3 py-1.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-40"
             >
               {busy === "update" ? "Updating…" : "Update from local"}
             </button>

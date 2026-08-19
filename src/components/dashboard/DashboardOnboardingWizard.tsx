@@ -220,7 +220,7 @@ export function DashboardOnboardingWizard({
                   className={[
                     "flex size-8 items-center justify-center rounded-full text-sm font-bold",
                     done
-                      ? "bg-accent text-white dark:text-zinc-900"
+                      ? "bg-accent text-primary-foreground"
                       : isActive
                         ? "bg-accent/20 text-accent"
                         : "bg-surface-muted opacity-70",
@@ -241,7 +241,7 @@ export function DashboardOnboardingWizard({
       <div className="space-y-3 px-5 pb-5">
         <div className="rounded-xl border border-border/40 bg-surface/90 p-4">
           <div className="flex items-center gap-2">
-            <span className="flex size-9 items-center justify-center rounded-full bg-accent text-lg font-bold text-white dark:text-zinc-900">
+            <span className="flex size-9 items-center justify-center rounded-full bg-accent text-lg font-bold text-primary-foreground">
               {progress[current.id] ? "✓" : current.n}
             </span>
             <div>
@@ -259,7 +259,7 @@ export function DashboardOnboardingWizard({
             {current.id === "find" ? (
               <button
                 type="button"
-                className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white hover:opacity-90 dark:text-zinc-900"
+                className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
                 onClick={() => {
                   document.getElementById("character-search")?.scrollIntoView({
                     behavior: "smooth",
@@ -274,7 +274,7 @@ export function DashboardOnboardingWizard({
             {current.id === "main" ? (
               <button
                 type="button"
-                className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white hover:opacity-90 dark:text-zinc-900"
+                className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
                 onClick={handleSetMainAndLock}
                 disabled={roster.length === 0}
               >
@@ -285,7 +285,7 @@ export function DashboardOnboardingWizard({
             {current.id === "scouter" ? (
               <Link
                 href="/calc/scouter"
-                className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white hover:opacity-90 dark:text-zinc-900"
+                className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
               >
                 {progress.scouter ? "Open Scouter" : "Go fill numbers"}
               </Link>
@@ -294,7 +294,7 @@ export function DashboardOnboardingWizard({
             {current.id === "equip" ? (
               <Link
                 href="/calc/scouter"
-                className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white hover:opacity-90 dark:text-zinc-900"
+                className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
               >
                 {progress.equip ? "Open Scouter (gear)" : "Go fill gear"}
               </Link>
@@ -303,7 +303,7 @@ export function DashboardOnboardingWizard({
             {current.id === "pair" ? (
               <button
                 type="button"
-                className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white hover:opacity-90 dark:text-zinc-900"
+                className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
                 onClick={handlePair}
               >
                 {progress.pair ? "Already paired ✓" : "Pair for damage calc"}

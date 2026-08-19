@@ -61,7 +61,7 @@ export function EquipPicker({
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search…"
-          className="w-full rounded border border-[#555] bg-[#1f1f1f] px-2 py-1 text-sm text-zinc-100 outline-none placeholder:text-zinc-500 focus:border-sky-500"
+          className="w-full rounded border border-[#555] bg-[#1f1f1f] px-2 py-1 text-sm text-zinc-100 outline-none placeholder:text-zinc-500 focus:border-accent"
         />
       </div>
       <ul className="maple-scroll flex-1 space-y-1.5 p-2">
@@ -79,7 +79,7 @@ export function EquipPicker({
                 onClick={() => onToggle(equip)}
                 className={`flex w-full items-center gap-3 rounded-lg border px-2.5 py-2 text-left transition ${
                   selected
-                    ? "border-sky-300 bg-sky-200 text-zinc-900"
+                    ? "border-accent bg-accent text-primary-foreground"
                     : "border-[#555] bg-[#3a3a3a] text-zinc-100 hover:border-[#777] hover:bg-[#454545]"
                 }`}
               >

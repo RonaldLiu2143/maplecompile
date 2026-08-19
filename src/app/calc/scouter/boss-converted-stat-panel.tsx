@@ -48,7 +48,7 @@ function ConvertedStatCell({
         {label}
       </p>
       <p
-        className={`mt-0.5 font-display text-lg font-bold tabular-nums ${
+        className={`mt-0.5 text-lg font-bold tabular-nums ${
           emphasize ? "text-accent" : ""
         }`}
       >
@@ -163,7 +163,7 @@ function ToggleBtn({
     <button
       type="button"
       className={`px-3 py-1.5 font-semibold transition ${
-        active ? "bg-accent text-white" : "bg-surface hover:bg-surface-muted"
+        active ? "bg-accent text-primary-foreground" : "bg-surface hover:bg-surface-muted"
       }`}
       onClick={onClick}
       title={title}

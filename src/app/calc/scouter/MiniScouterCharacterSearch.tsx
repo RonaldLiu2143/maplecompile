@@ -159,7 +159,7 @@ export function MiniScouterCharacterSearch({
             className={`shrink-0 rounded px-2.5 py-1 text-xs font-semibold transition ${
               isActive
                 ? "cursor-not-allowed border border-border/50 bg-surface-muted text-foreground/45"
-                : "bg-accent text-white hover:opacity-90 disabled:opacity-50 dark:text-zinc-900"
+                : "bg-accent text-primary-foreground hover:opacity-90 disabled:opacity-50"
             }`}
             title={
               isActive

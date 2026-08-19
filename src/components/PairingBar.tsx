@@ -250,7 +250,7 @@ export function PairingBar({
             <button
               type="button"
               onClick={onPair}
-              className="rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-white transition hover:opacity-90 dark:text-zinc-900"
+              className="rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-primary-foreground transition hover:opacity-90"
             >
               {cta.label}
             </button>

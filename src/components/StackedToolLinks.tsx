@@ -37,8 +37,8 @@ export function StackedToolLinks({
             <span
               className={
                 compact
-                  ? "font-display text-sm font-bold"
-                  : "font-display font-bold"
+                  ? "text-sm font-semibold"
+                  : "font-semibold"
               }
             >
               {tool.title}

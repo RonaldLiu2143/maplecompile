@@ -232,7 +232,7 @@ export function ScouterActiveCharacterPresetPair({
                 <button
                   type="button"
                   onClick={onPair}
-                  className="rounded-lg bg-accent px-2.5 py-1.5 text-xs font-semibold text-white transition hover:opacity-90 dark:text-zinc-900"
+                  className="rounded-lg bg-accent px-2.5 py-1.5 text-xs font-semibold text-primary-foreground transition hover:opacity-90"
                   title="Replace the Active Character link with the currently loaded preset"
                 >
                   Relink loaded preset
@@ -251,7 +251,7 @@ export function ScouterActiveCharacterPresetPair({
               type="button"
               onClick={onPair}
               disabled={!canPair}
-              className="rounded-lg bg-accent px-2.5 py-1.5 text-xs font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 dark:text-zinc-900"
+              className="rounded-lg bg-accent px-2.5 py-1.5 text-xs font-semibold text-primary-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
               title={
                 loadedPresetId
                   ? "Link the loaded Character Stats preset to Active Character"

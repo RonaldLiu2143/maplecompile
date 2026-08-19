@@ -197,7 +197,7 @@ export function DashboardRosterWeeklySection({
               "rounded-md px-3 py-1.5 text-xs font-semibold transition",
               managing
                 ? "border border-border hover:bg-surface-muted"
-                : "bg-accent text-white hover:opacity-90 dark:text-zinc-900",
+                : "bg-accent text-primary-foreground hover:opacity-90",
             ].join(" ")}
           >
             {managing ? "Done" : "Manage"}

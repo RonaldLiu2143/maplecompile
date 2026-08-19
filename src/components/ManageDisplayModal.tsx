@@ -263,7 +263,7 @@ export function ManageDisplayModal({
                 onSave(draft);
                 onClose();
               }}
-              className="rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-white dark:text-zinc-900"
+              className="rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-primary-foreground"
             >
               Done
             </button>

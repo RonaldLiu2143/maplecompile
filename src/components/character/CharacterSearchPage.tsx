@@ -122,7 +122,7 @@ function SavedRow({
                 {entry.region.toUpperCase()}
               </p>
             )}
-            <p className="mt-1 font-display text-[0.8rem] font-semibold tabular-nums">
+            <p className="mt-1 text-[0.8rem] font-semibold tabular-nums">
               {entry.level != null ? (
                 <>
                   Lv. {entry.level}
@@ -360,7 +360,7 @@ export function CharacterSearchPage() {
             <button
               type="submit"
               disabled={pending || name.trim().length < 2}
-              className="rounded-lg bg-accent px-5 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50 dark:text-zinc-900"
+              className="rounded-lg bg-accent px-5 py-2 text-sm font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-50"
             >
               {pending ? "Searching…" : "Search"}
             </button>
@@ -394,7 +394,7 @@ export function CharacterSearchPage() {
                         "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold transition",
                         profileSaved
                           ? "border border-accent/60 bg-accent-soft text-accent hover:bg-accent-soft/80"
-                          : "bg-accent text-white shadow-sm hover:opacity-90 dark:text-zinc-900",
+                          : "bg-accent text-primary-foreground shadow-sm hover:opacity-90",
                       ].join(" ")}
                       aria-pressed={profileSaved}
                     >

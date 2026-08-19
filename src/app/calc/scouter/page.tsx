@@ -1549,7 +1549,7 @@ export default function ScouterPage() {
                   <button
                     type="button"
                     onClick={() => setPresetModal("save")}
-                    className="rounded bg-accent px-2.5 py-1.5 text-xs font-semibold text-white transition hover:opacity-90 dark:text-zinc-900"
+                    className="rounded bg-accent px-2.5 py-1.5 text-xs font-semibold text-primary-foreground transition hover:opacity-90"
                   >
                     Save Preset
                   </button>
@@ -1571,7 +1571,7 @@ export default function ScouterPage() {
                       type="button"
                       onClick={openGalleryShareModal}
                       disabled={sharing}
-                      className="rounded bg-accent px-2.5 py-1.5 text-xs font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 dark:text-zinc-900"
+                      className="rounded bg-accent px-2.5 py-1.5 text-xs font-semibold text-primary-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
                       title="Update the public gallery post linked to this preset"
                     >
                       {sharing && galleryModalOpen
@@ -1957,7 +1957,7 @@ export default function ScouterPage() {
           <div className="space-y-2 border-t border-border/40 px-3 py-3">
             <button
               type="button"
-              className="w-full rounded-md bg-accent px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90"
+              className="w-full rounded-md bg-accent px-4 py-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
               onClick={() =>
                 runIfStatsReady(() => {
                   persistScouterDraft();
@@ -2492,7 +2492,7 @@ export default function ScouterPage() {
               </button>
               <button
                 type="button"
-                className="rounded-lg bg-accent px-3 py-1.5 text-sm font-semibold text-white transition hover:opacity-90"
+                className="rounded-lg bg-accent px-3 py-1.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
                 onClick={() => {
                   const first = missingFields[0];
                   setMissingFields(null);

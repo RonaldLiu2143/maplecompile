@@ -33,7 +33,7 @@ export default function GuidePage() {
       <ol className="flex flex-col divide-y divide-border">
         {GUIDE_STEPS.map((step) => (
           <li key={step.n} className="grid gap-2 py-6 sm:grid-cols-[3rem_1fr]">
-            <span className="font-display text-2xl font-bold tabular-nums text-primary">
+            <span className="text-2xl font-bold tabular-nums text-primary">
               {step.n}
             </span>
             <div>

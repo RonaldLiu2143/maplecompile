@@ -518,7 +518,7 @@ export default function FlamesClient() {
                           }
                           className={`flex h-8 items-center justify-center rounded border text-xs font-semibold tabular-nums transition ${
                             active
-                              ? "border-accent bg-accent text-white dark:text-zinc-900"
+                              ? "border-accent bg-accent text-primary-foreground"
                               : "border-border/40 bg-background hover:bg-surface-muted"
                           }`}
                         >
@@ -621,7 +621,7 @@ export default function FlamesClient() {
                 title={f.label}
                 className={`flex min-w-[4.5rem] items-center justify-center gap-1 rounded-md border-2 px-3 py-2 transition ${
                   viewFlame === f.id
-                    ? "border-sky-400 bg-sky-500/25"
+                    ? "border-accent bg-accent/25"
                     : "border-border/40 bg-surface-muted/60 opacity-75 hover:opacity-100"
                 }`}
               >

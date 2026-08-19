@@ -921,7 +921,7 @@ export function EquipmentSetupPanel({
                         status !== "ready" ||
                         (!customPresetName.trim() && !loadedCustomPresetId)
                       }
-                      className="rounded bg-accent px-2 py-1 text-[11px] font-semibold text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+                      className="rounded bg-accent px-2 py-1 text-[11px] font-semibold text-primary-foreground hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
                       title={
                         loadedCustomPresetId
                           ? "Overwrite the loaded preset"
