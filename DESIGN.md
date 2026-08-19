@@ -54,7 +54,7 @@ Operate first. Home is persuade-lite: the IGN search is the one focal action. Gu
 
 ## Visual world
 
-Four background layers: darker sidebar frame, canvas, raised surface, inset muted — cool ink, not brown (`#0a0a0a` → `#141414` → `#1c1c1c`). One or two strokes, three text steps (heading, body, subtext). White (dark) / black (light) is a functional ramp (rest / hover / pressed), not a 30% fill. Semantic red / green stay those hues; warning is a gray step, not gold. Dark mode: wider steps between neutrals; surfaces get lighter as they elevate; borders stay dim. Light mode: paper-gray canvas so white cards can lift; important buttons are black.
+Four background layers: darker sidebar frame, canvas, raised surface, inset muted — cool ink by default (`#0a0a0a` → `#141414` → `#1c1c1c`). Theme → Color can tint those neutrals in OKLCH (L−0.03, C+0.02, pick a hue) so the same UI can go red, green, or blue without a 60-30-10 fill. One or two strokes, three text steps (heading, body, subtext). White (dark) / black (light) is the Ink action ramp; a hue replaces that ramp with a 400/500 (light) or 300/400 (dark) of the same hue. Semantic red / green stay those hues; warning is a gray step, not gold. Dark mode: wider steps between neutrals; surfaces get lighter as they elevate; borders stay dim. Light mode: paper-gray canvas so white cards can lift; important buttons are black unless a hue is on.
 
 Source Serif 4 for large titles and the wordmark. IBM Plex Sans for body, nav, buttons, tables, and data. Optional wallpapers sit behind a dim overlay — grayscale meshes only.
 
