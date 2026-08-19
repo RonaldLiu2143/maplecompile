@@ -10,6 +10,7 @@ import {
   setThemeScheme,
   subscribeThemePrefs,
 } from "@/lib/theme";
+import { Moon, Sun } from "lucide-react";
 
 function getServerThemePrefs() {
   return DEFAULT_THEME_PREFS;
@@ -57,6 +58,7 @@ export function ThemeSchemeSwitch({ className }: { className?: string }) {
         }`}
         aria-pressed={light}
       >
+        <Sun className="mr-1 inline size-3" aria-hidden />
         Light
       </button>
       <button
@@ -74,6 +76,7 @@ export function ThemeSchemeSwitch({ className }: { className?: string }) {
             : "Dark (Compile)"
         }
       >
+        <Moon className="mr-1 inline size-3" aria-hidden />
         Dark
       </button>
     </div>

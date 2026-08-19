@@ -6,6 +6,7 @@ import { characterProfileHref } from "@/lib/character/client";
 import type { RosterPrimary } from "@/lib/dashboard/roster";
 import type { RosterSlotState } from "@/hooks/useRoster";
 import { DASHBOARD_QUICK_TOOLS } from "@/lib/tool-links";
+import { iconForHref } from "@/lib/icons";
 
 export function DashboardToolShortcuts({
   quiet = false,
@@ -22,19 +23,23 @@ export function DashboardToolShortcuts({
           : "flex flex-wrap gap-1.5"
       }
     >
-      {DASHBOARD_QUICK_TOOLS.map((tool) => (
-        <Link
-          key={tool.href}
-          href={tool.href}
-          className={
-            quiet
-              ? "rounded-md px-2 py-1 text-sm font-medium text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground"
-              : "rounded-md border border-border bg-surface px-2.5 py-1.5 text-sm font-semibold transition-colors duration-150 hover:bg-muted hover:text-foreground"
-          }
-        >
-          {tool.label}
-        </Link>
-      ))}
+      {DASHBOARD_QUICK_TOOLS.map((tool) => {
+        const Icon = iconForHref(tool.href);
+        return (
+          <Link
+            key={tool.href}
+            href={tool.href}
+            className={
+              quiet
+                ? "inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-sm font-medium text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground"
+                : "inline-flex items-center gap-1.5 rounded-md border border-border bg-surface px-2.5 py-1.5 text-sm font-semibold transition-colors duration-150 hover:bg-muted hover:text-foreground"
+            }
+          >
+            <Icon className="size-3.5 shrink-0" aria-hidden />
+            {tool.label}
+          </Link>
+        );
+      })}
     </nav>
   );
 }

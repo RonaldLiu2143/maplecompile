@@ -19,6 +19,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useApplyThemeToDocument } from "@/hooks/useApplyThemeToDocument";
+import { GROUP_ICONS, iconForHref } from "@/lib/icons";
 import {
   DISCOVER_LINKS,
   MAIN_LINKS,
@@ -30,7 +31,7 @@ import {
 } from "@/lib/nav";
 import { runStorageCleanupOnce } from "@/lib/storage-cleanup";
 import { cn } from "@/lib/utils";
-import { ChevronRight, Menu } from "lucide-react";
+import { ChevronRight, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 
 const STORAGE_KEY = "maplecompile-sidebar-open";
 
@@ -55,14 +56,16 @@ function NavSection({
       ) : null}
       {links.map((link) => {
         const active = linkActive(pathname, link);
+        const Icon = iconForHref(link.href);
         return (
           <Button
             key={link.href}
             asChild
             variant="ghost"
-            className={cn("h-9 w-full justify-start", active && NAV_ACTIVE)}
+            className={cn("h-9 w-full justify-start gap-2", active && NAV_ACTIVE)}
           >
             <Link href={link.href} aria-current={active ? "page" : undefined}>
+              <Icon className="size-4 shrink-0" aria-hidden />
               {link.label}
             </Link>
           </Button>
@@ -84,6 +87,7 @@ function NavGroup({
   const childActive = anyLinkActive(pathname, links);
   const [userExpanded, setUserExpanded] = useState<boolean | null>(null);
   const expanded = userExpanded ?? childActive;
+  const GroupIcon = GROUP_ICONS[title] ?? ChevronRight;
 
   useEffect(() => {
     if (childActive) setUserExpanded(null);
@@ -104,7 +108,10 @@ function NavGroup({
             childActive && "font-semibold",
           )}
         >
-          <span>{title}</span>
+          <span className="inline-flex items-center gap-2">
+            <GroupIcon className="size-4 shrink-0" aria-hidden />
+            {title}
+          </span>
           <ChevronRight
             className={cn(
               "size-3.5 opacity-70 transition-transform duration-200",
@@ -117,14 +124,16 @@ function NavGroup({
         <div className="ml-2 flex flex-col gap-0.5 border-l border-sidebar-border pl-2">
           {links.map((link) => {
             const active = linkActive(pathname, link);
+            const Icon = iconForHref(link.href);
             return (
               <Button
                 key={link.href}
                 asChild
                 variant="ghost"
-                className={cn("h-8 w-full justify-start", active && NAV_ACTIVE)}
+                className={cn("h-8 w-full justify-start gap-2", active && NAV_ACTIVE)}
               >
                 <Link href={link.href} aria-current={active ? "page" : undefined}>
+                  <Icon className="size-3.5 shrink-0" aria-hidden />
                   {link.label}
                 </Link>
               </Button>
@@ -220,7 +229,11 @@ export function SiteShell({
                 aria-expanded={open}
                 aria-controls="site-sidebar-nav"
               >
-                <Menu />
+                {open ? (
+                  <PanelLeftClose className="size-4" aria-hidden />
+                ) : (
+                  <PanelLeftOpen className="size-4" aria-hidden />
+                )}
                 <span className="sr-only">
                   {open ? "Collapse sidebar" : "Expand sidebar"}
                 </span>
@@ -258,9 +271,49 @@ export function SiteShell({
             <ThemePicker />
           </>
         ) : (
-          <div className="mt-auto">
-            <ThemePicker compact />
-          </div>
+          <>
+            <nav
+              className="maple-scroll flex flex-1 flex-col items-center gap-1 px-1 py-2"
+              aria-label="Site navigation"
+            >
+              {[
+                ...MAIN_LINKS,
+                ...PROGRESSION_LINKS,
+                ...TOOL_LINKS,
+                ...DISCOVER_LINKS,
+              ].map((link) => {
+                const Icon = iconForHref(link.href);
+                const active = linkActive(pathname, link);
+                return (
+                  <Tooltip key={link.href}>
+                    <TooltipTrigger asChild>
+                      <Button
+                        asChild
+                        variant="ghost"
+                        size="icon"
+                        className={cn(
+                          "size-10",
+                          active && NAV_ACTIVE,
+                        )}
+                      >
+                        <Link
+                          href={link.href}
+                          aria-current={active ? "page" : undefined}
+                          aria-label={link.label}
+                        >
+                          <Icon className="size-4" aria-hidden />
+                        </Link>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="right">{link.label}</TooltipContent>
+                  </Tooltip>
+                );
+              })}
+            </nav>
+            <div className="mt-auto">
+              <ThemePicker compact />
+            </div>
+          </>
         )}
       </aside>
 

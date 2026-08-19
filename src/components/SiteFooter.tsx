@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Separator } from "@/components/ui/separator";
+import { iconForHref } from "@/lib/icons";
 import { SITE_NAME } from "@/lib/seo";
 
 const TOOL_LINKS = [
@@ -37,16 +38,20 @@ function FooterColumn({
         {title}
       </p>
       <ul className="mt-2 flex flex-col gap-1">
-        {links.map((link) => (
-          <li key={link.href}>
-            <Link
-              href={link.href}
-              className="inline-flex min-h-11 items-center text-sm text-muted-foreground transition hover:text-primary"
-            >
-              {link.label}
-            </Link>
-          </li>
-        ))}
+        {links.map((link) => {
+          const Icon = iconForHref(link.href);
+          return (
+            <li key={link.href}>
+              <Link
+                href={link.href}
+                className="inline-flex min-h-11 items-center gap-1.5 text-sm text-muted-foreground transition hover:text-primary"
+              >
+                <Icon className="size-3.5 shrink-0" aria-hidden />
+                {link.label}
+              </Link>
+            </li>
+          );
+        })}
       </ul>
     </div>
   );

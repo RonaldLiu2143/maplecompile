@@ -6,6 +6,7 @@ import {
   formatWeeklyResetCountdown,
 } from "@/lib/bosses";
 import { cn } from "@/lib/utils";
+import { CalendarDays, Sun } from "lucide-react";
 
 export function ResetCountdowns({
   className,
@@ -38,13 +39,15 @@ export function ResetCountdowns({
       aria-live="polite"
       aria-label="Daily and weekly reset countdowns"
     >
-      <span className="truncate">
+      <span className="inline-flex min-w-0 items-center gap-1 truncate">
+        <Sun className="size-3 shrink-0 opacity-80" aria-hidden />
         {compact ? "D" : "Daily"} {daily}
       </span>
       <span className="text-muted-soft" aria-hidden>
         ·
       </span>
-      <span className="truncate">
+      <span className="inline-flex min-w-0 items-center gap-1 truncate">
+        <CalendarDays className="size-3 shrink-0 opacity-80" aria-hidden />
         {compact ? "W" : "Weekly"} {weekly}
       </span>
     </p>

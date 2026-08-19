@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { iconForHref } from "@/lib/icons";
 import { cn } from "@/lib/utils";
 
 export type StackedToolLink = {
@@ -25,36 +26,40 @@ export function StackedToolLinks({
         className,
       )}
     >
-      {items.map((tool) => (
-        <li
-          key={tool.href}
-          className={columns === 2 ? "border-b border-border" : undefined}
-        >
-          <Link
-            href={tool.href}
-            className="flex min-h-11 flex-col justify-center py-3 transition-colors hover:text-primary"
+      {items.map((tool) => {
+        const Icon = iconForHref(tool.href);
+        return (
+          <li
+            key={tool.href}
+            className={columns === 2 ? "border-b border-border" : undefined}
           >
-            <span
-              className={
-                compact
-                  ? "text-sm font-semibold"
-                  : "font-semibold"
-              }
+            <Link
+              href={tool.href}
+              className="flex min-h-11 items-center gap-3 py-3 transition-colors hover:text-primary"
             >
-              {tool.title}
-            </span>
-            <span
-              className={
-                compact
-                  ? "text-xs text-muted-foreground"
-                  : "text-sm text-muted-foreground"
-              }
-            >
-              {tool.body}
-            </span>
-          </Link>
-        </li>
-      ))}
+              <Icon className="size-4 shrink-0 text-accent" aria-hidden />
+              <span className="flex min-w-0 flex-col justify-center">
+                <span
+                  className={
+                    compact ? "text-sm font-semibold" : "font-semibold"
+                  }
+                >
+                  {tool.title}
+                </span>
+                <span
+                  className={
+                    compact
+                      ? "text-xs text-muted-foreground"
+                      : "text-sm text-muted-foreground"
+                  }
+                >
+                  {tool.body}
+                </span>
+              </span>
+            </Link>
+          </li>
+        );
+      })}
     </ul>
   );
 }

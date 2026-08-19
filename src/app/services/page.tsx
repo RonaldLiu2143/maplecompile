@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { InfoPage } from "@/components/InfoPage";
+import { iconForHref } from "@/lib/icons";
 import { routeMetadata } from "@/lib/seo";
+import { Search } from "lucide-react";
 
 export const metadata: Metadata = routeMetadata("/services");
 
@@ -62,23 +64,31 @@ export default function ServicesPage() {
       <p>
         <Link
           href="/calc/character"
-          className="inline-flex min-h-11 items-center rounded-lg bg-accent px-4 py-2 font-semibold text-primary-foreground no-underline hover:opacity-90"
+          className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-accent px-4 py-2 font-semibold text-primary-foreground no-underline hover:opacity-90"
         >
+          <Search className="size-4" aria-hidden />
           Look up a character
         </Link>
       </p>
       <ul className="!list-none !pl-0 mt-2 flex flex-col gap-4">
-        {SERVICES.map((item) => (
+        {SERVICES.map((item) => {
+          const Icon = iconForHref(item.href);
+          return (
           <li
             key={item.href}
             className="rounded-xl border border-border/50 bg-surface/70 px-4 py-3"
           >
-            <Link href={item.href} className="font-display text-base font-bold">
+            <Link
+              href={item.href}
+              className="inline-flex items-center gap-2 font-display text-base font-bold"
+            >
+              <Icon className="size-4 shrink-0 text-accent" aria-hidden />
               {item.title}
             </Link>
             <p className="mt-1 text-sm text-muted-foreground">{item.body}</p>
           </li>
-        ))}
+          );
+        })}
       </ul>
     </InfoPage>
   );

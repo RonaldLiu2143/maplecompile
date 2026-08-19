@@ -17,6 +17,7 @@ import {
   type RosterEntry,
   type RosterState,
 } from "@/lib/dashboard/roster";
+import { LoaderCircle, Search } from "lucide-react";
 
 const inputClass =
   "min-h-11 rounded border border-border bg-background px-3 py-2 text-base outline-none focus:border-accent md:min-h-0 md:text-sm";
@@ -127,7 +128,10 @@ export function CharacterSearchBar({
     <section className={panelClass}>
       {compactPanel || hint ? (
         <div>
-          <h2 className="text-sm font-semibold text-accent">Find character</h2>
+          <h2 className="inline-flex items-center gap-1.5 text-sm font-semibold text-accent">
+            <Search className="size-3.5" aria-hidden />
+            Find character
+          </h2>
           {hint ? (
             <p className="mt-0.5 text-xs opacity-60">{hint}</p>
           ) : null}
@@ -164,8 +168,13 @@ export function CharacterSearchBar({
           <button
             type="submit"
             disabled={pending || name.trim().length < 2}
-            className="mt-auto min-h-11 flex-1 rounded-lg bg-accent px-5 text-sm font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-50 sm:flex-none"
+            className="mt-auto inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-lg bg-accent px-5 text-sm font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-50 sm:flex-none"
           >
+            {pending ? (
+              <LoaderCircle className="size-4 animate-spin" aria-hidden />
+            ) : (
+              <Search className="size-4" aria-hidden />
+            )}
             {pending ? "Searching…" : "Search"}
           </button>
         </div>

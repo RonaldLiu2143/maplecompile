@@ -7,6 +7,7 @@ import { StackedToolLinks } from "@/components/StackedToolLinks";
 import { useRoster } from "@/hooks/useRoster";
 import { entryKey } from "@/lib/dashboard/roster";
 import { HOME_TOOL_LINKS } from "@/lib/tool-links";
+import { LoaderCircle } from "lucide-react";
 
 export function HomeHero() {
   const {
@@ -48,7 +49,8 @@ export function HomeHero() {
         {hydrated ? (
           <CharacterSearchBar roster={roster} onAdded={handleRosterAdded} />
         ) : (
-          <div className="rounded-lg bg-muted px-4 py-6 text-center text-sm text-muted-foreground">
+          <div className="flex items-center justify-center gap-2 rounded-lg bg-muted px-4 py-6 text-center text-sm text-muted-foreground">
+            <LoaderCircle className="size-4 animate-spin" aria-hidden />
             Loading search…
           </div>
         )}

@@ -54,13 +54,13 @@ Operate first. Home is persuade-lite: the IGN search is the one focal action. Gu
 
 ## Visual world
 
-Four background layers: darker sidebar frame, canvas, raised surface, inset muted — cool ink by default (`#0a0a0a` → `#141414` → `#1c1c1c`). Theme → Color can tint those neutrals in OKLCH (L−0.03, C+0.02, pick a hue) so the same UI can go red, green, or blue without a 60-30-10 fill. One or two strokes, three text steps (heading, body, subtext). White (dark) / black (light) is the Ink action ramp; a hue replaces that ramp with a 400/500 (light) or 300/400 (dark) of the same hue. Semantic red / green stay those hues; warning is a gray step, not gold. Dark mode: wider steps between neutrals; surfaces get lighter as they elevate; borders stay dim. Light mode: paper-gray canvas so white cards can lift; important buttons are black unless a hue is on.
+Four background layers: darker sidebar frame, canvas, raised surface, inset muted — cool ink neutrals (`#0a0a0a` → `#141414` → `#1c1c1c`), tinted with a Blue hue by default. One or two strokes, three text steps (heading, body, subtext). Semantic red / green stay those hues; warning is a gray step, not gold. Dark mode: wider steps between neutrals; surfaces get lighter as they elevate; borders stay dim. Light mode: paper-gray canvas so white cards can lift. Lucide icons sit next to labels in nav, tools, search, footer, and chrome.
 
 Source Serif 4 for large titles and the wordmark. IBM Plex Sans for body, nav, buttons, tables, and data. Optional wallpapers sit behind a dim overlay — grayscale meshes only.
 
 ## Hierarchy
 
-One primary action per cluster. Search is the home hero; Guide is a text dismiss. Headings carry their own weight — no uppercase kickers. Active nav is a quiet fill, not an accent pill. Lists for tools, not icon-card grids.
+One primary action per cluster. Search is the home hero; Guide is a text dismiss. Headings carry their own weight — no uppercase kickers. Active nav is a quiet fill, not an accent pill. Lists for tools with a Lucide icon beside each label, not icon-card grids. Theme picker is appearance plus any color (Blue default) — no type, wallpaper, or hex fields.
 
 ## Motion
 

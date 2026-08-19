@@ -13,6 +13,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { GROUP_ICONS, iconForHref } from "@/lib/icons";
 import {
   DISCOVER_LINKS,
   MAIN_LINKS,
@@ -24,20 +25,7 @@ import {
   type NavLink,
 } from "@/lib/nav";
 import { cn } from "@/lib/utils";
-import {
-  Ellipsis,
-  LayoutDashboard,
-  ScanSearch,
-  Swords,
-  UserRound,
-} from "lucide-react";
-
-const TAB_ICONS = {
-  "/dashboard": LayoutDashboard,
-  "/calc/character": UserRound,
-  "/calc/scouter": ScanSearch,
-  "/calc/bosses": Swords,
-} as const;
+import { Ellipsis } from "lucide-react";
 
 const MORE_GROUPS: { title: string; links: NavLink[] }[] = [
   { title: "Main", links: MAIN_LINKS },
@@ -54,17 +42,19 @@ function MoreLink({
   pathname: string;
 }) {
   const active = linkActive(pathname, link);
+  const Icon = iconForHref(link.href);
   return (
     <Link
       href={link.href}
       aria-current={active ? "page" : undefined}
       className={cn(
-        "flex min-h-11 items-center rounded-lg px-3 text-sm transition-colors duration-150",
+        "flex min-h-11 items-center gap-2.5 rounded-lg px-3 text-sm transition-colors duration-150",
         active
           ? "bg-muted font-semibold text-foreground"
           : "text-foreground/85 hover:bg-muted hover:text-foreground",
       )}
     >
+      <Icon className="size-4 shrink-0" aria-hidden />
       {link.label}
     </Link>
   );
@@ -101,7 +91,7 @@ export function MobileAppNav() {
       >
         <div className="grid h-14 grid-cols-5">
           {MOBILE_TABS.map((tab) => {
-            const Icon = TAB_ICONS[tab.href as keyof typeof TAB_ICONS];
+            const Icon = iconForHref(tab.href);
             const active = linkActive(pathname, tab);
             return (
               <Link
@@ -151,22 +141,28 @@ export function MobileAppNav() {
             </SheetDescription>
           </SheetHeader>
           <div className="maple-scroll min-h-0 flex-1 px-2 py-2">
-            {MORE_GROUPS.map((group) => (
-              <section key={group.title} className="pb-2">
-                <h3 className="px-3 pb-1 pt-2 text-xs font-semibold text-muted-foreground">
-                  {group.title}
-                </h3>
-                <div className="flex flex-col">
-                  {group.links.map((link) => (
-                    <MoreLink
-                      key={link.href}
-                      link={link}
-                      pathname={pathname}
-                    />
-                  ))}
-                </div>
-              </section>
-            ))}
+            {MORE_GROUPS.map((group) => {
+              const GroupIcon = GROUP_ICONS[group.title];
+              return (
+                <section key={group.title} className="pb-2">
+                  <h3 className="flex items-center gap-1.5 px-3 pb-1 pt-2 text-xs font-semibold text-muted-foreground">
+                    {GroupIcon ? (
+                      <GroupIcon className="size-3.5" aria-hidden />
+                    ) : null}
+                    {group.title}
+                  </h3>
+                  <div className="flex flex-col">
+                    {group.links.map((link) => (
+                      <MoreLink
+                        key={link.href}
+                        link={link}
+                        pathname={pathname}
+                      />
+                    ))}
+                  </div>
+                </section>
+              );
+            })}
           </div>
         </SheetContent>
       </Sheet>
