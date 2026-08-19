@@ -116,10 +116,16 @@ function NavSection({
           <Button
             key={link.href}
             asChild
-            variant={active ? "default" : "ghost"}
-            className="h-9 w-full justify-start"
+            variant="ghost"
+            className={cn(
+              "h-9 w-full justify-start",
+              active &&
+                "bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+            )}
           >
-            <Link href={link.href}>{link.label}</Link>
+            <Link href={link.href} aria-current={active ? "page" : undefined}>
+              {link.label}
+            </Link>
           </Button>
         );
       })}
@@ -177,10 +183,16 @@ function NavGroup({
               <Button
                 key={link.href}
                 asChild
-                variant={active ? "default" : "ghost"}
-                className="h-8 w-full justify-start"
+                variant="ghost"
+                className={cn(
+                  "h-8 w-full justify-start",
+                  active &&
+                    "bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                )}
               >
-                <Link href={link.href}>{link.label}</Link>
+                <Link href={link.href} aria-current={active ? "page" : undefined}>
+                  {link.label}
+                </Link>
               </Button>
             );
           })}
@@ -271,7 +283,7 @@ export function SiteShell({
 
       <aside
         className={cn(
-          "z-40 flex shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground backdrop-blur-md transition-[width,transform] duration-200 ease-out",
+          "z-40 flex shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-[width,transform] duration-200 ease-out",
           isMobile
             ? cn(
                 "fixed inset-y-0 left-0 w-64",
@@ -368,7 +380,7 @@ export function SiteShell({
       <div className="flex min-w-0 flex-1 flex-col">
         <div className="sticky top-0 z-20">
           {isMobile ? (
-            <header className="flex items-center gap-3 border-b border-sidebar-border bg-sidebar/95 px-3 py-2.5 backdrop-blur-md">
+            <header className="flex items-center gap-3 border-b border-sidebar-border bg-sidebar px-3 py-2.5">
               <Button
                 type="button"
                 variant="ghost"
@@ -392,7 +404,7 @@ export function SiteShell({
 
         <main
           id="main-content"
-          className="mx-auto w-full max-w-7xl flex-1 px-4 py-6"
+          className="mx-auto w-full max-w-7xl flex-1 px-4 py-8"
         >
           {children}
         </main>

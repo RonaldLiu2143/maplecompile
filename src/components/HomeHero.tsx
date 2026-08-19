@@ -8,19 +8,7 @@ import { Button } from "@/components/ui/button";
 import { StackedToolLinks } from "@/components/StackedToolLinks";
 import { useRoster } from "@/hooks/useRoster";
 import { entryKey } from "@/lib/dashboard/roster";
-
-const SECONDARY_TOOLS = [
-  { href: "/guide", title: "Guide", body: "Five steps from IGN to scouter" },
-  { href: "/dashboard", title: "Dashboard", body: "Primary, dailies, weeklies" },
-  { href: "/calc/scouter", title: "Scouter", body: "Combat power and gear" },
-  { href: "/calc/equips/setup", title: "Equipment", body: "Slots and set effects" },
-  { href: "/calc/equips/flames", title: "Flames", body: "Flame score helper" },
-  { href: "/calc/cubing", title: "Cubing", body: "Potential odds" },
-  { href: "/roster", title: "Roster", body: "Mules and alts" },
-  { href: "/calc/bosses", title: "Boss Income", body: "Weekly crystal meso" },
-  { href: "/calc/liberation", title: "Liberation", body: "Genesis / Destiny" },
-  { href: "/calc/scouter/gallery", title: "Gallery", body: "Shared builds" },
-] as const;
+import { HOME_TOOL_LINKS } from "@/lib/tool-links";
 
 export function HomeHero() {
   const {
@@ -30,7 +18,7 @@ export function HomeHero() {
     slots,
     handleRetry,
     handleRosterAdded,
-  } = useRoster();
+  } = useRoster({ load: "primary" });
 
   const primarySlot = primary ? slots[entryKey(primary)] : undefined;
   const primaryEntry = primary
@@ -38,7 +26,7 @@ export function HomeHero() {
     : undefined;
 
   return (
-    <div className="flex flex-col gap-10">
+    <div className="flex flex-col gap-8">
       <section className="mx-auto flex max-w-2xl flex-col items-center text-center">
         <BrandWordmark
           as="h1"
@@ -53,14 +41,11 @@ export function HomeHero() {
           Look up a GMS character, pin a primary, then jump into scouter and
           gear tools. Free, no account required.
         </p>
-        <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
-          <Button asChild className="h-11 px-4">
-            <a href="#character-search">Look up a character</a>
-          </Button>
-          <Button asChild variant="outline" className="h-11 px-4">
+        <div className="mt-8 flex flex-wrap items-center justify-center gap-2">
+          <Button asChild variant="ghost" className="h-11 px-4">
             <Link href="/guide">Read the Guide</Link>
           </Button>
-          <Button asChild variant="outline" className="h-11 px-4">
+          <Button asChild variant="ghost" className="h-11 px-4">
             <Link href="/calc/scouter">Open Scouter</Link>
           </Button>
         </div>
@@ -84,7 +69,7 @@ export function HomeHero() {
           <DashboardPrimaryHero
             primary={primary}
             slot={primarySlot}
-            compactTools
+            showToolShortcuts={false}
             onRetry={
               primaryEntry ? () => handleRetry(primaryEntry) : undefined
             }
@@ -93,7 +78,7 @@ export function HomeHero() {
       </div>
 
       <nav aria-label="Tools" className="mx-auto w-full max-w-3xl">
-        <StackedToolLinks items={SECONDARY_TOOLS} columns={2} compact />
+        <StackedToolLinks items={HOME_TOOL_LINKS} columns={2} compact />
       </nav>
     </div>
   );

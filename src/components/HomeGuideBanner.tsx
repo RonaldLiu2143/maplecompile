@@ -3,13 +3,16 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { isGuideDismissed, setGuideDismissed } from "@/lib/pairing";
+import {
+  isHomeGuideBannerDismissed,
+  setHomeGuideBannerDismissed,
+} from "@/lib/pairing";
 
 export function HomeGuideBanner() {
-  const [show, setShow] = useState(false);
+  const [show, setShow] = useState(true);
 
   useEffect(() => {
-    setShow(!isGuideDismissed());
+    if (isHomeGuideBannerDismissed()) setShow(false);
   }, []);
 
   if (!show) return null;
@@ -32,7 +35,7 @@ export function HomeGuideBanner() {
           variant="outline"
           className="h-11 px-4"
           onClick={() => {
-            setGuideDismissed(true);
+            setHomeGuideBannerDismissed(true);
             setShow(false);
           }}
         >

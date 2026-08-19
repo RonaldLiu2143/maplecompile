@@ -85,7 +85,7 @@ function SliderRow({
         disabled ? "opacity-40" : "",
       ].join(" ")}
     >
-      <span className="flex items-center justify-between text-[11px] font-semibold text-muted">
+      <span className="flex items-center justify-between text-[11px] font-semibold text-muted-foreground">
         <span>{label}</span>
         <span className="tabular-nums">
           {value}
@@ -289,7 +289,7 @@ export function ThemePicker({
                   <span
                     className={[
                       "mt-0.5 block text-[11px] leading-snug",
-                      active ? "text-white/90 dark:text-zinc-900/85" : "text-muted",
+                      active ? "text-white/90 dark:text-zinc-900/85" : "text-muted-foreground",
                     ].join(" ")}
                   >
                     {p.description}
@@ -323,7 +323,7 @@ export function ThemePicker({
                   <span
                     className={[
                       "mt-0.5 block text-[11px] leading-snug",
-                      active ? "text-white/90 dark:text-zinc-900/85" : "text-muted",
+                      active ? "text-white/90 dark:text-zinc-900/85" : "text-muted-foreground",
                     ].join(" ")}
                   >
                     {p.description}
@@ -445,7 +445,7 @@ export function ThemePicker({
               Theme default ({preset.defaultAccent})
             </p>
           ) : (
-            <p className="mt-1 text-[10px] text-muted">Custom accent applied</p>
+            <p className="mt-1 text-[10px] text-muted-foreground">Custom accent applied</p>
           )}
         </div>
 
@@ -475,7 +475,7 @@ export function ThemePicker({
                     className="h-8 w-full rounded-md border border-border/40"
                     style={{ background: b.preview }}
                   />
-                  <span className="w-full truncate text-center text-[10px] font-semibold text-muted">
+                  <span className="w-full truncate text-center text-[10px] font-semibold text-muted-foreground">
                     {b.name}
                   </span>
                 </button>
@@ -495,7 +495,7 @@ export function ThemePicker({
               ].join(" ")}
             >
               <span
-                className="flex h-8 w-full items-center justify-center rounded-md border border-dashed border-border/50 bg-surface-muted/40 text-[10px] font-bold text-muted"
+                className="flex h-8 w-full items-center justify-center rounded-md border border-dashed border-border/50 bg-surface-muted/40 text-[10px] font-bold text-muted-foreground"
                 style={
                   backdrop === "custom" && prefs.backdropUrl
                     ? {
@@ -509,7 +509,7 @@ export function ThemePicker({
               >
                 {backdrop === "custom" && prefs.backdropUrl ? "" : "URL"}
               </span>
-              <span className="w-full truncate text-center text-[10px] font-semibold text-muted">
+              <span className="w-full truncate text-center text-[10px] font-semibold text-muted-foreground">
                 Custom
               </span>
             </button>
@@ -580,7 +580,7 @@ export function ThemePicker({
             {urlError ? (
               <p className="mt-1 text-[10px] text-danger">{urlError}</p>
             ) : backdrop === "custom" ? (
-              <p className="mt-1 text-[10px] text-muted">
+              <p className="mt-1 text-[10px] text-muted-foreground">
                 Using custom wallpaper
               </p>
             ) : (

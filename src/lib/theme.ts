@@ -24,7 +24,7 @@ export const THEME_PRESETS: readonly ThemePreset[] = [
   {
     id: "compile",
     name: "Compile",
-    description: "Default dark zinc + sky — clearer body and muted text.",
+    description: "Neutral zinc stack, sky accent only on actions.",
     scheme: "dark",
     defaultAccent: "#38bdf8",
   },
@@ -38,7 +38,7 @@ export const THEME_PRESETS: readonly ThemePreset[] = [
   {
     id: "light",
     name: "Light",
-    description: "Cool gray canvas, soft white cards, sky accent for daytime use.",
+    description: "Cool gray canvas, white cards, darker sky buttons.",
     scheme: "light",
     defaultAccent: "#0ea5e9",
   },

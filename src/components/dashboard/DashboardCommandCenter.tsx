@@ -5,16 +5,7 @@ import { CharacterProfile } from "@/components/character/CharacterProfile";
 import { characterProfileHref } from "@/lib/character/client";
 import type { RosterPrimary } from "@/lib/dashboard/roster";
 import type { RosterSlotState } from "@/hooks/useRoster";
-
-const TOOL_LINKS = [
-  { href: "/calc/scouter", label: "Scouter" },
-  { href: "/calc/equips/setup", label: "Equipment" },
-  { href: "/calc/planner", label: "Upgrade Planner" },
-  { href: "/calc/bosses", label: "Boss Income" },
-  { href: "/calc/liberation", label: "Liberation" },
-  { href: "/calc/scouter/gallery", label: "Gallery" },
-  { href: "/calc/hexa-tracker", label: "HEXA / Fragments" },
-] as const;
+import { DASHBOARD_QUICK_TOOLS } from "@/lib/tool-links";
 
 export function DashboardToolShortcuts({
   quiet = false,
@@ -31,14 +22,14 @@ export function DashboardToolShortcuts({
           : "flex flex-wrap gap-1.5"
       }
     >
-      {TOOL_LINKS.map((tool) => (
+      {DASHBOARD_QUICK_TOOLS.map((tool) => (
         <Link
           key={tool.href}
           href={tool.href}
           className={
             quiet
-              ? "rounded-md px-2 py-1 text-[11px] font-medium text-muted transition hover:bg-accent-soft/40 hover:text-accent"
-              : "rounded-md border border-border/50 bg-surface/90 px-2.5 py-1.5 text-xs font-semibold transition hover:border-accent/40 hover:bg-accent/10 hover:text-accent"
+              ? "rounded-md px-2 py-1 text-[11px] font-medium text-muted-foreground transition-colors duration-150 hover:bg-accent-soft/40 hover:text-accent"
+              : "rounded-md border border-border bg-surface px-2.5 py-1.5 text-xs font-semibold transition-colors duration-150 hover:bg-muted hover:text-foreground"
           }
         >
           {tool.label}
@@ -52,30 +43,28 @@ export function DashboardPrimaryHero({
   primary,
   slot,
   onRetry,
-  compactTools = false,
+  showToolShortcuts = true,
 }: {
   primary: RosterPrimary | null;
   slot: RosterSlotState | undefined;
   onRetry?: () => void;
-  /** Quieter tool strip (home / filled dashboard). */
-  compactTools?: boolean;
+  showToolShortcuts?: boolean;
 }) {
   if (!primary) {
     return (
-      <section className="rounded-2xl border border-dashed border-border/60 bg-surface/60 px-4 py-5 sm:px-5">
-        <p className="text-xs font-semibold uppercase tracking-wider text-accent opacity-80">
-          Primary character
-        </p>
-        <h2 className="font-display mt-1 text-xl font-bold tracking-tight">
+      <section className="rounded-xl border border-border bg-surface px-4 py-5 shadow-[var(--shadow-elevated)] sm:px-5">
+        <h2 className="font-display text-xl font-bold tracking-tight">
           No primary yet
         </h2>
-        <p className="mt-1 max-w-xl text-sm opacity-75">
+        <p className="mt-1 max-w-xl text-sm text-muted-foreground">
           Search a GMS character and add them to your roster. Star one as
           primary to pin their profile here.
         </p>
-        <div className="mt-3">
-          <DashboardToolShortcuts quiet={compactTools} />
-        </div>
+        {showToolShortcuts ? (
+          <div className="mt-3">
+            <DashboardToolShortcuts />
+          </div>
+        ) : null}
       </section>
     );
   }
@@ -85,7 +74,7 @@ export function DashboardPrimaryHero({
   const errored = slot?.status === "error";
 
   return (
-    <section className="overflow-hidden rounded-xl border border-border/50 bg-surface/95">
+    <section className="overflow-hidden rounded-xl border border-border bg-surface shadow-[var(--shadow-elevated)]">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-accent/25 bg-accent-soft/15 px-3 py-1.5 sm:px-4">
         <div className="min-w-0">
           <p className="flex flex-wrap items-center gap-2 text-[0.65rem] font-semibold uppercase tracking-wider text-accent">
@@ -137,12 +126,6 @@ export function DashboardPrimaryHero({
           </div>
         ) : null}
       </div>
-
-      {compactTools ? (
-        <div className="border-t border-border/30 px-3 py-2">
-          <DashboardToolShortcuts quiet />
-        </div>
-      ) : null}
     </section>
   );
 }

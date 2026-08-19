@@ -22,6 +22,7 @@ export const PAIRING_KEY = "maplecompile-scouter-equip-pair";
 export const PAIRING_BY_CHAR_KEY = "maplecompile-scouter-equip-pair-by-char-v1";
 const PAIRING_MIGRATED_KEY = "maplecompile-scouter-equip-pair-migrated-v1";
 const GUIDE_DISMISSED_KEY = "maplecompile-guide-dismissed";
+const HOME_GUIDE_BANNER_KEY = "maplecompile-home-guide-banner-dismissed";
 
 export type PairedScouterRef =
   | { kind: "preset"; presetId: string; name: string }
@@ -186,23 +187,40 @@ export function applyLivePairingForCharacter(characterKey: string | null) {
   notifyMapleDataChanged("pairing");
 }
 
-export function isGuideDismissed(): boolean {
-  if (typeof window === "undefined") return true;
+function readStorageFlag(key: string): boolean {
+  if (typeof window === "undefined") return false;
   try {
-    return localStorage.getItem(GUIDE_DISMISSED_KEY) === "1";
+    return localStorage.getItem(key) === "1";
   } catch {
     return false;
   }
 }
 
-export function setGuideDismissed(dismissed: boolean) {
+function writeStorageFlag(key: string, on: boolean) {
   if (typeof window === "undefined") return;
   try {
-    if (dismissed) localStorage.setItem(GUIDE_DISMISSED_KEY, "1");
-    else localStorage.removeItem(GUIDE_DISMISSED_KEY);
+    if (on) localStorage.setItem(key, "1");
+    else localStorage.removeItem(key);
   } catch {
     /* ignore */
   }
+}
+
+/** Dashboard onboarding wizard only — not the home Guide banner. */
+export function isGuideDismissed(): boolean {
+  return readStorageFlag(GUIDE_DISMISSED_KEY);
+}
+
+export function setGuideDismissed(dismissed: boolean) {
+  writeStorageFlag(GUIDE_DISMISSED_KEY, dismissed);
+}
+
+export function isHomeGuideBannerDismissed(): boolean {
+  return readStorageFlag(HOME_GUIDE_BANNER_KEY);
+}
+
+export function setHomeGuideBannerDismissed(dismissed: boolean) {
+  writeStorageFlag(HOME_GUIDE_BANNER_KEY, dismissed);
 }
 
 export function formatPairingLabel(pairing: ScouterEquipPairing): string {

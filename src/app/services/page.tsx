@@ -76,7 +76,7 @@ export default function ServicesPage() {
             <Link href={item.href} className="font-display text-base font-bold">
               {item.title}
             </Link>
-            <p className="mt-1 text-sm text-muted">{item.body}</p>
+            <p className="mt-1 text-sm text-muted-foreground">{item.body}</p>
           </li>
         ))}
       </ul>

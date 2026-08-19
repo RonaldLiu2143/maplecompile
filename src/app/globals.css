@@ -5,39 +5,45 @@
 /* Class-based dark: so theme presets (not OS preference) control contrast helpers. */
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* Default / Compile — dark zinc + sky, mapped to shadcn tokens. */
+/* Default / Compile — 4-layer product neutrals (not 60-30-10).
+   Layers: frame (sidebar) → canvas → raised surface → inset.
+   Accent is a ramp used at ~2% of the UI. Semantic colors stay red/green/amber. */
 :root,
 [data-theme="compile"] {
-  --background: #0f1218;
-  --foreground: #f4f4f5;
-  --muted-soft: #a1a1aa;
-  --surface: #1a1e27;
-  --surface-muted: #252a36;
-  --accent-soft: #0c4a6e;
+  --background: #141820;
+  --foreground: #eceef2;
+  --muted-soft: #7a8494;
+  --surface: #1e2430;
+  --surface-muted: #2a3140;
+  --accent-soft: #163044;
   --danger: #f87171;
-  --card: #1a1e27;
-  --card-foreground: #f4f4f5;
-  --popover: #1a1e27;
-  --popover-foreground: #f4f4f5;
+  --success: #34d399;
+  --warning: #fbbf24;
+  --card: #1e2430;
+  --card-foreground: #eceef2;
+  --popover: #252c3a;
+  --popover-foreground: #eceef2;
   --primary: #38bdf8;
+  --primary-hover: #7dd3fc;
+  --primary-active: #0ea5e9;
   --primary-foreground: #0c1220;
-  --secondary: #252a36;
-  --secondary-foreground: #f4f4f5;
-  --muted: #252a36;
-  --muted-foreground: #c4c4cc;
+  --secondary: #2a3140;
+  --secondary-foreground: #eceef2;
+  --muted: #2a3140;
+  --muted-foreground: #a8b0bd;
   --accent: #38bdf8;
   --accent-foreground: #0c1220;
   --destructive: #f87171;
-  --border: #4b5563;
-  --input: #4b5563;
+  --border: #2e3646;
+  --input: #3d4658;
   --ring: #38bdf8;
-  --sidebar: #1a1e27;
-  --sidebar-foreground: #f4f4f5;
+  --sidebar: #10141a;
+  --sidebar-foreground: #eceef2;
   --sidebar-primary: #38bdf8;
   --sidebar-primary-foreground: #0c1220;
-  --sidebar-accent: #0c4a6e;
+  --sidebar-accent: #163044;
   --sidebar-accent-foreground: #e0f2fe;
-  --sidebar-border: #4b5563;
+  --sidebar-border: #252b38;
   --sidebar-ring: #38bdf8;
 }
 
@@ -49,11 +55,15 @@
   --surface-muted: #27272a;
   --accent-soft: #083344;
   --danger: #fb7185;
+  --success: #4ade80;
+  --warning: #facc15;
   --card: #18181b;
   --card-foreground: #fafafa;
-  --popover: #18181b;
+  --popover: #27272a;
   --popover-foreground: #fafafa;
   --primary: #22d3ee;
+  --primary-hover: #67e8f9;
+  --primary-active: #06b6d4;
   --primary-foreground: #083344;
   --secondary: #27272a;
   --secondary-foreground: #fafafa;
@@ -62,53 +72,61 @@
   --accent: #22d3ee;
   --accent-foreground: #083344;
   --destructive: #fb7185;
-  --border: #a1a1aa;
-  --input: #a1a1aa;
+  --border: #3f3f46;
+  --input: #52525b;
   --ring: #22d3ee;
-  --sidebar: #18181b;
+  --sidebar: #050506;
   --sidebar-foreground: #fafafa;
   --sidebar-primary: #22d3ee;
   --sidebar-primary-foreground: #083344;
   --sidebar-accent: #083344;
   --sidebar-accent-foreground: #ecfeff;
-  --sidebar-border: #a1a1aa;
+  --sidebar-border: #27272a;
   --sidebar-ring: #22d3ee;
 }
 
-/* Light — cool zinc gray + sky (not warm cream / terracotta). */
+/* Light — canvas is not pure white so cards can elevate; ~2% steps between layers. */
 html[data-theme="light"],
 [data-theme="light"] {
-  --background: #f4f4f5;
-  --foreground: #18181b;
-  --muted-soft: #71717a;
+  --background: #eef0f3;
+  --foreground: #1c1e22;
+  --muted-soft: #5c6370;
   --surface: #ffffff;
-  --surface-muted: #e4e4e7;
+  --surface-muted: #e4e7ec;
   --accent-soft: #e0f2fe;
   --danger: #dc2626;
+  --success: #059669;
+  --warning: #d97706;
   --card: #ffffff;
-  --card-foreground: #18181b;
+  --card-foreground: #1c1e22;
   --popover: #ffffff;
-  --popover-foreground: #18181b;
-  --primary: #0ea5e9;
+  --popover-foreground: #1c1e22;
+  --primary: #0369a1;
+  --primary-hover: #075985;
+  --primary-active: #0c4a6e;
   --primary-foreground: #f8fafc;
-  --secondary: #e4e4e7;
-  --secondary-foreground: #18181b;
-  --muted: #e4e4e7;
-  --muted-foreground: #52525b;
-  --accent: #0ea5e9;
+  --secondary: #e8eaee;
+  --secondary-foreground: #1c1e22;
+  --muted: #e8eaee;
+  --muted-foreground: #3f4550;
+  --accent: #0284c7;
   --accent-foreground: #f8fafc;
   --destructive: #dc2626;
-  --border: #a1a1aa;
-  --input: #a1a1aa;
-  --ring: #0ea5e9;
-  --sidebar: #ffffff;
-  --sidebar-foreground: #18181b;
-  --sidebar-primary: #0ea5e9;
+  --border: #d4d8de;
+  --input: #c5cad3;
+  --ring: #0284c7;
+  --sidebar: #e6e8ed;
+  --sidebar-foreground: #1c1e22;
+  --sidebar-primary: #0369a1;
   --sidebar-primary-foreground: #f8fafc;
-  --sidebar-accent: #e0f2fe;
+  --sidebar-accent: #dbeafe;
   --sidebar-accent-foreground: #0c4a6e;
-  --sidebar-border: #d4d4d8;
-  --sidebar-ring: #0ea5e9;
+  --sidebar-border: #d4d8de;
+  --sidebar-ring: #0284c7;
+}
+
+html[data-theme="light"] {
+  --shadow-elevated: 0 8px 24px rgb(15 23 42 / 0.08);
 }
 
 :root {
@@ -116,12 +134,13 @@ html[data-theme="light"],
   --mc-dim: 0.52;
   --mc-blur: 8px;
   --mc-wallpaper-image: none;
-  --radius: 0.625rem;
+  --radius: 0.5rem;
   --chart-1: #38bdf8;
-  --chart-2: #22d3ee;
-  --chart-3: #64748b;
-  --chart-4: #0ea5e9;
-  --chart-5: #334155;
+  --chart-2: #34d399;
+  --chart-3: #fbbf24;
+  --chart-4: #f87171;
+  --chart-5: #a78bfa;
+  --shadow-elevated: none;
 }
 
 @theme inline {
@@ -135,6 +154,8 @@ html[data-theme="light"],
   --color-accent: var(--accent);
   --color-accent-soft: var(--accent-soft);
   --color-danger: var(--danger);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
   --font-sans: var(--font-ibm-plex-sans);
   --font-display: var(--font-ibm-plex-sans);
   /* Soft-lift dim-text steps (opacity-55…75); ≤50 unchanged for fades. */
@@ -346,6 +367,8 @@ html[data-backdrop]:not([data-backdrop="none"]) .bg-surface-muted\/98 {
 
 .font-display {
   font-family: var(--font-display), var(--font-sans), system-ui, sans-serif;
+  letter-spacing: -0.025em;
+  line-height: 1.12;
 }
 
 /* Soft scroll areas — match surface / accent palette */
@@ -455,6 +478,12 @@ button:focus-visible,
   }
   body {
     @apply bg-background text-foreground;
+  }
+  h1,
+  h2,
+  h3 {
+    letter-spacing: -0.025em;
+    line-height: 1.15;
   }
   button:not(:disabled), [role="button"]:not(:disabled) {
     cursor: pointer;

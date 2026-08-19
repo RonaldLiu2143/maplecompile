@@ -177,13 +177,10 @@ export function DashboardOnboardingWizard({
   return (
     <section
       id="get-started"
-      className="scroll-mt-6 overflow-hidden rounded-2xl border-2 border-accent/35 bg-accent-soft/20"
+      className="scroll-mt-6 overflow-hidden rounded-xl border border-border bg-surface shadow-[var(--shadow-elevated)]"
     >
       <div className="flex flex-wrap items-start justify-between gap-3 border-b border-accent/20 px-5 py-4">
         <div className="min-w-0">
-          <p className="text-xs font-semibold uppercase tracking-wide text-accent">
-            New here?
-          </p>
           <h2 className="font-display mt-0.5 text-xl font-bold tracking-tight">
             {allDone ? "You’re set up!" : "5 easy steps"}
           </h2>

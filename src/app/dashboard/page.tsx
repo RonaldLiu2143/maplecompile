@@ -52,6 +52,9 @@ function DashboardInner() {
   }, [manageFromUrl, router]);
 
   const primarySlot = primary ? slots[entryKey(primary)] : undefined;
+  const primaryEntry = primary
+    ? roster.find((e) => entryKey(e) === entryKey(primary))
+    : undefined;
   const hasRoster = roster.length > 0;
 
   return (
@@ -95,14 +98,7 @@ function DashboardInner() {
             primary={primary}
             slot={primarySlot}
             onRetry={
-              primary
-                ? () => {
-                    const entry = roster.find(
-                      (e) => entryKey(e) === entryKey(primary),
-                    );
-                    if (entry) handleRetry(entry);
-                  }
-                : undefined
+              primaryEntry ? () => handleRetry(primaryEntry) : undefined
             }
           />
         </div>

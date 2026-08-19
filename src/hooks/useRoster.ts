@@ -35,7 +35,7 @@ export type RosterSlotState =
   | { status: "error"; error: string }
   | { status: "ready"; character: CharacterLookupResult };
 
-export function useRoster() {
+export function useRoster({ load = "all" }: { load?: "all" | "primary" } = {}) {
   const [hydrated, setHydrated] = useState(false);
   const [roster, setRoster] = useState<RosterEntry[]>([]);
   const [primary, setPrimaryState] = useState<RosterPrimary | null>(null);
@@ -61,7 +61,14 @@ export function useRoster() {
     if (!hydrated) return;
 
     let cancelled = false;
-    const wanted = roster.map((e) => ({ entry: e, key: entryKey(e) }));
+    const wanted =
+      load === "primary"
+        ? primary
+          ? roster
+              .filter((e) => entryKey(e) === entryKey(primary))
+              .map((e) => ({ entry: e, key: entryKey(e) }))
+          : []
+        : roster.map((e) => ({ entry: e, key: entryKey(e) }));
     const wantedKeys = new Set(wanted.map((w) => w.key));
 
     setSlots((prev) => {
@@ -208,7 +215,7 @@ export function useRoster() {
     return () => {
       cancelled = true;
     };
-  }, [hydrated, roster, reloadToken]);
+  }, [hydrated, roster, reloadToken, load, primary]);
 
   function handleRemove(entry: RosterEntry) {
     const key = entryKey(entry);

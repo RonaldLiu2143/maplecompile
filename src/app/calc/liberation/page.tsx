@@ -601,7 +601,7 @@ export default function LiberationPage() {
                       "rounded-md px-4 py-2 text-xs font-bold tracking-wide transition-colors",
                       type === id
                         ? "bg-accent text-white shadow-sm dark:text-zinc-900"
-                        : "text-muted hover:bg-accent-soft/50 hover:text-accent",
+                        : "text-muted-foreground hover:bg-accent-soft/50 hover:text-accent",
                     ].join(" ")}
                   >
                     {label}
