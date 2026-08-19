@@ -4,6 +4,13 @@ import Link from "next/link";
 import { BrandWordmark } from "@/components/BrandMark";
 import { CharacterSearchBar } from "@/components/dashboard/CharacterSearchBar";
 import { DashboardPrimaryHero } from "@/components/dashboard/DashboardCommandCenter";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+} from "@/components/ui/card";
 import { useRoster } from "@/hooks/useRoster";
 import { entryKey } from "@/lib/dashboard/roster";
 
@@ -35,12 +42,12 @@ export function HomeHero() {
 
   return (
     <div className="flex flex-col gap-8">
-      <section className="relative overflow-hidden rounded-2xl border border-border/60 bg-surface/85 px-5 py-8 sm:px-10 sm:py-10">
+      <Card className="relative overflow-hidden py-0">
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_70%_0%,var(--accent-soft),transparent_55%)] opacity-80"
         />
-        <div className="relative mx-auto flex max-w-2xl flex-col items-center text-center">
+        <CardHeader className="relative items-center px-5 py-8 text-center sm:px-10 sm:py-10">
           <BrandWordmark
             as="h1"
             markSize={36}
@@ -50,75 +57,73 @@ export function HomeHero() {
             MapleStory GMS calculators, character search, and combat power
             scouter
           </p>
-          <p className="mt-3 max-w-md text-sm opacity-75 sm:text-base">
+          <CardDescription className="mt-3 max-w-md text-sm sm:text-base">
             Look up a GMS character, pin a primary, then jump into scouter and
             gear tools. Free, no account required.
-          </p>
+          </CardDescription>
           <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
-            <a
-              href="#character-search"
-              className="inline-flex min-h-11 items-center rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90 dark:text-zinc-900"
-            >
-              Look up a character
-            </a>
-            <Link
-              href="/guide"
-              className="inline-flex min-h-11 items-center rounded-lg border border-border px-4 py-2 text-sm font-semibold transition hover:bg-accent-soft"
-            >
-              Read the Guide
-            </Link>
-            <Link
-              href="/calc/scouter"
-              className="inline-flex min-h-11 items-center rounded-lg border border-border px-4 py-2 text-sm font-semibold transition hover:bg-accent-soft"
-            >
-              Open Scouter
-            </Link>
+            <Button asChild className="h-11 px-4">
+              <a href="#character-search">Look up a character</a>
+            </Button>
+            <Button asChild variant="outline" className="h-11 px-4">
+              <Link href="/guide">Read the Guide</Link>
+            </Button>
+            <Button asChild variant="outline" className="h-11 px-4">
+              <Link href="/calc/scouter">Open Scouter</Link>
+            </Button>
           </div>
-        </div>
+        </CardHeader>
 
-        <div
-          id="character-search"
-          className="relative mx-auto mt-6 max-w-2xl scroll-mt-24 text-left"
-        >
-          {hydrated ? (
-            <CharacterSearchBar roster={roster} onAdded={handleRosterAdded} />
-          ) : (
-            <div className="rounded-xl border border-border/50 bg-surface/80 px-4 py-6 text-center text-sm opacity-70">
-              Loading search…
-            </div>
-          )}
-        </div>
+        <CardContent className="relative mx-auto max-w-2xl pb-8">
+          <div id="character-search" className="scroll-mt-24 text-left">
+            {hydrated ? (
+              <CharacterSearchBar roster={roster} onAdded={handleRosterAdded} />
+            ) : (
+              <div className="rounded-xl bg-muted px-4 py-6 text-center text-sm text-muted-foreground">
+                Loading search…
+              </div>
+            )}
+          </div>
 
-        <div className="relative mx-auto mt-5 max-w-2xl">
-          {hydrated ? (
-            <DashboardPrimaryHero
-              primary={primary}
-              slot={primarySlot}
-              compactTools
-              onRetry={
-                primary
-                  ? () => {
-                      const entry = roster.find(
-                        (e) => entryKey(e) === entryKey(primary),
-                      );
-                      if (entry) handleRetry(entry);
-                    }
-                  : undefined
-              }
-            />
-          ) : null}
-        </div>
-      </section>
+          <div className="mt-5">
+            {hydrated ? (
+              <DashboardPrimaryHero
+                primary={primary}
+                slot={primarySlot}
+                compactTools
+                onRetry={
+                  primary
+                    ? () => {
+                        const entry = roster.find(
+                          (e) => entryKey(e) === entryKey(primary),
+                        );
+                        if (entry) handleRetry(entry);
+                      }
+                    : undefined
+                }
+              />
+            ) : null}
+          </div>
+        </CardContent>
+      </Card>
 
-      <nav aria-label="Tools" className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+      <nav
+        aria-label="Tools"
+        className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5"
+      >
         {SECONDARY_TOOLS.map((tool) => (
-          <Link
-            key={tool.href}
-            href={tool.href}
-            className="flex min-h-11 flex-col justify-center rounded-xl border border-border/50 bg-surface/70 px-3 py-3 transition duration-200 hover:border-accent/40 hover:bg-accent-soft/25"
-          >
-            <p className="font-display text-sm font-bold">{tool.label}</p>
-            <p className="mt-0.5 text-xs text-muted">{tool.body}</p>
+          <Link key={tool.href} href={tool.href} className="group">
+            <Card
+              size="sm"
+              className="h-full transition-colors group-hover:bg-muted/80"
+            >
+              <CardContent>
+                <p className="font-display text-sm font-bold">{tool.label}</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  {tool.body}
+                </p>
+              </CardContent>
+            </Card>
           </Link>
         ))}
       </nav>

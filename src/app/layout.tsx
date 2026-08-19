@@ -17,6 +17,7 @@ import {
   SITE_URL,
 } from "@/lib/seo";
 import "./globals.css";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 const ibmPlexSans = IBM_Plex_Sans({
   variable: "--font-ibm-plex-sans",
@@ -103,7 +104,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${ibmPlexSans.variable} ${sourceSerif.variable} ${jetbrainsMono.variable} dark h-full`}
+      className={`${ibmPlexSans.variable} ${sourceSerif.variable} ${jetbrainsMono.variable} dark h-full font-sans`}
       data-theme="compile"
       data-font="sans"
       data-backdrop="deep-night"
@@ -117,7 +118,9 @@ export default function RootLayout({
         />
         <SkipToContent />
         <GoogleAnalytics />
-        <SiteShell footer={<SiteFooter />}>{children}</SiteShell>
+        <TooltipProvider>
+          <SiteShell footer={<SiteFooter />}>{children}</SiteShell>
+        </TooltipProvider>
       </body>
     </html>
   );

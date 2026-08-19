@@ -2,6 +2,13 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { isGuideDismissed, setGuideDismissed } from "@/lib/pairing";
 
 export function HomeGuideBanner() {
@@ -14,39 +21,37 @@ export function HomeGuideBanner() {
   if (!show) return null;
 
   return (
-    <div className="relative overflow-hidden rounded-xl border-2 border-accent/40 bg-accent-soft/30 px-5 py-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
+    <Card className="border-primary/40 bg-accent-soft/40 py-0">
+      <CardHeader className="flex flex-col gap-4 px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0 max-w-xl">
-          <p className="text-xs font-semibold uppercase tracking-wide text-accent">
+          <p className="text-xs font-semibold uppercase tracking-wide text-primary">
             New here?
           </p>
-          <p className="mt-1 font-display text-lg font-semibold">
+          <CardTitle className="font-display mt-1 text-lg font-semibold">
             Start with the Guide
-          </p>
-          <p className="mt-1 text-sm opacity-75">
+          </CardTitle>
+          <CardDescription className="mt-1">
             Find your character → lock your main → fill Scouter stats and gear
             → post to the gallery when you&apos;re ready.
-          </p>
+          </CardDescription>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Link
-            href="/guide"
-            className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90 dark:text-zinc-900"
-          >
-            Start here
-          </Link>
-          <button
+          <Button asChild className="h-11 px-4">
+            <Link href="/guide">Start here</Link>
+          </Button>
+          <Button
             type="button"
-            className="rounded-lg border border-border bg-surface px-4 py-2 text-sm font-semibold transition hover:bg-surface-muted"
+            variant="outline"
+            className="h-11 px-4"
             onClick={() => {
               setGuideDismissed(true);
               setShow(false);
             }}
           >
             Dismiss
-          </button>
+          </Button>
         </div>
-      </div>
-    </div>
+      </CardHeader>
+    </Card>
   );
 }

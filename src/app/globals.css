@@ -1,34 +1,78 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
 /* Class-based dark: so theme presets (not OS preference) control contrast helpers. */
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* Default / Compile — dark zinc + sky (also before boot script). */
+/* Default / Compile — dark zinc + sky, mapped to shadcn tokens. */
 :root,
 [data-theme="compile"] {
   --background: #0f1218;
   --foreground: #f4f4f5;
-  --muted: #c4c4cc;
   --muted-soft: #a1a1aa;
   --surface: #1a1e27;
   --surface-muted: #252a36;
-  --border: #4b5563;
-  --accent: #38bdf8;
   --accent-soft: #0c4a6e;
   --danger: #f87171;
+  --card: #1a1e27;
+  --card-foreground: #f4f4f5;
+  --popover: #1a1e27;
+  --popover-foreground: #f4f4f5;
+  --primary: #38bdf8;
+  --primary-foreground: #0c1220;
+  --secondary: #252a36;
+  --secondary-foreground: #f4f4f5;
+  --muted: #252a36;
+  --muted-foreground: #c4c4cc;
+  --accent: #38bdf8;
+  --accent-foreground: #0c1220;
+  --destructive: #f87171;
+  --border: #4b5563;
+  --input: #4b5563;
+  --ring: #38bdf8;
+  --sidebar: #1a1e27;
+  --sidebar-foreground: #f4f4f5;
+  --sidebar-primary: #38bdf8;
+  --sidebar-primary-foreground: #0c1220;
+  --sidebar-accent: #0c4a6e;
+  --sidebar-accent-foreground: #e0f2fe;
+  --sidebar-border: #4b5563;
+  --sidebar-ring: #38bdf8;
 }
 
 [data-theme="contrast"] {
   --background: #09090b;
   --foreground: #fafafa;
-  --muted: #d4d4d8;
   --muted-soft: #a1a1aa;
   --surface: #18181b;
   --surface-muted: #27272a;
-  --border: #a1a1aa;
-  --accent: #22d3ee;
   --accent-soft: #083344;
   --danger: #fb7185;
+  --card: #18181b;
+  --card-foreground: #fafafa;
+  --popover: #18181b;
+  --popover-foreground: #fafafa;
+  --primary: #22d3ee;
+  --primary-foreground: #083344;
+  --secondary: #27272a;
+  --secondary-foreground: #fafafa;
+  --muted: #27272a;
+  --muted-foreground: #d4d4d8;
+  --accent: #22d3ee;
+  --accent-foreground: #083344;
+  --destructive: #fb7185;
+  --border: #a1a1aa;
+  --input: #a1a1aa;
+  --ring: #22d3ee;
+  --sidebar: #18181b;
+  --sidebar-foreground: #fafafa;
+  --sidebar-primary: #22d3ee;
+  --sidebar-primary-foreground: #083344;
+  --sidebar-accent: #083344;
+  --sidebar-accent-foreground: #ecfeff;
+  --sidebar-border: #a1a1aa;
+  --sidebar-ring: #22d3ee;
 }
 
 /* Light — cool zinc gray + sky (not warm cream / terracotta). */
@@ -36,14 +80,35 @@ html[data-theme="light"],
 [data-theme="light"] {
   --background: #f4f4f5;
   --foreground: #18181b;
-  --muted: #52525b;
   --muted-soft: #71717a;
   --surface: #ffffff;
   --surface-muted: #e4e4e7;
-  --border: #a1a1aa;
-  --accent: #0ea5e9;
   --accent-soft: #e0f2fe;
   --danger: #dc2626;
+  --card: #ffffff;
+  --card-foreground: #18181b;
+  --popover: #ffffff;
+  --popover-foreground: #18181b;
+  --primary: #0ea5e9;
+  --primary-foreground: #f8fafc;
+  --secondary: #e4e4e7;
+  --secondary-foreground: #18181b;
+  --muted: #e4e4e7;
+  --muted-foreground: #52525b;
+  --accent: #0ea5e9;
+  --accent-foreground: #f8fafc;
+  --destructive: #dc2626;
+  --border: #a1a1aa;
+  --input: #a1a1aa;
+  --ring: #0ea5e9;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #18181b;
+  --sidebar-primary: #0ea5e9;
+  --sidebar-primary-foreground: #f8fafc;
+  --sidebar-accent: #e0f2fe;
+  --sidebar-accent-foreground: #0c4a6e;
+  --sidebar-border: #d4d4d8;
+  --sidebar-ring: #0ea5e9;
 }
 
 :root {
@@ -51,6 +116,12 @@ html[data-theme="light"],
   --mc-dim: 0.52;
   --mc-blur: 8px;
   --mc-wallpaper-image: none;
+  --radius: 0.625rem;
+  --chart-1: #38bdf8;
+  --chart-2: #22d3ee;
+  --chart-3: #64748b;
+  --chart-4: #0ea5e9;
+  --chart-5: #334155;
 }
 
 @theme inline {
@@ -72,6 +143,40 @@ html[data-theme="light"],
   --opacity-65: 80%;
   --opacity-70: 84%;
   --opacity-75: 88%;
+  --font-heading: var(--font-sans);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
 }
 
 /* Font presets — next/font CSS vars on <html>; switch via data-font */
@@ -192,8 +297,6 @@ body {
   z-index: 0;
   /* No filter/transform/isolation here — keeps text on the primary raster path */
   /* Solid theme canvas by default; wallpaper meshes live on body::before when backdrop ≠ none */
-  background: var(--background);
-  color: var(--foreground);
   font-family: var(--font-sans), system-ui, sans-serif;
   /* Prefer Windows ClearType / subpixel over grayscale antialiased (thin/fuzzy on dark UI) */
   -webkit-font-smoothing: auto;
@@ -338,5 +441,25 @@ button:focus-visible,
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+}
+
+/* MapleCompile used text-muted as body copy; shadcn --muted is a surface. */
+@utility text-muted {
+  color: var(--muted-foreground);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  button:not(:disabled), [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+  html {
+    @apply font-sans;
   }
 }

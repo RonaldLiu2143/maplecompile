@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Separator } from "@/components/ui/separator";
 import { SITE_NAME } from "@/lib/seo";
 
 const TOOL_LINKS = [
@@ -40,7 +41,7 @@ function FooterColumn({
           <li key={link.href}>
             <Link
               href={link.href}
-              className="inline-flex min-h-11 items-center text-sm text-muted transition hover:text-accent"
+              className="inline-flex min-h-11 items-center text-sm text-muted-foreground transition hover:text-primary"
             >
               {link.label}
             </Link>
@@ -53,11 +54,14 @@ function FooterColumn({
 
 export function SiteFooter() {
   return (
-    <footer className="border-t border-border/40 bg-surface-muted/40 px-4 py-8 text-sm">
+    <footer className="bg-card/40 px-4 py-8 text-sm">
+      <Separator className="mx-auto mb-8 max-w-7xl" />
       <div className="mx-auto grid w-full max-w-7xl gap-8 sm:grid-cols-2 lg:grid-cols-4">
         <div>
-          <p className="font-display text-base font-bold text-accent">{SITE_NAME}</p>
-          <p className="mt-2 max-w-xs text-muted">
+          <p className="font-display text-base font-bold text-primary">
+            {SITE_NAME}
+          </p>
+          <p className="mt-2 max-w-xs text-muted-foreground">
             Free, unofficial MapleStory GMS calculators. Progress stays on your
             device unless you share a build.
           </p>
@@ -68,7 +72,10 @@ export function SiteFooter() {
       </div>
       <p className="mx-auto mt-8 max-w-7xl text-center text-xs text-muted-soft">
         Not affiliated with Nexon. MapleStory is © Nexon.{" "}
-        <Link href="/accessibility" className="underline-offset-2 hover:text-accent hover:underline">
+        <Link
+          href="/accessibility"
+          className="underline-offset-2 hover:text-primary hover:underline"
+        >
           Accessibility statement
         </Link>
         .
