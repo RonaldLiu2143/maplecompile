@@ -173,7 +173,7 @@ function BossHoverTooltipBody({
     <div className="flex flex-col gap-2">
       <div className="flex items-start justify-between gap-2">
         <div>
-          <p className="text-[11px] font-extrabold uppercase tracking-wide text-amber-300">
+          <p className="text-sm font-semibold tracking-wide">
             {row.difficulty}
           </p>
           <p className="text-sm font-semibold leading-tight">{row.nameEn}</p>
@@ -701,8 +701,8 @@ export default function ScouterDetailedResultPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<MapleScouterCalculatedData | null>(null);
-  const [level, setLevel] = useState(275);
-  const [charLabel, setCharLabel] = useState("Adele");
+  const [level, setLevel] = useState(0);
+  const [charLabel, setCharLabel] = useState("Character");
   const [arcaneForce, setArcaneForce] = useState(0);
   const [authenticForce, setAuthenticForce] = useState(0);
   const [relevantOnly, setRelevantOnly] = useState(true);
@@ -742,8 +742,13 @@ export default function ScouterDetailedResultPage() {
         const hexa = last?.hexa ?? defaultHexaLevels();
 
         if (!cancelled) {
+          const hasDraft = Boolean(last?.input);
           setLevel(input.level);
-          setCharLabel(getCharName(input.jobType, input.charType));
+          setCharLabel(
+            hasDraft
+              ? getCharName(input.jobType, input.charType)
+              : "Character",
+          );
           setArcaneForce(input.arcaneForce);
           setAuthenticForce(input.sacredForce);
         }

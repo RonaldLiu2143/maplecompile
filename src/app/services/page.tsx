@@ -48,7 +48,7 @@ const SERVICES = [
   },
   {
     href: "/roster",
-    title: "Roster Manager",
+    title: "Roster",
     body: "Multi-character roster with an Active Character that other tools can follow.",
   },
 ] as const;

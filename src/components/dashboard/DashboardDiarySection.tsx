@@ -29,7 +29,7 @@ function CompactCounter({
   return (
     <div className="flex min-w-0 flex-1 items-center gap-2 rounded-lg border border-border/45 bg-surface-muted/30 px-2.5 py-2">
       <div className="min-w-0 flex-1">
-        <p className="text-[0.65rem] font-semibold uppercase tracking-wider opacity-55">
+        <p className="text-sm font-semibold text-muted-foreground">
           {title}
         </p>
         <p className="font-mono text-lg font-bold tabular-nums leading-tight">
@@ -41,7 +41,7 @@ function CompactCounter({
           type="button"
           aria-label={`Decrease ${title}`}
           onClick={onDrop}
-          className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border text-sm font-bold transition hover:bg-surface-muted"
+          className="inline-flex size-11 items-center justify-center rounded-md border border-border text-sm font-bold transition hover:bg-muted"
         >
           −
         </button>
@@ -49,7 +49,7 @@ function CompactCounter({
           type="button"
           aria-label={`Increase ${title}`}
           onClick={onBump}
-          className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-accent/40 bg-accent/10 text-sm font-bold text-accent transition hover:bg-accent/20"
+          className="inline-flex size-11 items-center justify-center rounded-md border border-border bg-foreground text-sm font-bold text-background transition hover:opacity-90"
         >
           +
         </button>

@@ -152,14 +152,14 @@ function EquipSlot({
           readOnly ? "cursor-default" : ""
         } ${
           active
-            ? "border-accent bg-[#3a4a5c] ring-1 ring-accent/60"
+            ? "border-foreground bg-muted ring-1 ring-foreground/50"
             : filled
-              ? "border-[#6CFF6C] bg-[#454545]"
-              : "border-[#999] bg-[#5c5c5c] hover:border-[#ccc] hover:bg-[#686868]"
+              ? "border-foreground/50 bg-surface"
+              : "border-border bg-surface-muted hover:border-foreground/40 hover:bg-muted"
         }`}
       >
         {showStars && (
-          <span className="absolute left-0 top-0 z-10 flex h-3.5 min-w-3.5 items-center justify-center bg-[#2ECC40] px-0.5 text-[8px] font-bold leading-none text-white">
+          <span className="absolute left-0 top-0 z-10 flex h-3.5 min-w-3.5 items-center justify-center bg-foreground px-0.5 text-[8px] font-bold leading-none text-background">
             {stars}★
           </span>
         )}
@@ -207,7 +207,7 @@ export function EquipGrid({
 }: Props) {
   return (
     <div
-      className="inline-grid gap-1 rounded-sm border-2 border-[#111] bg-[#333] p-1.5 shadow-lg"
+      className="inline-grid gap-1 rounded-sm border-2 border-border bg-muted p-1.5"
       style={{
         gridTemplateColumns: `repeat(7, ${SLOT})`,
         gridTemplateRows: `repeat(6, ${SLOT})`,
@@ -215,32 +215,20 @@ export function EquipGrid({
     >
       {/* Character preview */}
       <div
-        className="relative overflow-hidden rounded-[2px] border border-[#777] bg-[#1a1a1a]"
+        className="relative overflow-hidden rounded-[2px] border border-border bg-background"
         style={{ gridColumn: "3 / 6", gridRow: "1 / 5" }}
       >
         <div
           aria-hidden
-          className="absolute inset-0"
-          style={{
-            background:
-              "linear-gradient(180deg, #4a5d78 0%, #2a3a52 42%, #141c28 100%)",
-          }}
-        />
-        <div
-          aria-hidden
-          className="absolute inset-x-0 bottom-0 h-1/2 opacity-40"
-          style={{
-            backgroundImage:
-              "linear-gradient(90deg, transparent, #7cf6 40%, transparent 75%)",
-          }}
+          className="absolute inset-0 bg-background"
         />
         <div className="relative flex h-full flex-col items-center justify-end pb-1.5">
           <div className="mb-1 flex flex-col items-center">
-            <div className="h-8 w-8 rounded-full bg-zinc-200/30 ring-2 ring-zinc-300/40" />
-            <div className="mt-0.5 h-14 w-10 rounded bg-zinc-200/20 ring-1 ring-zinc-300/30" />
+            <div className="h-8 w-8 rounded-full bg-foreground/20 ring-2 ring-foreground/25" />
+            <div className="mt-0.5 h-14 w-10 rounded bg-foreground/15 ring-1 ring-foreground/20" />
           </div>
-          <div className="mb-1 h-1 w-11 rounded-full bg-cyan-300/70" />
-          <p className="max-w-[95%] truncate px-1 text-center text-[10px] font-semibold text-zinc-100">
+          <div className="mb-1 h-1 w-11 rounded-full bg-foreground/50" />
+          <p className="max-w-[95%] truncate px-1 text-center text-xs font-semibold">
             {charLabel ?? "Character"}
           </p>
         </div>
@@ -248,7 +236,7 @@ export function EquipGrid({
 
       {/* Appearance / Roro (non-equip) */}
       <div
-        className="flex items-center justify-center rounded-[2px] border border-[#999] bg-[#5c5c5c] text-zinc-300"
+        className="flex items-center justify-center rounded-[2px] border border-border bg-surface-muted text-muted-foreground"
         style={{
           gridColumn: APPEARANCE_CELL.col,
           gridRow: APPEARANCE_CELL.row,

@@ -225,7 +225,7 @@ export function ActiveCharacterBar({
             className="h-10 w-10 shrink-0 object-contain"
           />
         ) : (
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-surface-muted text-[10px] font-bold uppercase opacity-55">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-muted text-xs font-bold">
             {(displayName || "?").slice(0, 2)}
           </div>
         )}
@@ -233,7 +233,7 @@ export function ActiveCharacterBar({
           <p className="text-xs text-muted-foreground">
             Active
             {locked ? (
-              <span className="ml-1.5 inline-flex items-center gap-0.5 text-amber-500">
+              <span className="ml-1.5 inline-flex items-center gap-0.5 text-foreground">
                 <LockIcon filled size={10} />
                 Locked
               </span>
@@ -262,8 +262,8 @@ export function ActiveCharacterBar({
           className={[
             "inline-flex size-11 shrink-0 items-center justify-center rounded-md border transition",
             locked
-              ? "border-amber-400/55 bg-amber-400/15 text-amber-500 hover:bg-amber-400/25"
-              : "border-border bg-background text-foreground/45 hover:bg-surface-muted hover:text-foreground/80",
+              ? "border-foreground bg-foreground text-background hover:opacity-90"
+              : "border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground",
             !primary ? "cursor-not-allowed opacity-40" : "",
           ].join(" ")}
         >
@@ -275,7 +275,7 @@ export function ActiveCharacterBar({
             type="button"
             onClick={handleSwitchBack}
             title={`Switch back to locked default (${lockedLabel})`}
-            className="min-h-11 rounded-md border border-amber-400/45 bg-amber-400/10 px-3 text-sm font-semibold text-amber-600 transition hover:bg-amber-400/20"
+            className="min-h-11 rounded-md border border-border bg-muted px-3 text-sm font-semibold transition hover:bg-surface-muted"
           >
             Switch back
           </button>
@@ -315,14 +315,14 @@ export function ActiveCharacterBar({
           href="/roster"
           className="rounded-md border border-border px-2.5 py-1.5 text-xs font-semibold transition hover:bg-surface-muted"
         >
-          Manager
+          Roster
         </Link>
       </div>
 
       {lockHint ? (
         <p
           role="status"
-          className="w-full text-sm font-semibold text-amber-600"
+          className="w-full text-sm font-semibold"
         >
           {lockHint}
         </p>

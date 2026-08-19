@@ -124,7 +124,7 @@ export const PUBLIC_ROUTES: PublicRoute[] = [
   },
   {
     path: "/roster",
-    title: "Roster Manager",
+    title: "Roster",
     description:
       "Manage your MapleStory character roster and sync tools around a primary character.",
     changeFrequency: "weekly",

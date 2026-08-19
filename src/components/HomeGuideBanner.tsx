@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
 import {
   isHomeGuideBannerDismissed,
   setHomeGuideBannerDismissed,
@@ -18,30 +17,24 @@ export function HomeGuideBanner() {
   if (!show) return null;
 
   return (
-    <div className="flex flex-wrap items-start justify-between gap-4 border-b border-border pb-6">
-      <div className="min-w-0 max-w-xl">
-        <p className="font-display text-lg font-semibold">Start with the Guide</p>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Find your character, lock your main, fill Scouter stats and gear, then
-          post to the gallery when you are ready.
-        </p>
-      </div>
-      <div className="flex flex-wrap gap-2">
-        <Button asChild className="h-11 px-4">
-          <Link href="/guide">Open Guide</Link>
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          className="h-11 px-4"
-          onClick={() => {
-            setHomeGuideBannerDismissed(true);
-            setShow(false);
-          }}
-        >
-          Dismiss
-        </Button>
-      </div>
+    <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2 border-b border-border pb-4 text-sm text-muted-foreground">
+      <p>
+        New here?{" "}
+        <Link href="/guide" className="font-medium text-foreground underline-offset-2 hover:underline">
+          Read the Guide
+        </Link>
+        .
+      </p>
+      <button
+        type="button"
+        className="min-h-11 text-sm text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+        onClick={() => {
+          setHomeGuideBannerDismissed(true);
+          setShow(false);
+        }}
+      >
+        Dismiss
+      </button>
     </div>
   );
 }

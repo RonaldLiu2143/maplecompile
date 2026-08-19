@@ -172,7 +172,7 @@ export function ThemePicker({
   const applyCustomAccent = (raw?: string) => {
     const parsed = parseAccentHex(raw ?? accentDraft);
     if (!parsed) {
-      setAccentError("Use a hex color like #c9a227.");
+      setAccentError("Use a hex color like #f5f5f5.");
       return;
     }
     setAccentError(null);
@@ -407,7 +407,7 @@ export function ThemePicker({
               autoComplete="off"
               spellCheck={false}
               aria-label="Custom accent hex"
-              placeholder="#c9a227"
+              placeholder="#f5f5f5"
               value={accentDraft}
               onChange={(e) => {
                 setAccentDraft(e.target.value);
@@ -419,7 +419,7 @@ export function ThemePicker({
                 if (parsed && parsed !== (prefs.accent ?? "").toLowerCase()) {
                   applyCustomAccent(parsed);
                 } else if (accentDraft.trim() && !parsed) {
-                  setAccentError("Use a hex color like #c9a227.");
+                  setAccentError("Use a hex color like #f5f5f5.");
                 }
               }}
               onKeyDown={(e) => {

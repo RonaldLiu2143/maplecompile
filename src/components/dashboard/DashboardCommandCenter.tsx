@@ -28,8 +28,8 @@ export function DashboardToolShortcuts({
           href={tool.href}
           className={
             quiet
-              ? "rounded-md px-2 py-1 text-[11px] font-medium text-muted-foreground transition-colors duration-150 hover:bg-accent-soft/40 hover:text-accent"
-              : "rounded-md border border-border bg-surface px-2.5 py-1.5 text-xs font-semibold transition-colors duration-150 hover:bg-muted hover:text-foreground"
+              ? "rounded-md px-2 py-1 text-sm font-medium text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground"
+              : "rounded-md border border-border bg-surface px-2.5 py-1.5 text-sm font-semibold transition-colors duration-150 hover:bg-muted hover:text-foreground"
           }
         >
           {tool.label}
@@ -76,7 +76,7 @@ export function DashboardPrimaryHero({
           <p className="text-xs text-muted-foreground">
             Primary
             {character ? null : (
-              <span className="ml-1.5 text-amber-400">★</span>
+              <span className="ml-1.5">★</span>
             )}
           </p>
           {!character ? (

@@ -6,7 +6,7 @@ const TOOL_LINKS = [
   { href: "/calc/character", label: "Character Search" },
   { href: "/calc/scouter", label: "Scouter" },
   { href: "/calc/equips/setup", label: "Equipment Setup" },
-  { href: "/calc/bosses", label: "Boss Income" },
+  { href: "/calc/bosses", label: "Bossing" },
   { href: "/calc/hexa-tracker", label: "HEXA Tracker" },
   { href: "/services", label: "All tools" },
 ] as const;
@@ -33,7 +33,7 @@ function FooterColumn({
 }) {
   return (
     <div>
-      <p className="text-[0.7rem] font-semibold uppercase tracking-wider text-muted-soft">
+      <p className="text-sm font-semibold text-muted-foreground">
         {title}
       </p>
       <ul className="mt-2 flex flex-col gap-1">

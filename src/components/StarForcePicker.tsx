@@ -31,10 +31,11 @@ function StarIcon({ filled }: { filled: boolean }) {
     >
       <path
         d="M12 2.4l2.85 6.55 7.15.66-5.4 4.72 1.6 6.97L12 17.7l-6.2 3.6 1.6-6.97-5.4-4.72 7.15-.66L12 2.4z"
-        fill={filled ? "#F5C518" : "#2a2d35"}
-        stroke={filled ? "#C9940A" : "#5a5e6a"}
+        fill={filled ? "currentColor" : "transparent"}
+        stroke="currentColor"
         strokeWidth={1.15}
         strokeLinejoin="round"
+        opacity={filled ? 1 : 0.35}
       />
     </svg>
   );
@@ -149,7 +150,7 @@ export function StarForcePicker({
                   <span
                     key={n}
                     data-sf-star={n}
-                    className="inline-flex size-[14px] shrink-0 sm:size-[15px]"
+                    className="inline-flex size-[14px] shrink-0 text-foreground sm:size-[15px]"
                     title={`${n}★`}
                   >
                     <StarIcon filled={n <= stars} />
@@ -163,13 +164,13 @@ export function StarForcePicker({
 
       <div className="flex flex-wrap items-center gap-2">
         <span
-          className="text-sm font-bold tabular-nums text-amber-300"
+          className="text-sm font-bold tabular-nums"
           aria-live="polite"
         >
           {stars}★
         </span>
-        <label className="flex items-center gap-1.5 text-sm text-zinc-200">
-          <span className="opacity-70" aria-hidden>
+        <label className="flex items-center gap-1.5 text-sm">
+          <span className="text-muted-foreground" aria-hidden>
             ★
           </span>
           <input
@@ -179,9 +180,9 @@ export function StarForcePicker({
             value={stars}
             aria-label={`${label} amount`}
             onChange={(e) => commit(Number(e.target.value) || 0)}
-            className="w-16 rounded border border-[#555] bg-[#1f1f1f] px-2 py-1 text-sm font-semibold tabular-nums text-zinc-100 outline-none focus:border-accent"
+            className="w-16 min-h-11 rounded border border-border bg-background px-2 py-1 text-sm font-semibold tabular-nums outline-none focus:border-accent"
           />
-          <span className="text-xs text-zinc-500">/ {max}</span>
+          <span className="text-sm text-muted-foreground">/ {max}</span>
         </label>
         <div
           className="flex flex-wrap gap-1"
@@ -196,10 +197,10 @@ export function StarForcePicker({
                 type="button"
                 onClick={() => commit(n)}
                 aria-pressed={active}
-                className={`rounded border px-1.5 py-0.5 text-[11px] font-semibold tabular-nums transition ${
+                className={`min-h-11 rounded border px-2 text-sm font-semibold tabular-nums transition ${
                   active
-                    ? "border-amber-400/80 bg-amber-500/25 text-amber-100"
-                    : "border-[#555] bg-[#1f1f1f] text-zinc-300 hover:border-[#777] hover:bg-[#353535]"
+                    ? "border-foreground bg-foreground text-background"
+                    : "border-border bg-background text-muted-foreground hover:border-foreground/40 hover:bg-muted"
                 }`}
               >
                 {n}★

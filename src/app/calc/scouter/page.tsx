@@ -1458,14 +1458,14 @@ export default function ScouterPage() {
 
   return (
     <div className="space-y-5">
-      <header className="flex flex-wrap items-end justify-between gap-3 border-l-[3px] border-accent pl-3">
+      <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="font-display text-3xl font-bold tracking-tight">
             Scouter
           </h1>
-          <p className="mt-1 max-w-2xl text-sm opacity-75">
-            Same layout as MapleScouter — stats on the left, buffs / links /
-            HEXA on the right.
+          <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
+            Enter character-window stats. Combat power is on Results after you
+            fill the required fields.
           </p>
         </div>
       </header>
@@ -1497,16 +1497,16 @@ export default function ScouterPage() {
 
       <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.95fr)]">
         {/* —— Left: Enter Directly —— */}
-        <section className="overflow-hidden rounded-lg border border-border/60 border-t-2 border-t-accent bg-surface/90">
+        <section className="overflow-hidden rounded-lg border border-border bg-surface">
           <div className="flex flex-col gap-2.5 border-b border-border/40 px-3 py-2.5">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-baseline gap-2">
-                  <h2 className="text-sm font-semibold text-accent">
+                  <h2 className="text-sm font-semibold">
                     Character Stats
                   </h2>
                   {loadedPresetId ? (
-                    <span className="rounded-full bg-accent-soft/40 px-2 py-0.5 text-[11px] font-semibold text-accent">
+                    <span className="rounded-full bg-muted px-2 py-0.5 text-sm font-semibold">
                       Editing “
                       {presetName.trim() ||
                         presets.find((p) => p.id === loadedPresetId)?.name ||
@@ -1514,44 +1514,48 @@ export default function ScouterPage() {
                       ”
                     </span>
                   ) : (
-                    <span className="text-[11px] font-medium opacity-50">
+                    <span className="text-sm text-muted-foreground">
                       Unsaved draft
                     </span>
                   )}
                 </div>
                 {statsPairLabel ? (
-                  <p className="mt-0.5 text-xs font-medium text-accent">
+                  <p className="mt-0.5 text-sm font-medium">
                     {statsPairLabel}
                   </p>
                 ) : (
-                  <p className="mt-0.5 text-xs opacity-60">
+                  <p className="mt-0.5 text-sm text-muted-foreground">
                     Enter values from your character window. Save presets
                     (stats + gear) locally, or share a link.
                   </p>
                 )}
               </div>
 
-              <div className="ml-auto min-w-0 max-w-full space-y-1.5 text-right">
+              <details className="w-full border-t border-border/40 pt-2">
+                <summary className="cursor-pointer text-sm font-semibold text-muted-foreground hover:text-foreground">
+                  Save, recall, and share
+                </summary>
+                <div className="mt-2 space-y-1.5">
                 <div className="flex flex-wrap items-center justify-end gap-1.5">
                   <input
                     type="text"
                     placeholder="Preset name"
                     value={presetName}
                     onChange={(e) => setPresetName(e.target.value)}
-                    className="min-h-11 min-w-0 flex-1 rounded border border-border/50 bg-background px-2.5 text-sm outline-none focus:border-accent sm:max-w-[14rem] sm:min-h-0 sm:text-xs"
+                    className="min-h-11 min-w-0 flex-1 rounded border border-border/50 bg-background px-2.5 text-sm outline-none focus:border-accent sm:max-w-[14rem]"
                     aria-label="Preset name"
                   />
                   <button
                     type="button"
                     onClick={() => setPresetModal("recall")}
-                    className="min-h-11 rounded border border-border/50 bg-background px-2.5 text-sm font-semibold transition hover:bg-surface-muted sm:min-h-0 sm:py-1.5 sm:text-xs"
+                    className="min-h-11 rounded border border-border/50 bg-background px-2.5 text-sm font-semibold transition hover:bg-surface-muted"
                   >
                     Recall Saved Preset
                   </button>
                   <button
                     type="button"
                     onClick={() => setPresetModal("save")}
-                    className="min-h-11 rounded bg-accent px-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90 sm:min-h-0 sm:py-1.5 sm:text-xs"
+                    className="min-h-11 rounded bg-accent px-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
                   >
                     Save Preset
                   </button>
@@ -1561,7 +1565,7 @@ export default function ScouterPage() {
                     type="button"
                     onClick={() => void shareLoadout({ asPublic: false })}
                     disabled={sharing}
-                    className="min-h-11 rounded border border-border/50 bg-background px-2.5 text-sm font-semibold transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40 sm:min-h-0 sm:py-1.5 sm:text-xs"
+                    className="min-h-11 rounded border border-border/50 bg-background px-2.5 text-sm font-semibold transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
                     title="Create a private link anyone can open if they have it"
                   >
                     {sharing && !galleryModalOpen
@@ -1573,7 +1577,7 @@ export default function ScouterPage() {
                       type="button"
                       onClick={openGalleryShareModal}
                       disabled={sharing}
-                      className="min-h-11 rounded bg-accent px-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 sm:min-h-0 sm:py-1.5 sm:text-xs"
+                      className="min-h-11 rounded bg-accent px-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
                       title="Update the public gallery post linked to this preset"
                     >
                       {sharing && galleryModalOpen
@@ -1585,7 +1589,7 @@ export default function ScouterPage() {
                       type="button"
                       onClick={openGalleryShareModal}
                       disabled={sharing}
-                      className="min-h-11 rounded border border-border/50 bg-background px-2.5 text-sm font-semibold transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40 sm:min-h-0 sm:py-1.5 sm:text-xs"
+                      className="min-h-11 rounded border border-border/50 bg-background px-2.5 text-sm font-semibold transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
                       title={
                         getMissingRequiredScouterFields(input).length
                           ? "Fill required character stats before posting"
@@ -1599,17 +1603,17 @@ export default function ScouterPage() {
                   )}
                   <Link
                     href="/calc/scouter/gallery"
-                    className="min-h-11 rounded border border-border/50 bg-background px-2.5 text-sm font-semibold transition hover:bg-surface-muted sm:min-h-0 sm:py-1.5 sm:text-xs"
+                    className="min-h-11 rounded border border-border/50 bg-background px-2.5 text-sm font-semibold transition hover:bg-surface-muted"
                   >
                     Browse gallery
                   </Link>
                 </div>
                 {/* Fixed-height status so flash / gallery text does not reflow Character Stats */}
                 <p
-                  className={`min-h-[1.125rem] text-right text-[11px] leading-[1.125rem] ${
+                  className={`min-h-[1.125rem] text-right text-sm leading-[1.125rem] ${
                     presetMsg
-                      ? "font-medium text-accent"
-                      : "opacity-55"
+                      ? "font-medium text-foreground"
+                      : "text-muted-foreground"
                   }`}
                   role={presetMsg ? "status" : undefined}
                 >
@@ -1625,7 +1629,7 @@ export default function ScouterPage() {
                             ·{" "}
                             <Link
                               href={`/calc/character/share/${existingGalleryPost.id}`}
-                              className="font-semibold text-accent underline-offset-2 hover:underline"
+                              className="font-semibold underline-offset-2 hover:underline"
                             >
                               Open
                             </Link>
@@ -1645,7 +1649,7 @@ export default function ScouterPage() {
                     type="text"
                     readOnly
                     value={shareUrl ?? ""}
-                    className="min-w-0 flex-1 rounded border border-border/50 bg-background px-2.5 py-1.5 text-xs outline-none focus:border-accent sm:max-w-xs"
+                    className="min-w-0 flex-1 rounded border border-border/50 bg-background px-2.5 py-1.5 text-sm outline-none focus:border-accent sm:max-w-xs"
                     aria-label="Share link"
                     onFocus={(e) => e.currentTarget.select()}
                     tabIndex={shareUrl ? 0 : -1}
@@ -1654,12 +1658,13 @@ export default function ScouterPage() {
                     type="button"
                     onClick={() => void copyShareUrl()}
                     disabled={!shareUrl}
-                    className="min-h-11 rounded border border-border/50 bg-background px-2.5 text-sm font-semibold transition hover:bg-surface-muted disabled:opacity-40 sm:min-h-0 sm:py-1.5 sm:text-xs"
+                    className="min-h-11 rounded border border-border/50 bg-background px-2.5 text-sm font-semibold transition hover:bg-surface-muted disabled:opacity-40"
                   >
                     Copy link
                   </button>
                 </div>
-              </div>
+                </div>
+              </details>
             </div>
 
             <MiniScouterCharacterSearch
@@ -1688,7 +1693,7 @@ export default function ScouterPage() {
             </select>
           </div>
 
-          <p className="border-b border-border/40 bg-accent-soft/25 px-3 py-2 text-xs leading-relaxed text-accent">
+          <p className="border-b border-border/40 bg-muted/40 px-3 py-2 text-sm leading-relaxed text-muted-foreground">
             General Requirements: No Buffs, Link Equipped (No Stacks), Oz Ring
             Equipped / Summons On / (Decent) Combat Orders, Sharp Eyes On /
             Soul Gauge 0/1000 / Familiars On.
@@ -2324,7 +2329,7 @@ export default function ScouterPage() {
       </div>
 
       {draftReady ? (
-        <section className="overflow-hidden rounded-lg border border-border/60 border-t-2 border-t-accent bg-surface/90 p-3 sm:p-4">
+        <section className="overflow-hidden rounded-lg border border-border bg-surface p-3 sm:p-4">
           <EquipmentSetupPanel
             variant="embedded"
             showClassSelect={false}

@@ -1,20 +1,20 @@
 ---
 name: MapleCompile
-description: Unofficial MapleStory GMS calculators — maple-night UI, warm ink layers, gold action ramp, serif titles.
+description: Unofficial MapleStory GMS calculators — ink UI, black and white action ramp, serif titles.
 colors:
-  background: "#120e0c"
-  foreground: "#f4ebe1"
-  primary: "#c9a227"
-  primary-hover: "#e0bc4a"
-  primary-foreground: "#1a1408"
-  surface: "#1c1612"
-  muted: "#261e18"
-  muted-foreground: "#c4b8aa"
-  border: "#3a3028"
-  sidebar: "#0c0a08"
+  background: "#0a0a0a"
+  foreground: "#f5f5f5"
+  primary: "#f5f5f5"
+  primary-hover: "#ffffff"
+  primary-foreground: "#0a0a0a"
+  surface: "#141414"
+  muted: "#1c1c1c"
+  muted-foreground: "#b3b3b3"
+  border: "#2e2e2e"
+  sidebar: "#050505"
   danger: "#f87171"
   success: "#34d399"
-  warning: "#fbbf24"
+  warning: "#d4d4d4"
 typography:
   display:
     fontFamily: "Source Serif 4, ui-serif, Georgia, serif"
@@ -54,13 +54,13 @@ Operate first. Home is persuade-lite: the IGN search is the one focal action. Gu
 
 ## Visual world
 
-Four background layers: darker sidebar frame, canvas, raised surface, inset muted — warm ink, not zinc (`#120e0c` → `#1c1612` → `#261e18`). One or two strokes, three text steps (heading, body, subtext). Maple gold is a functional ramp (rest / hover / pressed), not a 30% fill. Semantic red / green / amber stay those hues. Dark mode: wider steps between neutrals; surfaces get lighter as they elevate; borders stay dim. Light mode: warm paper canvas so white-warm cards can lift; important buttons are the darker gold.
+Four background layers: darker sidebar frame, canvas, raised surface, inset muted — cool ink, not brown (`#0a0a0a` → `#141414` → `#1c1c1c`). One or two strokes, three text steps (heading, body, subtext). White (dark) / black (light) is a functional ramp (rest / hover / pressed), not a 30% fill. Semantic red / green stay those hues; warning is a gray step, not gold. Dark mode: wider steps between neutrals; surfaces get lighter as they elevate; borders stay dim. Light mode: paper-gray canvas so white cards can lift; important buttons are black.
 
-Source Serif 4 for large titles and the wordmark. IBM Plex Sans for body, nav, buttons, tables, and data. Optional wallpapers sit behind a dim overlay — amber/ember meshes only.
+Source Serif 4 for large titles and the wordmark. IBM Plex Sans for body, nav, buttons, tables, and data. Optional wallpapers sit behind a dim overlay — grayscale meshes only.
 
 ## Hierarchy
 
-One primary action per cluster. Search is the home hero; Guide and Scouter are ghost buttons. Headings carry their own weight — no uppercase kickers. Active nav is a quiet fill, not a gold pill. Lists for tools, not icon-card grids.
+One primary action per cluster. Search is the home hero; Guide is a text dismiss. Headings carry their own weight — no uppercase kickers. Active nav is a quiet fill, not an accent pill. Lists for tools, not icon-card grids.
 
 ## Motion
 
@@ -68,4 +68,4 @@ One primary action per cluster. Search is the home hero; Guide and Scouter are g
 
 ## Components
 
-Use shadcn `Button`, `AlertDialog`, `Collapsible`, `Tooltip`. Primary buttons use the gold ramp. Sidebar links are ghost buttons with an accent-soft selected state.
+Use shadcn `Button`, `AlertDialog`, `Collapsible`, `Tooltip`. Primary buttons use the ink ramp (white on dark, black on light). Sidebar links are ghost buttons with a muted selected state.

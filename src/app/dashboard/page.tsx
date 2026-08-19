@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CharacterSearchBar } from "@/components/dashboard/CharacterSearchBar";
 import {
@@ -63,10 +64,10 @@ function DashboardInner() {
           <h1 className="font-display text-2xl font-bold tracking-tight md:text-4xl">
             Dashboard
           </h1>
-          {!hasRoster ? (
-            <p className="mt-1.5 max-w-xl text-sm opacity-75">
-              Search a character, set a primary, then track dailies and weekly
-              bosses.
+          {hydrated && !hasRoster ? (
+            <p className="mt-1.5 max-w-xl text-sm text-muted-foreground">
+              Search a GMS character to pin a primary. Dailies and weeklies
+              show up after that.
             </p>
           ) : null}
         </div>
@@ -77,7 +78,7 @@ function DashboardInner() {
         ) : null}
       </header>
 
-      {hydrated ? (
+      {hydrated && hasRoster ? (
         <DashboardOnboardingWizard
           roster={roster}
           primary={primary}
@@ -85,31 +86,51 @@ function DashboardInner() {
         />
       ) : null}
 
-      {/* Character-first: search + primary as first viewport center */}
       {hydrated ? (
         <div id="character-search" className="space-y-3">
           <CharacterSearchBar roster={roster} onAdded={handleRosterAdded} />
-          <DashboardPrimaryHero
-            primary={primary}
-            slot={primarySlot}
-            onRetry={
-              primaryEntry ? () => handleRetry(primaryEntry) : undefined
-            }
-          />
+          {primary ? (
+            <DashboardPrimaryHero
+              primary={primary}
+              slot={primarySlot}
+              onRetry={
+                primaryEntry ? () => handleRetry(primaryEntry) : undefined
+              }
+            />
+          ) : (
+            <nav
+              aria-label="After search"
+              className="flex flex-wrap gap-x-4 gap-y-1 text-sm"
+            >
+              <Link
+                href="/calc/scouter"
+                className="inline-flex min-h-11 items-center text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+              >
+                Scouter
+              </Link>
+              <Link
+                href="/calc/equips/setup"
+                className="inline-flex min-h-11 items-center text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+              >
+                Equipment
+              </Link>
+              <Link
+                href="/calc/bosses"
+                className="inline-flex min-h-11 items-center text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+              >
+                Bossing
+              </Link>
+            </nav>
+          )}
         </div>
       ) : (
-        <div className="rounded-xl border border-border/50 bg-surface/80 px-4 py-8 text-center text-sm opacity-70">
+        <div className="rounded-xl border border-border/50 bg-surface/80 px-4 py-8 text-center text-sm text-muted-foreground">
           Loading…
         </div>
       )}
 
-      {hydrated ? (
-        <div
-          className={[
-            "grid gap-3 lg:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)] lg:items-stretch",
-            hasRoster ? "gap-3" : "gap-4",
-          ].join(" ")}
-        >
+      {hydrated && hasRoster ? (
+        <div className="grid gap-3 lg:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)] lg:items-stretch">
           <div className="flex min-h-0 flex-col gap-3">
             <DashboardRosterWeeklySection
               roster={roster}
@@ -136,7 +157,7 @@ function DashboardInner() {
         </div>
       ) : null}
 
-      {hydrated ? <DashboardPatchNotesCard /> : null}
+      {hydrated && hasRoster ? <DashboardPatchNotesCard /> : null}
     </div>
   );
 }

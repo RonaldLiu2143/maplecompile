@@ -260,9 +260,8 @@ export function CharacterSearchPage() {
           Character Search
         </h1>
         <p className="max-w-xl text-sm text-foreground/65">
-          Look up any GMS character for a full MapleRanks-style profile. Saved
-          bookmarks stay on this device and are separate from your Manager
-          roster.
+          Look up any GMS character. Star a bookmark here; pin a primary on
+          Dashboard or Roster for tools.
         </p>
       </header>
 
@@ -273,7 +272,7 @@ export function CharacterSearchPage() {
               <h2 className="font-display text-sm font-bold text-foreground">
                 Saved Characters
               </h2>
-              <p className="mt-1 text-[0.7rem] text-foreground/50">
+              <p className="mt-1 text-sm text-muted-foreground">
                 Bookmarks only — not your roster.
               </p>
             </div>
@@ -405,14 +404,14 @@ export function CharacterSearchPage() {
               />
             </div>
           ) : !pending ? (
-            <p className="text-xs text-foreground/45">
-              Tip: from a profile, tap the star to bookmark it here. Roster /
-              Active Character for tools stays under{" "}
+            <p className="text-sm text-muted-foreground">
+              Tip: from a profile, tap the star to bookmark it here. Roster
+              and Active Character for tools stay under{" "}
               <Link
                 href="/roster"
-                className="font-semibold text-accent underline-offset-2 hover:underline"
+                className="font-semibold text-foreground underline-offset-2 hover:underline"
               >
-                Manager
+                Roster
               </Link>
               .
             </p>

@@ -24,23 +24,23 @@ export const THEME_PRESETS: readonly ThemePreset[] = [
   {
     id: "compile",
     name: "Compile",
-    description: "Warm ink layers, maple gold only on actions.",
+    description: "Black canvas, white actions.",
     scheme: "dark",
-    defaultAccent: "#c9a227",
+    defaultAccent: "#f5f5f5",
   },
   {
     id: "contrast",
     name: "Contrast",
-    description: "Near-black ink, brighter gold, maximum clarity.",
+    description: "True black, true white, maximum clarity.",
     scheme: "dark",
-    defaultAccent: "#e8c547",
+    defaultAccent: "#ffffff",
   },
   {
     id: "light",
     name: "Light",
-    description: "Warm paper canvas, white-warm cards, darker gold buttons.",
+    description: "Paper canvas, black actions.",
     scheme: "light",
-    defaultAccent: "#7a5610",
+    defaultAccent: "#111111",
   },
 ] as const;
 
@@ -68,43 +68,43 @@ export const BACKDROP_PRESETS: readonly BackdropPreset[] = [
   {
     id: "none",
     name: "None",
-    preview: "#120e0c",
+    preview: "#0a0a0a",
   },
   {
     id: "deep-night",
     name: "Deep Night",
     preview:
-      "radial-gradient(circle at 20% 20%, #5c3a12 0%, transparent 45%), linear-gradient(160deg, #120e0c, #1a1410 55%, #0c0a08)",
+      "radial-gradient(circle at 20% 20%, #525252 0%, transparent 45%), linear-gradient(160deg, #0a0a0a, #141414 55%, #050505)",
   },
   {
     id: "teal-aurora",
-    name: "Teal Aurora",
+    name: "Fog",
     preview:
-      "radial-gradient(ellipse at 30% 0%, #c9a22766, transparent 55%), radial-gradient(ellipse at 90% 20%, #b4530944, transparent 50%), #1a1410",
+      "radial-gradient(ellipse at 30% 0%, #ffffff33, transparent 55%), radial-gradient(ellipse at 90% 20%, #a3a3a344, transparent 50%), #141414",
   },
   {
     id: "amber-ember",
-    name: "Amber Ember",
+    name: "Highlight",
     preview:
-      "radial-gradient(ellipse at 80% 10%, #f59e0b66, transparent 45%), radial-gradient(ellipse at 10% 80%, #b4530966, transparent 50%), #1a1208",
+      "radial-gradient(ellipse at 80% 10%, #ffffff44, transparent 45%), radial-gradient(ellipse at 10% 80%, #73737366, transparent 50%), #111111",
   },
   {
     id: "forest-mist",
-    name: "Forest Mist",
+    name: "Mist",
     preview:
-      "radial-gradient(ellipse at 50% 0%, #3d2a1477, transparent 55%), linear-gradient(180deg, #120e0c, #1a1410 60%, #0c0a08)",
+      "radial-gradient(ellipse at 50% 0%, #52525277, transparent 55%), linear-gradient(180deg, #0a0a0a, #141414 60%, #050505)",
   },
   {
     id: "horizon",
     name: "Horizon",
     preview:
-      "linear-gradient(185deg, #c9a22766 0%, transparent 40%), linear-gradient(0deg, #b4530944 0%, transparent 35%), #1a1410",
+      "linear-gradient(185deg, #ffffff33 0%, transparent 40%), linear-gradient(0deg, #73737344 0%, transparent 35%), #141414",
   },
   {
     id: "slate-mesh",
     name: "Slate Mesh",
     preview:
-      "radial-gradient(at 0% 0%, #5c3a1277 0, transparent 50%), radial-gradient(at 100% 0%, #3a302888 0, transparent 45%), radial-gradient(at 50% 100%, #7a4a1244 0, transparent 50%), #1a1410",
+      "radial-gradient(at 0% 0%, #52525277 0, transparent 50%), radial-gradient(at 100% 0%, #3a3a3a88 0, transparent 45%), radial-gradient(at 50% 100%, #26262644 0, transparent 50%), #141414",
   },
 ] as const;
 
@@ -161,8 +161,8 @@ export type ThemePrefs = {
 
 export const DEFAULT_THEME_ID: ThemeId = "compile";
 export const DEFAULT_FONT_ID: FontId = "sans";
-/** Subtle atmosphere for new / unset prefs — ThemePicker can still pick None. */
-export const DEFAULT_BACKDROP_ID: BackdropId = "deep-night";
+/** Flat canvas for new / unset prefs — ThemePicker can still pick a mesh. */
+export const DEFAULT_BACKDROP_ID: BackdropId = "none";
 export const DEFAULT_DIM = 0;
 export const DEFAULT_BLUR = 0;
 /** Sensible readability when picking a wallpaper. */
@@ -183,23 +183,31 @@ function defaultBlurForBackdrop(backdrop: BackdropId): number {
 export const DEFAULT_THEME_PREFS: ThemePrefs = {
   id: DEFAULT_THEME_ID,
   backdrop: DEFAULT_BACKDROP_ID,
-  dim: WALLPAPER_DEFAULT_DIM,
-  blur: WALLPAPER_DEFAULT_BLUR,
+  dim: DEFAULT_DIM,
+  blur: DEFAULT_BLUR,
 };
 
 /**
- * Named accent picks — maple gold is Compile default.
- * Hex list kept for ThemePicker swatches + parse checks.
+ * Named accent picks — ink white / black plus two gray steps.
+ * Warm maple/gold/amber leftovers are stripped on read (see LEGACY_WARM_ACCENTS).
  */
 export const THEME_ACCENT_PRESETS = [
-  { hex: "#c9a227", name: "Maple Gold" },
-  { hex: "#ea580c", name: "Maple" },
-  { hex: "#f59e0b", name: "Amber" },
-  { hex: "#fb7185", name: "Rose" },
-  { hex: "#34d399", name: "Emerald" },
-  { hex: "#a78bfa", name: "Grape" },
-  { hex: "#38bdf8", name: "Sky" },
+  { hex: "#f5f5f5", name: "Ink" },
+  { hex: "#ffffff", name: "White" },
+  { hex: "#111111", name: "Black" },
+  { hex: "#a3a3a3", name: "Silver" },
+  { hex: "#737373", name: "Gray" },
 ] as const;
+
+/** Previous maple-night defaults — drop so stored prefs pick up ink. */
+const LEGACY_WARM_ACCENTS = new Set([
+  "#c9a227",
+  "#e8c547",
+  "#7a5610",
+  "#8a6410",
+  "#ea580c",
+  "#f59e0b",
+]);
 
 export const THEME_ACCENT_SWATCHES: readonly string[] =
   THEME_ACCENT_PRESETS.map((p) => p.hex);
@@ -369,9 +377,9 @@ function isDefaultPrefs(prefs: ThemePrefs): boolean {
     backdrop === DEFAULT_BACKDROP_ID &&
     (prefs.backdropUrl ?? null) == null &&
     clampDim(prefs.dim ?? defaultDimForBackdrop(backdrop)) ===
-      WALLPAPER_DEFAULT_DIM &&
+      defaultDimForBackdrop(DEFAULT_BACKDROP_ID) &&
     clampBlur(prefs.blur ?? defaultBlurForBackdrop(backdrop)) ===
-      WALLPAPER_DEFAULT_BLUR
+      defaultBlurForBackdrop(DEFAULT_BACKDROP_ID)
   );
 }
 
@@ -411,7 +419,9 @@ export function normalizeThemePrefs(raw: unknown): ThemePrefs {
   const id = isThemeId(obj.id) ? obj.id : DEFAULT_THEME_ID;
   // Missing / legacy "default" / unknown font → Plex Sans.
   const font = isFontId(obj.font) ? obj.font : DEFAULT_FONT_ID;
-  const accent = parseAccentHex(obj.accent);
+  const accentRaw = parseAccentHex(obj.accent);
+  const accent =
+    accentRaw && LEGACY_WARM_ACCENTS.has(accentRaw) ? null : accentRaw;
   let backdrop: BackdropId = isBackdropId(obj.backdrop)
     ? obj.backdrop
     : DEFAULT_BACKDROP_ID;
@@ -611,9 +621,9 @@ export function themeBootScript(): string {
   // Legacy maple/mist/night-grape ids fall through to compile (not in `ids`).
   // Missing / legacy font → sans (Plex). Backdrop / dim / blur before React.
   // URL sanitize mirrors sanitizeBackdropUrl (quotes / missing scheme).
-  // Unset backdrop → Deep Night (+ wallpaper dim/blur); explicit "none" stays flat.
+  // Unset backdrop → None (flat canvas); explicit meshes keep wallpaper dim/blur.
   const defBack = DEFAULT_BACKDROP_ID;
   const wDim = WALLPAPER_DEFAULT_DIM;
   const wBlur = WALLPAPER_DEFAULT_BLUR;
-  return `(function(){try{var k=${JSON.stringify(THEME_STORAGE_KEY)};var ids=${JSON.stringify([...THEME_IDS])};var fonts=${JSON.stringify([...FONT_IDS])};var backs=${JSON.stringify([...BACKDROP_IDS])};var schemes={compile:"dark",contrast:"dark",light:"light"};var raw=localStorage.getItem(k);var prefs=raw?JSON.parse(raw):{};var id=ids.indexOf(prefs.id)>=0?prefs.id:"compile";var font=fonts.indexOf(prefs.font)>=0?prefs.font:"sans";var accent=typeof prefs.accent==="string"&&/^#[0-9a-fA-F]{6}$/.test(prefs.accent)?prefs.accent:null;var backdrop=backs.indexOf(prefs.backdrop)>=0?prefs.backdrop:${JSON.stringify(defBack)};var url=null;if(typeof prefs.backdropUrl==="string"){var t=prefs.backdropUrl.trim();if((t.charAt(0)==='"'&&t.charAt(t.length-1)==='"')||(t.charAt(0)==="'"&&t.charAt(t.length-1)==="'")||(t.charAt(0)==="<"&&t.charAt(t.length-1)===">"))t=t.slice(1,-1).trim();if(t.indexOf("//")===0)t="https:"+t;else if(!/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(t))t="https://"+t;if(t&&t.length<=2048){try{var u=new URL(t);if((u.protocol==="http:"||u.protocol==="https:")&&u.hostname)url=u.href}catch(e){}}}if(backdrop==="custom"&&!url)backdrop=${JSON.stringify(defBack)};var dimDef=backdrop==="none"?0:${wDim};var blurDef=backdrop==="none"?0:${wBlur};var dim=typeof prefs.dim==="number"&&isFinite(prefs.dim)?Math.max(0,Math.min(${DIM_MAX},Math.round(prefs.dim))):dimDef;var blur=typeof prefs.blur==="number"&&isFinite(prefs.blur)?Math.max(0,Math.min(${BLUR_MAX},Math.round(prefs.blur))):blurDef;var scheme=schemes[id]||"dark";var r=document.documentElement;r.setAttribute("data-theme",id);r.setAttribute("data-font",font);r.setAttribute("data-backdrop",backdrop);r.style.colorScheme=scheme;if(scheme==="dark")r.classList.add("dark");else r.classList.remove("dark");if(accent){r.style.setProperty("--accent",accent);var hr=parseInt(accent.slice(1,3),16),hg=parseInt(accent.slice(3,5),16),hb=parseInt(accent.slice(5,7),16);var soft=scheme==="dark"?"rgb("+Math.round(hr*0.22)+" "+Math.round(hg*0.22)+" "+Math.round(hb*0.28)+")":"rgb("+Math.min(255,Math.round(hr+(255-hr)*0.72))+" "+Math.min(255,Math.round(hg+(255-hg)*0.72))+" "+Math.min(255,Math.round(hb+(255-hb)*0.65))+")";r.style.setProperty("--accent-soft",soft)}if(backdrop==="none"){r.style.setProperty("--mc-dim","0");r.style.setProperty("--mc-blur","0px");r.style.removeProperty("--mc-wallpaper-image")}else{r.style.setProperty("--mc-dim",String(dim/100));r.style.setProperty("--mc-blur",blur+"px");if(backdrop==="custom"&&url)r.style.setProperty("--mc-wallpaper-image","url("+JSON.stringify(url)+")");else r.style.removeProperty("--mc-wallpaper-image")}}catch(e){var d=document.documentElement;d.setAttribute("data-theme","compile");d.setAttribute("data-font","sans");d.setAttribute("data-backdrop",${JSON.stringify(defBack)});d.classList.add("dark");d.style.colorScheme="dark";d.style.setProperty("--mc-dim",String(${wDim}/100));d.style.setProperty("--mc-blur","${wBlur}px")}})();`;
+  return `(function(){try{var k=${JSON.stringify(THEME_STORAGE_KEY)};var ids=${JSON.stringify([...THEME_IDS])};var fonts=${JSON.stringify([...FONT_IDS])};var backs=${JSON.stringify([...BACKDROP_IDS])};var schemes={compile:"dark",contrast:"dark",light:"light"};var raw=localStorage.getItem(k);var prefs=raw?JSON.parse(raw):{};var id=ids.indexOf(prefs.id)>=0?prefs.id:"compile";var font=fonts.indexOf(prefs.font)>=0?prefs.font:"sans";var accent=typeof prefs.accent==="string"&&/^#[0-9a-fA-F]{6}$/.test(prefs.accent)?prefs.accent.toLowerCase():null;var warm=["#c9a227","#e8c547","#7a5610","#8a6410","#ea580c","#f59e0b"];if(accent&&warm.indexOf(accent)>=0)accent=null;var backdrop=backs.indexOf(prefs.backdrop)>=0?prefs.backdrop:${JSON.stringify(defBack)};var url=null;if(typeof prefs.backdropUrl==="string"){var t=prefs.backdropUrl.trim();if((t.charAt(0)==='"'&&t.charAt(t.length-1)==='"')||(t.charAt(0)==="'"&&t.charAt(t.length-1)==="'")||(t.charAt(0)==="<"&&t.charAt(t.length-1)===">"))t=t.slice(1,-1).trim();if(t.indexOf("//")===0)t="https:"+t;else if(!/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(t))t="https://"+t;if(t&&t.length<=2048){try{var u=new URL(t);if((u.protocol==="http:"||u.protocol==="https:")&&u.hostname)url=u.href}catch(e){}}}if(backdrop==="custom"&&!url)backdrop=${JSON.stringify(defBack)};var dimDef=backdrop==="none"?0:${wDim};var blurDef=backdrop==="none"?0:${wBlur};var dim=typeof prefs.dim==="number"&&isFinite(prefs.dim)?Math.max(0,Math.min(${DIM_MAX},Math.round(prefs.dim))):dimDef;var blur=typeof prefs.blur==="number"&&isFinite(prefs.blur)?Math.max(0,Math.min(${BLUR_MAX},Math.round(prefs.blur))):blurDef;var scheme=schemes[id]||"dark";var r=document.documentElement;r.setAttribute("data-theme",id);r.setAttribute("data-font",font);r.setAttribute("data-backdrop",backdrop);r.style.colorScheme=scheme;if(scheme==="dark")r.classList.add("dark");else r.classList.remove("dark");if(accent){r.style.setProperty("--accent",accent);var hr=parseInt(accent.slice(1,3),16),hg=parseInt(accent.slice(3,5),16),hb=parseInt(accent.slice(5,7),16);var soft=scheme==="dark"?"rgb("+Math.round(hr*0.22)+" "+Math.round(hg*0.22)+" "+Math.round(hb*0.28)+")":"rgb("+Math.min(255,Math.round(hr+(255-hr)*0.72))+" "+Math.min(255,Math.round(hg+(255-hg)*0.72))+" "+Math.min(255,Math.round(hb+(255-hb)*0.65))+")";r.style.setProperty("--accent-soft",soft)}if(backdrop==="none"){r.style.setProperty("--mc-dim","0");r.style.setProperty("--mc-blur","0px");r.style.removeProperty("--mc-wallpaper-image")}else{r.style.setProperty("--mc-dim",String(dim/100));r.style.setProperty("--mc-blur",blur+"px");if(backdrop==="custom"&&url)r.style.setProperty("--mc-wallpaper-image","url("+JSON.stringify(url)+")");else r.style.removeProperty("--mc-wallpaper-image")}}catch(e){var d=document.documentElement;d.setAttribute("data-theme","compile");d.setAttribute("data-font","sans");d.setAttribute("data-backdrop",${JSON.stringify(defBack)});d.classList.add("dark");d.style.colorScheme="dark";d.style.setProperty("--mc-dim","0");d.style.setProperty("--mc-blur","0px")}})();`;
 }

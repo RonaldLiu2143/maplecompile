@@ -1,10 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { BrandWordmark } from "@/components/BrandMark";
 import { CharacterSearchBar } from "@/components/dashboard/CharacterSearchBar";
 import { DashboardPrimaryHero } from "@/components/dashboard/DashboardCommandCenter";
-import { Button } from "@/components/ui/button";
 import { StackedToolLinks } from "@/components/StackedToolLinks";
 import { useRoster } from "@/hooks/useRoster";
 import { entryKey } from "@/lib/dashboard/roster";
@@ -41,14 +39,6 @@ export function HomeHero() {
           Look up a GMS character, pin a primary, then jump into scouter and
           gear tools. Free, no account required.
         </p>
-        <div className="mt-4 hidden flex-wrap items-center justify-center gap-2 sm:mt-8 sm:flex">
-          <Button asChild variant="ghost" className="h-11 px-4">
-            <Link href="/guide">Read the Guide</Link>
-          </Button>
-          <Button asChild variant="ghost" className="h-11 px-4">
-            <Link href="/calc/scouter">Open Scouter</Link>
-          </Button>
-        </div>
       </section>
 
       <div
@@ -76,8 +66,8 @@ export function HomeHero() {
         </div>
       ) : null}
 
-      <nav aria-label="Tools" className="mx-auto w-full max-w-3xl">
-        <StackedToolLinks items={HOME_TOOL_LINKS} columns={2} compact />
+      <nav aria-label="Tools" className="mx-auto w-full max-w-2xl">
+        <StackedToolLinks items={HOME_TOOL_LINKS} compact />
       </nav>
     </div>
   );

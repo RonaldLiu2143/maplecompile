@@ -8,10 +8,10 @@ export const MAIN_LINKS: NavLink[] = [
   { href: "/dashboard", label: "Dashboard", match: "exact" },
   { href: "/calc/character", label: "My Character", match: "exact" },
   { href: "/roster", label: "My Roster", match: "exact" },
+  { href: "/calc/equips/setup", label: "Equipment", match: "exact" },
 ];
 
 export const PROGRESSION_LINKS: NavLink[] = [
-  { href: "/calc/equips/setup", label: "Equipment", match: "exact" },
   { href: "/calc/hexa-tracker", label: "HEXA", match: "exact" },
   { href: "/calc/bosses", label: "Bossing", match: "exact" },
   { href: "/calc/liberation", label: "Liberation", match: "exact" },

@@ -5,137 +5,137 @@
 /* Class-based dark: so theme presets (not OS preference) control contrast helpers. */
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* Default / Compile — maple-night: warm ink layers, gold action ramp.
+/* Default / Compile — ink layers, white action on black canvas.
    Layers: frame (sidebar) → canvas → raised surface → inset. */
 :root,
 [data-theme="compile"] {
-  --background: #120e0c;
-  --foreground: #f4ebe1;
-  --muted-soft: #8a7d72;
-  --surface: #1c1612;
-  --surface-muted: #261e18;
-  --accent-soft: #3a2e14;
+  --background: #0a0a0a;
+  --foreground: #f5f5f5;
+  --muted-soft: #8a8a8a;
+  --surface: #141414;
+  --surface-muted: #1c1c1c;
+  --accent-soft: #2a2a2a;
   --danger: #f87171;
   --success: #34d399;
-  --warning: #fbbf24;
-  --card: #1c1612;
-  --card-foreground: #f4ebe1;
-  --popover: #241c16;
-  --popover-foreground: #f4ebe1;
-  --primary: #c9a227;
-  --primary-hover: #e0bc4a;
-  --primary-active: #9a7a12;
-  --primary-foreground: #1a1408;
-  --secondary: #261e18;
-  --secondary-foreground: #f4ebe1;
-  --muted: #261e18;
-  --muted-foreground: #c4b8aa;
-  --accent: #c9a227;
-  --accent-foreground: #1a1408;
+  --warning: #d4d4d4;
+  --card: #141414;
+  --card-foreground: #f5f5f5;
+  --popover: #1a1a1a;
+  --popover-foreground: #f5f5f5;
+  --primary: #f5f5f5;
+  --primary-hover: #ffffff;
+  --primary-active: #d4d4d4;
+  --primary-foreground: #0a0a0a;
+  --secondary: #1c1c1c;
+  --secondary-foreground: #f5f5f5;
+  --muted: #1c1c1c;
+  --muted-foreground: #b3b3b3;
+  --accent: #f5f5f5;
+  --accent-foreground: #0a0a0a;
   --destructive: #f87171;
-  --border: #3a3028;
-  --input: #4a3e34;
-  --ring: #c9a227;
-  --sidebar: #0c0a08;
-  --sidebar-foreground: #f4ebe1;
-  --sidebar-primary: #c9a227;
-  --sidebar-primary-foreground: #1a1408;
-  --sidebar-accent: #3a2e14;
-  --sidebar-accent-foreground: #f5e6c8;
-  --sidebar-border: #2a221c;
-  --sidebar-ring: #c9a227;
+  --border: #2e2e2e;
+  --input: #3a3a3a;
+  --ring: #f5f5f5;
+  --sidebar: #050505;
+  --sidebar-foreground: #f5f5f5;
+  --sidebar-primary: #f5f5f5;
+  --sidebar-primary-foreground: #0a0a0a;
+  --sidebar-accent: #1c1c1c;
+  --sidebar-accent-foreground: #f5f5f5;
+  --sidebar-border: #222222;
+  --sidebar-ring: #f5f5f5;
 }
 
 [data-theme="contrast"] {
-  --background: #080605;
-  --foreground: #fffaf4;
-  --muted-soft: #b8aea4;
-  --surface: #14110e;
-  --surface-muted: #221c16;
-  --accent-soft: #4a3a12;
+  --background: #000000;
+  --foreground: #ffffff;
+  --muted-soft: #a3a3a3;
+  --surface: #0f0f0f;
+  --surface-muted: #1a1a1a;
+  --accent-soft: #262626;
   --danger: #fb7185;
   --success: #4ade80;
-  --warning: #facc15;
-  --card: #14110e;
-  --card-foreground: #fffaf4;
-  --popover: #1c1814;
-  --popover-foreground: #fffaf4;
-  --primary: #e8c547;
-  --primary-hover: #f2d56a;
-  --primary-active: #c9a227;
-  --primary-foreground: #140f06;
-  --secondary: #221c16;
-  --secondary-foreground: #fffaf4;
-  --muted: #221c16;
-  --muted-foreground: #e4dcd2;
-  --accent: #e8c547;
-  --accent-foreground: #140f06;
+  --warning: #e5e5e5;
+  --card: #0f0f0f;
+  --card-foreground: #ffffff;
+  --popover: #141414;
+  --popover-foreground: #ffffff;
+  --primary: #ffffff;
+  --primary-hover: #f5f5f5;
+  --primary-active: #d4d4d4;
+  --primary-foreground: #000000;
+  --secondary: #1a1a1a;
+  --secondary-foreground: #ffffff;
+  --muted: #1a1a1a;
+  --muted-foreground: #d4d4d4;
+  --accent: #ffffff;
+  --accent-foreground: #000000;
   --destructive: #fb7185;
-  --border: #4a4036;
-  --input: #5c5046;
-  --ring: #e8c547;
-  --sidebar: #050403;
-  --sidebar-foreground: #fffaf4;
-  --sidebar-primary: #e8c547;
-  --sidebar-primary-foreground: #140f06;
-  --sidebar-accent: #4a3a12;
-  --sidebar-accent-foreground: #fff6dc;
-  --sidebar-border: #2a2420;
-  --sidebar-ring: #e8c547;
+  --border: #3f3f3f;
+  --input: #525252;
+  --ring: #ffffff;
+  --sidebar: #000000;
+  --sidebar-foreground: #ffffff;
+  --sidebar-primary: #ffffff;
+  --sidebar-primary-foreground: #000000;
+  --sidebar-accent: #1a1a1a;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: #262626;
+  --sidebar-ring: #ffffff;
 }
 
-/* Light — warm paper canvas so cards can lift; darker gold on buttons. */
+/* Light — paper canvas, black actions. */
 html[data-theme="light"],
 [data-theme="light"] {
-  --background: #f4efe6;
-  --foreground: #1c1612;
-  --muted-soft: #6b5e52;
-  --surface: #fffaf4;
-  --surface-muted: #ebe3d6;
-  --accent-soft: #f3e4bc;
+  --background: #f4f4f4;
+  --foreground: #111111;
+  --muted-soft: #737373;
+  --surface: #ffffff;
+  --surface-muted: #ececec;
+  --accent-soft: #e5e5e5;
   --danger: #dc2626;
   --success: #059669;
-  --warning: #b45309;
-  --card: #fffaf4;
-  --card-foreground: #1c1612;
-  --popover: #fffaf4;
-  --popover-foreground: #1c1612;
-  --primary: #7a5610;
-  --primary-hover: #62440c;
-  --primary-active: #4a3408;
-  --primary-foreground: #fff8ea;
-  --secondary: #ebe3d6;
-  --secondary-foreground: #1c1612;
-  --muted: #ebe3d6;
-  --muted-foreground: #4a4036;
-  --accent: #8a6410;
-  --accent-foreground: #fff8ea;
+  --warning: #525252;
+  --card: #ffffff;
+  --card-foreground: #111111;
+  --popover: #ffffff;
+  --popover-foreground: #111111;
+  --primary: #111111;
+  --primary-hover: #000000;
+  --primary-active: #262626;
+  --primary-foreground: #ffffff;
+  --secondary: #ececec;
+  --secondary-foreground: #111111;
+  --muted: #ececec;
+  --muted-foreground: #404040;
+  --accent: #111111;
+  --accent-foreground: #ffffff;
   --destructive: #dc2626;
-  --border: #d4c8b8;
-  --input: #c4b6a4;
-  --ring: #8a6410;
-  --sidebar: #ebe4d8;
-  --sidebar-foreground: #1c1612;
-  --sidebar-primary: #7a5610;
-  --sidebar-primary-foreground: #fff8ea;
-  --sidebar-accent: #f3e4bc;
-  --sidebar-accent-foreground: #4a3408;
-  --sidebar-border: #d4c8b8;
-  --sidebar-ring: #8a6410;
-  --shadow-elevated: 0 8px 24px rgb(40 28 16 / 0.1);
+  --border: #d4d4d4;
+  --input: #c4c4c4;
+  --ring: #111111;
+  --sidebar: #ececec;
+  --sidebar-foreground: #111111;
+  --sidebar-primary: #111111;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #e5e5e5;
+  --sidebar-accent-foreground: #111111;
+  --sidebar-border: #d4d4d4;
+  --sidebar-ring: #111111;
+  --shadow-elevated: 0 8px 24px rgb(0 0 0 / 0.08);
 }
 
 :root {
-  /* Match DEFAULT_THEME_PREFS (Deep Night) before boot script runs. */
-  --mc-dim: 0.52;
-  --mc-blur: 8px;
+  /* Match DEFAULT_THEME_PREFS (flat canvas) before boot script runs. */
+  --mc-dim: 0;
+  --mc-blur: 0px;
   --mc-wallpaper-image: none;
   --radius: 0.5rem;
-  --chart-1: #c9a227;
-  --chart-2: #34d399;
-  --chart-3: #fbbf24;
+  --chart-1: #f5f5f5;
+  --chart-2: #a3a3a3;
+  --chart-3: #737373;
   --chart-4: #f87171;
-  --chart-5: #c4b8aa;
+  --chart-5: #525252;
   --shadow-elevated: none;
 }
 
@@ -252,50 +252,50 @@ html[data-backdrop]:not([data-backdrop="none"]) body::after {
 
 html[data-backdrop="deep-night"] body::before {
   background-image:
-    radial-gradient(ellipse 70% 55% at 18% 12%, #5c3a12aa, transparent 55%),
-    radial-gradient(ellipse 55% 45% at 88% 8%, #7a4a1233, transparent 50%),
-    linear-gradient(165deg, #120e0c 0%, #1a1410 48%, #0c0a08 100%);
+    radial-gradient(ellipse 70% 55% at 18% 12%, #3a3a3aaa, transparent 55%),
+    radial-gradient(ellipse 55% 45% at 88% 8%, #52525233, transparent 50%),
+    linear-gradient(165deg, #0a0a0a 0%, #141414 48%, #050505 100%);
 }
 
 html[data-backdrop="teal-aurora"] body::before {
   background-image:
-    radial-gradient(ellipse 80% 50% at 25% -5%, #c9a22766, transparent 55%),
-    radial-gradient(ellipse 60% 40% at 95% 15%, #b4530944, transparent 50%),
-    radial-gradient(ellipse 50% 35% at 50% 100%, #78350f33, transparent 55%),
-    linear-gradient(180deg, #120e0c 0%, #1a1410 55%, #0c0a08 100%);
+    radial-gradient(ellipse 80% 50% at 25% -5%, #ffffff22, transparent 55%),
+    radial-gradient(ellipse 60% 40% at 95% 15%, #a3a3a344, transparent 50%),
+    radial-gradient(ellipse 50% 35% at 50% 100%, #52525233, transparent 55%),
+    linear-gradient(180deg, #0a0a0a 0%, #141414 55%, #050505 100%);
 }
 
 html[data-backdrop="amber-ember"] body::before {
   background-image:
-    radial-gradient(ellipse 65% 45% at 85% 5%, #f59e0b55, transparent 50%),
-    radial-gradient(ellipse 55% 40% at 8% 85%, #b4530944, transparent 50%),
-    radial-gradient(ellipse 40% 30% at 40% 40%, #78350f33, transparent 55%),
-    linear-gradient(160deg, #1a1208 0%, #1c1410 50%, #120d08 100%);
+    radial-gradient(ellipse 65% 45% at 85% 5%, #ffffff33, transparent 50%),
+    radial-gradient(ellipse 55% 40% at 8% 85%, #73737344, transparent 50%),
+    radial-gradient(ellipse 40% 30% at 40% 40%, #40404033, transparent 55%),
+    linear-gradient(160deg, #111111 0%, #1a1a1a 50%, #0a0a0a 100%);
 }
 
 html[data-backdrop="forest-mist"] body::before {
   background-image:
-    radial-gradient(ellipse 70% 50% at 50% -10%, #3d2a1477, transparent 55%),
-    radial-gradient(ellipse 45% 35% at 10% 70%, #5c3a1244, transparent 50%),
-    radial-gradient(ellipse 40% 30% at 90% 60%, #261e1855, transparent 50%),
-    linear-gradient(180deg, #120e0c 0%, #1a1410 55%, #0c0a08 100%);
+    radial-gradient(ellipse 70% 50% at 50% -10%, #52525277, transparent 55%),
+    radial-gradient(ellipse 45% 35% at 10% 70%, #3a3a3a44, transparent 50%),
+    radial-gradient(ellipse 40% 30% at 90% 60%, #26262655, transparent 50%),
+    linear-gradient(180deg, #0a0a0a 0%, #141414 55%, #050505 100%);
 }
 
 html[data-backdrop="horizon"] body::before {
   background-image:
-    linear-gradient(185deg, #c9a22755 0%, transparent 42%),
-    linear-gradient(0deg, #b4530933 0%, transparent 38%),
-    radial-gradient(ellipse 60% 40% at 70% 30%, #7a561044, transparent 55%),
-    linear-gradient(180deg, #120e0c 0%, #1a1410 55%, #0c0a08 100%);
+    linear-gradient(185deg, #ffffff22 0%, transparent 42%),
+    linear-gradient(0deg, #73737333 0%, transparent 38%),
+    radial-gradient(ellipse 60% 40% at 70% 30%, #40404044, transparent 55%),
+    linear-gradient(180deg, #0a0a0a 0%, #141414 55%, #050505 100%);
 }
 
 html[data-backdrop="slate-mesh"] body::before {
   background-image:
-    radial-gradient(at 0% 0%, #5c3a1277 0, transparent 50%),
-    radial-gradient(at 100% 0%, #3a302888 0, transparent 45%),
-    radial-gradient(at 50% 100%, #7a4a1244 0, transparent 50%),
-    radial-gradient(at 80% 60%, #261e1833 0, transparent 40%),
-    linear-gradient(160deg, #120e0c, #1a1410 55%, #0c0a08);
+    radial-gradient(at 0% 0%, #52525277 0, transparent 50%),
+    radial-gradient(at 100% 0%, #3a3a3a88 0, transparent 45%),
+    radial-gradient(at 50% 100%, #26262644 0, transparent 50%),
+    radial-gradient(at 80% 60%, #1a1a1a33 0, transparent 40%),
+    linear-gradient(160deg, #0a0a0a, #141414 55%, #050505);
 }
 
 html[data-backdrop="custom"] body::before {
@@ -318,6 +318,15 @@ body {
 
 html[data-backdrop]:not([data-backdrop="none"]) body {
   background: transparent;
+}
+
+/* Light canvas stays paper. Dark meshes behind a transparent body wash out type. */
+html[data-theme="light"] body::before,
+html[data-theme="light"] body::after {
+  opacity: 0;
+}
+html[data-theme="light"] body {
+  background-color: var(--background);
 }
 
 /*

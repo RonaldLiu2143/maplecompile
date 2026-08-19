@@ -24,14 +24,14 @@ function Chip({
   const toneClass =
     tone === "good"
       ? "border-emerald-500/35 bg-emerald-500/10 text-emerald-800 dark:text-emerald-300"
-      : tone === "warn"
-        ? "border-amber-500/35 bg-amber-500/10 text-amber-900 dark:text-amber-200"
+        : tone === "warn"
+        ? "border-border bg-muted text-muted-foreground"
         : tone === "accent"
           ? "border-accent/40 bg-accent/10 text-accent"
           : "border-border/50 bg-surface-muted/40 opacity-90";
   return (
     <span
-      className={`inline-flex items-center rounded-md border px-1.5 py-0.5 text-[0.65rem] font-semibold ${toneClass}`}
+      className={`inline-flex items-center rounded-md border px-1.5 py-0.5 text-xs font-semibold ${toneClass}`}
     >
       {children}
     </span>

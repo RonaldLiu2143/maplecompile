@@ -229,7 +229,7 @@ export function DashboardOnboardingWizard({
                 >
                   {done ? "✓" : step.n}
                 </span>
-                <span className="hidden text-[10px] font-semibold leading-tight sm:block">
+                <span className="hidden text-xs font-medium leading-tight sm:block">
                   {step.kid}
                 </span>
               </button>
@@ -245,7 +245,7 @@ export function DashboardOnboardingWizard({
               {progress[current.id] ? "✓" : current.n}
             </span>
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-accent">
+              <p className="text-sm text-muted-foreground">
                 {current.kid}
               </p>
               <h3 className="font-display text-lg font-semibold">
