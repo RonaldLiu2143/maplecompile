@@ -1,11 +1,4 @@
 import type { ReactNode } from "react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 
 export function InfoPage({
   title,
@@ -18,21 +11,15 @@ export function InfoPage({
 }) {
   return (
     <article className="mx-auto max-w-3xl pb-10">
-      <Card>
-        <CardHeader>
-          <CardTitle className="font-display text-3xl font-bold tracking-tight sm:text-4xl">
-            {title}
-          </CardTitle>
-          {lede ? (
-            <CardDescription className="text-base sm:text-lg">
-              {lede}
-            </CardDescription>
-          ) : null}
-        </CardHeader>
-        <CardContent className="prose-site flex flex-col gap-4 pb-8 text-sm leading-relaxed text-foreground/90 sm:text-base">
-          {children}
-        </CardContent>
-      </Card>
+      <h1 className="font-display text-3xl font-bold tracking-tight sm:text-4xl">
+        {title}
+      </h1>
+      {lede ? (
+        <p className="mt-3 text-base text-muted-foreground sm:text-lg">{lede}</p>
+      ) : null}
+      <div className="prose-site mt-8 flex flex-col gap-4 text-sm leading-relaxed text-foreground/90 sm:text-base">
+        {children}
+      </div>
     </article>
   );
 }

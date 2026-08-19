@@ -1,15 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { GUIDE_STEPS } from "@/lib/guide";
 import { buildPageMetadata } from "@/lib/seo";
 
@@ -55,71 +46,63 @@ const TOOLS = [
 
 export default function GuidePage() {
   return (
-    <div className="mx-auto flex max-w-4xl flex-col gap-8 pb-8">
-      <Card className="relative overflow-hidden py-0">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_0%_0%,var(--accent-soft),transparent_55%)] opacity-80"
-        />
-        <CardHeader className="relative px-5 py-8 sm:px-8">
-          <Badge variant="secondary">Getting started</Badge>
-          <CardTitle className="font-display mt-2 text-3xl font-bold tracking-tight sm:text-4xl">
-            MapleCompile guide
-          </CardTitle>
-          <CardDescription className="mt-2 max-w-xl text-sm sm:text-base">
-            Five steps from a blank roster to a usable scouter. Everything stays
-            in this browser unless you share a build.
-          </CardDescription>
-          <div className="mt-6 flex flex-wrap gap-2">
-            <Button asChild className="h-11 px-4">
-              <Link href="/calc/character">Start with Character Search</Link>
-            </Button>
-            <Button asChild variant="outline" className="h-11 px-4">
-              <Link href="/dashboard">Go to Dashboard</Link>
-            </Button>
-          </div>
-        </CardHeader>
-      </Card>
+    <div className="mx-auto flex max-w-3xl flex-col gap-12 pb-8">
+      <header className="max-w-xl">
+        <h1 className="font-display text-3xl font-bold tracking-tight sm:text-4xl">
+          MapleCompile guide
+        </h1>
+        <p className="mt-3 text-base text-muted-foreground sm:text-[1.05rem]">
+          Five steps from a blank roster to a usable scouter. Everything stays
+          in this browser unless you share a build.
+        </p>
+        <div className="mt-6 flex flex-wrap gap-2">
+          <Button asChild className="h-11 px-4">
+            <Link href="/calc/character">Start with Character Search</Link>
+          </Button>
+          <Button asChild variant="outline" className="h-11 px-4">
+            <Link href="/dashboard">Go to Dashboard</Link>
+          </Button>
+        </div>
+      </header>
 
-      <ol className="grid gap-3 sm:grid-cols-2">
+      <ol className="flex flex-col divide-y divide-border">
         {GUIDE_STEPS.map((step) => (
-          <li key={step.n}>
-            <Card className="h-full">
-              <CardHeader>
-                <Badge variant="outline">Step {step.n}</Badge>
-                <CardTitle className="font-display text-lg font-bold tracking-tight">
-                  {step.title}
-                </CardTitle>
-                <CardDescription>{step.body}</CardDescription>
-              </CardHeader>
-              <CardFooter className="border-0 bg-transparent">
-                <Button asChild variant="link" className="h-11 px-0">
-                  <Link href={step.href}>{step.cta}</Link>
-                </Button>
-              </CardFooter>
-            </Card>
+          <li key={step.n} className="grid gap-2 py-6 sm:grid-cols-[3rem_1fr]">
+            <span className="font-display text-2xl font-bold tabular-nums text-primary">
+              {step.n}
+            </span>
+            <div>
+              <h2 className="font-display text-lg font-bold tracking-tight">
+                {step.title}
+              </h2>
+              <p className="mt-1 text-sm text-muted-foreground">{step.body}</p>
+              <Button asChild variant="link" className="mt-2 h-11 px-0">
+                <Link href={step.href}>{step.cta}</Link>
+              </Button>
+            </div>
           </li>
         ))}
       </ol>
 
-      <section className="flex flex-col gap-4">
+      <section>
         <h2 className="font-display text-xl font-bold tracking-tight">
           Tool map
         </h2>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <ul className="mt-4 divide-y divide-border">
           {TOOLS.map((tool) => (
-            <Link key={tool.href} href={tool.href} className="group">
-              <Card className="h-full transition-colors group-hover:bg-muted/80">
-                <CardContent>
-                  <p className="font-display font-bold">{tool.title}</p>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {tool.body}
-                  </p>
-                </CardContent>
-              </Card>
-            </Link>
+            <li key={tool.href}>
+              <Link
+                href={tool.href}
+                className="flex min-h-11 flex-col justify-center py-3 transition-colors hover:text-primary"
+              >
+                <span className="font-display font-bold">{tool.title}</span>
+                <span className="text-sm text-muted-foreground">
+                  {tool.body}
+                </span>
+              </Link>
+            </li>
           ))}
-        </div>
+        </ul>
       </section>
     </div>
   );

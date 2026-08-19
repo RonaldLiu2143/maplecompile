@@ -462,4 +462,8 @@ button:focus-visible,
   html {
     @apply font-sans;
   }
+  ::selection {
+    background: color-mix(in srgb, var(--accent) 40%, transparent);
+    color: var(--foreground);
+  }
 }
