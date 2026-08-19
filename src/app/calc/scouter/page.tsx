@@ -87,7 +87,7 @@ import {
 import type { MapleScouterCalculatedData } from "@/lib/scouter/to-user-stat";
 
 const cell =
-  "border border-border/50 bg-background px-2 py-1.5 text-sm outline-none focus:relative focus:z-10 focus:border-accent";
+  "border border-border/50 bg-background px-2 py-2 text-base outline-none focus:relative focus:z-10 focus:border-accent min-h-11 sm:min-h-0 sm:py-1.5 sm:text-sm";
 const labelCell =
   "border border-border/50 bg-surface-muted/50 px-2 py-1.5 text-sm font-medium";
 const headCell =
@@ -280,21 +280,23 @@ function TripleRow({
   fieldId?: string;
 }) {
   return (
-    <div className="grid grid-cols-4">
-      <div className={labelCell}>{label}</div>
-      <NumInput
-        value={value.base}
-        fieldId={fieldId}
-        onChange={(base) => onChange({ ...value, base })}
-      />
-      <NumInput
-        value={value.percent}
-        onChange={(percent) => onChange({ ...value, percent })}
-      />
-      <NumInput
-        value={value.flat}
-        onChange={(flat) => onChange({ ...value, flat })}
-      />
+    <div className="border-t border-border/50 sm:grid sm:grid-cols-4 sm:border-t-0">
+      <div className={`${labelCell} text-sm`}>{label}</div>
+      <div className="grid grid-cols-3 sm:contents">
+        <NumInput
+          value={value.base}
+          fieldId={fieldId}
+          onChange={(base) => onChange({ ...value, base })}
+        />
+        <NumInput
+          value={value.percent}
+          onChange={(percent) => onChange({ ...value, percent })}
+        />
+        <NumInput
+          value={value.flat}
+          onChange={(flat) => onChange({ ...value, flat })}
+        />
+      </div>
     </div>
   );
 }
@@ -1536,20 +1538,20 @@ export default function ScouterPage() {
                     placeholder="Preset name"
                     value={presetName}
                     onChange={(e) => setPresetName(e.target.value)}
-                    className="min-w-0 flex-1 rounded border border-border/50 bg-background px-2.5 py-1.5 text-xs outline-none focus:border-accent sm:max-w-[14rem]"
+                    className="min-h-11 min-w-0 flex-1 rounded border border-border/50 bg-background px-2.5 text-sm outline-none focus:border-accent sm:max-w-[14rem] sm:min-h-0 sm:text-xs"
                     aria-label="Preset name"
                   />
                   <button
                     type="button"
                     onClick={() => setPresetModal("recall")}
-                    className="rounded border border-border/50 bg-background px-2.5 py-1.5 text-xs font-semibold transition hover:bg-surface-muted"
+                    className="min-h-11 rounded border border-border/50 bg-background px-2.5 text-sm font-semibold transition hover:bg-surface-muted sm:min-h-0 sm:py-1.5 sm:text-xs"
                   >
                     Recall Saved Preset
                   </button>
                   <button
                     type="button"
                     onClick={() => setPresetModal("save")}
-                    className="rounded bg-accent px-2.5 py-1.5 text-xs font-semibold text-primary-foreground transition hover:opacity-90"
+                    className="min-h-11 rounded bg-accent px-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90 sm:min-h-0 sm:py-1.5 sm:text-xs"
                   >
                     Save Preset
                   </button>
@@ -1559,7 +1561,7 @@ export default function ScouterPage() {
                     type="button"
                     onClick={() => void shareLoadout({ asPublic: false })}
                     disabled={sharing}
-                    className="rounded border border-border/50 bg-background px-2.5 py-1.5 text-xs font-semibold transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
+                    className="min-h-11 rounded border border-border/50 bg-background px-2.5 text-sm font-semibold transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40 sm:min-h-0 sm:py-1.5 sm:text-xs"
                     title="Create a private link anyone can open if they have it"
                   >
                     {sharing && !galleryModalOpen
@@ -1571,7 +1573,7 @@ export default function ScouterPage() {
                       type="button"
                       onClick={openGalleryShareModal}
                       disabled={sharing}
-                      className="rounded bg-accent px-2.5 py-1.5 text-xs font-semibold text-primary-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+                      className="min-h-11 rounded bg-accent px-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 sm:min-h-0 sm:py-1.5 sm:text-xs"
                       title="Update the public gallery post linked to this preset"
                     >
                       {sharing && galleryModalOpen
@@ -1583,7 +1585,7 @@ export default function ScouterPage() {
                       type="button"
                       onClick={openGalleryShareModal}
                       disabled={sharing}
-                      className="rounded border border-border/50 bg-background px-2.5 py-1.5 text-xs font-semibold transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
+                      className="min-h-11 rounded border border-border/50 bg-background px-2.5 text-sm font-semibold transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40 sm:min-h-0 sm:py-1.5 sm:text-xs"
                       title={
                         getMissingRequiredScouterFields(input).length
                           ? "Fill required character stats before posting"
@@ -1597,7 +1599,7 @@ export default function ScouterPage() {
                   )}
                   <Link
                     href="/calc/scouter/gallery"
-                    className="rounded border border-border/50 bg-background px-2.5 py-1.5 text-xs font-semibold transition hover:bg-surface-muted"
+                    className="min-h-11 rounded border border-border/50 bg-background px-2.5 text-sm font-semibold transition hover:bg-surface-muted sm:min-h-0 sm:py-1.5 sm:text-xs"
                   >
                     Browse gallery
                   </Link>
@@ -1652,7 +1654,7 @@ export default function ScouterPage() {
                     type="button"
                     onClick={() => void copyShareUrl()}
                     disabled={!shareUrl}
-                    className="rounded border border-border/50 bg-background px-2.5 py-1.5 text-xs font-semibold transition hover:bg-surface-muted disabled:opacity-40"
+                    className="min-h-11 rounded border border-border/50 bg-background px-2.5 text-sm font-semibold transition hover:bg-surface-muted disabled:opacity-40 sm:min-h-0 sm:py-1.5 sm:text-xs"
                   >
                     Copy link
                   </button>
@@ -1745,7 +1747,12 @@ export default function ScouterPage() {
 
           {/* Top: main / sub / attack (character window style) */}
           <div className="m-2 overflow-hidden rounded-md border border-border/50">
-            <div className="grid grid-cols-4">
+            <div className="grid grid-cols-3 border-b border-border/40 px-2 py-1.5 text-xs text-muted-foreground sm:hidden">
+              <span className="text-right">Base</span>
+              <span className="text-right">%</span>
+              <span className="text-right">Flat</span>
+            </div>
+            <div className="hidden sm:grid sm:grid-cols-4">
               <div className={headCell} />
               <div className={headCell}>Base Value</div>
               <div className={headCell}>% Value</div>

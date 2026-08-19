@@ -74,7 +74,7 @@ const faqJsonLd = {
 
 export default function Home() {
   return (
-    <div className="flex flex-col gap-8 py-6 sm:py-8">
+    <div className="flex flex-col gap-6 py-2 sm:gap-8 sm:py-8">
       <JsonLd data={websiteJsonLd} />
       <JsonLd data={appJsonLd} />
       <JsonLd data={faqJsonLd} />

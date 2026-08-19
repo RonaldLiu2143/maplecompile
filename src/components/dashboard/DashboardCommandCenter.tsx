@@ -50,7 +50,7 @@ export function DashboardPrimaryHero({
 }) {
   if (!primary) {
     return (
-      <section className="rounded-xl border border-border bg-surface px-4 py-5 shadow-[var(--shadow-elevated)] sm:px-5">
+      <section className="border border-border bg-surface px-4 py-5 sm:px-5">
         <h2 className="font-display text-xl font-bold tracking-tight">
           No primary yet
         </h2>
@@ -58,7 +58,7 @@ export function DashboardPrimaryHero({
           Search a GMS character and add them to your roster. Star one as
           primary to pin their profile here.
         </p>
-        <div className="mt-3">
+        <div className="mt-3 hidden md:block">
           <DashboardToolShortcuts />
         </div>
       </section>
@@ -70,14 +70,14 @@ export function DashboardPrimaryHero({
   const errored = slot?.status === "error";
 
   return (
-    <section className="overflow-hidden rounded-xl border border-border bg-surface shadow-[var(--shadow-elevated)]">
+      <section className="overflow-hidden border border-border bg-surface">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-accent/25 bg-accent-soft/15 px-3 py-1.5 sm:px-4">
         <div className="min-w-0">
-          <p className="flex flex-wrap items-center gap-2 text-[0.65rem] font-semibold uppercase tracking-wider text-accent">
+          <p className="text-xs text-muted-foreground">
             Primary
-            <span className="text-amber-400 normal-case tracking-normal">
-              ★
-            </span>
+            {character ? null : (
+              <span className="ml-1.5 text-amber-400">★</span>
+            )}
           </p>
           {!character ? (
             <p className="truncate font-display text-base font-bold tracking-tight">
@@ -88,7 +88,7 @@ export function DashboardPrimaryHero({
         {character ? (
           <Link
             href={characterProfileHref(character)}
-            className="rounded-md border border-border/60 px-2 py-0.5 text-[11px] font-semibold transition hover:bg-surface-muted"
+            className="inline-flex min-h-11 items-center rounded-md border border-border/60 px-3 text-sm font-semibold transition hover:bg-surface-muted"
           >
             Full profile
           </Link>

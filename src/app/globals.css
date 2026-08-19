@@ -362,12 +362,32 @@ html[data-backdrop]:not([data-backdrop="none"]) .bg-surface-muted\/98 {
 }
 
 /* Soft scroll areas — match surface / accent palette */
+html {
+  overflow-x: clip;
+}
+
 .maple-scroll {
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-width: thin;
   scrollbar-color: color-mix(in srgb, var(--accent) 45%, transparent)
     color-mix(in srgb, var(--surface-muted) 70%, transparent);
+}
+
+.maple-table-scroll {
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--accent) 45%, transparent)
+    color-mix(in srgb, var(--surface-muted) 70%, transparent);
+}
+
+@media (max-width: 767px) {
+  .maple-table-scroll {
+    margin-inline: -0.75rem;
+    padding-inline: 0.75rem;
+  }
 }
 
 .maple-scroll::-webkit-scrollbar {

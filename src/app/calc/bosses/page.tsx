@@ -1,5 +1,6 @@
 "use client";
 
+import { ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ActiveCharacterBar } from "@/components/ActiveCharacterBar";
@@ -252,12 +253,12 @@ export default function BossesIncomePage() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-5 md:space-y-8">
       <header>
-        <h1 className="font-display text-3xl font-bold tracking-tight">
+        <h1 className="font-display text-2xl font-bold tracking-tight md:text-3xl">
           Boss Income
         </h1>
-        <p className="mt-2 max-w-2xl text-sm opacity-75">
+        <p className="mt-1 hidden max-w-2xl text-sm opacity-75 md:mt-2 md:block">
           Roster crystal planner — {WEEKLY_CRYSTAL_LIMIT} weekly bosses per
           character, account sell cap {ACCOUNT_WEEKLY_CRYSTAL_LIMIT}. Crystal
           prices follow each character&apos;s world (Heroic 5× / Interactive);
@@ -276,7 +277,7 @@ export default function BossesIncomePage() {
         </p>
       ) : null}
 
-      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <section className="grid grid-cols-2 gap-x-4 gap-y-1 border-b border-border/40 pb-3 md:grid-cols-3 md:gap-3 md:border-0 md:pb-0">
         <Stat
           label="Max possible mesos"
           value={formatMesos(rosterSummary.maxPossibleMesos)}
@@ -291,7 +292,7 @@ export default function BossesIncomePage() {
             rosterSummary.accountCrystalLimit
           }
         />
-        <div className="rounded-xl border border-border/40 bg-surface/80 p-4">
+        <div className="hidden rounded-xl border border-border/40 bg-surface/80 p-4 md:block">
           <p className="text-xs font-semibold uppercase tracking-wider opacity-60">
             Roster
           </p>
@@ -328,7 +329,7 @@ export default function BossesIncomePage() {
           </div>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+        <div className="grid gap-2 sm:grid-cols-2 sm:gap-3 xl:grid-cols-3 2xl:grid-cols-4">
           {hasRoster
             ? roster.map((entry, index) => {
                 const key = entryKey(entry);
@@ -505,19 +506,19 @@ function Stat({
   warn?: boolean;
 }) {
   return (
-    <div className="rounded-xl border border-border/40 bg-surface/80 p-4">
-      <p className="text-xs font-semibold uppercase tracking-wider opacity-60">
-        {label}
-      </p>
+    <div className="py-1 md:rounded-xl md:border md:border-border/40 md:bg-surface/80 md:p-4">
+      <p className="text-xs text-muted-foreground">{label}</p>
       <p
         className={[
-          "mt-1 text-xl font-semibold tabular-nums",
+          "mt-0.5 text-lg font-semibold tabular-nums md:text-xl",
           warn ? "text-red-500" : "",
         ].join(" ")}
       >
         {value}
       </p>
-      {hint ? <p className="mt-1 text-xs opacity-55">{hint}</p> : null}
+      {hint ? (
+        <p className="mt-1 hidden text-xs opacity-55 md:block">{hint}</p>
+      ) : null}
     </div>
   );
 }
@@ -563,6 +564,7 @@ function CharacterBossCard({
   drag?: RosterDragProps;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [expanded, setExpanded] = useState(primaryMark);
   const menuRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -675,6 +677,21 @@ function CharacterBossCard({
               ) : null}
             </div>
 
+            <button
+              type="button"
+              className="flex size-11 shrink-0 items-center justify-center rounded-md text-muted-foreground md:hidden"
+              aria-expanded={expanded}
+              aria-label={expanded ? "Hide bosses" : "Show bosses"}
+              onClick={() => setExpanded((v) => !v)}
+            >
+              <ChevronRight
+                className={[
+                  "size-5 transition-transform duration-150",
+                  expanded ? "rotate-90" : "",
+                ].join(" ")}
+              />
+            </button>
+
             <div ref={menuRef} className="relative shrink-0">
               <button
                 type="button"
@@ -682,7 +699,7 @@ function CharacterBossCard({
                 aria-expanded={menuOpen}
                 aria-haspopup="menu"
                 onClick={() => setMenuOpen((o) => !o)}
-                className="flex h-7 w-7 items-center justify-center rounded-md border border-border/50 text-sm opacity-70 transition-colors hover:bg-surface-muted hover:opacity-100"
+                className="flex size-11 items-center justify-center rounded-md border border-border/50 text-sm opacity-70 transition-colors hover:bg-surface-muted hover:opacity-100"
               >
                 ⋮
               </button>
@@ -694,7 +711,7 @@ function CharacterBossCard({
                   <button
                     type="button"
                     role="menuitem"
-                    className="block w-full px-3 py-1.5 text-left text-sm hover:bg-accent-soft hover:text-accent"
+                    className="block min-h-11 w-full px-3 text-left text-sm hover:bg-accent-soft hover:text-accent"
                     onClick={() => {
                       setMenuOpen(false);
                       onAddBosses();
@@ -705,7 +722,7 @@ function CharacterBossCard({
                   <button
                     type="button"
                     role="menuitem"
-                    className="block w-full px-3 py-1.5 text-left text-sm hover:bg-accent-soft hover:text-accent"
+                    className="block min-h-11 w-full px-3 text-left text-sm hover:bg-accent-soft hover:text-accent"
                     onClick={() => {
                       setMenuOpen(false);
                       onResetClears();
@@ -740,21 +757,86 @@ function CharacterBossCard({
         </div>
       </div>
 
-      <div className="flex min-h-0 flex-1 flex-col p-3">
+      <div
+        className={[
+          "min-h-0 flex-1 flex-col p-3",
+          !hasBosses || expanded ? "flex" : "hidden md:flex",
+        ].join(" ")}
+      >
         {!hasBosses ? (
-          <div className="flex flex-1 flex-col items-center justify-center gap-2 py-8 text-center">
+          <div className="flex flex-1 flex-col items-center justify-center gap-2 py-4 text-center md:py-8">
             <p className="text-sm opacity-65">No bosses configured</p>
             <button
               type="button"
               onClick={onAddBosses}
-              className="cursor-pointer rounded-lg border border-border/50 bg-background px-3 py-1.5 text-sm font-semibold shadow-sm transition-colors hover:border-accent/50 hover:bg-accent-soft hover:text-accent"
+            className="min-h-11 cursor-pointer rounded-lg border border-border/50 bg-background px-3 text-sm font-semibold shadow-sm transition-colors hover:border-accent/50 hover:bg-accent-soft hover:text-accent"
             >
               Add bosses
             </button>
           </div>
         ) : (
           <>
-            <div className="overflow-x-auto">
+            <ul className="md:hidden">
+              {rows.map((line) => {
+                const boss = BOSS_CRYSTALS.find((b) => b.id === line.bossId);
+                const icon = boss ? bossIconUrl(boss) : null;
+                const showIcon = icon && !brokenIcons[line.bossId];
+                const label = formatBossLabel(line.difficulty, line.bossName);
+                const cleared = !!clearedById.get(line.bossId);
+                return (
+                  <li key={`${line.bossId}-${line.difficulty}-${line.frequency}`}>
+                    <button
+                      type="button"
+                      onClick={() => onToggleCleared(line.bossId)}
+                      className="flex min-h-11 w-full items-center gap-2 border-t border-border/20 py-1 text-left"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={cleared}
+                        readOnly
+                        tabIndex={-1}
+                        aria-hidden
+                        className="pointer-events-none size-4 accent-[var(--accent)]"
+                      />
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-md bg-surface-muted/60">
+                        {showIcon ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={icon}
+                            alt=""
+                            width={32}
+                            height={32}
+                            className="h-8 w-8 object-contain"
+                            style={{ imageRendering: "pixelated" }}
+                            onError={() => onBrokenIcon(line.bossId)}
+                          />
+                        ) : (
+                          <span className="text-[10px] font-semibold opacity-50">
+                            {line.bossName.slice(0, 2)}
+                          </span>
+                        )}
+                      </div>
+                      <span className="min-w-0 flex-1 truncate text-sm font-medium">
+                        {label}
+                        {line.frequency === "monthly" ? (
+                          <span className="ml-1 text-xs font-normal text-muted-foreground">
+                            monthly
+                          </span>
+                        ) : null}
+                      </span>
+                      <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+                        x{line.partySize}
+                      </span>
+                      <span className="shrink-0 font-mono text-xs tabular-nums">
+                        {formatMesosCompact(line.crystalPersonal)}
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+
+            <div className="hidden overflow-x-auto md:block">
               <table className="w-full table-fixed text-left text-sm leading-tight">
                 <thead className="text-[11px] uppercase tracking-wider opacity-55">
                   <tr>
@@ -847,7 +929,7 @@ function CharacterBossCard({
               <button
                 type="button"
                 onClick={() => onCheckAll(!allCleared)}
-                className="inline-flex items-center gap-1.5 rounded-md border border-border/50 bg-background px-2 py-1 text-xs font-semibold opacity-90 transition-colors hover:border-accent/40 hover:bg-accent-soft hover:text-accent"
+                className="inline-flex min-h-11 items-center gap-1.5 rounded-md border border-border/50 bg-background px-3 text-sm font-semibold opacity-90 transition-colors hover:border-accent/40 hover:bg-accent-soft hover:text-accent md:min-h-0 md:px-2 md:py-1 md:text-xs"
               >
                 <input
                   type="checkbox"

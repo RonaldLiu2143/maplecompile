@@ -118,7 +118,7 @@ export function DashboardDailiesSection({ hydrated }: { hydrated: boolean }) {
                 type="button"
                 onClick={() => toggle(slot.id)}
                 className={[
-                  "flex w-full items-center gap-2 rounded-md border px-2 py-1.5 text-left text-xs transition",
+                  "flex w-full items-center gap-2 rounded-md border px-3 py-2.5 text-left text-sm transition min-h-11",
                   done
                     ? "border-emerald-500/30 bg-emerald-500/10"
                     : "border-border/45 bg-surface-muted/25 hover:border-accent/35 hover:bg-accent/5",
@@ -127,7 +127,7 @@ export function DashboardDailiesSection({ hydrated }: { hydrated: boolean }) {
               >
                 <span
                   className={[
-                    "flex h-4 w-4 shrink-0 items-center justify-center rounded border text-[0.65rem] font-bold",
+                    "flex h-5 w-5 shrink-0 items-center justify-center rounded border text-xs font-bold",
                     done
                       ? "border-emerald-500/50 bg-emerald-500/20 text-emerald-800 dark:text-emerald-300"
                       : "border-border/60 opacity-50",

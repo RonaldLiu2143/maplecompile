@@ -399,7 +399,7 @@ export function GalleryClient({
     <div className="space-y-6">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="font-display text-3xl font-bold tracking-tight">
+          <h1 className="font-display text-2xl font-bold tracking-tight md:text-3xl">
             Public Build Gallery
           </h1>
           <p className="mt-1 max-w-2xl text-sm opacity-75">
@@ -444,7 +444,7 @@ export function GalleryClient({
               role="tab"
               aria-selected={mode === id}
               onClick={() => setMode(id)}
-              className={`rounded px-3 py-1.5 text-sm font-semibold transition ${
+              className={`min-h-11 rounded px-3 text-sm font-semibold transition ${
                 mode === id
                   ? "bg-accent text-primary-foreground"
                   : "opacity-70 hover:bg-surface-muted hover:opacity-100"
@@ -459,7 +459,7 @@ export function GalleryClient({
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search name, class, achievement…"
-          className="min-w-[14rem] flex-1 rounded border border-border/50 bg-background px-3 py-2 text-sm outline-none focus:border-accent"
+          className="min-h-11 min-w-0 flex-1 rounded border border-border/50 bg-background px-3 py-2 text-base outline-none focus:border-accent md:text-sm"
           aria-label="Search gallery"
         />
         <span className="text-xs opacity-60">{countLabel}</span>
@@ -484,7 +484,91 @@ export function GalleryClient({
       ) : null}
 
       {filtered.length > 0 ? (
-        <div className="overflow-x-auto rounded-lg border border-border/50 bg-surface/90">
+        <>
+          <ul className="divide-y divide-border/40 border-y border-border/40 md:hidden">
+            {filtered.map((item, index) => {
+              const className = getCharName(item.jobType, item.charType);
+              const canRemoveOwned = Boolean(owned[item.id]?.deleteToken);
+              const canRemove = canRemoveOwned || localAdmin;
+              const paired =
+                item.identity !== "anonymous" &&
+                item.characterName &&
+                item.characterRegion
+                  ? {
+                      name: item.characterName,
+                      region: item.characterRegion,
+                    }
+                  : null;
+              const avatarUrl = paired
+                ? avatars[characterAvatarKey(paired.region, paired.name)]
+                : undefined;
+              const timeTs =
+                mode === "recent"
+                  ? (viewedAtById.get(item.id) ?? item.createdAt)
+                  : item.createdAt;
+              return (
+                <li key={item.id} className="flex gap-3 py-3">
+                  <div className="shrink-0">
+                    {item.identity === "anonymous" ? (
+                      <AnonymousShareAvatar size={48} className="rounded-lg" />
+                    ) : paired ? (
+                      <CharacterSprite
+                        src={avatarUrl}
+                        alt=""
+                        size={48}
+                        reserveSpace
+                        className="rounded-lg"
+                      />
+                    ) : null}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-semibold">
+                      {mode === "leaderboard" ? (
+                        <span className="mr-1.5 tabular-nums text-muted-foreground">
+                          {index + 1}.
+                        </span>
+                      ) : null}
+                      {item.name}
+                    </p>
+                    <p className="truncate text-sm text-muted-foreground">
+                      {className}
+                      {item.level ? ` · Lv. ${item.level}` : ""}
+                      {item.hasEquipment
+                        ? ` · ${item.equipCount > 0 ? `${item.equipCount} gear` : "gear"}`
+                        : ""}
+                    </p>
+                    <p className="mt-0.5 text-xs tabular-nums text-muted-foreground">
+                      {(item.views ?? 0).toLocaleString()} views ·{" "}
+                      {formatSharedAt(timeTs, now)}
+                    </p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      <Link
+                        href={`/calc/character/share/${item.id}`}
+                        className="inline-flex min-h-11 items-center rounded bg-accent px-3 text-sm font-semibold text-primary-foreground"
+                      >
+                        Open
+                      </Link>
+                      {canRemove ? (
+                        <button
+                          type="button"
+                          disabled={removingId === item.id}
+                          onClick={() => void removeFromGallery(item)}
+                          className="inline-flex min-h-11 items-center rounded border border-border px-3 text-sm font-semibold text-red-700 disabled:opacity-40 dark:text-red-400"
+                        >
+                          {removingId === item.id
+                            ? "Removing…"
+                            : canRemoveOwned
+                              ? "Remove"
+                              : "Delete"}
+                        </button>
+                      ) : null}
+                    </div>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+          <div className="maple-table-scroll hidden rounded-lg border border-border/50 bg-surface/90 md:block">
           <table className="w-full min-w-[48rem] text-left text-sm">
             <thead className="border-b border-border/40 bg-surface-muted/50 text-xs uppercase tracking-wide opacity-70">
               <tr>
@@ -520,7 +604,8 @@ export function GalleryClient({
               )}
             </tbody>
           </table>
-        </div>
+          </div>
+        </>
       ) : null}
     </div>
   );

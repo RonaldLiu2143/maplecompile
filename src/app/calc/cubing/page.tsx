@@ -341,7 +341,7 @@ export default function CubingCalculatorPage() {
             </p>
           </div>
 
-          <div className="overflow-x-auto">
+          <div className="maple-table-scroll">
             <table className="w-full min-w-[28rem] border-collapse text-sm">
               <thead>
                 <tr className="border-b border-border/40 text-left">

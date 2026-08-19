@@ -415,7 +415,7 @@ export default function FlamesClient() {
             s.displaySections.includes("table"),
           );
           return (
-            <div key={section} className="overflow-x-auto">
+            <div key={section} className="maple-table-scroll">
               <h3 className="mb-2 text-sm font-semibold opacity-80">
                 {block.category}
               </h3>
@@ -672,7 +672,7 @@ export default function FlamesClient() {
             <h3 className="mb-2 text-sm font-semibold">
               Flames needed for an X% chance of a better result
             </h3>
-            <div className="overflow-x-auto rounded-lg border border-border/30">
+            <div className="maple-table-scroll rounded-lg border border-border/30">
               <table className="w-full min-w-[28rem] border-collapse text-sm">
                 <thead>
                   <tr className="border-b border-border/30 bg-surface-muted/50 text-left text-xs opacity-70">

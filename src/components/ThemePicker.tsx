@@ -603,7 +603,7 @@ export function ThemePicker({
           aria-controls={panelId}
           title="Theme"
           onClick={() => setOpen((v) => !v)}
-          className="rounded-lg p-2 transition-colors hover:bg-accent-soft hover:text-accent"
+          className="flex size-11 items-center justify-center rounded-lg transition-colors hover:bg-accent-soft hover:text-accent"
         >
           <ThemeIcon />
           <span className="sr-only">Theme</span>

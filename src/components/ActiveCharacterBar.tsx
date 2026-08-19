@@ -184,16 +184,16 @@ export function ActiveCharacterBar({
     return (
       <div
         className={[
-          "flex flex-wrap items-center justify-between gap-2 rounded-xl border border-dashed border-border/60 bg-surface/70 px-3 py-2",
+          "flex flex-wrap items-center justify-between gap-2 border-b border-dashed border-border/60 py-2",
           className ?? "",
         ].join(" ")}
       >
-        <p className="text-xs opacity-70">
+        <p className="text-sm text-muted-foreground">
           No roster characters yet — tools stay local until you add one.
         </p>
         <Link
           href="/dashboard"
-          className="rounded-md border border-border px-2.5 py-1 text-xs font-semibold transition hover:bg-surface-muted"
+          className="inline-flex min-h-11 items-center rounded-md border border-border px-3 text-sm font-semibold transition hover:bg-surface-muted"
         >
           Dashboard
         </Link>
@@ -210,7 +210,7 @@ export function ActiveCharacterBar({
   return (
     <div
       className={[
-        "flex flex-wrap items-center gap-2 rounded-xl border border-border/50 bg-surface/90 px-3 py-2",
+        "flex flex-col gap-2 border-b border-border/50 py-2 md:flex-row md:flex-wrap md:items-center",
         className ?? "",
       ].join(" ")}
     >
@@ -220,20 +220,20 @@ export function ActiveCharacterBar({
           <img
             src={avatar}
             alt=""
-            width={36}
-            height={36}
-            className="h-9 w-9 shrink-0 object-contain"
+            width={40}
+            height={40}
+            className="h-10 w-10 shrink-0 object-contain"
           />
         ) : (
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-surface-muted text-[10px] font-bold uppercase opacity-55">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-surface-muted text-[10px] font-bold uppercase opacity-55">
             {(displayName || "?").slice(0, 2)}
           </div>
         )}
         <div className="min-w-0">
-          <p className="text-[0.65rem] font-semibold uppercase tracking-wider text-accent opacity-80">
-            Active character
+          <p className="text-xs text-muted-foreground">
+            Active
             {locked ? (
-              <span className="ml-1.5 inline-flex items-center gap-0.5 normal-case tracking-normal text-amber-500 opacity-90">
+              <span className="ml-1.5 inline-flex items-center gap-0.5 text-amber-500">
                 <LockIcon filled size={10} />
                 Locked
               </span>
@@ -241,70 +241,70 @@ export function ActiveCharacterBar({
           </p>
           <p className="truncate text-sm font-semibold">{displayName}</p>
           {presetLabel ? (
-            <p className="truncate text-[0.65rem] text-accent opacity-85">
-              {presetLabel}
-            </p>
+            <p className="truncate text-xs text-accent">{presetLabel}</p>
           ) : null}
           {viewingTemporary ? (
-            <p className="truncate text-[0.65rem] opacity-65">
+            <p className="truncate text-xs text-muted-foreground">
               Default: {lockedLabel}
             </p>
           ) : null}
         </div>
       </div>
 
-      <button
-        type="button"
-        onClick={handleToggleLock}
-        disabled={!primary}
-        title={lockTitle}
-        aria-label={locked ? "Unlock active character" : "Lock active character"}
-        aria-pressed={locked}
-        className={[
-          "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border transition",
-          locked
-            ? "border-amber-400/55 bg-amber-400/15 text-amber-500 hover:bg-amber-400/25"
-            : "border-border bg-background text-foreground/45 hover:bg-surface-muted hover:text-foreground/80",
-          !primary ? "cursor-not-allowed opacity-40" : "",
-        ].join(" ")}
-      >
-        <LockIcon filled={locked} />
-      </button>
-
-      {viewingTemporary ? (
+      <div className="flex min-w-0 items-center gap-2">
         <button
           type="button"
-          onClick={handleSwitchBack}
-          title={`Switch back to locked default (${lockedLabel})`}
-          className="rounded-md border border-amber-400/45 bg-amber-400/10 px-2.5 py-1.5 text-xs font-semibold text-amber-600 transition hover:bg-amber-400/20"
+          onClick={handleToggleLock}
+          disabled={!primary}
+          title={lockTitle}
+          aria-label={locked ? "Unlock active character" : "Lock active character"}
+          aria-pressed={locked}
+          className={[
+            "inline-flex size-11 shrink-0 items-center justify-center rounded-md border transition",
+            locked
+              ? "border-amber-400/55 bg-amber-400/15 text-amber-500 hover:bg-amber-400/25"
+              : "border-border bg-background text-foreground/45 hover:bg-surface-muted hover:text-foreground/80",
+            !primary ? "cursor-not-allowed opacity-40" : "",
+          ].join(" ")}
         >
-          Switch back
+          <LockIcon filled={locked} />
         </button>
-      ) : null}
 
-      <label className="flex items-center gap-1.5 text-xs">
-        <span className="sr-only">Switch active character</span>
-        <select
-          value={primaryKey}
-          onChange={(e) => handleSelect(e.target.value)}
-          className="max-w-[11rem] rounded-md border border-border bg-background px-2 py-1.5 text-xs font-semibold outline-none focus:border-accent sm:max-w-[14rem]"
-        >
-          {roster.map((entry) => {
-            const key = entryKey(entry);
-            const cached = readSessionCharacter(entry.name, entry.region);
-            const label = cached?.name ?? entry.name;
-            const isLockedOpt = lockKey === key;
-            return (
-              <option key={key} value={key}>
-                {label} ({entry.region.toUpperCase()})
-                {isLockedOpt ? " · locked" : ""}
-              </option>
-            );
-          })}
-        </select>
-      </label>
+        {viewingTemporary ? (
+          <button
+            type="button"
+            onClick={handleSwitchBack}
+            title={`Switch back to locked default (${lockedLabel})`}
+            className="min-h-11 rounded-md border border-amber-400/45 bg-amber-400/10 px-3 text-sm font-semibold text-amber-600 transition hover:bg-amber-400/20"
+          >
+            Switch back
+          </button>
+        ) : null}
 
-      <div className="flex flex-wrap items-center gap-1.5">
+        <label className="min-w-0 flex-1">
+          <span className="sr-only">Switch active character</span>
+          <select
+            value={primaryKey}
+            onChange={(e) => handleSelect(e.target.value)}
+            className="min-h-11 w-full rounded-md border border-border bg-background px-2 text-base font-semibold outline-none focus:border-accent md:text-sm"
+          >
+            {roster.map((entry) => {
+              const key = entryKey(entry);
+              const cached = readSessionCharacter(entry.name, entry.region);
+              const label = cached?.name ?? entry.name;
+              const isLockedOpt = lockKey === key;
+              return (
+                <option key={key} value={key}>
+                  {label} ({entry.region.toUpperCase()})
+                  {isLockedOpt ? " · locked" : ""}
+                </option>
+              );
+            })}
+          </select>
+        </label>
+      </div>
+
+      <div className="hidden flex-wrap items-center gap-1.5 md:flex">
         <Link
           href="/dashboard"
           className="rounded-md border border-border px-2.5 py-1.5 text-xs font-semibold transition hover:bg-surface-muted"
@@ -322,7 +322,7 @@ export function ActiveCharacterBar({
       {lockHint ? (
         <p
           role="status"
-          className="w-full text-xs font-semibold text-amber-600"
+          className="w-full text-sm font-semibold text-amber-600"
         >
           {lockHint}
         </p>

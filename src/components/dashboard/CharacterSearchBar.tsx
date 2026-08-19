@@ -19,7 +19,7 @@ import {
 } from "@/lib/dashboard/roster";
 
 const inputClass =
-  "rounded border border-border bg-background px-3 py-2 text-sm outline-none focus:border-accent";
+  "min-h-11 rounded border border-border bg-background px-3 py-2 text-base outline-none focus:border-accent md:min-h-0 md:text-sm";
 
 export function CharacterSearchBar({
   roster,
@@ -120,8 +120,8 @@ export function CharacterSearchBar({
     ? "space-y-3 rounded-xl border border-border/50 bg-surface/70 p-3"
     : "space-y-3";
   const formClass = compactPanel
-    ? "flex flex-wrap items-end gap-2"
-    : "flex flex-wrap items-end gap-3 rounded-xl border-2 border-border bg-surface p-4";
+    ? "flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-end"
+    : "flex flex-col gap-2 rounded-xl border-2 border-border bg-surface p-3 sm:flex-row sm:flex-wrap sm:items-end sm:gap-3 sm:p-4";
 
   return (
     <section className={panelClass}>
@@ -135,7 +135,7 @@ export function CharacterSearchBar({
       ) : null}
 
       <form onSubmit={onSubmit} className={formClass}>
-        <label className="flex min-w-[12rem] flex-1 flex-col gap-1 text-sm font-semibold">
+        <label className="flex min-w-0 flex-1 flex-col gap-1 text-sm font-semibold">
           Search character
           <input
             className={inputClass}
@@ -148,25 +148,27 @@ export function CharacterSearchBar({
             disabled={pending}
           />
         </label>
-        <label className="flex flex-col gap-1 text-sm font-semibold">
-          Region
-          <select
-            className={inputClass}
-            value={region}
-            onChange={(e) => setRegion(e.target.value as NexonRegion)}
-            disabled={pending}
+        <div className="flex gap-2">
+          <label className="flex min-w-[5.5rem] flex-col gap-1 text-sm font-semibold">
+            Region
+            <select
+              className={inputClass}
+              value={region}
+              onChange={(e) => setRegion(e.target.value as NexonRegion)}
+              disabled={pending}
+            >
+              <option value="na">NA</option>
+              <option value="eu">EU</option>
+            </select>
+          </label>
+          <button
+            type="submit"
+            disabled={pending || name.trim().length < 2}
+            className="mt-auto min-h-11 flex-1 rounded-lg bg-accent px-5 text-sm font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-50 sm:flex-none"
           >
-            <option value="na">NA</option>
-            <option value="eu">EU</option>
-          </select>
-        </label>
-        <button
-          type="submit"
-          disabled={pending || name.trim().length < 2}
-          className="rounded-lg bg-accent px-5 py-2 text-sm font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-50"
-        >
-          {pending ? "Searching…" : "Search"}
-        </button>
+            {pending ? "Searching…" : "Search"}
+          </button>
+        </div>
       </form>
 
       {error ? (

@@ -33,14 +33,14 @@ export default function SetupClient() {
 
   if (!ready) {
     return (
-      <div className="space-y-8">
+        <div className="space-y-4 md:space-y-8">
         <p className="text-sm opacity-70">Loading equipment setup…</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8">
+      <div className="space-y-4 md:space-y-8">
       <ActiveCharacterBar
         onSwitched={() => setReloadToken((n) => n + 1)}
       />

@@ -54,9 +54,9 @@ function FooterColumn({
 
 export function SiteFooter() {
   return (
-    <footer className="bg-card/40 px-4 py-8 text-sm">
-      <Separator className="mx-auto mb-8 max-w-7xl" />
-      <div className="mx-auto grid w-full max-w-7xl gap-8 sm:grid-cols-2 lg:grid-cols-4">
+    <footer className="bg-card/40 px-4 py-4 text-sm md:py-8">
+      <Separator className="mx-auto mb-4 hidden max-w-7xl md:mb-8 md:block" />
+      <div className="mx-auto hidden w-full max-w-7xl gap-8 sm:grid-cols-2 md:grid lg:grid-cols-4">
         <div>
           <p className="font-display text-base font-bold text-primary">
             {SITE_NAME}
@@ -70,13 +70,27 @@ export function SiteFooter() {
         <FooterColumn title="Site" links={COMPANY_LINKS} />
         <FooterColumn title="Legal" links={LEGAL_LINKS} />
       </div>
-      <p className="mx-auto mt-8 max-w-7xl text-center text-xs text-muted-soft">
+      <p className="mx-auto max-w-7xl text-center text-xs text-muted-soft md:mt-8">
         Not affiliated with Nexon. MapleStory is © Nexon.{" "}
         <Link
           href="/accessibility"
-          className="underline-offset-2 hover:text-primary hover:underline"
+          className="inline-flex min-h-11 items-center underline-offset-2 hover:text-primary hover:underline md:min-h-0"
         >
-          Accessibility statement
+          Accessibility
+        </Link>
+        {" · "}
+        <Link
+          href="/privacy"
+          className="inline-flex min-h-11 items-center underline-offset-2 hover:text-primary hover:underline md:min-h-0"
+        >
+          Privacy
+        </Link>
+        {" · "}
+        <Link
+          href="/terms"
+          className="inline-flex min-h-11 items-center underline-offset-2 hover:text-primary hover:underline md:min-h-0"
+        >
+          Terms
         </Link>
         .
       </p>

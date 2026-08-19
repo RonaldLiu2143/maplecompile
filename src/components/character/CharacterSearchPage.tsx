@@ -25,7 +25,7 @@ import type {
 import { entryKey } from "@/lib/dashboard/roster";
 
 const inputClass =
-  "rounded border border-border bg-background px-3 py-2 text-sm outline-none focus:border-accent";
+  "min-h-11 rounded border border-border bg-background px-3 py-2 text-base outline-none focus:border-accent md:min-h-0 md:text-sm";
 
 function toSavedFields(result: CharacterLookupResult): SavedCharacterInput {
   return {
@@ -254,12 +254,9 @@ export function CharacterSearchPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6 py-2">
-      <header className="space-y-1.5">
-        <p className="text-[0.7rem] font-semibold uppercase tracking-[0.14em] text-accent/90">
-          Character
-        </p>
-        <h1 className="font-display text-3xl font-bold tracking-tight sm:text-4xl">
+    <div className="flex flex-col gap-5 py-1 md:gap-6 md:py-2">
+      <header className="space-y-1">
+        <h1 className="font-display text-2xl font-bold tracking-tight md:text-4xl">
           Character Search
         </h1>
         <p className="max-w-xl text-sm text-foreground/65">
@@ -270,10 +267,10 @@ export function CharacterSearchPage() {
       </header>
 
       <div className="flex flex-col gap-5">
-        <aside className="rounded-2xl border border-border/55 bg-surface/90 p-4 sm:p-5">
+        <aside className="border-b border-border/55 pb-4">
           <div className="flex flex-wrap items-end justify-between gap-2">
             <div>
-              <h2 className="font-display text-[0.7rem] font-bold uppercase tracking-[0.14em] text-accent">
+              <h2 className="font-display text-sm font-bold text-foreground">
                 Saved Characters
               </h2>
               <p className="mt-1 text-[0.7rem] text-foreground/50">
@@ -329,9 +326,9 @@ export function CharacterSearchPage() {
         <section className="space-y-3">
           <form
             onSubmit={(e) => void onSubmit(e)}
-            className="flex flex-wrap items-end gap-3 rounded-2xl border-2 border-border bg-surface p-4 sm:p-5"
+            className="flex flex-col gap-2 rounded-xl border-2 border-border bg-surface p-3 sm:flex-row sm:flex-wrap sm:items-end sm:gap-3 sm:p-5"
           >
-            <label className="flex min-w-[12rem] flex-1 flex-col gap-1 text-sm font-semibold">
+            <label className="flex min-w-0 flex-1 flex-col gap-1 text-sm font-semibold">
               Character name
               <input
                 className={inputClass}
@@ -345,25 +342,27 @@ export function CharacterSearchPage() {
                 autoFocus
               />
             </label>
-            <label className="flex flex-col gap-1 text-sm font-semibold">
-              Region
-              <select
-                className={inputClass}
-                value={region}
-                onChange={(e) => setRegion(e.target.value as NexonRegion)}
-                disabled={pending}
+            <div className="flex gap-2">
+              <label className="flex min-w-[5.5rem] flex-col gap-1 text-sm font-semibold">
+                Region
+                <select
+                  className={inputClass}
+                  value={region}
+                  onChange={(e) => setRegion(e.target.value as NexonRegion)}
+                  disabled={pending}
+                >
+                  <option value="na">NA</option>
+                  <option value="eu">EU</option>
+                </select>
+              </label>
+              <button
+                type="submit"
+                disabled={pending || name.trim().length < 2}
+                className="mt-auto min-h-11 flex-1 rounded-lg bg-accent px-5 text-sm font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-50 sm:flex-none"
               >
-                <option value="na">NA</option>
-                <option value="eu">EU</option>
-              </select>
-            </label>
-            <button
-              type="submit"
-              disabled={pending || name.trim().length < 2}
-              className="rounded-lg bg-accent px-5 py-2 text-sm font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-50"
-            >
-              {pending ? "Searching…" : "Search"}
-            </button>
+                {pending ? "Searching…" : "Search"}
+              </button>
+            </div>
           </form>
 
           {error ? (

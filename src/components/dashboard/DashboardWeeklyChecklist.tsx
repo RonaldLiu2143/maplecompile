@@ -194,7 +194,7 @@ export function DashboardRosterWeeklySection({
             type="button"
             onClick={onManageToggle}
             className={[
-              "rounded-md px-3 py-1.5 text-xs font-semibold transition",
+              "inline-flex min-h-11 items-center rounded-md px-3 text-sm font-semibold transition",
               managing
                 ? "border border-border hover:bg-surface-muted"
                 : "bg-accent text-primary-foreground hover:opacity-90",

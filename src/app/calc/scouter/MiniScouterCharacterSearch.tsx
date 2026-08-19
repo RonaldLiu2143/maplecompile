@@ -12,7 +12,7 @@ import {
 } from "@/lib/character/lookup";
 
 const inputClass =
-  "rounded border border-border/50 bg-background px-2 py-1 text-xs outline-none focus:border-accent";
+  "min-h-11 rounded border border-border/50 bg-background px-2 py-1 text-base outline-none focus:border-accent md:min-h-0 md:text-xs";
 
 function characterKey(c: Pick<CharacterLookupResult, "name" | "region">): string {
   return `${c.region}:${c.name.toLowerCase()}`;
@@ -115,7 +115,7 @@ export function MiniScouterCharacterSearch({
         <button
           type="submit"
           disabled={pending || name.trim().length < 2}
-          className="rounded border border-border/50 bg-background px-2.5 py-1 text-xs font-semibold transition hover:bg-surface-muted disabled:opacity-40"
+          className="min-h-11 rounded border border-border/50 bg-background px-3 text-sm font-semibold transition hover:bg-surface-muted disabled:opacity-40"
         >
           {pending ? "…" : "Search"}
         </button>

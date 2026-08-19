@@ -269,7 +269,7 @@ export default function UpgradePlannerPage() {
       ) : null}
 
       {!pending && filtered.length > 0 ? (
-        <div className="overflow-x-auto rounded-xl border border-border/50">
+        <div className="maple-table-scroll rounded-xl border border-border/50">
           <table className="w-full min-w-[36rem] border-collapse text-left text-sm">
             <thead className="bg-surface-muted/60 text-xs uppercase tracking-wide opacity-70">
               <tr>

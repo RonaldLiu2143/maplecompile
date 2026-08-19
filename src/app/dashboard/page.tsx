@@ -2,7 +2,6 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { BrandMark } from "@/components/BrandMark";
 import { CharacterSearchBar } from "@/components/dashboard/CharacterSearchBar";
 import {
   DashboardPrimaryHero,
@@ -58,14 +57,10 @@ function DashboardInner() {
   const hasRoster = roster.length > 0;
 
   return (
-    <div className="mx-auto flex max-w-5xl flex-col gap-5 py-4">
+    <div className="mx-auto flex max-w-5xl flex-col gap-4 py-1 md:gap-5 md:py-4">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div className="min-w-0">
-          <p className="flex items-center gap-1.5 text-sm font-semibold uppercase tracking-wider text-accent opacity-90">
-            <BrandMark size={16} />
-            MapleCompile
-          </p>
-          <h1 className="font-display mt-0.5 text-3xl font-bold tracking-tight sm:text-4xl">
+          <h1 className="font-display text-2xl font-bold tracking-tight md:text-4xl">
             Dashboard
           </h1>
           {!hasRoster ? (
@@ -76,7 +71,7 @@ function DashboardInner() {
           ) : null}
         </div>
         {hydrated && hasRoster ? (
-          <div className="hidden rounded-lg border border-border/40 bg-surface/70 px-2 py-1.5 sm:block">
+          <div className="hidden md:block">
             <DashboardToolShortcuts quiet />
           </div>
         ) : null}
@@ -107,12 +102,6 @@ function DashboardInner() {
           Loading…
         </div>
       )}
-
-      {hydrated && hasRoster ? (
-        <div className="rounded-lg border border-border/40 bg-surface/70 px-2 py-1.5 sm:hidden">
-          <DashboardToolShortcuts quiet />
-        </div>
-      ) : null}
 
       {hydrated ? (
         <div

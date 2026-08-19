@@ -821,7 +821,7 @@ export default function HexaTrackerPage() {
                         type="button"
                         onClick={() => selectRosterCharacter(key)}
                         className={[
-                          "flex w-[4.75rem] shrink-0 flex-col items-center gap-1 rounded-xl border px-1.5 py-2 transition",
+                          "flex min-h-11 w-[4.75rem] shrink-0 flex-col items-center gap-1 rounded-xl border px-1.5 py-2 transition",
                           active
                             ? "border-accent bg-accent-soft/45"
                             : "border-border/50 bg-background/40 hover:border-accent/40",

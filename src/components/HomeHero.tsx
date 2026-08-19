@@ -26,22 +26,22 @@ export function HomeHero() {
     : undefined;
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex flex-col gap-5 md:gap-8">
       <section className="mx-auto flex max-w-2xl flex-col items-center text-center">
         <BrandWordmark
           as="h1"
-          markSize={36}
-          textClassName="text-4xl sm:text-5xl"
+          markSize={28}
+          textClassName="text-3xl sm:text-5xl"
         />
         <p className="sr-only">
           MapleStory GMS calculators, character search, and combat power
           scouter
         </p>
-        <p className="mt-3 max-w-md text-sm text-muted-foreground sm:text-base">
+        <p className="mt-2 max-w-md text-sm text-muted-foreground sm:mt-3 sm:text-base">
           Look up a GMS character, pin a primary, then jump into scouter and
           gear tools. Free, no account required.
         </p>
-        <div className="mt-8 flex flex-wrap items-center justify-center gap-2">
+        <div className="mt-4 hidden flex-wrap items-center justify-center gap-2 sm:mt-8 sm:flex">
           <Button asChild variant="ghost" className="h-11 px-4">
             <Link href="/guide">Read the Guide</Link>
           </Button>

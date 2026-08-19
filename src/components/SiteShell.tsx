@@ -2,14 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  useEffect,
-  useEffectEvent,
-  useRef,
-  useState,
-  type ReactNode,
-} from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { BrandMark, BrandWordmark } from "@/components/BrandMark";
+import { MobileAppHeader, MobileAppNav } from "@/components/MobileAppNav";
 import { ThemePicker } from "@/components/ThemePicker";
 import { WeeklyResetBar } from "@/components/WeeklyResetBar";
 import { Button } from "@/components/ui/button";
@@ -24,78 +19,23 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useApplyThemeToDocument } from "@/hooks/useApplyThemeToDocument";
+import {
+  DISCOVER_LINKS,
+  MAIN_LINKS,
+  PROGRESSION_LINKS,
+  TOOL_LINKS,
+  anyLinkActive,
+  linkActive,
+  type NavLink,
+} from "@/lib/nav";
 import { runStorageCleanupOnce } from "@/lib/storage-cleanup";
 import { cn } from "@/lib/utils";
-import { ChevronRight, Menu, X } from "lucide-react";
+import { ChevronRight, Menu } from "lucide-react";
 
 const STORAGE_KEY = "maplecompile-sidebar-open";
 
-type NavLink = {
-  href: string;
-  label: string;
-  match?: "exact" | "prefix";
-};
-
 const NAV_ACTIVE =
-  "bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground";
-
-/** Top-of-nav links — static module constants so SSR and client first paint match. */
-const TOP_LINKS: NavLink[] = [
-  { href: "/dashboard", label: "Dashboard", match: "exact" },
-  { href: "/calc/character", label: "Character Search", match: "exact" },
-];
-
-const SCOUTER_LINKS: NavLink[] = [
-  { href: "/calc/scouter", label: "Scouter", match: "exact" },
-  { href: "/calc/scouter/gallery", label: "Gallery" },
-];
-
-const ROSTER_LINKS: NavLink[] = [
-  { href: "/roster", label: "Manager", match: "exact" },
-  { href: "/calc/bosses", label: "Boss Income", match: "exact" },
-  { href: "/calc/liberation", label: "Liberation", match: "exact" },
-  { href: "/calc/hexa-tracker", label: "HEXA / Fragments", match: "exact" },
-  { href: "/calc/diary", label: "Diary", match: "exact" },
-];
-
-const CALCULATOR_LINKS: NavLink[] = [
-  { href: "/calc/planner", label: "Upgrade Planner" },
-  { href: "/calc/equips/flames", label: "Flame Calculator" },
-  { href: "/calc/cubing", label: "Cubing Calculator" },
-];
-
-const EQUIPMENT_LINKS: NavLink[] = [
-  { href: "/calc/equips/setup", label: "Equipment Setup" },
-];
-
-const GUIDE_LINKS: NavLink[] = [
-  { href: "/guide", label: "Guide", match: "exact" },
-  { href: "/about", label: "About", match: "exact" },
-  { href: "/faq", label: "FAQ", match: "exact" },
-];
-
-function linkActive(pathname: string, link: NavLink): boolean {
-  if (link.match === "exact") {
-    // Character Search: highlight search + profile routes, not share posts.
-    if (link.href === "/calc/character") {
-      return (
-        pathname === "/calc/character" ||
-        (pathname.startsWith("/calc/character/") &&
-          !pathname.startsWith("/calc/character/share"))
-      );
-    }
-    return (
-      pathname === link.href ||
-      pathname.startsWith(`${link.href}/result`) ||
-      pathname.startsWith(`${link.href}/s/`)
-    );
-  }
-  return pathname === link.href || pathname.startsWith(`${link.href}/`);
-}
-
-function anyLinkActive(pathname: string, links: NavLink[]): boolean {
-  return links.some((link) => linkActive(pathname, link));
-}
+  "bg-muted font-semibold text-sidebar-foreground hover:bg-muted hover:text-sidebar-foreground";
 
 function NavSection({
   title,
@@ -109,7 +49,7 @@ function NavSection({
   return (
     <div className="flex flex-col gap-0.5">
       {title ? (
-        <p className="px-3 pb-1 pt-3 text-[0.7rem] font-semibold uppercase tracking-wider text-muted-soft">
+        <p className="px-3 pb-1 pt-3 text-xs font-semibold text-muted-soft">
           {title}
         </p>
       ) : null}
@@ -142,7 +82,6 @@ function NavGroup({
   pathname: string;
 }) {
   const childActive = anyLinkActive(pathname, links);
-  // null = follow route; boolean = user override. Avoids SSR/client first-paint drift.
   const [userExpanded, setUserExpanded] = useState<boolean | null>(null);
   const expanded = userExpanded ?? childActive;
 
@@ -162,7 +101,7 @@ function NavGroup({
           variant="ghost"
           className={cn(
             "h-9 w-full justify-between",
-            childActive && "text-primary",
+            childActive && "font-semibold",
           )}
         >
           <span>{title}</span>
@@ -207,18 +146,10 @@ export function SiteShell({
   const pathname = usePathname();
   const [open, setOpen] = useState(true);
   const [ready, setReady] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
   useApplyThemeToDocument();
 
-  const syncViewport = useEffectEvent(() => {
-    setIsMobile(window.matchMedia("(max-width: 767px)").matches);
-  });
-
   useEffect(() => {
-    syncViewport();
     const mq = window.matchMedia("(max-width: 767px)");
-    const onChange = () => syncViewport();
-    mq.addEventListener("change", onChange);
 
     try {
       runStorageCleanupOnce();
@@ -237,8 +168,6 @@ export function SiteShell({
       setOpen(!mq.matches);
     }
     setReady(true);
-
-    return () => mq.removeEventListener("change", onChange);
   }, []);
 
   useEffect(() => {
@@ -250,43 +179,14 @@ export function SiteShell({
     }
   }, [open, ready]);
 
-  // Close mobile overlay after navigation (skip initial mount)
-  const skipPathClose = useRef(true);
-  useEffect(() => {
-    if (skipPathClose.current) {
-      skipPathClose.current = false;
-      return;
-    }
-    if (window.matchMedia("(max-width: 767px)").matches) {
-      setOpen(false);
-    }
-  }, [pathname]);
-
   const toggle = () => setOpen((v) => !v);
-  const showOverlay = isMobile && open;
 
   return (
-    <div className="flex min-h-full flex-1">
-      {showOverlay ? (
-        <button
-          type="button"
-          aria-label="Close navigation"
-          className="fixed inset-0 z-30 bg-black/40 md:hidden"
-          onClick={() => setOpen(false)}
-        />
-      ) : null}
-
+    <div className="flex min-h-full flex-1 overflow-x-clip">
       <aside
         className={cn(
-          "z-40 flex shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-[width,transform] duration-200 ease-out",
-          isMobile
-            ? cn(
-                "fixed inset-y-0 left-0 w-64",
-                open ? "translate-x-0" : "-translate-x-full",
-              )
-            : open
-              ? "sticky top-0 h-dvh w-60"
-              : "sticky top-0 h-dvh w-14",
+          "sticky top-0 z-40 hidden h-dvh shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-[width] duration-200 ease-out md:flex",
+          open ? "w-60" : "w-14",
         )}
         aria-label="Site navigation"
       >
@@ -297,13 +197,7 @@ export function SiteShell({
           )}
         >
           {open ? (
-            <Link
-              href="/"
-              className="min-w-0"
-              onClick={() => {
-                if (isMobile) setOpen(false);
-              }}
-            >
+            <Link href="/" className="min-w-0">
               <BrandWordmark markSize={24} textClassName="text-xl" />
             </Link>
           ) : (
@@ -326,7 +220,7 @@ export function SiteShell({
                 aria-expanded={open}
                 aria-controls="site-sidebar-nav"
               >
-                {isMobile && open ? <X /> : <Menu />}
+                <Menu />
                 <span className="sr-only">
                   {open ? "Collapse sidebar" : "Expand sidebar"}
                 </span>
@@ -344,24 +238,22 @@ export function SiteShell({
               id="site-sidebar-nav"
               className="maple-scroll flex flex-1 flex-col gap-2 px-1 py-2"
             >
-              <NavSection links={TOP_LINKS} pathname={pathname} />
-              <NavGroup
-                title="Roster"
-                links={ROSTER_LINKS}
-                pathname={pathname}
-              />
-              <NavSection links={SCOUTER_LINKS} pathname={pathname} />
-              <NavGroup
-                title="Calculators"
-                links={CALCULATOR_LINKS}
+              <NavSection
+                title="Main"
+                links={MAIN_LINKS}
                 pathname={pathname}
               />
               <NavGroup
-                title="Equipment"
-                links={EQUIPMENT_LINKS}
+                title="Progression"
+                links={PROGRESSION_LINKS}
                 pathname={pathname}
               />
-              <NavSection links={GUIDE_LINKS} pathname={pathname} />
+              <NavGroup title="Tools" links={TOOL_LINKS} pathname={pathname} />
+              <NavSection
+                title="Discover"
+                links={DISCOVER_LINKS}
+                pathname={pathname}
+              />
             </nav>
             <ThemePicker />
           </>
@@ -373,37 +265,27 @@ export function SiteShell({
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <div className="sticky top-0 z-20">
-          {isMobile ? (
-            <header className="flex items-center gap-3 border-b border-sidebar-border bg-sidebar px-3 py-2.5">
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                onClick={toggle}
-                aria-expanded={open}
-              >
-                <Menu />
-                <span className="sr-only">Open navigation</span>
-              </Button>
-              <Link href="/" className="min-w-0 flex-1">
-                <BrandWordmark markSize={22} textClassName="text-xl" />
-              </Link>
-              <div className="shrink-0">
-                <ThemePicker compact placement="below" />
-              </div>
-            </header>
-          ) : null}
+        <div className="sticky top-0 z-20 md:hidden">
+          <MobileAppHeader />
+        </div>
+        <div className="sticky top-0 z-20 hidden md:block">
           <WeeklyResetBar />
         </div>
 
         <main
           id="main-content"
-          className="mx-auto w-full max-w-7xl flex-1 px-4 py-8"
+          className="mx-auto w-full max-w-7xl min-w-0 flex-1 px-3 py-4 md:px-4 md:py-8"
         >
           {children}
         </main>
         {footer}
+        <div
+          className="h-[calc(4.25rem+env(safe-area-inset-bottom,0px))] md:hidden"
+          aria-hidden
+        />
+        <div className="md:hidden">
+          <MobileAppNav />
+        </div>
       </div>
     </div>
   );
