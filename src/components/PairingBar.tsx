@@ -256,7 +256,7 @@ export function PairingBar({
             </button>
           )}
           <Link
-            href="/dashboard#get-started"
+            href="/guide"
             className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold transition hover:bg-surface-muted"
           >
             Guide

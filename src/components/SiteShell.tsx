@@ -53,7 +53,7 @@ const EQUIPMENT_LINKS: NavLink[] = [
 ];
 
 const GUIDE_LINKS: NavLink[] = [
-  { href: "/onboarding", label: "Guide", match: "exact" },
+  { href: "/guide", label: "Guide", match: "exact" },
   { href: "/about", label: "About", match: "exact" },
   { href: "/faq", label: "FAQ", match: "exact" },
 ];
@@ -104,7 +104,7 @@ function NavSection({
             key={link.href}
             href={link.href}
             className={[
-              "rounded-lg px-3 py-2 text-sm font-semibold transition-colors",
+              "cursor-pointer rounded-lg px-3 py-2 text-sm font-semibold transition-colors duration-200",
               active
                 ? "bg-accent text-white dark:text-zinc-900"
                 : "hover:bg-accent-soft hover:text-accent",
@@ -143,7 +143,7 @@ function NavGroup({
         aria-expanded={expanded}
         onClick={() => setUserExpanded(!(userExpanded ?? childActive))}
         className={[
-          "flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm font-semibold transition-colors",
+          "flex w-full cursor-pointer items-center justify-between rounded-lg px-3 py-2 text-left text-sm font-semibold transition-colors duration-200",
           childActive
             ? "text-accent"
             : "hover:bg-accent-soft hover:text-accent",
@@ -179,7 +179,7 @@ function NavGroup({
                 key={link.href}
                 href={link.href}
                 className={[
-                  "rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors",
+                  "cursor-pointer rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors duration-200",
                   active
                     ? "bg-accent text-white dark:text-zinc-900"
                     : "hover:bg-accent-soft hover:text-accent",
@@ -305,7 +305,7 @@ export function SiteShell({
 
       <aside
         className={[
-          "z-40 flex shrink-0 flex-col border-r-2 border-border bg-surface-muted/98 backdrop-blur-md transition-[width,transform] duration-200 ease-out",
+          "z-40 flex shrink-0 flex-col border-r border-border/60 bg-surface/90 backdrop-blur-md transition-[width,transform] duration-200 ease-out",
           isMobile
             ? [
                 "fixed inset-y-0 left-0 w-64",

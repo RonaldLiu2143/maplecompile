@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-/** Dedicated onboarding entry → dashboard wizard. */
+/** Legacy /onboarding bookmarks → Guide. */
 export default function OnboardingPage() {
-  redirect("/dashboard#get-started");
+  redirect("/guide");
 }

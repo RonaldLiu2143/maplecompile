@@ -13,7 +13,6 @@ export default function robots(): MetadataRoute.Robots {
           "/calc/scouter/s/",
           "/calc/scouter/result",
           "/calc/boss-schedule/s/",
-          "/guide",
           "/onboarding",
         ],
       },

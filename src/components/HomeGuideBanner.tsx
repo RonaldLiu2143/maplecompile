@@ -21,7 +21,7 @@ export function HomeGuideBanner() {
             New here?
           </p>
           <p className="mt-1 font-display text-lg font-semibold">
-            5 easy steps on the Dashboard
+            Start with the Guide
           </p>
           <p className="mt-1 text-sm opacity-75">
             Find your character → lock your main → fill Scouter stats and gear
@@ -30,7 +30,7 @@ export function HomeGuideBanner() {
         </div>
         <div className="flex flex-wrap gap-2">
           <Link
-            href="/dashboard#get-started"
+            href="/guide"
             className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90 dark:text-zinc-900"
           >
             Start here

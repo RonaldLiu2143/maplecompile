@@ -8,15 +8,16 @@ import { useRoster } from "@/hooks/useRoster";
 import { entryKey } from "@/lib/dashboard/roster";
 
 const SECONDARY_TOOLS = [
-  { href: "/dashboard", label: "Dashboard" },
-  { href: "/calc/scouter", label: "Scouter" },
-  { href: "/calc/equips/setup", label: "Equipment" },
-  { href: "/calc/equips/flames", label: "Flames" },
-  { href: "/calc/cubing", label: "Cubing" },
-  { href: "/roster", label: "Roster" },
-  { href: "/calc/bosses", label: "Boss Income" },
-  { href: "/calc/liberation", label: "Liberation" },
-  { href: "/calc/scouter/gallery", label: "Gallery" },
+  { href: "/guide", label: "Guide", body: "Five steps from IGN to scouter" },
+  { href: "/dashboard", label: "Dashboard", body: "Primary, dailies, weeklies" },
+  { href: "/calc/scouter", label: "Scouter", body: "Combat power and gear" },
+  { href: "/calc/equips/setup", label: "Equipment", body: "Slots and set effects" },
+  { href: "/calc/equips/flames", label: "Flames", body: "Flame score helper" },
+  { href: "/calc/cubing", label: "Cubing", body: "Potential odds" },
+  { href: "/roster", label: "Roster", body: "Mules and alts" },
+  { href: "/calc/bosses", label: "Boss Income", body: "Weekly crystal meso" },
+  { href: "/calc/liberation", label: "Liberation", body: "Genesis / Destiny" },
+  { href: "/calc/scouter/gallery", label: "Gallery", body: "Shared builds" },
 ] as const;
 
 /** Character-first home: brand + IGN search + primary as optical center. */
@@ -61,6 +62,12 @@ export function HomeHero() {
               Look up a character
             </a>
             <Link
+              href="/guide"
+              className="inline-flex min-h-11 items-center rounded-lg border border-border px-4 py-2 text-sm font-semibold transition hover:bg-accent-soft"
+            >
+              Read the Guide
+            </Link>
+            <Link
               href="/calc/scouter"
               className="inline-flex min-h-11 items-center rounded-lg border border-border px-4 py-2 text-sm font-semibold transition hover:bg-accent-soft"
             >
@@ -103,20 +110,15 @@ export function HomeHero() {
         </div>
       </section>
 
-      <nav
-        aria-label="Tools"
-        className="flex flex-wrap items-center justify-center gap-x-1 gap-y-1 border-t border-border/30 pt-6"
-      >
-        <span className="mr-2 text-[0.7rem] font-semibold uppercase tracking-wider text-muted-soft">
-          Tools
-        </span>
+      <nav aria-label="Tools" className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
         {SECONDARY_TOOLS.map((tool) => (
           <Link
             key={tool.href}
             href={tool.href}
-            className="rounded-md px-2.5 py-1.5 text-xs font-medium text-muted transition hover:bg-accent-soft/40 hover:text-accent"
+            className="flex min-h-11 flex-col justify-center rounded-xl border border-border/50 bg-surface/70 px-3 py-3 transition duration-200 hover:border-accent/40 hover:bg-accent-soft/25"
           >
-            {tool.label}
+            <p className="font-display text-sm font-bold">{tool.label}</p>
+            <p className="mt-0.5 text-xs text-muted">{tool.body}</p>
           </Link>
         ))}
       </nav>

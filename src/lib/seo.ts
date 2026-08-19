@@ -51,6 +51,14 @@ export const PUBLIC_ROUTES: PublicRoute[] = [
     priority: 1,
   },
   {
+    path: "/guide",
+    title: "Guide",
+    description:
+      "Get started with MapleCompile: find your MapleStory GMS character, lock your main, fill Scouter, and track bosses and HEXA.",
+    changeFrequency: "monthly",
+    priority: 0.8,
+  },
+  {
     path: "/dashboard",
     title: "Dashboard",
     description:
