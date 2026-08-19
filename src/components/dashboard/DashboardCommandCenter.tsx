@@ -10,7 +10,7 @@ import { DASHBOARD_QUICK_TOOLS } from "@/lib/tool-links";
 export function DashboardToolShortcuts({
   quiet = false,
 }: {
-  /** Text-link strip for filled dashboards / home secondary chrome. */
+  /** Text-link strip for filled dashboards. */
   quiet?: boolean;
 }) {
   return (

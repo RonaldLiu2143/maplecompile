@@ -64,8 +64,8 @@ export function HomeHero() {
         )}
       </div>
 
-      <div className="mx-auto w-full max-w-2xl">
-        {hydrated && primary ? (
+      {hydrated && primary ? (
+        <div className="mx-auto w-full max-w-2xl">
           <DashboardPrimaryHero
             primary={primary}
             slot={primarySlot}
@@ -73,8 +73,8 @@ export function HomeHero() {
               primaryEntry ? () => handleRetry(primaryEntry) : undefined
             }
           />
-        ) : null}
-      </div>
+        </div>
+      ) : null}
 
       <nav aria-label="Tools" className="mx-auto w-full max-w-3xl">
         <StackedToolLinks items={HOME_TOOL_LINKS} columns={2} compact />
