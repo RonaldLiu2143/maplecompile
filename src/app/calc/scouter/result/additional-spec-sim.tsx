@@ -136,7 +136,9 @@ export function applySpecSimToInput(
   const next: ScouterInput = structuredClone(base);
   const { mainKeys, secondaryKeys } = resolveMainSecondary(next);
 
-  next.finalDamagePercent += num(sim.finalDmg);
+  const extraFd = Math.min(num(sim.finalDmg), 75);
+  next.finalDamagePercent += extraFd;
+  next.additionalFinalDamagePercent = extraFd;
   next.bossDamagePercent += num(sim.bossDmg);
   next.criticalDamagePercent += num(sim.criDmg);
   next.criticalRatePercent += num(sim.criRate);
@@ -602,11 +604,8 @@ export function AdditionalSpecSimulation({
         ...applySpecSimToInput(draftMeta.input, sim),
         ...simOz,
       };
-      // Cap additional Final Damage % at 75 (MapleScouter).
       if (num(sim.finalDmg) > 75) {
         setSim((prev) => ({ ...prev, finalDmg: "75" }));
-        input.finalDamagePercent =
-          draftMeta.input.finalDamagePercent + 75;
       }
       const res = await fetch("/api/scouter/result", {
         method: "POST",

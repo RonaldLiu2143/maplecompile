@@ -237,7 +237,7 @@ export function toMapleScouterUserStat(args: {
       ssubStat_afterDoping: "",
       ignoreElementalResist: String(input.ignoreElementalResistancePercent),
       maple_combatPower: "",
-      tms_fd: "0",
+      tms_fd: String(input.additionalFinalDamagePercent ?? 0),
     },
     hexa: hexaPayload,
     seedRing: {

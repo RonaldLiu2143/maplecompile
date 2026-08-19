@@ -23,6 +23,8 @@ export type ScouterInput = {
   damagePercent: number;
   bossDamagePercent: number;
   finalDamagePercent: number;
+  /** Extra FD % for Additional Spec Sim → MapleScouter `stat.tms_fd`. */
+  additionalFinalDamagePercent?: number;
   ignoreDefensePercent: number;
   normalEnemyDamagePercent: number;
   criticalRatePercent: number;
