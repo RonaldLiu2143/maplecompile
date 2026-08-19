@@ -6,7 +6,7 @@ export function InfoPage({
   children,
 }: {
   title: string;
-  lede?: string;
+  lede: string;
   children: ReactNode;
 }) {
   return (
@@ -14,9 +14,7 @@ export function InfoPage({
       <h1 className="font-display text-3xl font-bold tracking-tight sm:text-4xl">
         {title}
       </h1>
-      {lede ? (
-        <p className="mt-3 text-base text-muted-foreground sm:text-lg">{lede}</p>
-      ) : null}
+      <p className="mt-3 text-base text-muted-foreground sm:text-lg">{lede}</p>
       <div className="prose-site mt-8 flex flex-col gap-4 text-sm leading-relaxed text-foreground/90 sm:text-base">
         {children}
       </div>

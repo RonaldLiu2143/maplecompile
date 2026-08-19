@@ -5,23 +5,23 @@ import { BrandWordmark } from "@/components/BrandMark";
 import { CharacterSearchBar } from "@/components/dashboard/CharacterSearchBar";
 import { DashboardPrimaryHero } from "@/components/dashboard/DashboardCommandCenter";
 import { Button } from "@/components/ui/button";
+import { StackedToolLinks } from "@/components/StackedToolLinks";
 import { useRoster } from "@/hooks/useRoster";
 import { entryKey } from "@/lib/dashboard/roster";
 
 const SECONDARY_TOOLS = [
-  { href: "/guide", label: "Guide", body: "Five steps from IGN to scouter" },
-  { href: "/dashboard", label: "Dashboard", body: "Primary, dailies, weeklies" },
-  { href: "/calc/scouter", label: "Scouter", body: "Combat power and gear" },
-  { href: "/calc/equips/setup", label: "Equipment", body: "Slots and set effects" },
-  { href: "/calc/equips/flames", label: "Flames", body: "Flame score helper" },
-  { href: "/calc/cubing", label: "Cubing", body: "Potential odds" },
-  { href: "/roster", label: "Roster", body: "Mules and alts" },
-  { href: "/calc/bosses", label: "Boss Income", body: "Weekly crystal meso" },
-  { href: "/calc/liberation", label: "Liberation", body: "Genesis / Destiny" },
-  { href: "/calc/scouter/gallery", label: "Gallery", body: "Shared builds" },
+  { href: "/guide", title: "Guide", body: "Five steps from IGN to scouter" },
+  { href: "/dashboard", title: "Dashboard", body: "Primary, dailies, weeklies" },
+  { href: "/calc/scouter", title: "Scouter", body: "Combat power and gear" },
+  { href: "/calc/equips/setup", title: "Equipment", body: "Slots and set effects" },
+  { href: "/calc/equips/flames", title: "Flames", body: "Flame score helper" },
+  { href: "/calc/cubing", title: "Cubing", body: "Potential odds" },
+  { href: "/roster", title: "Roster", body: "Mules and alts" },
+  { href: "/calc/bosses", title: "Boss Income", body: "Weekly crystal meso" },
+  { href: "/calc/liberation", title: "Liberation", body: "Genesis / Destiny" },
+  { href: "/calc/scouter/gallery", title: "Gallery", body: "Shared builds" },
 ] as const;
 
-/** Character-first home: brand + IGN search + primary as optical center. */
 export function HomeHero() {
   const {
     hydrated,
@@ -33,6 +33,9 @@ export function HomeHero() {
   } = useRoster();
 
   const primarySlot = primary ? slots[entryKey(primary)] : undefined;
+  const primaryEntry = primary
+    ? roster.find((e) => entryKey(e) === entryKey(primary))
+    : undefined;
 
   return (
     <div className="flex flex-col gap-10">
@@ -83,37 +86,14 @@ export function HomeHero() {
             slot={primarySlot}
             compactTools
             onRetry={
-              primary
-                ? () => {
-                    const entry = roster.find(
-                      (e) => entryKey(e) === entryKey(primary),
-                    );
-                    if (entry) handleRetry(entry);
-                  }
-                : undefined
+              primaryEntry ? () => handleRetry(primaryEntry) : undefined
             }
           />
         ) : null}
       </div>
 
       <nav aria-label="Tools" className="mx-auto w-full max-w-3xl">
-        <ul className="grid gap-x-8 sm:grid-cols-2">
-          {SECONDARY_TOOLS.map((tool) => (
-            <li key={tool.href} className="border-b border-border">
-              <Link
-                href={tool.href}
-                className="flex min-h-11 flex-col justify-center py-3 transition-colors hover:text-primary"
-              >
-                <span className="font-display text-sm font-bold">
-                  {tool.label}
-                </span>
-                <span className="text-xs text-muted-foreground">
-                  {tool.body}
-                </span>
-              </Link>
-            </li>
-          ))}
-        </ul>
+        <StackedToolLinks items={SECONDARY_TOOLS} columns={2} compact />
       </nav>
     </div>
   );

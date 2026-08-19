@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { StackedToolLinks } from "@/components/StackedToolLinks";
 import { GUIDE_STEPS } from "@/lib/guide";
 import { buildPageMetadata } from "@/lib/seo";
 
@@ -88,21 +89,7 @@ export default function GuidePage() {
         <h2 className="font-display text-xl font-bold tracking-tight">
           Tool map
         </h2>
-        <ul className="mt-4 divide-y divide-border">
-          {TOOLS.map((tool) => (
-            <li key={tool.href}>
-              <Link
-                href={tool.href}
-                className="flex min-h-11 flex-col justify-center py-3 transition-colors hover:text-primary"
-              >
-                <span className="font-display font-bold">{tool.title}</span>
-                <span className="text-sm text-muted-foreground">
-                  {tool.body}
-                </span>
-              </Link>
-            </li>
-          ))}
-        </ul>
+        <StackedToolLinks className="mt-4" items={TOOLS} />
       </section>
     </div>
   );
