@@ -43,12 +43,10 @@ export function DashboardPrimaryHero({
   primary,
   slot,
   onRetry,
-  showToolShortcuts = true,
 }: {
   primary: RosterPrimary | null;
   slot: RosterSlotState | undefined;
   onRetry?: () => void;
-  showToolShortcuts?: boolean;
 }) {
   if (!primary) {
     return (
@@ -60,11 +58,9 @@ export function DashboardPrimaryHero({
           Search a GMS character and add them to your roster. Star one as
           primary to pin their profile here.
         </p>
-        {showToolShortcuts ? (
-          <div className="mt-3">
-            <DashboardToolShortcuts />
-          </div>
-        ) : null}
+        <div className="mt-3">
+          <DashboardToolShortcuts />
+        </div>
       </section>
     );
   }

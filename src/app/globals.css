@@ -7,7 +7,7 @@
 
 /* Default / Compile — 4-layer product neutrals (not 60-30-10).
    Layers: frame (sidebar) → canvas → raised surface → inset.
-   Accent is a ramp used at ~2% of the UI. Semantic colors stay red/green/amber. */
+   Accent is a ramp used at ~2% of the UI. */
 :root,
 [data-theme="compile"] {
   --background: #141820;
@@ -123,9 +123,6 @@ html[data-theme="light"],
   --sidebar-accent-foreground: #0c4a6e;
   --sidebar-border: #d4d8de;
   --sidebar-ring: #0284c7;
-}
-
-html[data-theme="light"] {
   --shadow-elevated: 0 8px 24px rgb(15 23 42 / 0.08);
 }
 
@@ -478,12 +475,6 @@ button:focus-visible,
   }
   body {
     @apply bg-background text-foreground;
-  }
-  h1,
-  h2,
-  h3 {
-    letter-spacing: -0.025em;
-    line-height: 1.15;
   }
   button:not(:disabled), [role="button"]:not(:disabled) {
     cursor: pointer;

@@ -29,33 +29,34 @@ export default function GuidePage() {
           </Button>
         </>
       }
-      bodyClassName="flex flex-col gap-12"
     >
-      <ol className="flex flex-col divide-y divide-border">
-        {GUIDE_STEPS.map((step) => (
-          <li key={step.n} className="grid gap-2 py-6 sm:grid-cols-[3rem_1fr]">
-            <span className="font-display text-2xl font-bold tabular-nums text-primary">
-              {step.n}
-            </span>
-            <div>
-              <h2 className="font-display text-lg font-bold tracking-tight">
-                {step.title}
-              </h2>
-              <p className="mt-1 text-sm text-muted-foreground">{step.body}</p>
-              <Button asChild variant="link" className="mt-2 h-11 px-0">
-                <Link href={step.href}>{step.cta}</Link>
-              </Button>
-            </div>
-          </li>
-        ))}
-      </ol>
+      <div className="flex flex-col gap-12">
+        <ol className="flex flex-col divide-y divide-border">
+          {GUIDE_STEPS.map((step) => (
+            <li key={step.n} className="grid gap-2 py-6 sm:grid-cols-[3rem_1fr]">
+              <span className="font-display text-2xl font-bold tabular-nums text-primary">
+                {step.n}
+              </span>
+              <div>
+                <h2 className="font-display text-lg font-bold tracking-tight">
+                  {step.title}
+                </h2>
+                <p className="mt-1 text-sm text-muted-foreground">{step.body}</p>
+                <Button asChild variant="link" className="mt-2 h-11 px-0">
+                  <Link href={step.href}>{step.cta}</Link>
+                </Button>
+              </div>
+            </li>
+          ))}
+        </ol>
 
-      <section>
-        <h2 className="font-display text-xl font-bold tracking-tight">
-          Tool map
-        </h2>
-        <StackedToolLinks className="mt-4" items={GUIDE_TOOL_LINKS} />
-      </section>
+        <section>
+          <h2 className="font-display text-xl font-bold tracking-tight">
+            Tool map
+          </h2>
+          <StackedToolLinks className="mt-4" items={GUIDE_TOOL_LINKS} />
+        </section>
+      </div>
     </InfoPage>
   );
 }

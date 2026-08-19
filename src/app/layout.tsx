@@ -111,7 +111,6 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="flex min-h-full flex-col" suppressHydrationWarning>
-        {/* THESIS: MapleCompile is a second-monitor product, not a 60-30-10 landing page. Neutrals do the work; sky is a 2% action color. OWN-WORLD: four stacked zinc layers, sky ramp, semantic red/green/amber, IBM Plex. STORY: find an IGN, lock a main, open a tool. FIRST VIEWPORT: search is the focal point; Guide and Scouter are ghost actions. FORM: Kole Jain 4-layer color + 10-minute UX rules. FINISH: unreviewed and undocumented is unfinished; this build ends with DESIGN.md describing the shipped tokens. */}
         <Script
           id="theme-boot"
           strategy="beforeInteractive"

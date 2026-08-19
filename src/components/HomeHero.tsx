@@ -65,11 +65,10 @@ export function HomeHero() {
       </div>
 
       <div className="mx-auto w-full max-w-2xl">
-        {hydrated ? (
+        {hydrated && primary ? (
           <DashboardPrimaryHero
             primary={primary}
             slot={primarySlot}
-            showToolShortcuts={false}
             onRetry={
               primaryEntry ? () => handleRetry(primaryEntry) : undefined
             }

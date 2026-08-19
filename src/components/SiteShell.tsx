@@ -36,6 +36,9 @@ type NavLink = {
   match?: "exact" | "prefix";
 };
 
+const NAV_ACTIVE =
+  "bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground";
+
 /** Top-of-nav links — static module constants so SSR and client first paint match. */
 const TOP_LINKS: NavLink[] = [
   { href: "/dashboard", label: "Dashboard", match: "exact" },
@@ -117,11 +120,7 @@ function NavSection({
             key={link.href}
             asChild
             variant="ghost"
-            className={cn(
-              "h-9 w-full justify-start",
-              active &&
-                "bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-            )}
+            className={cn("h-9 w-full justify-start", active && NAV_ACTIVE)}
           >
             <Link href={link.href} aria-current={active ? "page" : undefined}>
               {link.label}
@@ -184,11 +183,7 @@ function NavGroup({
                 key={link.href}
                 asChild
                 variant="ghost"
-                className={cn(
-                  "h-8 w-full justify-start",
-                  active &&
-                    "bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                )}
+                className={cn("h-8 w-full justify-start", active && NAV_ACTIVE)}
               >
                 <Link href={link.href} aria-current={active ? "page" : undefined}>
                   {link.label}
