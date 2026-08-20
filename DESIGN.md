@@ -1,11 +1,11 @@
 ---
 name: MapleCompile
-description: Unofficial MapleStory GMS calculators — ink UI, black and white action ramp, serif titles.
+description: Unofficial MapleStory GMS calculators — Layer 4 tinted neutrals, Geist UI, Lucide chrome.
 colors:
   background: "#0a0a0a"
   foreground: "#f5f5f5"
-  primary: "#f5f5f5"
-  primary-hover: "#ffffff"
+  primary: "#3b82f6"
+  primary-hover: "#60a5fa"
   primary-foreground: "#0a0a0a"
   surface: "#141414"
   muted: "#1c1c1c"
@@ -17,13 +17,13 @@ colors:
   warning: "#d4d4d4"
 typography:
   display:
-    fontFamily: "Source Serif 4, ui-serif, Georgia, serif"
+    fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif"
     fontSize: "clamp(1.75rem, 4vw, 3rem)"
     fontWeight: 700
     lineHeight: 1.2
     letterSpacing: "0.01em"
   body:
-    fontFamily: "IBM Plex Sans, ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif"
     fontSize: "1rem"
     fontWeight: 400
     lineHeight: 1.5
@@ -54,13 +54,13 @@ Operate first. Home is persuade-lite: the IGN search is the one focal action. Gu
 
 ## Visual world
 
-Four background layers: darker sidebar frame, canvas, raised surface, inset muted — cool ink neutrals (`#0a0a0a` → `#141414` → `#1c1c1c`), tinted with a Blue hue by default. One or two strokes, three text steps (heading, body, subtext). Semantic red / green stay those hues; warning is a gray step, not gold. Dark mode: wider steps between neutrals; surfaces get lighter as they elevate; borders stay dim. Light mode: paper-gray canvas so white cards can lift. Lucide icons sit next to labels in nav, tools, search, footer, and chrome.
+Four background layers: darker sidebar frame, canvas, raised surface, inset muted — cool ink neutrals (`#0a0a0a` → `#141414` → `#1c1c1c`), tinted with a Layer 4 OKLCH hue (Blue by default). One or two strokes, three text steps (heading, body, subtext). Semantic red / green stay those hues; warning is a gray step, not gold. Dark mode: wider steps between neutrals; surfaces get lighter as they elevate; borders stay dim. Light mode: paper-gray canvas so white cards can lift. Lucide icons sit next to labels in nav, tools, search, footer, and chrome.
 
-Source Serif 4 for large titles and the wordmark. IBM Plex Sans for body, nav, buttons, tables, and data. Optional wallpapers sit behind a dim overlay — grayscale meshes only.
+Geist is the default typeface (modern, clean, technical). Inter and Plus Jakarta Sans are optional. Line charts use Apache ECharts: basic line series, category x-axis ticks aligned with labels.
 
 ## Hierarchy
 
-One primary action per cluster. Search is the home hero; Guide is a text dismiss. Headings carry their own weight — no uppercase kickers. Active nav is a quiet fill, not an accent pill. Lists for tools with a Lucide icon beside each label, not icon-card grids. Theme picker is appearance plus any color (Blue default) — no type, wallpaper, or hex fields.
+One primary action per cluster. Search is the home hero; Guide is a text dismiss. Headings carry their own weight — no uppercase kickers. Active nav is a quiet fill, not an accent pill. Lists for tools with a Lucide icon beside each label, not icon-card grids. Theme picker is appearance, six color presets plus custom HEX/graph, and type.
 
 ## Motion
 

@@ -1,9 +1,10 @@
 import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import {
-  IBM_Plex_Sans,
+  Geist,
+  Inter,
   JetBrains_Mono,
-  Source_Serif_4,
+  Plus_Jakarta_Sans,
 } from "next/font/google";
 import { GoogleAnalytics } from "@/components/GoogleAnalytics";
 import { SiteFooter } from "@/components/SiteFooter";
@@ -19,16 +20,19 @@ import {
 import "./globals.css";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
-const ibmPlexSans = IBM_Plex_Sans({
-  variable: "--font-ibm-plex-sans",
+const geist = Geist({
+  variable: "--font-geist",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
 });
 
-const sourceSerif = Source_Serif_4({
-  variable: "--font-source-serif",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+});
+
+const jakarta = Plus_Jakarta_Sans({
+  variable: "--font-jakarta",
+  subsets: ["latin"],
 });
 
 const jetbrainsMono = JetBrains_Mono({
@@ -105,9 +109,9 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${ibmPlexSans.variable} ${sourceSerif.variable} ${jetbrainsMono.variable} dark h-full font-sans`}
+      className={`${geist.variable} ${inter.variable} ${jakarta.variable} ${jetbrainsMono.variable} dark h-full font-sans`}
       data-theme="compile"
-      data-font="sans"
+      data-font="geist"
       data-backdrop="none"
       suppressHydrationWarning
     >

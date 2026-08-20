@@ -7,23 +7,27 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
+import { ColorGraph } from "@/components/theme/ColorGraph";
 import {
   DEFAULT_THEME_COLOR,
   DEFAULT_THEME_HUE,
   DEFAULT_THEME_PREFS,
+  FONT_PRESETS,
+  THEME_HUE_PRESETS,
   THEME_PRESETS,
   hexToHue,
-  hueToHex,
+  matchThemeHuePreset,
   parseAccentHex,
   parseThemeHue,
   readThemePrefs,
   subscribeThemePrefs,
   themeHueLabel,
   writeThemePrefs,
+  type FontId,
   type ThemeId,
   type ThemePrefs,
 } from "@/lib/theme";
-import { Contrast, Moon, Palette, Sun } from "lucide-react";
+import { Contrast, Moon, Palette, Sun, Type } from "lucide-react";
 
 function getServerThemePrefs(): ThemePrefs {
   return DEFAULT_THEME_PREFS;
@@ -49,8 +53,11 @@ export function ThemePicker({
     getServerThemePrefs,
   );
   const [open, setOpen] = useState(false);
+  const [customOpen, setCustomOpen] = useState(false);
   const panelId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
+  const matched = matchThemeHuePreset(prefs.hue);
+  const showCustom = customOpen || matched == null;
 
   useEffect(() => {
     if (!open) return;
@@ -72,25 +79,33 @@ export function ThemePicker({
     writeThemePrefs({ ...prefs, id });
   };
 
+  const setFont = (font: FontId) => {
+    writeThemePrefs({ ...prefs, font });
+  };
+
+  const setPreset = (preset: (typeof THEME_HUE_PRESETS)[number]) => {
+    setCustomOpen(false);
+    writeThemePrefs({
+      ...prefs,
+      hue: preset.hue,
+      accent: preset.hex,
+    });
+  };
+
   const setColor = (hex: string) => {
     const parsed = parseAccentHex(hex);
     if (!parsed) return;
     const hue = hexToHue(parsed) ?? parseThemeHue(prefs.hue) ?? DEFAULT_THEME_HUE;
+    setCustomOpen(true);
     writeThemePrefs({ ...prefs, accent: parsed, hue });
   };
 
-  const setHue = (hue: number) => {
-    const next = parseThemeHue(hue) ?? DEFAULT_THEME_HUE;
-    writeThemePrefs({
-      ...prefs,
-      hue: next,
-      accent: hueToHex(next),
-    });
-  };
-
-  const activeHue = parseThemeHue(prefs.hue) ?? DEFAULT_THEME_HUE;
+  const activeHue = prefs.hue === null ? null : (parseThemeHue(prefs.hue) ?? DEFAULT_THEME_HUE);
   const activeColor =
-    parseAccentHex(prefs.accent) ?? hueToHex(activeHue) ?? DEFAULT_THEME_COLOR;
+    parseAccentHex(prefs.accent) ??
+    matched?.hex ??
+    DEFAULT_THEME_COLOR;
+  const activeFont = prefs.font ?? DEFAULT_THEME_PREFS.font ?? "geist";
 
   const panel = (
     <div
@@ -101,7 +116,7 @@ export function ThemePicker({
         "rounded-xl border border-border/50 bg-surface p-3 shadow-lg",
         compact
           ? [
-              "absolute z-50 w-72",
+              "absolute z-50 w-80",
               placement === "above"
                 ? "bottom-full left-0 mb-2"
                 : "top-full right-0 mt-2",
@@ -155,41 +170,85 @@ export function ThemePicker({
             <Palette className="size-3.5" aria-hidden />
             Color
           </p>
-          <label className="relative flex cursor-pointer items-center gap-3 overflow-hidden rounded-lg border border-border/50 bg-background p-2">
-            <span
-              className="size-11 shrink-0 rounded-md border border-border/60"
-              style={{ backgroundColor: activeColor }}
-            />
-            <span className="min-w-0 flex-1">
-              <span className="block text-sm font-semibold">Pick any color</span>
-              <span className="block font-mono text-[11px] text-muted-foreground">
-                {activeColor}
-              </span>
-            </span>
-            <input
-              type="color"
-              value={activeColor}
-              aria-label="Theme color"
-              onChange={(e) => setColor(e.target.value)}
-              className="absolute inset-0 cursor-pointer opacity-0"
-            />
-          </label>
-          <label className="mt-2.5 flex flex-col gap-1">
-            <span className="flex items-center justify-between text-[11px] font-semibold text-muted-foreground">
-              <span>Hue</span>
-              <span className="tabular-nums">{activeHue}°</span>
-            </span>
-            <input
-              type="range"
-              min={0}
-              max={359}
-              step={1}
-              value={activeHue}
-              aria-label="Theme hue"
-              onChange={(e) => setHue(Number(e.target.value))}
-              className="h-1.5 w-full cursor-pointer accent-[var(--accent)]"
-            />
-          </label>
+          <div
+            className="grid grid-cols-3 gap-1.5"
+            role="group"
+            aria-label="Color presets"
+          >
+            {THEME_HUE_PRESETS.map((p) => {
+              const active = !showCustom && matched?.id === p.id;
+              return (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => setPreset(p)}
+                  aria-pressed={active}
+                  className={[
+                    "flex flex-col items-center gap-1 rounded-lg border px-1.5 py-1.5 text-[10px] font-semibold transition-colors",
+                    active
+                      ? "border-accent bg-accent-soft text-foreground"
+                      : "border-border/50 text-muted-foreground hover:border-border hover:text-foreground",
+                  ].join(" ")}
+                >
+                  <span
+                    className="size-6 rounded-md border border-border/50"
+                    style={{ backgroundColor: p.hex }}
+                    aria-hidden
+                  />
+                  {p.name}
+                </button>
+              );
+            })}
+          </div>
+          <button
+            type="button"
+            aria-pressed={showCustom}
+            onClick={() => setCustomOpen(true)}
+            className={[
+              "mt-1.5 w-full rounded-lg border px-2 py-1.5 text-left text-[11px] font-semibold transition-colors",
+              showCustom
+                ? "border-accent bg-accent-soft text-foreground"
+                : "border-border/50 text-muted-foreground hover:border-border hover:text-foreground",
+            ].join(" ")}
+          >
+            Custom color
+          </button>
+          {showCustom ? (
+            <div className="mt-2">
+              <ColorGraph color={activeColor} onChange={setColor} />
+            </div>
+          ) : null}
+        </div>
+
+        <div>
+          <p className="mb-1.5 flex items-center gap-1.5 text-sm font-semibold text-foreground">
+            <Type className="size-3.5" aria-hidden />
+            Type
+          </p>
+          <div className="flex flex-col gap-1" role="group" aria-label="Typeface">
+            {FONT_PRESETS.map((p) => {
+              const active = activeFont === p.id;
+              return (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => setFont(p.id)}
+                  aria-pressed={active}
+                  className={[
+                    "rounded-lg border px-2.5 py-1.5 text-left transition-colors",
+                    active
+                      ? "border-accent bg-accent-soft"
+                      : "border-border/50 hover:border-border",
+                  ].join(" ")}
+                >
+                  <span className="block text-sm font-semibold">{p.name}</span>
+                  <span className="block text-[11px] text-muted-foreground">
+                    {p.description}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
     </div>
