@@ -1,4 +1,5 @@
 import { ImageResponse } from "next/og";
+import { MAPLE_LEAF_D, MAPLE_STEM_D } from "@/lib/maple-leaf";
 
 export const size = { width: 32, height: 32 };
 export const contentType = "image/png";
@@ -13,16 +14,28 @@ export default function Icon() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "#0b1220",
-          borderRadius: 8,
-          color: "#e85d4a",
-          fontSize: 18,
-          fontWeight: 700,
-          fontFamily:
-            "ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif",
+          background: "#0a0a0a",
         }}
       >
-        M
+        <svg
+          width="26"
+          height="26"
+          viewBox="0 0 32 32"
+          fill="none"
+        >
+          <path
+            d={MAPLE_STEM_D}
+            stroke="#3b82f6"
+            strokeWidth="1.75"
+            strokeLinecap="round"
+          />
+          <path
+            d={MAPLE_LEAF_D}
+            stroke="#3b82f6"
+            strokeWidth="1.55"
+            strokeLinejoin="round"
+          />
+        </svg>
       </div>
     ),
     { ...size },

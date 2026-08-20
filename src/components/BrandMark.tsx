@@ -1,3 +1,5 @@
+import { MAPLE_LEAF_D, MAPLE_STEM_D } from "@/lib/maple-leaf";
+
 /** Maple leaf mark for MapleCompile wordmarks (nav, hero). Uses currentColor. */
 
 export function BrandMark({
@@ -21,17 +23,18 @@ export function BrandMark({
       className={className}
     >
       {title ? <title>{title}</title> : null}
-      {/* Stem */}
       <path
-        d="M16 28.5V18.2"
+        d={MAPLE_STEM_D}
         stroke="currentColor"
         strokeWidth="1.75"
         strokeLinecap="round"
       />
-      {/* Leaf silhouette — compact maple, readable at 16–32px */}
       <path
-        fill="currentColor"
-        d="M16 3.2c.35 1.4 1.05 2.7 2.15 3.85 1.55-1.7 3.6-2.55 5.85-2.35-.15 2.45-1.15 4.55-2.95 6.05 2.1.55 3.85 1.85 5.05 3.75-2.35.85-4.55.7-6.45-.2.55 2.15.45 4.2-.35 6.1-1.55-1.05-2.7-2.55-3.35-4.4-.65 1.85-1.8 3.35-3.35 4.4-.8-1.9-.9-3.95-.35-6.1-1.9.9-4.1 1.05-6.45.2 1.2-1.9 2.95-3.2 5.05-3.75C7.15 9.25 6.15 7.15 6 4.7c2.25-.2 4.3.65 5.85 2.35C13 5.9 13.7 4.6 16 3.2Z"
+        d={MAPLE_LEAF_D}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.55"
+        strokeLinejoin="round"
       />
     </svg>
   );

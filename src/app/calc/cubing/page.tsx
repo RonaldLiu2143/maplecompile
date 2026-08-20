@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ActiveCharacterBar } from "@/components/ActiveCharacterBar";
 import {
   buildDesiredStatGroups,
   canPickDesiredStat,
@@ -157,12 +156,10 @@ export default function CubingCalculatorPage() {
           Cubing Calculator
         </h1>
         <p className="mt-2 max-w-2xl text-sm opacity-75">
-          Estimate cubes and mesos needed for your desired potential lines,
-          including tier-ups and Double Miracle Time.
+          Estimate cubes and mesos for desired potential lines — odds and cost
+          only. No character loadout.
         </p>
       </header>
-
-      <ActiveCharacterBar />
 
       <section className="space-y-3 rounded-xl border border-border/40 bg-surface/80 p-4">
         <h2 className="font-display text-lg font-semibold">

@@ -25,14 +25,15 @@ export type LiberationMilestone = {
  * Absolute bank ceiling (game / MapleHub input clamp).
  * Per-mission turn-in amounts are smaller — see {@link missionCapFor}.
  */
-export const TRACE_INPUT_MAX = 3000;
+export const TRACE_INPUT_MAX = 15000;
 /** @deprecated Prefer {@link missionCapFor}; Destiny bank ceiling. */
-export const DESTINY_CARRYOVER_CAP = 3000;
+export const DESTINY_CARRYOVER_CAP = 15000;
 /** @deprecated Prefer {@link missionCapFor}; legacy MapleHub Genesis tip. */
 export const GENESIS_CARRYOVER_CAP = 1500;
 
 export const GENESIS_TARGET = 6500;
-export const DESTINY_TARGET = 7500;
+/** First Destiny weapon at 7,500; second stage finishes at Baldrix (45,000). */
+export const DESTINY_TARGET = 45000;
 
 export const BOSS_ICON_CDN = "https://cdn.maplehub.app";
 
@@ -270,6 +271,24 @@ export const DESTINY_MILESTONES: LiberationMilestone[] = [
     requiredTraces: 4500,
     value: "4500|Kaling",
   },
+  {
+    label: "First Adversary — 7,500",
+    bossName: "Adversary",
+    requiredTraces: 7500,
+    value: "7500|Adversary",
+  },
+  {
+    label: "Limbo — 17,500",
+    bossName: "Limbo",
+    requiredTraces: 17500,
+    value: "17500|Limbo",
+  },
+  {
+    label: "Baldrix — 30,000",
+    bossName: "Baldrix",
+    requiredTraces: 30000,
+    value: "30000|Baldrix",
+  },
 ];
 
 export function bossesFor(type: LiberationType): TraceBoss[] {
@@ -289,7 +308,8 @@ export function targetForType(type: LiberationType): number {
  * (gap from selected quest to the next milestone, or to the final target).
  *
  * Genesis: 500 early, then 1,000 per step.
- * Destiny: 2,000 → 2,500 → 3,000.
+ * Destiny stage 1: 2,000 → 2,500 → 3,000.
+ * Destiny stage 2 (through Baldrix): 10,000 → 12,500 → 15,000.
  */
 export function missionCapFor(
   type: LiberationType,

@@ -323,7 +323,8 @@ export default function LiberationPage() {
         </h1>
         <p className="mt-2 max-w-2xl text-sm opacity-75">
           See how many weeks until Genesis or Destiny liberation from your
-          weekly bosses.
+          weekly bosses. Destiny goes through First Adversary, Limbo, and
+          Baldrix.
         </p>
       </header>
 

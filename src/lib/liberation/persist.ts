@@ -163,6 +163,9 @@ function migrateV1(raw: string): LiberationStore | null {
               [0, "0|Seren"],
               [2000, "2000|Kalos"],
               [4500, "4500|Kaling"],
+              [7500, "7500|Adversary"],
+              [17500, "17500|Limbo"],
+              [30000, "30000|Baldrix"],
             ]
           : [
               [0, "0|Von Leon"],

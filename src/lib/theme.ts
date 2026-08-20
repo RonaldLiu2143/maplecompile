@@ -1,5 +1,7 @@
 /** Site-wide visual theme presets + localStorage persistence. */
 
+import { syncThemeFavicon } from "@/lib/maple-leaf";
+
 export const THEME_STORAGE_KEY = "maplecompile-theme";
 export const THEME_CHANGE_EVENT = "maplecompile-theme-change";
 
@@ -814,6 +816,8 @@ export function applyThemeToDocument(prefs: ThemePrefs): void {
       root.style.removeProperty("--mc-wallpaper-image");
     }
   }
+
+  syncThemeFavicon(accent);
 }
 
 /** Inline script source for FOUC-free boot (keep in sync with applyThemeToDocument). */

@@ -9,6 +9,12 @@ import {
 } from "react";
 import Link from "next/link";
 import { ActiveCharacterBar } from "@/components/ActiveCharacterBar";
+import { useMapleDataReload } from "@/hooks/useMapleDataReload";
+import {
+  activeCharacterKey,
+  ensureActiveWorkspaceLoaded,
+  persistLiveToWorkspace,
+} from "@/lib/character-workspace";
 import {
   buildFlameTable,
   calcFlameProbability,
@@ -68,6 +74,38 @@ function flattenSetup(setup: EquipSetup): Equip[] {
   }));
 }
 
+function flamesFromEquipment(
+  setup: EquipSetup,
+  stored: FlameSetup,
+): FlameSetup {
+  const next: FlameSetup = {};
+  for (const equip of flattenSetup(setup)) {
+    const lines = equip.flames ?? stored[equip.id] ?? [];
+    if (lines.length) next[equip.id] = lines;
+  }
+  return next;
+}
+
+function writeFlamesOntoSetup(
+  setup: EquipSetup,
+  id: string,
+  lines: FlameLine[],
+): EquipSetup {
+  const next: EquipSetup = {};
+  for (const [slot, list] of Object.entries(setup)) {
+    if (!Array.isArray(list)) {
+      next[slot] = list;
+      continue;
+    }
+    next[slot] = list.map((equip) =>
+      equip.id === id
+        ? { ...equip, flames: lines.length ? lines : undefined }
+        : equip,
+    );
+  }
+  return next;
+}
+
 function formatChance(chance: number): string {
   if (chance <= 0) return "0%";
   if (chance >= 1) return "100%";
@@ -107,26 +145,45 @@ export default function FlamesClient() {
     flammable.find((e) => e.id === selectedId) ?? flammable[0] ?? null;
   const lines: FlameLine[] = selected ? (flameSetup[selected.id] ?? []) : [];
 
-  useEffect(() => {
+  const loadFromEquipment = (applyWorkspace = false) => {
+    if (applyWorkspace) ensureActiveWorkspaceLoaded();
     const job = (storage.getJobType() || DEFAULT_JOB) as JobType;
     const char = storage.getCharType() || DEFAULT_CHAR;
     const savedSetup = storage.getEquipSetup();
-    const savedFlames = storage.getFlameSetup();
+    const mergedFlames = flamesFromEquipment(
+      savedSetup,
+      storage.getFlameSetup(),
+    );
 
     setJobType(job);
     setCharType(char);
     setSetup(savedSetup);
-    setFlameSetup(savedFlames);
+    setFlameSetup(mergedFlames);
     setStatEquiv(defaultStatEquiv(job, char));
 
     const items = flattenSetup(savedSetup).filter(isFlammable);
     if (items[0]) {
-      setSelectedId(items[0].id);
-      setManualLevel(items[0].level);
-      setManualWa(getWeaponAtt(items[0]));
+      setSelectedId((prev) =>
+        items.some((e) => e.id === prev) ? prev : items[0]!.id,
+      );
+    } else {
+      setSelectedId(null);
     }
     setHydrated(true);
+  };
+
+  useEffect(() => {
+    loadFromEquipment(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount only
   }, []);
+
+  useMapleDataReload(() => loadFromEquipment(false));
+
+  useEffect(() => {
+    if (!selected) return;
+    setManualLevel(selected.level);
+    setManualWa(getWeaponAtt(selected));
+  }, [selected?.id]);
 
   // Chunk probability calc so first paint / line picks stay responsive
   useEffect(() => {
@@ -243,28 +300,30 @@ export default function FlamesClient() {
   ) => {
     if (!selected) return;
     const id = selected.id;
-    setFlameSetup((prev) => {
-      const current = [...(prev[id] ?? [])];
-      const existing = current.find((l) => l.id === statId);
-      let nextLines: FlameLine[];
-      if (existing?.tierNum === tierNum) {
-        nextLines = current.filter((l) => l.id !== statId);
-      } else if (existing) {
-        nextLines = current.map((l) =>
-          l.id === statId ? { id: statId, tierNum, value, mixedStats } : l,
-        );
-      } else if (current.length >= 4) {
-        nextLines = current;
-      } else {
-        nextLines = [...current, { id: statId, tierNum, value, mixedStats }];
-      }
-      const next = { ...prev, [id]: nextLines };
-      if (persistTimer.current) clearTimeout(persistTimer.current);
-      persistTimer.current = setTimeout(() => {
-        storage.setFlameSetup(next);
-      }, 200);
-      return next;
-    });
+    const current = [...(flameSetup[id] ?? [])];
+    const existing = current.find((l) => l.id === statId);
+    let nextLines: FlameLine[];
+    if (existing?.tierNum === tierNum) {
+      nextLines = current.filter((l) => l.id !== statId);
+    } else if (existing) {
+      nextLines = current.map((l) =>
+        l.id === statId ? { id: statId, tierNum, value, mixedStats } : l,
+      );
+    } else if (current.length >= 4) {
+      nextLines = current;
+    } else {
+      nextLines = [...current, { id: statId, tierNum, value, mixedStats }];
+    }
+    const next = { ...flameSetup, [id]: nextLines };
+    const nextSetup = writeFlamesOntoSetup(setup, id, nextLines);
+    setFlameSetup(next);
+    setSetup(nextSetup);
+    if (persistTimer.current) clearTimeout(persistTimer.current);
+    persistTimer.current = setTimeout(() => {
+      storage.setFlameSetup(next);
+      storage.setEquipSetup(nextSetup);
+      persistLiveToWorkspace(activeCharacterKey());
+    }, 200);
   };
 
   const flameKind = selected?.isNormalFlame ? "normal" : "special";
@@ -354,8 +413,8 @@ export default function FlamesClient() {
           Flame Calculator
         </h1>
         <p className="mt-2 max-w-2xl text-sm opacity-75">
-          View flame value tables, save your current lines from Equipment Setup,
-          and estimate the chance of a better outcome.
+          Pulls items and flame lines from Equipment. Odds and tables only —
+          stars, cube potential, and base stats are ignored.
         </p>
         {jobType && charType ? (
           <p className="mt-2 text-sm">
@@ -378,7 +437,7 @@ export default function FlamesClient() {
         )}
       </header>
 
-      <ActiveCharacterBar />
+      <ActiveCharacterBar onSwitched={() => loadFromEquipment(true)} />
 
       <section className="space-y-3 rounded-xl border border-border/40 bg-surface/80 p-4">
         <h2 className="font-display text-lg font-semibold">
