@@ -1,5 +1,6 @@
 import { ImageResponse } from "next/og";
 import { MAPLE_LEAF_D, MAPLE_STEM_D } from "@/lib/maple-leaf";
+import { DEFAULT_THEME_COLOR } from "@/lib/theme";
 
 export const size = { width: 180, height: 180 };
 export const contentType = "image/png";
@@ -20,13 +21,13 @@ export default function AppleIcon() {
         <svg width="140" height="140" viewBox="0 0 32 32" fill="none">
           <path
             d={MAPLE_STEM_D}
-            stroke="#3b82f6"
+            stroke={DEFAULT_THEME_COLOR}
             strokeWidth="1.75"
             strokeLinecap="round"
           />
           <path
             d={MAPLE_LEAF_D}
-            stroke="#3b82f6"
+            stroke={DEFAULT_THEME_COLOR}
             strokeWidth="1.55"
             strokeLinejoin="round"
           />

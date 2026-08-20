@@ -36,7 +36,7 @@ import type {
   StatEquiv,
 } from "@/lib/types";
 import { DEFAULT_CHAR, DEFAULT_JOB, getCharName, getJob } from "@/lib/jobs";
-import { flattenSetup as flattenEquipSetup } from "@/lib/set-effects";
+import { flattenSetup } from "@/lib/set-effects";
 
 type ProbMap = Record<string, { flameType: string; chance: number }[]>;
 
@@ -67,8 +67,8 @@ const FLAME_TYPES: {
 
 const CHANCE_TARGETS = [0.5, 0.75, 0.9, 0.99] as const;
 
-function flattenSetup(setup: EquipSetup): Equip[] {
-  return flattenEquipSetup(setup).map((e) => ({
+function withFlameMeta(setup: EquipSetup): Equip[] {
+  return flattenSetup(setup).map((e) => ({
     ...e,
     isNormalFlame: inferNormalFlame(e),
   }));
@@ -80,7 +80,7 @@ function flamesFromEquipment(
 ): FlameSetup {
   const next: FlameSetup = {};
   for (const equip of flattenSetup(setup)) {
-    const lines = equip.flames ?? stored[equip.id] ?? [];
+    const lines = stored[equip.id] ?? equip.flames ?? [];
     if (lines.length) next[equip.id] = lines;
   }
   return next;
@@ -135,9 +135,13 @@ export default function FlamesClient() {
   const persistTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const calcGen = useRef(0);
   const flameSetupRef = useRef(flameSetup);
+  const setupRef = useRef(setup);
+  const skipReloadRef = useRef(false);
+
+  setupRef.current = setup;
 
   const flammable = useMemo(
-    () => flattenSetup(setup).filter(isFlammable),
+    () => withFlameMeta(setup).filter(isFlammable),
     [setup],
   );
 
@@ -146,6 +150,10 @@ export default function FlamesClient() {
   const lines: FlameLine[] = selected ? (flameSetup[selected.id] ?? []) : [];
 
   const loadFromEquipment = (applyWorkspace = false) => {
+    if (skipReloadRef.current) {
+      skipReloadRef.current = false;
+      return;
+    }
     if (applyWorkspace) ensureActiveWorkspaceLoaded();
     const job = (storage.getJobType() || DEFAULT_JOB) as JobType;
     const char = storage.getCharType() || DEFAULT_CHAR;
@@ -161,7 +169,7 @@ export default function FlamesClient() {
     setFlameSetup(mergedFlames);
     setStatEquiv(defaultStatEquiv(job, char));
 
-    const items = flattenSetup(savedSetup).filter(isFlammable);
+    const items = withFlameMeta(savedSetup).filter(isFlammable);
     if (items[0]) {
       setSelectedId((prev) =>
         items.some((e) => e.id === prev) ? prev : items[0]!.id,
@@ -315,11 +323,11 @@ export default function FlamesClient() {
       nextLines = [...current, { id: statId, tierNum, value, mixedStats }];
     }
     const next = { ...flameSetup, [id]: nextLines };
-    const nextSetup = writeFlamesOntoSetup(setup, id, nextLines);
     setFlameSetup(next);
-    setSetup(nextSetup);
     if (persistTimer.current) clearTimeout(persistTimer.current);
     persistTimer.current = setTimeout(() => {
+      const nextSetup = writeFlamesOntoSetup(setupRef.current, id, nextLines);
+      skipReloadRef.current = true;
       storage.setFlameSetup(next);
       storage.setEquipSetup(nextSetup);
       persistLiveToWorkspace(activeCharacterKey());

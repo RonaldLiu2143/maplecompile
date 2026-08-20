@@ -1,5 +1,6 @@
 import { ImageResponse } from "next/og";
 import { MAPLE_LEAF_D, MAPLE_STEM_D } from "@/lib/maple-leaf";
+import { DEFAULT_THEME_COLOR } from "@/lib/theme";
 
 export const size = { width: 32, height: 32 };
 export const contentType = "image/png";
@@ -25,13 +26,13 @@ export default function Icon() {
         >
           <path
             d={MAPLE_STEM_D}
-            stroke="#3b82f6"
+            stroke={DEFAULT_THEME_COLOR}
             strokeWidth="1.75"
             strokeLinecap="round"
           />
           <path
             d={MAPLE_LEAF_D}
-            stroke="#3b82f6"
+            stroke={DEFAULT_THEME_COLOR}
             strokeWidth="1.55"
             strokeLinejoin="round"
           />
