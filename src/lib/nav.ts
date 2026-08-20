@@ -2,6 +2,8 @@ export type NavLink = {
   href: string;
   label: string;
   match?: "exact" | "prefix";
+  /** Indented under the previous Main link (e.g. Gallery under Scouter). */
+  nested?: boolean;
 };
 
 export const MAIN_LINKS: NavLink[] = [
@@ -9,6 +11,7 @@ export const MAIN_LINKS: NavLink[] = [
   { href: "/calc/character", label: "Character Search", match: "exact" },
   { href: "/roster", label: "My Roster", match: "exact" },
   { href: "/calc/scouter", label: "Scouter", match: "exact" },
+  { href: "/calc/scouter/gallery", label: "Gallery", nested: true },
   { href: "/calc/equips/setup", label: "Equipment", match: "exact" },
 ];
 
@@ -20,7 +23,6 @@ export const PROGRESSION_LINKS: NavLink[] = [
 ];
 
 export const TOOL_LINKS: NavLink[] = [
-  { href: "/calc/scouter/gallery", label: "Gallery" },
   { href: "/calc/planner", label: "Upgrade Planner" },
   { href: "/calc/equips/flames", label: "Flame Calculator" },
   { href: "/calc/cubing", label: "Cubing Calculator" },
@@ -56,11 +58,15 @@ export function linkActive(pathname: string, link: NavLink): boolean {
           !pathname.startsWith("/calc/character/share"))
       );
     }
-    return (
-      pathname === link.href ||
-      pathname.startsWith(`${link.href}/result`) ||
-      pathname.startsWith(`${link.href}/s/`)
-    );
+    if (link.href === "/calc/scouter") {
+      return (
+        pathname === link.href ||
+        pathname.startsWith(`${link.href}/result`) ||
+        pathname.startsWith(`${link.href}/s/`) ||
+        pathname.startsWith(`${link.href}/gallery`)
+      );
+    }
+    return pathname === link.href;
   }
   return pathname === link.href || pathname.startsWith(`${link.href}/`);
 }

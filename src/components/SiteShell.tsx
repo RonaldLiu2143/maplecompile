@@ -62,10 +62,17 @@ function NavSection({
             key={link.href}
             asChild
             variant="ghost"
-            className={cn("h-9 w-full justify-start gap-2", active && NAV_ACTIVE)}
+            className={cn(
+              "h-9 w-full justify-start gap-2",
+              link.nested && "ml-2 h-8 border-l border-sidebar-border pl-3",
+              active && NAV_ACTIVE,
+            )}
           >
             <Link href={link.href} aria-current={active ? "page" : undefined}>
-              <Icon className="size-4 shrink-0" aria-hidden />
+              <Icon
+                className={cn("shrink-0", link.nested ? "size-3.5" : "size-4")}
+                aria-hidden
+              />
               {link.label}
             </Link>
           </Button>

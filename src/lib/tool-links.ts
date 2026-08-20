@@ -39,10 +39,10 @@ export const HOME_TOOL_LINKS = [
 
 export const DASHBOARD_QUICK_TOOLS = [
   { href: "/calc/scouter", label: "Scouter" },
+  { href: "/calc/scouter/gallery", label: "Gallery" },
   { href: "/calc/equips/setup", label: "Equipment" },
   { href: "/calc/planner", label: "Upgrade Planner" },
   { href: "/calc/bosses", label: "Bossing" },
   { href: "/calc/liberation", label: "Liberation" },
-  { href: "/calc/scouter/gallery", label: "Gallery" },
   { href: "/calc/hexa-tracker", label: "HEXA / Fragments" },
 ] as const;
