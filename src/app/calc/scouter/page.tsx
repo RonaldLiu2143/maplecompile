@@ -54,6 +54,7 @@ import {
 import { ConfirmModal } from "@/components/ConfirmModal";
 import { EquipmentSetupPanel } from "@/components/EquipmentSetupPanel";
 import { HexaEfficiencyPanel } from "./hexa-efficiency";
+import { ScouterClassRotationPanel } from "./class-rotation-panel";
 import type { EquipSetup, FlameSetup, JobType } from "@/lib/types";
 import { ShareGalleryModal } from "./share-gallery-modal";
 import { MiniScouterCharacterSearch } from "./MiniScouterCharacterSearch";
@@ -359,6 +360,7 @@ function CdnIcon({
 
 export default function ScouterPage() {
   const router = useRouter();
+  const [rotationImportFlash, setRotationImportFlash] = useState(false);
   const [input, setInput] = useState<ScouterInput>(() =>
     defaultScouterInput(DEFAULT_JOB, DEFAULT_CHAR),
   );
@@ -629,6 +631,30 @@ export default function ScouterPage() {
     setDraftReady(true);
     if (fromShare) {
       // Drop the flag so refresh uses the normal workspace bind.
+      window.history.replaceState(null, "", "/calc/scouter");
+    }
+
+    const importChar = new URLSearchParams(window.location.search).get(
+      "importRotation",
+    );
+    if (importChar) {
+      const opt = CLASS_OPTIONS.find((o) => o.charType === importChar);
+      if (opt) {
+        setInput((cur) => {
+          if (cur.charType === opt.charType && cur.jobType === opt.jobType) {
+            return cur;
+          }
+          return {
+            ...defaultScouterInput(opt.jobType, opt.charType),
+            ...cur,
+            jobType: opt.jobType,
+            charType: opt.charType,
+            useMagicAttack: opt.jobType === "magician",
+          };
+        });
+      }
+      setRotationImportFlash(true);
+      window.setTimeout(() => setRotationImportFlash(false), 2800);
       window.history.replaceState(null, "", "/calc/scouter");
     }
   }, []);
@@ -2284,6 +2310,14 @@ export default function ScouterPage() {
           </section>
         </div>
       </div>
+
+      {draftReady ? (
+        <ScouterClassRotationPanel
+          charType={input.charType || DEFAULT_CHAR}
+          jobType={input.jobType || DEFAULT_JOB}
+          highlightImport={rotationImportFlash}
+        />
+      ) : null}
 
       {draftReady ? (
         <section className="overflow-hidden rounded-lg border border-border bg-surface p-3 sm:p-4">

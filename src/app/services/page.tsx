@@ -34,6 +34,11 @@ const SERVICES = [
     body: "Odds and meso estimates for potential lines.",
   },
   {
+    href: "/calc/rotations",
+    title: "Class Rotations",
+    body: "Drag-and-drop skill priority per class — save locally and use on Scouter.",
+  },
+  {
     href: "/calc/bosses",
     title: "Boss Income",
     body: "Weekly crystal meso income for your roster’s boss list.",
