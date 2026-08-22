@@ -49,3 +49,23 @@ CLAUDE.md
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+.playwright-cli/
+
+# local agent / research scratch (never commit)
+.agents/
+.impeccable/
+__pycache__/
+tmp_*
+tmp-*/
+tmp-*
+class-fd.json
+/scripts/patch_*.py
+/scripts/strip_*.py
+/scripts/recolor_*.py
+/scripts/tmp_*.js
+
+# extra copied Cursor skills (impeccable is tracked)
+.cursor/agents/
+.cursor/skills/*
+!.cursor/skills/impeccable/
+!.cursor/skills/impeccable/**
