@@ -109,7 +109,7 @@ export function ColorGraph({
         />
       </div>
       <div className="flex items-stretch gap-1.5">
-        <label className="flex min-w-0 flex-1 items-center gap-2 rounded-md border border-border/50 bg-background px-2 py-1.5">
+        <label className="flex min-w-0 flex-[3] items-center gap-2 rounded-md border border-border/50 bg-background px-2 py-1.5">
           <span className="text-[11px] font-semibold text-muted-foreground">
             HEX
           </span>
@@ -133,7 +133,7 @@ export function ColorGraph({
           <button
             type="button"
             onClick={onSave}
-            className="w-1/4 min-w-[3.25rem] shrink-0 rounded-md border border-accent/50 bg-accent-soft px-2 text-[11px] font-semibold text-foreground hover:bg-accent hover:text-primary-foreground"
+            className="min-w-[3.25rem] flex-[1] shrink-0 rounded-md border border-accent/50 bg-accent-soft px-2 text-[11px] font-semibold text-foreground hover:bg-accent hover:text-primary-foreground"
           >
             Save
           </button>

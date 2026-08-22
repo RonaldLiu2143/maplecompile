@@ -34,7 +34,7 @@ import {
   type ThemeId,
   type ThemePrefs,
 } from "@/lib/theme";
-import { Moon, Palette, Sun, Type } from "lucide-react";
+import { Moon, Palette, Sun, Type, X } from "lucide-react";
 
 function getServerThemePrefs(): ThemePrefs {
   return DEFAULT_THEME_PREFS;
@@ -158,6 +158,14 @@ export function ThemePicker({
     setCustomOpen(false);
   };
 
+  const deleteCustom = (id: string) => {
+    setSaveMsg(null);
+    writeThemePrefs({
+      ...prefs,
+      customColors: customColors.filter((c) => c.id !== id),
+    });
+  };
+
   const activeHue = prefs.hue === null ? null : (parseThemeHue(prefs.hue) ?? DEFAULT_THEME_HUE);
   const scheme = getThemePreset(prefs.id).scheme;
   const isBwColor = prefs.hue === null;
@@ -261,26 +269,37 @@ export function ThemePicker({
             {customColors.map((saved) => {
               const active = !showCustom && activeCustom?.id === saved.id;
               return (
-                <button
-                  key={saved.id}
-                  type="button"
-                  onClick={() => applySavedCustom(saved)}
-                  aria-pressed={active}
-                  title={saved.hex}
-                  className={[
-                    "flex flex-col items-center gap-1 rounded-lg border px-1.5 py-1.5 text-[10px] font-semibold transition-colors",
-                    active
-                      ? "border-accent bg-accent-soft text-foreground"
-                      : "border-border/50 text-muted-foreground hover:border-border hover:text-foreground",
-                  ].join(" ")}
-                >
-                  <span
-                    className="size-6 rounded-md border border-border/50"
-                    style={{ backgroundColor: saved.hex }}
-                    aria-hidden
-                  />
-                  <span className="max-w-full truncate">{saved.name}</span>
-                </button>
+                <div key={saved.id} className="relative">
+                  <button
+                    type="button"
+                    onClick={() => applySavedCustom(saved)}
+                    aria-pressed={active}
+                    title={saved.hex}
+                    className={[
+                      "flex w-full flex-col items-center gap-1 rounded-lg border px-1.5 py-1.5 text-[10px] font-semibold transition-colors",
+                      active
+                        ? "border-accent bg-accent-soft text-foreground"
+                        : "border-border/50 text-muted-foreground hover:border-border hover:text-foreground",
+                    ].join(" ")}
+                  >
+                    <span
+                      className="size-6 rounded-md border border-border/50"
+                      style={{ backgroundColor: saved.hex }}
+                      aria-hidden
+                    />
+                    <span className="max-w-full truncate font-mono text-[9px]">
+                      {saved.name}
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => deleteCustom(saved.id)}
+                    aria-label={`Remove ${saved.name}`}
+                    className="absolute -right-1 -top-1 flex size-4 items-center justify-center rounded-full border border-border/60 bg-surface text-muted-foreground shadow-sm hover:bg-danger/15 hover:text-danger"
+                  >
+                    <X className="size-2.5" aria-hidden />
+                  </button>
+                </div>
               );
             })}
           </div>

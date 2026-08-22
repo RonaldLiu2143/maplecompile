@@ -556,10 +556,10 @@ function normalizeCustomColors(raw: unknown): SavedCustomColor[] {
     const name =
       typeof r.name === "string" && r.name.trim()
         ? r.name.trim().slice(0, 32)
-        : "";
+        : hex.toUpperCase();
     const id =
       typeof r.id === "string" && r.id.trim() ? r.id.trim() : nanoid();
-    if (!hex || hue == null || !name) continue;
+    if (!hex || hue == null) continue;
     if (out.some((c) => c.hex === hex)) continue;
     out.push({ id, name, hex, hue });
     if (out.length >= MAX_CUSTOM_COLORS) break;
