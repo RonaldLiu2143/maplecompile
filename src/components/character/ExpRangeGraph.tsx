@@ -62,6 +62,7 @@ export function ExpRangeGraph({
   showAvg = true,
   centerChart = false,
   sectionLead = false,
+  chartHeight,
 }: {
   graph: MapleHubGraphData | null | undefined;
   averages?: MapleHubExpAverages | null;
@@ -71,6 +72,7 @@ export function ExpRangeGraph({
   centerChart?: boolean;
   /** First graph block under a parent divider (no extra top rule). */
   sectionLead?: boolean;
+  chartHeight?: number;
 }) {
   const dailyExp = graph?.dailyExp ?? [];
   const labels = graph?.labels ?? [];
@@ -85,13 +87,17 @@ export function ExpRangeGraph({
       : slice.map((_, i) => String(i + 1));
   const avg = showAvg ? avgForRange(averages, days) : null;
   const hasLine = slice.length > 0;
+  const barHeight = chartHeight ?? (compact ? 140 : 220);
+  const tightChart = chartHeight != null;
 
   return (
     <div
       className={
         compact
           ? sectionLead
-            ? "pt-3"
+            ? tightChart
+              ? "pt-1.5"
+              : "pt-3"
             : "mt-3 border-t border-border/40 pt-3"
           : "mt-5"
       }
@@ -156,7 +162,11 @@ export function ExpRangeGraph({
 
       <div
         className={`mt-2 rounded-xl border border-border/55 bg-surface-muted/25 ${
-          compact ? "px-2 py-2 sm:px-2.5" : "px-3 py-3 sm:px-4"
+          tightChart
+            ? "px-1 py-1"
+            : compact
+              ? "px-2 py-2 sm:px-2.5"
+              : "px-3 py-3 sm:px-4"
         } ${centerChart ? "mx-auto max-w-xl" : ""}`}
       >
         {hasLine ? (
@@ -164,15 +174,14 @@ export function ExpRangeGraph({
             type="bar"
             labels={labelSlice}
             values={slice}
-            height={compact ? 140 : 220}
+            height={barHeight}
             yFormatter={(n) => formatCompact(n)}
             valueFormatter={(n) => formatCompact(n)}
           />
         ) : (
           <p
-            className={`flex items-center justify-center text-xs opacity-55 ${
-              compact ? "h-28" : "h-56 sm:h-64"
-            }`}
+            className="flex items-center justify-center text-xs opacity-55"
+            style={{ height: barHeight }}
           >
             No daily EXP history for this window
           </p>
@@ -186,10 +195,12 @@ export function LevelProgressGraph({
   graph,
   compact = false,
   centerChart = false,
+  chartHeight,
 }: {
   graph: MapleHubGraphData | null | undefined;
   compact?: boolean;
   centerChart?: boolean;
+  chartHeight?: number;
 }) {
   const levels = graph?.levels ?? [];
   const cumulativeExp = graph?.cumulativeExp ?? [];
@@ -229,8 +240,10 @@ export function LevelProgressGraph({
     yMax = values[0]! + 0.01;
   }
 
+  const lineHeight = chartHeight ?? (compact ? 132 : 184);
+
   return (
-    <div className={compact ? "mt-3 border-t border-border/40 pt-3" : ""}>
+    <div className={compact ? (chartHeight != null ? "mt-2 border-t border-border/40 pt-2" : "mt-3 border-t border-border/40 pt-3") : ""}>
       <div
         className={`relative flex items-center ${
           compact ? "justify-between gap-2" : "justify-center py-1"
@@ -277,13 +290,17 @@ export function LevelProgressGraph({
 
       <div
         className={`mt-2 rounded-xl border border-border/55 bg-surface-muted/20 ${
-          compact ? "px-2 py-2 sm:px-2.5" : "px-2.5 py-2.5 sm:px-3 sm:py-3"
+          chartHeight != null
+            ? "px-1 py-1"
+            : compact
+              ? "px-2 py-2 sm:px-2.5"
+              : "px-2.5 py-2.5 sm:px-3 sm:py-3"
         } ${centerChart ? "mx-auto max-w-xl" : ""}`}
       >
         <ThemeLineChart
           labels={labelSlice}
           values={values}
-          height={compact ? 132 : 184}
+          height={lineHeight}
           yFormatter={formatLevelTick}
           valueFormatter={formatLevelTick}
           yMin={yMin}

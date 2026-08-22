@@ -122,8 +122,8 @@ function MiniStat({ label, value }: { label: string; value: string }) {
   );
 }
 
-/** Vertical rank list for dashboard Primary (dense) header. */
-function RankStatsList({
+/** Rank grid for dashboard Primary (dense) header. */
+function RankStatsGrid({
   items,
   className = "",
 }: {
@@ -131,20 +131,13 @@ function RankStatsList({
   className?: string;
 }) {
   return (
-    <ul
-      className={[
-        className.includes("grid") ? "" : "space-y-2",
-        className,
-      ]
-        .filter(Boolean)
-        .join(" ")}
+    <div
+      className={`grid grid-cols-2 gap-x-4 gap-y-1 ${className}`.trim()}
     >
       {items.map((item) => (
-        <li key={item.label}>
-          <MiniStat label={item.label} value={item.value} />
-        </li>
+        <MiniStat key={item.label} label={item.label} value={item.value} />
       ))}
-    </ul>
+    </div>
   );
 }
 
@@ -333,7 +326,7 @@ function CompactCharacterProfile({
   const gmsOverall = formatRank(ranking?.globalRank ?? character.overallRank);
   const legion = formatOptionalInt(character.legionLevel);
 
-  const avatarPx = dense ? 64 : 88;
+  const avatarPx = dense ? 56 : 88;
 
   const [liberation, setLiberation] = useState<LiberationTagFlags>({
     genesis: false,
@@ -364,9 +357,20 @@ function CompactCharacterProfile({
   ];
 
   if (dense) {
+    const subtitle = [
+      `Lv. ${character.level}`,
+      pct != null ? `(${pct.toFixed(2)}%)` : null,
+      "·",
+      job,
+      world ? `in ${world}` : null,
+      `· ${region}`,
+    ]
+      .filter(Boolean)
+      .join(" ");
+
     return (
       <article className="overflow-hidden rounded-xl border border-border/50 bg-surface">
-        <div className="flex items-start gap-3 p-2.5 sm:p-3">
+        <div className="flex items-start gap-2.5 p-2.5 sm:gap-3">
           <div className="shrink-0">
             {character.characterImgURL ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -389,10 +393,10 @@ function CompactCharacterProfile({
           </div>
 
           <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-start justify-between gap-2">
+            <div className="flex items-start justify-between gap-3 sm:gap-4">
               <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-2">
-                  <h2 className="font-display text-lg font-bold tracking-tight">
+                <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                  <h2 className="font-display text-base font-bold tracking-tight sm:text-lg">
                     {character.name}
                   </h2>
                   {character.isHeroic ? (
@@ -411,27 +415,19 @@ function CompactCharacterProfile({
                     compact
                   />
                 </div>
-                <p className="mt-0.5 font-display text-sm font-semibold">
-                  Lv. {character.level}
-                  {pct != null ? (
-                    <span className="ml-1.5 text-sm font-medium opacity-70">
-                      ({pct.toFixed(2)}%)
-                    </span>
-                  ) : null}
-                </p>
-                <p className="mt-0.5 text-xs opacity-70">
-                  {job}
-                  {world ? ` in ${world}` : ""}
-                  {` · ${region}`}
+                <p className="mt-0.5 truncate text-xs font-medium opacity-75 sm:text-sm">
+                  {subtitle}
                 </p>
               </div>
-              {actions ? (
-                <div className="flex flex-wrap items-center gap-2">{actions}</div>
-              ) : null}
+
+              <RankStatsGrid
+                items={rankStats}
+                className="hidden shrink-0 sm:grid lg:gap-x-5"
+              />
             </div>
 
-            <div className="mt-2 max-w-sm">
-              <div className="mb-1 flex justify-between gap-3 font-mono text-xs tabular-nums text-foreground/60">
+            <div className="mt-1.5 max-w-xs min-w-0 sm:max-w-sm">
+              <div className="mb-0.5 flex justify-between gap-2 font-mono text-xs tabular-nums text-foreground/60">
                 <span>{formatCompact(character.exp)}</span>
                 <span>{need != null ? formatCompact(need) : "Max level"}</span>
               </div>
@@ -443,27 +439,24 @@ function CompactCharacterProfile({
               </div>
             </div>
           </div>
-
-          <div className="hidden shrink-0 sm:block sm:min-w-[9rem] lg:min-w-[10rem]">
-            <RankStatsList items={rankStats} />
-          </div>
         </div>
 
-        <div className="border-t border-border/40 px-2.5 pb-2.5 sm:px-3">
-          <div className="sm:hidden">
-            <RankStatsList
-              items={rankStats}
-              className="grid grid-cols-2 gap-x-4 gap-y-2 py-3"
-            />
+        <div className="border-t border-border/40 px-2 pb-2 pt-1.5 sm:px-2.5">
+          <div className="mb-1.5 sm:hidden">
+            <RankStatsGrid items={rankStats} className="gap-x-3" />
           </div>
           <ExpRangeGraph
             graph={character.graph}
             averages={character.expAverages}
             compact
-            centerChart
             sectionLead
+            chartHeight={220}
           />
-          <LevelProgressGraph graph={character.graph} compact centerChart />
+          <LevelProgressGraph
+            graph={character.graph}
+            compact
+            chartHeight={200}
+          />
         </div>
       </article>
     );
