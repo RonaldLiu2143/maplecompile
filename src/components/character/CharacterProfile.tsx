@@ -122,6 +122,32 @@ function MiniStat({ label, value }: { label: string; value: string }) {
   );
 }
 
+/** Vertical rank list for dashboard Primary (dense) header. */
+function RankStatsList({
+  items,
+  className = "",
+}: {
+  items: { label: string; value: string }[];
+  className?: string;
+}) {
+  return (
+    <ul
+      className={[
+        className.includes("grid") ? "" : "space-y-2",
+        className,
+      ]
+        .filter(Boolean)
+        .join(" ")}
+    >
+      {items.map((item) => (
+        <li key={item.label}>
+          <MiniStat label={item.label} value={item.value} />
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 function formatDaysNumber(n: number): string {
   if (n < 10) return n.toFixed(1);
   return String(Math.round(n));
@@ -324,20 +350,129 @@ function CompactCharacterProfile({
     setLiberation(readLiberationFlags(entryKey(character)));
   });
 
+  const rankStats = [
+    {
+      label: world ? `${job} (${world})` : `${job} rank`,
+      value: classInWorld,
+    },
+    {
+      label: world ? `${world} rank` : "World rank",
+      value: worldRank,
+    },
+    { label: `GMS ${region}`, value: gmsOverall },
+    { label: "Legion", value: legion },
+  ];
+
+  if (dense) {
+    return (
+      <article className="overflow-hidden rounded-xl border border-border/50 bg-surface">
+        <div className="flex items-start gap-3 p-2.5 sm:p-3">
+          <div className="shrink-0">
+            {character.characterImgURL ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={character.characterImgURL}
+                alt={`${character.name} avatar`}
+                width={avatarPx}
+                height={avatarPx}
+                className="object-contain"
+                style={{ width: avatarPx, height: avatarPx }}
+              />
+            ) : (
+              <div
+                className="flex items-center justify-center rounded-lg bg-surface-muted text-xs opacity-60"
+                style={{ width: avatarPx, height: avatarPx }}
+              >
+                No img
+              </div>
+            )}
+          </div>
+
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h2 className="font-display text-lg font-bold tracking-tight">
+                    {character.name}
+                  </h2>
+                  {character.isHeroic ? (
+                    <span className="rounded-md bg-accent-soft px-1.5 py-0.5 text-xs font-semibold text-accent">
+                      Heroic
+                    </span>
+                  ) : null}
+                  {world ? (
+                    <span className="rounded-md border border-border px-1.5 py-0.5 text-xs font-semibold opacity-70">
+                      {world}
+                    </span>
+                  ) : null}
+                  <LiberationStatusTags
+                    genesis={liberation.genesis}
+                    destiny={liberation.destiny}
+                    compact
+                  />
+                </div>
+                <p className="mt-0.5 font-display text-sm font-semibold">
+                  Lv. {character.level}
+                  {pct != null ? (
+                    <span className="ml-1.5 text-sm font-medium opacity-70">
+                      ({pct.toFixed(2)}%)
+                    </span>
+                  ) : null}
+                </p>
+                <p className="mt-0.5 text-xs opacity-70">
+                  {job}
+                  {world ? ` in ${world}` : ""}
+                  {` · ${region}`}
+                </p>
+              </div>
+              {actions ? (
+                <div className="flex flex-wrap items-center gap-2">{actions}</div>
+              ) : null}
+            </div>
+
+            <div className="mt-2 max-w-sm">
+              <div className="mb-1 flex justify-between gap-3 font-mono text-xs tabular-nums text-foreground/60">
+                <span>{formatCompact(character.exp)}</span>
+                <span>{need != null ? formatCompact(need) : "Max level"}</span>
+              </div>
+              <div className="h-1 overflow-hidden rounded-full bg-surface-muted">
+                <div
+                  className="h-full rounded-full bg-accent transition-[width]"
+                  style={{ width: `${pct ?? 0}%` }}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="hidden shrink-0 sm:block sm:min-w-[9rem] lg:min-w-[10rem]">
+            <RankStatsList items={rankStats} />
+          </div>
+        </div>
+
+        <div className="border-t border-border/40 px-2.5 pb-2.5 sm:px-3">
+          <div className="sm:hidden">
+            <RankStatsList
+              items={rankStats}
+              className="grid grid-cols-2 gap-x-4 gap-y-2 py-3"
+            />
+          </div>
+          <ExpRangeGraph
+            graph={character.graph}
+            averages={character.expAverages}
+            compact
+            centerChart
+            sectionLead
+          />
+          <LevelProgressGraph graph={character.graph} compact centerChart />
+        </div>
+      </article>
+    );
+  }
+
   return (
-    <article
-      className={
-        dense
-          ? "overflow-hidden rounded-xl border border-border/50 bg-surface"
-          : "overflow-hidden rounded-2xl border-2 border-border bg-surface"
-      }
-    >
-      <div
-        className={`flex flex-col sm:flex-row sm:items-start ${
-          dense ? "gap-3 p-2.5 sm:p-3" : "gap-4 p-4"
-        }`}
-      >
-        <div className="flex shrink-0 justify-center sm:justify-start">
+    <article className="overflow-hidden rounded-2xl border-2 border-border bg-surface">
+      <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-start">
+        <div className="flex shrink-0 justify-start">
           {character.characterImgURL ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -362,11 +497,7 @@ function CompactCharacterProfile({
           <div className="flex flex-wrap items-start justify-between gap-2">
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
-                <h2
-                  className={`font-display font-bold tracking-tight ${
-                    dense ? "text-lg" : "text-xl"
-                  }`}
-                >
+                <h2 className="font-display text-xl font-bold tracking-tight">
                   {character.name}
                 </h2>
                 {character.isHeroic ? (
@@ -379,19 +510,8 @@ function CompactCharacterProfile({
                     {world}
                   </span>
                 ) : null}
-                {dense ? (
-                  <LiberationStatusTags
-                    genesis={liberation.genesis}
-                    destiny={liberation.destiny}
-                    compact
-                  />
-                ) : null}
               </div>
-              <p
-                className={`mt-0.5 font-display font-semibold ${
-                  dense ? "text-sm" : "text-base"
-                }`}
-              >
+              <p className="mt-0.5 font-display text-base font-semibold">
                 Lv. {character.level}
                 {pct != null ? (
                   <span className="ml-1.5 text-sm font-medium opacity-70">
@@ -399,7 +519,7 @@ function CompactCharacterProfile({
                   </span>
                 ) : null}
               </p>
-              <p className={`mt-0.5 opacity-70 ${dense ? "text-xs" : "text-sm"}`}>
+              <p className="mt-0.5 text-sm opacity-70">
                 {job}
                 {world ? ` in ${world}` : ""}
                 {` · ${region}`}
@@ -411,18 +531,14 @@ function CompactCharacterProfile({
             ) : null}
           </div>
 
-          <div className={`max-w-sm ${dense ? "mt-2" : "mt-3"}`}>
+          <div className="mt-3 max-w-sm">
             <div className="mb-1 flex justify-between gap-3 font-mono text-xs tabular-nums text-foreground/60">
               <span>{formatCompact(character.exp)}</span>
               <span>
                 {need != null ? formatCompact(need) : "Max level"}
               </span>
             </div>
-            <div
-              className={`overflow-hidden rounded-full bg-surface-muted ${
-                dense ? "h-1" : "h-1.5"
-              }`}
-            >
+            <div className="h-1.5 overflow-hidden rounded-full bg-surface-muted">
               <div
                 className="h-full rounded-full bg-accent transition-[width]"
                 style={{ width: `${pct ?? 0}%` }}
@@ -430,21 +546,17 @@ function CompactCharacterProfile({
             </div>
           </div>
 
-          <div
-            className={`grid grid-cols-2 sm:grid-cols-4 ${
-              dense ? "mt-2 gap-x-3 gap-y-1.5" : "mt-3 gap-x-4 gap-y-2"
-            }`}
-          >
+          <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-4">
             <MiniStat
-              label={world ? `${job} (${world})` : `${job} rank`}
-              value={classInWorld}
+              label={rankStats[0]!.label}
+              value={rankStats[0]!.value}
             />
             <MiniStat
-              label={world ? `${world} rank` : "World rank"}
-              value={worldRank}
+              label={rankStats[1]!.label}
+              value={rankStats[1]!.value}
             />
-            <MiniStat label={`GMS ${region}`} value={gmsOverall} />
-            <MiniStat label="Legion" value={legion} />
+            <MiniStat label={rankStats[2]!.label} value={rankStats[2]!.value} />
+            <MiniStat label={rankStats[3]!.label} value={rankStats[3]!.value} />
           </div>
 
           <ExpRangeGraph

@@ -60,11 +60,17 @@ export function ExpRangeGraph({
   averages,
   compact = false,
   showAvg = true,
+  centerChart = false,
+  sectionLead = false,
 }: {
   graph: MapleHubGraphData | null | undefined;
   averages?: MapleHubExpAverages | null;
   compact?: boolean;
   showAvg?: boolean;
+  /** Center the chart canvas; headers stay left-aligned. */
+  centerChart?: boolean;
+  /** First graph block under a parent divider (no extra top rule). */
+  sectionLead?: boolean;
 }) {
   const dailyExp = graph?.dailyExp ?? [];
   const labels = graph?.labels ?? [];
@@ -81,7 +87,15 @@ export function ExpRangeGraph({
   const hasLine = slice.length > 0;
 
   return (
-    <div className={compact ? "mt-3 border-t border-border/40 pt-3" : "mt-5"}>
+    <div
+      className={
+        compact
+          ? sectionLead
+            ? "pt-3"
+            : "mt-3 border-t border-border/40 pt-3"
+          : "mt-5"
+      }
+    >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p
           className={`font-semibold uppercase tracking-wider opacity-55 ${
@@ -143,7 +157,7 @@ export function ExpRangeGraph({
       <div
         className={`mt-2 rounded-xl border border-border/55 bg-surface-muted/25 ${
           compact ? "px-2 py-2 sm:px-2.5" : "px-3 py-3 sm:px-4"
-        }`}
+        } ${centerChart ? "mx-auto max-w-xl" : ""}`}
       >
         {hasLine ? (
           <ThemeLineChart
@@ -171,9 +185,11 @@ export function ExpRangeGraph({
 export function LevelProgressGraph({
   graph,
   compact = false,
+  centerChart = false,
 }: {
   graph: MapleHubGraphData | null | undefined;
   compact?: boolean;
+  centerChart?: boolean;
 }) {
   const levels = graph?.levels ?? [];
   const cumulativeExp = graph?.cumulativeExp ?? [];
@@ -262,7 +278,7 @@ export function LevelProgressGraph({
       <div
         className={`mt-2 rounded-xl border border-border/55 bg-surface-muted/20 ${
           compact ? "px-2 py-2 sm:px-2.5" : "px-2.5 py-2.5 sm:px-3 sm:py-3"
-        }`}
+        } ${centerChart ? "mx-auto max-w-xl" : ""}`}
       >
         <ThemeLineChart
           labels={labelSlice}
