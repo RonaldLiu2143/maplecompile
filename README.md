@@ -1,6 +1,6 @@
 # MapleCompile
 
-Free MapleStory GMS tools — character lookup, combat power scouter, equipment & flames, boss income, liberation, HEXA fragments, and a local roster dashboard.
+Free MapleStory GMS tools — character lookup, combat power scouter, equipment & flames, star force, boss income, liberation, HEXA fragments, and a local roster dashboard.
 
 **Live:** [https://maplecompile.vercel.app](https://maplecompile.vercel.app)
 
@@ -9,24 +9,26 @@ Free MapleStory GMS tools — character lookup, combat power scouter, equipment 
 | Area | Route | Notes |
 |------|--------|--------|
 | Dashboard | `/dashboard` | Active Character, dailies / weeklies, tool shortcuts |
-| Character Search | `/calc/character` | MapleRanks-style profile (inline), Saved bookmarks (separate from roster) |
-| Scouter | `/calc/scouter` | Combat power, presets, equipment setup, gallery share |
-| Scouter Gallery | `/calc/scouter/gallery` | Public shared loadouts |
-| Equipment Setup | `/calc/equips/setup` | Gear grid + set effects (also embedded on Scouter) |
-| Flames | `/calc/equips/flames` | Flame tables & probabilities |
+| Character Search | `/calc/character` | MapleRanks-style profile (inline); Saved bookmarks (separate from roster) |
+| Scouter | `/calc/scouter` | Combat power, local presets, embedded equipment + set effects, gallery share |
+| Scouter Gallery | `/calc/scouter/gallery` | Public shared loadouts; open a post with **Gallery** / **Open in Scouter** |
+| Starforce | `/calc/starforce` | GMS v269 Star Force sim (modes, MVP/events, optimizer, fodder) |
+| Flame Calculator | `/calc/equips/flames` | Flame tables & odds; optional load from a saved Scouter preset |
 | Cubing | `/calc/cubing` | Cube / meso odds for lines |
-| Upgrade Planner | `/calc/planner` | Progression planning |
-| Boss Income | `/calc/bosses` | Crystal / boss income |
-| Liberation | `/calc/liberation` | Liberation tracker |
-| HEXA / Fragments | `/calc/hexa-tracker` | HEXA levels & fragment tracking (per character) |
+| Boss Income | `/calc/bosses` | Weekly crystals, MapleHub mule presets, reset timer |
+| Liberation | `/calc/liberation` | Genesis / Destiny traces (party cap 3 on late bosses) |
+| HEXA / Fragments | `/calc/hexa-tracker` | HEXA levels & fragment ETA (per character) |
 | Diary | `/calc/diary` | Drop / progress diary |
 | Roster | `/roster` | Multi-character manager |
+| Guide | `/guide` | How to use the tools |
 | About | `/about` | Project, local-first storage, affiliation |
-| Tools | `/services` | Directory of every calculator |
+| All tools | `/services` | Directory of every calculator |
 | FAQ | `/faq` | Common questions |
 | Privacy | `/privacy` | Privacy policy |
 | Terms | `/terms` | Terms and conditions |
 | Accessibility | `/accessibility` | Accessibility statement |
+
+Equipment Setup (`/calc/equips/setup`) and Upgrade Planner (`/calc/planner`) still exist as routes; primary gear editing is on **Scouter**. Starforce / Flames / Cubing live under **Tools** in the nav.
 
 Most progress is stored in the browser (`localStorage`). Active Character links tools across the site; Character Search **Saved** is a separate bookmark list from the roster.
 
@@ -64,7 +66,7 @@ NEXT_PUBLIC_GA_MEASUREMENT_ID=G-XXXXXXXXXX
 ```
 
 > **Deploy note:** `vercel.json` disables Git-triggered deploys. Ship production with  
-> `npx vercel deploy --prod --yes --scope <your-team-scope>`.
+> `npx vercel deploy --prod --yes`.
 
 ## Character lookup (GMS)
 
