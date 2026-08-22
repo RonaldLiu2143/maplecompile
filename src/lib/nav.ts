@@ -10,7 +10,6 @@ export const MAIN_LINKS: NavLink[] = [
   { href: "/roster", label: "My Roster", match: "exact" },
   { href: "/calc/scouter", label: "Scouter", match: "exact" },
   { href: "/calc/scouter/gallery", label: "Gallery", match: "exact" },
-  { href: "/calc/equips/setup", label: "Equipment", match: "exact" },
 ];
 
 export const PROGRESSION_LINKS: NavLink[] = [
@@ -21,7 +20,7 @@ export const PROGRESSION_LINKS: NavLink[] = [
 ];
 
 export const TOOL_LINKS: NavLink[] = [
-  { href: "/calc/planner", label: "Upgrade Planner" },
+  { href: "/calc/starforce", label: "Starforce Calculator" },
   { href: "/calc/equips/flames", label: "Flame Calculator" },
   { href: "/calc/cubing", label: "Cubing Calculator" },
 ];

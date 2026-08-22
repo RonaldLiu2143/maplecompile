@@ -115,6 +115,14 @@ export const PUBLIC_ROUTES: PublicRoute[] = [
     priority: 0.75,
   },
   {
+    path: "/calc/starforce",
+    title: "Star Force Calculator",
+    description:
+      "MapleStory GMS v269 Star Force calculator — Enhancement Modes 1–4, Monte Carlo cost/boom sims, per-star plans, optimizer, and fodder transfer.",
+    changeFrequency: "monthly",
+    priority: 0.8,
+  },
+  {
     path: "/calc/planner",
     title: "Upgrade Planner",
     description:
