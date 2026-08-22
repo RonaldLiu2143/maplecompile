@@ -160,15 +160,43 @@ export function toggleSavedCharacter(
   return { list, saved: true };
 }
 
+/** Compare saved card fields to a fresh lookup snapshot. */
+export function snapshotFieldsEqual(
+  a: SavedCharacter,
+  snapshot: SavedCharacterInput,
+): boolean {
+  const name = snapshot.name.trim() || a.name;
+  const level = snapshot.level ?? a.level;
+  const exp = snapshot.exp ?? a.exp;
+  const jobName = snapshot.jobName ?? a.jobName;
+  const worldName = snapshot.worldName ?? a.worldName;
+  const characterImgURL =
+    snapshot.characterImgURL !== undefined
+      ? snapshot.characterImgURL
+      : a.characterImgURL;
+  return (
+    a.name === name &&
+    a.level === level &&
+    a.exp === exp &&
+    a.jobName === jobName &&
+    a.worldName === worldName &&
+    a.characterImgURL === characterImgURL
+  );
+}
+
 /** Refresh snapshot fields when opening a saved profile (keeps list cards current). */
 export function updateSavedCharacterSnapshot(
   snapshot: SavedCharacterInput,
+  /** When syncing React state, pass the in-memory list to preserve reference if unchanged. */
+  currentList?: ReadonlyArray<SavedCharacter>,
 ): SavedCharacter[] {
-  const current = readSavedCharacters();
+  const current =
+    currentList != null ? [...currentList] : readSavedCharacters();
   const key = entryKey(snapshot);
   let changed = false;
   const next = current.map((e) => {
     if (entryKey(e) !== key) return e;
+    if (snapshotFieldsEqual(e, snapshot)) return e;
     changed = true;
     return {
       ...e,
@@ -183,7 +211,13 @@ export function updateSavedCharacterSnapshot(
           : e.characterImgURL,
     };
   });
-  if (!changed) return current;
+  if (!changed) {
+    return currentList != null ? [...currentList] : current;
+  }
   const written = writeList(next);
-  return written === false ? current : written;
+  return written === false
+    ? currentList != null
+      ? [...currentList]
+      : current
+    : written;
 }

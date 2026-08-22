@@ -6,12 +6,14 @@ import {
   readSavedCharacters,
   removeSavedCharacter,
   SAVED_CHARACTERS_KEY,
+  snapshotFieldsEqual,
   toggleSavedCharacter,
   updateSavedCharacterSnapshot,
   type SavedCharacter,
   type SavedCharacterInput,
   type SavedCharacterTarget,
 } from "@/lib/character/saved";
+import { entryKey } from "@/lib/dashboard/roster";
 
 export function useSavedCharacters() {
   const [hydrated, setHydrated] = useState(false);
@@ -41,8 +43,13 @@ export function useSavedCharacters() {
   }
 
   const syncSnapshot = useEffectEvent((snapshot: SavedCharacterInput) => {
-    if (!isCharacterSaved(snapshot, saved)) return;
-    setSaved(updateSavedCharacterSnapshot(snapshot));
+    setSaved((prev) => {
+      if (!isCharacterSaved(snapshot, prev)) return prev;
+      const key = entryKey(snapshot);
+      const existing = prev.find((e) => entryKey(e) === key);
+      if (!existing || snapshotFieldsEqual(existing, snapshot)) return prev;
+      return updateSavedCharacterSnapshot(snapshot, prev);
+    });
   });
 
   function isSaved(target: SavedCharacterTarget) {

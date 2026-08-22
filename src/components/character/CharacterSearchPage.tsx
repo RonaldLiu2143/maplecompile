@@ -238,7 +238,9 @@ export function CharacterSearchPage() {
   useEffect(() => {
     if (!result || !hydrated) return;
     syncSnapshot(toSavedFields(result));
-  }, [result, hydrated, syncSnapshot]);
+    // syncSnapshot is a stable Effect Event — omit from deps (see React useEffectEvent).
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- snapshot sync on profile load only
+  }, [result, hydrated]);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
