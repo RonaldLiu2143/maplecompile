@@ -2,24 +2,18 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { SCOUTER_CDN } from "@/lib/scouter";
 import {
   CLASS_ROTATIONS_KEY,
   getSavedRotation,
   skillMapForCharType,
   type SavedClassRotation,
 } from "@/lib/rotations";
-
-function iconUrl(suffix: string | null | undefined): string | null {
-  if (!suffix) return null;
-  if (suffix.startsWith("http")) return suffix;
-  return `${SCOUTER_CDN}${suffix.startsWith("/") ? suffix : `/${suffix}`}`;
-}
+import { DurationTimeline } from "@/components/rotations/DurationTimeline";
+import { RotationSkillIcon } from "@/components/rotations/rotation-skill-icon";
 
 type Props = {
   charType: string;
   jobType: string;
-  /** When set (from ?importRotation=), flash a confirmation. */
   highlightImport?: boolean;
 };
 
@@ -45,14 +39,14 @@ export function ScouterClassRotationPanel({
       window.removeEventListener("maplecompile-class-rotations", onStore);
       window.removeEventListener("storage", onStorage);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- reload binds charType
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [charType]);
 
   useEffect(() => {
     if (!highlightImport) return;
     reload();
     setFlash(true);
-    const t = window.setTimeout(() => setFlash(false), 2500);
+    const t = window.setTimeout(() => setFlash(false), 2800);
     return () => window.clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [highlightImport, charType]);
@@ -89,52 +83,53 @@ export function ScouterClassRotationPanel({
           </Link>
         </div>
       </div>
-      <div className="space-y-1.5 p-2">
-        {!rotation || rotation.slots.length === 0 ? (
+      <div className="space-y-2 p-2">
+        {!rotation ||
+        (rotation.castOrder.length === 0 && rotation.timeline.length === 0) ? (
           <p className="text-[11px] text-muted-foreground">
-            No saved rotation for this class.{" "}
+            No saved rotation.{" "}
             <Link href={builderHref} className="text-accent underline">
               Build one
             </Link>
-            , save it, then Import here.
+            , save, then Import here.
           </p>
         ) : (
           <>
             <div className="flex flex-wrap items-baseline gap-x-2 text-[10px] text-muted-foreground">
               <span className="font-medium text-foreground">{rotation.name}</span>
-              <span>{rotation.mode}</span>
               <span>{rotation.updatedAt.slice(0, 10)}</span>
             </div>
-            <ol className="flex flex-wrap gap-1.5">
-              {rotation.slots.map((slot, i) => {
-                const skill = skillsById.get(slot.skillId);
-                const src = iconUrl(skill?.iconSuffix);
-                return (
-                  <li
-                    key={slot.slotId}
-                    title={`${skill?.name ?? slot.skillId} · ${slot.when}`}
-                    className="flex items-center gap-1 rounded border border-border/40 bg-background px-1 py-0.5"
-                  >
-                    <span className="text-[9px] font-bold text-accent">
-                      {i + 1}
-                    </span>
-                    {src ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={src}
-                        alt=""
-                        width={18}
-                        height={18}
-                        className="rounded object-contain"
-                      />
-                    ) : null}
-                    <span className="max-w-[4.5rem] truncate text-[9px]">
-                      {skill?.name ?? slot.skillId}
-                    </span>
-                  </li>
-                );
-              })}
-            </ol>
+            {rotation.castOrder.length > 0 ? (
+              <ol className="flex flex-wrap gap-1.5">
+                {rotation.castOrder.map((entry, i) => {
+                  const skill = skillsById.get(entry.skillId);
+                  return (
+                    <li
+                      key={entry.slotId}
+                      title={skill?.name ?? entry.skillId}
+                      className="flex items-center gap-1 rounded border border-border/40 bg-background px-1 py-0.5"
+                    >
+                      <span className="text-[9px] font-bold text-accent">
+                        {i + 1}
+                      </span>
+                      <RotationSkillIcon skill={skill} size={18} />
+                      <span className="max-w-[4.5rem] truncate text-[9px]">
+                        {skill?.name ?? entry.skillId}
+                      </span>
+                    </li>
+                  );
+                })}
+              </ol>
+            ) : null}
+            {rotation.timeline.length > 0 ? (
+              <DurationTimeline
+                timeline={rotation.timeline}
+                skillsById={skillsById}
+                onChange={() => {}}
+                readOnly
+                compact
+              />
+            ) : null}
             {rotation.notes ? (
               <p className="text-[10px] text-muted-foreground line-clamp-2">
                 {rotation.notes}

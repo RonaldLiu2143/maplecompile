@@ -1,0 +1,191 @@
+{
+  "charType": "bs",
+  "patchNote": "GMS wiki-seeded — verify cooldowns/durations",
+  "skills": [
+    {
+      "id": "bless",
+      "name": "Bless",
+      "category": "class_buff",
+      "cooldownSec": 0,
+      "durationSec": 0
+    },
+    {
+      "id": "holy-symbol",
+      "name": "Holy Symbol",
+      "category": "class_buff",
+      "cooldownSec": 0,
+      "durationSec": 0
+    },
+    {
+      "id": "infinity",
+      "name": "Infinity",
+      "category": "class_buff",
+      "cooldownSec": 180,
+      "durationSec": 40
+    },
+    {
+      "id": "big-bang",
+      "name": "Big Bang",
+      "category": "attack",
+      "cooldownSec": 0,
+      "durationSec": 0,
+      "delaySec": 0.9
+    },
+    {
+      "id": "angel-ray",
+      "name": "Angel Ray",
+      "category": "attack",
+      "cooldownSec": 0,
+      "durationSec": 0,
+      "delaySec": 0.84
+    },
+    {
+      "id": "genesis",
+      "name": "Genesis",
+      "category": "fifth",
+      "cooldownSec": 360,
+      "durationSec": 30
+    },
+    {
+      "id": "benediction",
+      "name": "Benediction",
+      "category": "fifth",
+      "cooldownSec": 120,
+      "durationSec": 40
+    },
+    {
+      "id": "peacemaker",
+      "name": "Peacemaker",
+      "category": "fifth",
+      "cooldownSec": 120,
+      "durationSec": 12
+    },
+    {
+      "id": "epic-adventure",
+      "name": "Epic Adventure",
+      "category": "fifth",
+      "cooldownSec": 120,
+      "durationSec": 60
+    },
+    {
+      "id": "hexa-0",
+      "name": "Angel Ray",
+      "category": "hexa",
+      "iconSuffix": "/hexaskill/Bishop_2.png",
+      "hexaSlot": 0,
+      "cooldownSec": 0,
+      "durationSec": 0,
+      "delaySec": 1
+    },
+    {
+      "id": "hexa-1",
+      "name": "Big Bang",
+      "category": "hexa",
+      "iconSuffix": "/hexaskill/Bishop_7.png",
+      "hexaSlot": 1,
+      "cooldownSec": 0,
+      "durationSec": 0,
+      "delaySec": 1
+    },
+    {
+      "id": "hexa-2",
+      "name": "Angelic Wrath",
+      "category": "hexa",
+      "iconSuffix": "/hexaskill/Bishop_8.png",
+      "hexaSlot": 2,
+      "cooldownSec": 0,
+      "durationSec": 0,
+      "delaySec": 1
+    },
+    {
+      "id": "hexa-3",
+      "name": "Genesis",
+      "category": "hexa",
+      "iconSuffix": "/hexaskill/Bishop_9.png",
+      "hexaSlot": 3,
+      "cooldownSec": 0,
+      "durationSec": 0,
+      "delaySec": 1
+    },
+    {
+      "id": "hexa-4",
+      "name": "Benediction",
+      "category": "hexa",
+      "iconSuffix": "/hexaskill/Bishop_3.png",
+      "hexaSlot": 4,
+      "cooldownSec": 0,
+      "durationSec": 0,
+      "delaySec": 1
+    },
+    {
+      "id": "hexa-5",
+      "name": "Angel of Balance",
+      "category": "hexa",
+      "iconSuffix": "/hexaskill/Bishop_4.png",
+      "hexaSlot": 5,
+      "cooldownSec": 0,
+      "durationSec": 0,
+      "delaySec": 1
+    },
+    {
+      "id": "hexa-6",
+      "name": "Peacemaker",
+      "category": "hexa",
+      "iconSuffix": "/hexaskill/Bishop_5.png",
+      "hexaSlot": 6,
+      "cooldownSec": 0,
+      "durationSec": 0,
+      "delaySec": 1
+    },
+    {
+      "id": "hexa-7",
+      "name": "Divine Punishment",
+      "category": "hexa",
+      "iconSuffix": "/hexaskill/Bishop_6.png",
+      "hexaSlot": 7,
+      "cooldownSec": 0,
+      "durationSec": 0,
+      "delaySec": 1
+    },
+    {
+      "id": "hexa-8",
+      "name": "Holy Advent",
+      "category": "hexa",
+      "iconSuffix": "/hexaskill/Bishop_1.png",
+      "hexaSlot": 8,
+      "cooldownSec": 360,
+      "durationSec": 30,
+      "delaySec": 1
+    },
+    {
+      "id": "hexa-9",
+      "name": "Command of Heaven",
+      "category": "hexa",
+      "iconSuffix": "/hexaskill/Bishop_10.png",
+      "hexaSlot": 9,
+      "cooldownSec": 0,
+      "durationSec": 0,
+      "delaySec": 1
+    },
+    {
+      "id": "hexa-12",
+      "name": "Sol Janus",
+      "category": "hexa",
+      "iconSuffix": "/hexaskill/General/General_1_0.png",
+      "hexaSlot": 12,
+      "cooldownSec": 60,
+      "durationSec": 20,
+      "delaySec": 1
+    },
+    {
+      "id": "hexa-13",
+      "name": "Sol Hecate",
+      "category": "hexa",
+      "iconSuffix": "/hexaskill/General/General_2.png",
+      "hexaSlot": 13,
+      "cooldownSec": 60,
+      "durationSec": 15,
+      "delaySec": 1
+    }
+  ]
+}

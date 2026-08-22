@@ -1,52 +1,91 @@
+import { nanoid } from "nanoid";
 import type {
+  CastOrderEntry,
   ClassRotationsStore,
-  RotationMode,
-  RotationSlot,
-  RotationWhen,
   SavedClassRotation,
+  SavedClassRotationV1,
+  TimelineBlock,
 } from "./types";
+import { getRotationClassData } from "./class-data";
+import { skillMapForCharType } from "./skills";
+import { autoPlaceTimeline, rebuildTimelineFromCastOrder } from "./placement";
 
-export const CLASS_ROTATIONS_KEY = "maplecompile.class-rotations.v1";
-
-const WHEN: ReadonlySet<string> = new Set([
-  "cd_ready",
-  "always",
-  "burst_only",
-  "hold",
-]);
+export const CLASS_ROTATIONS_KEY = "maplecompile.class-rotations.v2";
+export const CLASS_ROTATIONS_KEY_V1 = "maplecompile.class-rotations.v1";
 
 function emptyStore(): ClassRotationsStore {
-  return { version: 1, byCharType: {} };
+  return { version: 2, byCharType: {} };
 }
 
-function isSlot(raw: unknown): raw is RotationSlot {
+function isCastEntry(raw: unknown): raw is CastOrderEntry {
   if (!raw || typeof raw !== "object") return false;
-  const s = raw as Record<string, unknown>;
+  const e = raw as Record<string, unknown>;
+  return typeof e.slotId === "string" && typeof e.skillId === "string";
+}
+
+function isTimelineBlock(raw: unknown): raw is TimelineBlock {
+  if (!raw || typeof raw !== "object") return false;
+  const b = raw as Record<string, unknown>;
   return (
-    typeof s.slotId === "string" &&
-    typeof s.skillId === "string" &&
-    typeof s.when === "string" &&
-    WHEN.has(s.when)
+    typeof b.blockId === "string" &&
+    typeof b.skillId === "string" &&
+    typeof b.startSec === "number" &&
+    typeof b.durationSec === "number"
   );
+}
+
+function migrateV1(raw: SavedClassRotationV1): SavedClassRotation {
+  const castOrder: CastOrderEntry[] = (raw.slots ?? []).map((s) => ({
+    slotId: s.slotId,
+    skillId: s.skillId,
+  }));
+  const skillsById = skillMapForCharType(raw.charType);
+  const timeline =
+    castOrder.length > 0
+      ? rebuildTimelineFromCastOrder(castOrder, skillsById)
+      : [];
+  return {
+    version: 2,
+    charType: raw.charType,
+    jobType: raw.jobType,
+    name: raw.name?.trim() || "Rotation",
+    notes: raw.notes ?? "",
+    castOrder,
+    timeline,
+    updatedAt: raw.updatedAt ?? new Date().toISOString(),
+  };
 }
 
 function normalizeRotation(raw: unknown): SavedClassRotation | null {
   if (!raw || typeof raw !== "object") return null;
   const r = raw as Record<string, unknown>;
-  if (r.version !== 1) return null;
+
+  if (r.version === 1) {
+    return migrateV1(raw as SavedClassRotationV1);
+  }
+
+  if (r.version !== 2) return null;
   if (typeof r.charType !== "string" || !r.charType.trim()) return null;
   if (typeof r.jobType !== "string") return null;
-  if (!Array.isArray(r.slots)) return null;
-  const slots = r.slots.filter(isSlot);
-  const mode: RotationMode = r.mode === "boss" ? "boss" : "dummy";
+
+  const castOrder = Array.isArray(r.castOrder)
+    ? r.castOrder.filter(isCastEntry)
+    : [];
+  const timeline = Array.isArray(r.timeline)
+    ? r.timeline.filter(isTimelineBlock)
+    : [];
+
   return {
-    version: 1,
+    version: 2,
     charType: r.charType.trim(),
     jobType: String(r.jobType),
-    name: typeof r.name === "string" && r.name.trim() ? r.name.trim() : "Rotation",
-    mode,
+    name:
+      typeof r.name === "string" && r.name.trim()
+        ? r.name.trim()
+        : "Rotation",
     notes: typeof r.notes === "string" ? r.notes : "",
-    slots,
+    castOrder,
+    timeline,
     updatedAt:
       typeof r.updatedAt === "string" && r.updatedAt
         ? r.updatedAt
@@ -54,27 +93,42 @@ function normalizeRotation(raw: unknown): SavedClassRotation | null {
   };
 }
 
-export function readClassRotationsStore(): ClassRotationsStore {
+function readRawStore(): ClassRotationsStore {
   if (typeof window === "undefined") return emptyStore();
   try {
-    const raw = localStorage.getItem(CLASS_ROTATIONS_KEY);
-    if (!raw) return emptyStore();
-    const parsed = JSON.parse(raw) as Partial<ClassRotationsStore>;
-    if (parsed.version !== 1 || !parsed.byCharType) return emptyStore();
-    const byCharType: Record<string, SavedClassRotation> = {};
-    for (const [k, v] of Object.entries(parsed.byCharType)) {
-      const norm = normalizeRotation(v);
-      if (norm) byCharType[k] = norm;
+    let raw = localStorage.getItem(CLASS_ROTATIONS_KEY);
+    if (!raw) {
+      raw = localStorage.getItem(CLASS_ROTATIONS_KEY_V1);
     }
-    return { version: 1, byCharType };
+    if (!raw) return emptyStore();
+    const parsed = JSON.parse(raw) as {
+      version?: number;
+      byCharType?: Record<string, unknown>;
+    };
+    const byCharType: Record<string, SavedClassRotation> = {};
+    if (parsed.byCharType) {
+      for (const [k, v] of Object.entries(parsed.byCharType)) {
+        const norm = normalizeRotation(v);
+        if (norm) byCharType[k] = norm;
+      }
+    } else if (parsed.version === 1 || parsed.version === 2) {
+      const single = normalizeRotation(parsed);
+      if (single) byCharType[single.charType] = single;
+    }
+    return { version: 2, byCharType };
   } catch {
     return emptyStore();
   }
 }
 
+export function readClassRotationsStore(): ClassRotationsStore {
+  return readRawStore();
+}
+
 export function writeClassRotationsStore(store: ClassRotationsStore): void {
   if (typeof window === "undefined") return;
   localStorage.setItem(CLASS_ROTATIONS_KEY, JSON.stringify(store));
+  localStorage.removeItem(CLASS_ROTATIONS_KEY_V1);
   window.dispatchEvent(new Event("maplecompile-class-rotations"));
 }
 
@@ -91,13 +145,13 @@ export function saveClassRotation(
   },
 ): SavedClassRotation {
   const next: SavedClassRotation = {
-    version: 1,
+    version: 2,
     charType: rotation.charType,
     jobType: rotation.jobType,
     name: rotation.name.trim() || "Rotation",
-    mode: rotation.mode,
     notes: rotation.notes,
-    slots: rotation.slots,
+    castOrder: rotation.castOrder,
+    timeline: rotation.timeline,
     updatedAt: rotation.updatedAt ?? new Date().toISOString(),
   };
   const store = readClassRotationsStore();
@@ -133,6 +187,32 @@ export function importRotationJson(text: string): SavedClassRotation | null {
   }
 }
 
-export function defaultWhen(): RotationWhen {
-  return "cd_ready";
+export function emptyRotation(
+  charType: string,
+  jobType: string,
+): SavedClassRotation {
+  void getRotationClassData(charType);
+  return {
+    version: 2,
+    charType,
+    jobType,
+    name: "Rotation",
+    notes: "",
+    castOrder: [],
+    timeline: [],
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+export function syncTimelineFromCastOrder(
+  castOrder: CastOrderEntry[],
+  charType: string,
+  existing?: TimelineBlock[],
+): TimelineBlock[] {
+  const skillsById = skillMapForCharType(charType);
+  return autoPlaceTimeline(castOrder, skillsById, existing);
+}
+
+export function newCastEntry(skillId: string): CastOrderEntry {
+  return { slotId: nanoid(), skillId };
 }

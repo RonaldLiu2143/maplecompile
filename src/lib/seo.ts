@@ -118,7 +118,7 @@ export const PUBLIC_ROUTES: PublicRoute[] = [
     path: "/calc/rotations",
     title: "Class Rotations",
     description:
-      "Build and save MapleStory GMS class skill rotations (dummy/boss priority), then use them on Scouter.",
+      "Plan MapleStory GMS class skill rotations — buff timeline and cast order, import on Scouter.",
     changeFrequency: "monthly",
     priority: 0.65,
   },

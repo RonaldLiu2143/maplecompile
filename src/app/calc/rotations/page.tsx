@@ -21,9 +21,8 @@ function RotationsInner() {
           Class Rotations
         </h1>
         <p className="max-w-2xl text-sm text-muted-foreground">
-          Build dummy/boss skill priority per class (notes only — not a damage
-          sim). Save locally, then open Scouter to use that class&apos;s
-          rotation.
+          Plan skill priority and buff uptime on a 30-minute timeline. Save
+          locally, then import on Scouter for that class.
         </p>
       </header>
       <RotationBuilder initialClassValue={initial ?? undefined} />
