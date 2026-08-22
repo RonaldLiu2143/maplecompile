@@ -15,7 +15,6 @@ Free MapleStory GMS tools — character lookup, combat power scouter, equipment 
 | Starforce | `/calc/starforce` | GMS v269 Star Force sim (modes, MVP/events, optimizer, fodder) |
 | Flame Calculator | `/calc/equips/flames` | Flame tables & odds; optional load from a saved Scouter preset |
 | Cubing | `/calc/cubing` | Cube / meso odds for lines |
-| Class Rotations | `/calc/rotations` | Skill priority + 30-min buff timeline; save locally and import on Scouter |
 | Boss Income | `/calc/bosses` | Weekly crystals, MapleHub mule presets, reset timer |
 | Liberation | `/calc/liberation` | Genesis / Destiny traces (party cap 3 on late bosses) |
 | HEXA / Fragments | `/calc/hexa-tracker` | HEXA levels & fragment ETA (per character) |

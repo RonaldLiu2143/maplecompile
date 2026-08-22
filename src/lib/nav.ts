@@ -23,7 +23,6 @@ export const TOOL_LINKS: NavLink[] = [
   { href: "/calc/starforce", label: "Starforce Calculator" },
   { href: "/calc/equips/flames", label: "Flame Calculator" },
   { href: "/calc/cubing", label: "Cubing Calculator" },
-  { href: "/calc/rotations", label: "Class Rotations" },
 ];
 
 export const DISCOVER_LINKS: NavLink[] = [

@@ -34,11 +34,6 @@ const SERVICES = [
     body: "Odds and meso estimates for potential lines.",
   },
   {
-    href: "/calc/rotations",
-    title: "Class Rotations",
-    body: "Skill priority and 30-minute buff timeline per class — save locally and import on Scouter.",
-  },
-  {
     href: "/calc/bosses",
     title: "Boss Income",
     body: "Weekly crystal meso income for your roster’s boss list.",

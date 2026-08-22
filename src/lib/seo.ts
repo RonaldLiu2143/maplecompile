@@ -115,14 +115,6 @@ export const PUBLIC_ROUTES: PublicRoute[] = [
     priority: 0.75,
   },
   {
-    path: "/calc/rotations",
-    title: "Class Rotations",
-    description:
-      "Plan MapleStory GMS class skill rotations — buff timeline and cast order, import on Scouter.",
-    changeFrequency: "monthly",
-    priority: 0.65,
-  },
-  {
     path: "/calc/starforce",
     title: "Star Force Calculator",
     description:
