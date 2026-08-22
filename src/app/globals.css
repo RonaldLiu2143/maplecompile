@@ -131,32 +131,22 @@ html[data-theme="light"],
   --n-sidebar-border: #d4d4d4;
 }
 
-/* Layer 4 — tint every neutral: L−0.03, C+0.02, hue from --tint-h.
-   Semantic red/green stay untouched. Action ramp is set in JS. */
+/* Layer 4 — tint surfaces/borders only; text (--foreground*) stays neutral. */
 html[data-tint] {
   --background: oklch(from var(--n-background) calc(l - 0.03) calc(c + 0.02) var(--tint-h));
-  --foreground: oklch(from var(--n-foreground) calc(l - 0.03) calc(c + 0.02) var(--tint-h));
   --muted-soft: oklch(from var(--n-muted-soft) calc(l - 0.03) calc(c + 0.02) var(--tint-h));
   --surface: oklch(from var(--n-surface) calc(l - 0.03) calc(c + 0.02) var(--tint-h));
   --surface-muted: oklch(from var(--n-surface-muted) calc(l - 0.03) calc(c + 0.02) var(--tint-h));
   --accent-soft: oklch(from var(--n-accent-soft) calc(l - 0.03) calc(c + 0.02) var(--tint-h));
   --warning: oklch(from var(--n-warning) calc(l - 0.03) calc(c + 0.02) var(--tint-h));
   --card: oklch(from var(--n-card) calc(l - 0.03) calc(c + 0.02) var(--tint-h));
-  --card-foreground: oklch(from var(--n-card-foreground) calc(l - 0.03) calc(c + 0.02) var(--tint-h));
   --popover: oklch(from var(--n-popover) calc(l - 0.03) calc(c + 0.02) var(--tint-h));
-  --popover-foreground: oklch(from var(--n-popover-foreground) calc(l - 0.03) calc(c + 0.02) var(--tint-h));
   --secondary: oklch(from var(--n-secondary) calc(l - 0.03) calc(c + 0.02) var(--tint-h));
-  --secondary-foreground: oklch(from var(--n-secondary-foreground) calc(l - 0.03) calc(c + 0.02) var(--tint-h));
   --muted: oklch(from var(--n-muted) calc(l - 0.03) calc(c + 0.02) var(--tint-h));
-  --muted-foreground: oklch(from var(--n-muted-foreground) calc(l - 0.03) calc(c + 0.02) var(--tint-h));
   --border: oklch(from var(--n-border) calc(l - 0.03) calc(c + 0.02) var(--tint-h));
   --input: oklch(from var(--n-input) calc(l - 0.03) calc(c + 0.02) var(--tint-h));
   --sidebar: oklch(from var(--n-sidebar) calc(l - 0.03) calc(c + 0.02) var(--tint-h));
-  --sidebar-foreground: oklch(from var(--n-sidebar-foreground) calc(l - 0.03) calc(c + 0.02) var(--tint-h));
   --sidebar-accent: oklch(from var(--n-sidebar-accent) calc(l - 0.03) calc(c + 0.02) var(--tint-h));
-  --sidebar-accent-foreground: oklch(
-    from var(--n-sidebar-accent-foreground) calc(l - 0.03) calc(c + 0.02) var(--tint-h)
-  );
   --sidebar-border: oklch(from var(--n-sidebar-border) calc(l - 0.03) calc(c + 0.02) var(--tint-h));
   --chart-1: oklch(0.78 0.14 var(--tint-h));
   --chart-2: oklch(0.7 0.13 calc(var(--tint-h) + 120));

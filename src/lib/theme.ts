@@ -1,5 +1,6 @@
 /** Site-wide visual theme presets + localStorage persistence. */
 
+import { nanoid } from "nanoid";
 import { syncThemeFavicon } from "@/lib/maple-leaf";
 
 export const THEME_STORAGE_KEY = "maplecompile-theme";
@@ -143,8 +144,8 @@ export type ThemePrefs = {
   /** Site font preset. Default / omitted = Geist. */
   font?: FontId;
   /**
-   * OKLCH hue (0–359) that tints every neutral (Layer 4).
-   * Null/undefined = ink, no tint.
+   * OKLCH hue (0–359) that tints surface neutrals (Layer 4).
+   * Null/undefined = B/W, no tint. Text colors stay untinted.
    */
   hue?: number | null;
   /** Optional accent override (hex). Null/undefined = hue ramp or preset default. */
@@ -157,7 +158,18 @@ export type ThemePrefs = {
   dim?: number;
   /** Backdrop blur in px 0–24. */
   blur?: number;
+  /** User-saved custom accent colors (shown in the Color preset grid). */
+  customColors?: SavedCustomColor[];
 };
+
+export type SavedCustomColor = {
+  id: string;
+  name: string;
+  hex: string;
+  hue: number;
+};
+
+export const MAX_CUSTOM_COLORS = 8;
 
 export const DEFAULT_THEME_ID: ThemeId = "compile";
 export const DEFAULT_FONT_ID: FontId = "geist";
@@ -314,10 +326,20 @@ export function parseThemeHue(value: unknown): number | null {
   return ((Math.round(n) % 360) + 360) % 360;
 }
 
-export function themeHueLabel(hue: number | null | undefined): string {
+export function themeHueLabel(
+  hue: number | null | undefined,
+  prefs?: Pick<ThemePrefs, "accent" | "customColors">,
+): string {
   if (hue == null) return THEME_BW_LABEL;
   const parsed = parseThemeHue(hue);
   if (parsed == null) return THEME_BW_LABEL;
+  if (prefs) {
+    const hex = parseAccentHex(prefs.accent);
+    const custom = (prefs.customColors ?? []).find(
+      (c) => c.hex === hex && c.hue === parsed,
+    );
+    if (custom) return custom.name;
+  }
   const named = THEME_HUE_PRESETS.find(
     (p) => p.hue != null && hueDistance(p.hue, parsed) <= 8,
   );
@@ -507,6 +529,57 @@ export function wallpaperImageCssValue(url: string): string {
   return `url(${JSON.stringify(url)})`;
 }
 
+function customColorsEqual(
+  a?: SavedCustomColor[],
+  b?: SavedCustomColor[],
+): boolean {
+  const aa = a ?? [];
+  const bb = b ?? [];
+  if (aa.length !== bb.length) return false;
+  return aa.every(
+    (c, i) =>
+      c.id === bb[i]!.id &&
+      c.name === bb[i]!.name &&
+      c.hex === bb[i]!.hex &&
+      c.hue === bb[i]!.hue,
+  );
+}
+
+function normalizeCustomColors(raw: unknown): SavedCustomColor[] {
+  if (!Array.isArray(raw)) return [];
+  const out: SavedCustomColor[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== "object") continue;
+    const r = item as Record<string, unknown>;
+    const hex = parseAccentHex(r.hex);
+    const hue = parseThemeHue(r.hue);
+    const name =
+      typeof r.name === "string" && r.name.trim()
+        ? r.name.trim().slice(0, 32)
+        : "";
+    const id =
+      typeof r.id === "string" && r.id.trim() ? r.id.trim() : nanoid();
+    if (!hex || hue == null || !name) continue;
+    if (out.some((c) => c.hex === hex)) continue;
+    out.push({ id, name, hex, hue });
+    if (out.length >= MAX_CUSTOM_COLORS) break;
+  }
+  return out;
+}
+
+export function findActiveCustomColor(
+  prefs: ThemePrefs,
+): SavedCustomColor | null {
+  if (prefs.hue == null) return null;
+  const hex = parseAccentHex(prefs.accent);
+  const hue = parseThemeHue(prefs.hue);
+  if (!hex || hue == null) return null;
+  return (
+    (prefs.customColors ?? []).find((c) => c.hex === hex && c.hue === hue) ??
+    null
+  );
+}
+
 function prefsEqual(a: ThemePrefs, b: ThemePrefs): boolean {
   const aBack = a.backdrop ?? DEFAULT_BACKDROP_ID;
   const bBack = b.backdrop ?? DEFAULT_BACKDROP_ID;
@@ -520,7 +593,8 @@ function prefsEqual(a: ThemePrefs, b: ThemePrefs): boolean {
     clampDim(a.dim ?? defaultDimForBackdrop(aBack)) ===
       clampDim(b.dim ?? defaultDimForBackdrop(bBack)) &&
     clampBlur(a.blur ?? defaultBlurForBackdrop(aBack)) ===
-      clampBlur(b.blur ?? defaultBlurForBackdrop(bBack))
+      clampBlur(b.blur ?? defaultBlurForBackdrop(bBack)) &&
+    customColorsEqual(a.customColors, b.customColors)
   );
 }
 
@@ -571,6 +645,7 @@ function canonicalize(prefs: ThemePrefs): ThemePrefs {
     backdropUrl,
     dim: clampDim(prefs.dim ?? defaultDimForBackdrop(backdrop)),
     blur: clampBlur(prefs.blur ?? defaultBlurForBackdrop(backdrop)),
+    customColors: normalizeCustomColors(prefs.customColors),
   };
   if (isDefaultPrefs(next)) return DEFAULT_THEME_PREFS;
   return next;
@@ -632,6 +707,7 @@ export function normalizeThemePrefs(raw: unknown): ThemePrefs {
     backdropUrl: backdrop === "custom" ? backdropUrl : null,
     dim,
     blur,
+    customColors: normalizeCustomColors(stored.customColors),
   });
 }
 
@@ -654,6 +730,7 @@ function serializePrefs(prefs: ThemePrefs): string {
     blur: clampBlur(
       c.blur ?? defaultBlurForBackdrop(c.backdrop ?? DEFAULT_BACKDROP_ID),
     ),
+    customColors: c.customColors ?? [],
   });
 }
 

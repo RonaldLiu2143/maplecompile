@@ -7,13 +7,16 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
+import { nanoid } from "nanoid";
 import { ColorGraph } from "@/components/theme/ColorGraph";
 import {
   DEFAULT_THEME_COLOR,
   DEFAULT_THEME_HUE,
   DEFAULT_THEME_PREFS,
   FONT_PRESETS,
+  MAX_CUSTOM_COLORS,
   bwSwatchBackground,
+  findActiveCustomColor,
   getThemePreset,
   inkAccentForScheme,
   THEME_HUE_PRESETS,
@@ -27,6 +30,7 @@ import {
   themeHueLabel,
   writeThemePrefs,
   type FontId,
+  type SavedCustomColor,
   type ThemeId,
   type ThemePrefs,
 } from "@/lib/theme";
@@ -64,10 +68,14 @@ export function ThemePicker({
   );
   const [open, setOpen] = useState(false);
   const [customOpen, setCustomOpen] = useState(false);
+  const [saveName, setSaveName] = useState("");
+  const [saveMsg, setSaveMsg] = useState<string | null>(null);
   const panelId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
   const matched = matchThemeHuePreset(prefs.hue);
-  const showCustom = customOpen || matched == null;
+  const activeCustom = findActiveCustomColor(prefs);
+  const customColors = prefs.customColors ?? [];
+  const showCustom = customOpen || (matched == null && !activeCustom);
 
   useEffect(() => {
     if (!open) return;
@@ -95,6 +103,7 @@ export function ThemePicker({
 
   const setPreset = (preset: (typeof THEME_HUE_PRESETS)[number]) => {
     setCustomOpen(false);
+    setSaveMsg(null);
     const scheme = getThemePreset(prefs.id).scheme;
     writeThemePrefs({
       ...prefs,
@@ -104,12 +113,51 @@ export function ThemePicker({
     });
   };
 
+  const applySavedCustom = (saved: SavedCustomColor) => {
+    setCustomOpen(false);
+    setSaveMsg(null);
+    writeThemePrefs({
+      ...prefs,
+      hue: saved.hue,
+      accent: saved.hex,
+    });
+  };
+
   const setColor = (hex: string) => {
     const parsed = parseAccentHex(hex);
     if (!parsed) return;
     const hue = hexToHue(parsed) ?? parseThemeHue(prefs.hue) ?? DEFAULT_THEME_HUE;
     setCustomOpen(true);
+    setSaveMsg(null);
     writeThemePrefs({ ...prefs, accent: parsed, hue });
+  };
+
+  const handleSaveCustom = () => {
+    const hex = parseAccentHex(prefs.accent);
+    if (!hex || prefs.hue == null) {
+      setSaveMsg("Pick a color on the graph first.");
+      return;
+    }
+    const hue = parseThemeHue(prefs.hue) ?? hexToHue(hex) ?? DEFAULT_THEME_HUE;
+    if (customColors.some((c) => c.hex === hex)) {
+      setSaveMsg("That color is already saved.");
+      return;
+    }
+    if (customColors.length >= MAX_CUSTOM_COLORS) {
+      setSaveMsg(`You can save up to ${MAX_CUSTOM_COLORS} custom colors.`);
+      return;
+    }
+    const name = saveName.trim() || hex;
+    writeThemePrefs({
+      ...prefs,
+      customColors: [
+        ...customColors,
+        { id: nanoid(), name: name.slice(0, 32), hex, hue },
+      ],
+    });
+    setSaveName("");
+    setSaveMsg("Saved to presets.");
+    setCustomOpen(false);
   };
 
   const activeHue = prefs.hue === null ? null : (parseThemeHue(prefs.hue) ?? DEFAULT_THEME_HUE);
@@ -212,11 +260,39 @@ export function ThemePicker({
                 </button>
               );
             })}
+            {customColors.map((saved) => {
+              const active = !showCustom && activeCustom?.id === saved.id;
+              return (
+                <button
+                  key={saved.id}
+                  type="button"
+                  onClick={() => applySavedCustom(saved)}
+                  aria-pressed={active}
+                  title={saved.hex}
+                  className={[
+                    "flex flex-col items-center gap-1 rounded-lg border px-1.5 py-1.5 text-[10px] font-semibold transition-colors",
+                    active
+                      ? "border-accent bg-accent-soft text-foreground"
+                      : "border-border/50 text-muted-foreground hover:border-border hover:text-foreground",
+                  ].join(" ")}
+                >
+                  <span
+                    className="size-6 rounded-md border border-border/50"
+                    style={{ backgroundColor: saved.hex }}
+                    aria-hidden
+                  />
+                  <span className="max-w-full truncate">{saved.name}</span>
+                </button>
+              );
+            })}
           </div>
           <button
             type="button"
             aria-pressed={showCustom}
-            onClick={() => setCustomOpen(true)}
+            onClick={() => {
+              setCustomOpen(true);
+              setSaveMsg(null);
+            }}
             className={[
               "mt-1.5 w-full rounded-lg border px-2 py-1.5 text-left text-[11px] font-semibold transition-colors",
               showCustom
@@ -227,8 +303,30 @@ export function ThemePicker({
             Custom color
           </button>
           {showCustom ? (
-            <div className="mt-2">
+            <div className="mt-2 space-y-2">
               <ColorGraph color={activeColor} onChange={setColor} />
+              <div className="flex flex-wrap items-center gap-1.5">
+                <input
+                  type="text"
+                  value={saveName}
+                  onChange={(e) => setSaveName(e.target.value)}
+                  placeholder="Preset name (optional)"
+                  maxLength={32}
+                  className="min-w-0 flex-1 rounded-md border border-border/50 bg-background px-2 py-1.5 text-[11px] outline-none focus:border-accent"
+                />
+                <button
+                  type="button"
+                  onClick={handleSaveCustom}
+                  className="shrink-0 rounded-md border border-accent/50 bg-accent-soft px-2.5 py-1.5 text-[11px] font-semibold text-foreground hover:bg-accent hover:text-primary-foreground"
+                >
+                  Save custom color
+                </button>
+              </div>
+              {saveMsg ? (
+                <p className="text-[10px] text-muted-foreground" role="status">
+                  {saveMsg}
+                </p>
+              ) : null}
             </div>
           ) : null}
         </div>
@@ -309,7 +407,7 @@ export function ThemePicker({
             }
             aria-hidden
           />
-          {isBwColor ? <BwLabel /> : themeHueLabel(activeHue)}
+          {isBwColor ? <BwLabel /> : themeHueLabel(activeHue, prefs)}
         </span>
       </button>
       {open ? <div className="mt-1">{panel}</div> : null}
