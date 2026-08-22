@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { EquipmentSetupPanel } from "@/components/EquipmentSetupPanel";
-import { ActiveCharacterBar } from "@/components/ActiveCharacterBar";
 import { PairingBar } from "@/components/PairingBar";
 import {
   activeCharacterKey,
@@ -41,11 +40,7 @@ export default function SetupClient() {
 
   return (
       <div className="space-y-4 md:space-y-8">
-      <ActiveCharacterBar
-        onSwitched={() => setReloadToken((n) => n + 1)}
-      />
-
-      <PairingBar compact />
+<PairingBar compact />
 
       <EquipmentSetupPanel
         variant="page"

@@ -57,18 +57,23 @@ function SetBreakdownBlock({ b }: { b: SetBreakdown }) {
 
   return (
     <div
-      className={`flex w-full min-w-0 flex-col rounded-md border border-border/40 bg-surface/80 px-1.5 py-1 text-left ${
+      role="button"
+      tabIndex={0}
+      aria-expanded={open}
+      aria-controls={panelId}
+      id={headerId}
+      onClick={toggle}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          toggle();
+        }
+      }}
+      className={`flex w-full min-w-0 cursor-pointer flex-col rounded-md border border-border/40 bg-surface/80 px-1.5 py-1 text-left transition hover:bg-surface-muted/40 ${
         open ? "h-full min-h-0" : "self-start"
       }`}
     >
-      <button
-        type="button"
-        id={headerId}
-        aria-expanded={open}
-        aria-controls={panelId}
-        onClick={toggle}
-        className="flex w-full min-w-0 cursor-pointer flex-wrap items-center gap-x-1.5 gap-y-0.5 rounded text-left transition hover:bg-surface-muted/40"
-      >
+      <div className="flex w-full min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5">
         <span
           className="inline-flex h-3.5 w-3.5 shrink-0 items-center justify-center text-[10px] opacity-60"
           aria-hidden
@@ -94,7 +99,7 @@ function SetBreakdownBlock({ b }: { b: SetBreakdown }) {
             />
           ))}
         </div>
-      </button>
+      </div>
       {open && tiers.length > 0 ? (
         <ul
           id={panelId}

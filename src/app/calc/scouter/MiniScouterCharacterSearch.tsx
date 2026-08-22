@@ -121,6 +121,10 @@ export function MiniScouterCharacterSearch({
         </button>
       </form>
 
+      <p className="text-[11px] leading-snug text-muted-foreground">
+        Gallery posts only show the sprite, not the character name.
+      </p>
+
       {error ? (
         <p role="alert" className="text-[11px] text-red-600 dark:text-red-400">
           {error}

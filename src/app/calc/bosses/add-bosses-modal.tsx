@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { CharacterSprite } from "@/components/character/CharacterSprite";
 import {
   BOSS_CRYSTALS,
   DEFAULT_MAX_PARTY,
@@ -9,9 +10,11 @@ import {
   bossIconUrl,
   bossMaxParty,
   clampPartySize,
+  clearAllBossSelections,
   compareBossesHardestFirst,
   deleteBossPreset,
   formatMesos,
+  isBuiltinBossPreset,
   loadBossPresets,
   personalCrystal,
   presetFromSelections,
@@ -26,6 +29,7 @@ import {
 type CharacterOption = {
   key: string;
   label: string;
+  imageUrl?: string | null;
 };
 
 type Props = {
@@ -240,6 +244,10 @@ export function AddBossesModal({
 
   const removePreset = () => {
     if (!selectedPreset) return;
+    if (isBuiltinBossPreset(selectedPreset)) {
+      setToast("MapleHub default presets cannot be deleted.");
+      return;
+    }
     const ok = window.confirm(`Delete preset “${selectedPreset.name}”?`);
     if (!ok) return;
     const next = deleteBossPreset(presets, selectedPreset.id);
@@ -247,9 +255,27 @@ export function AddBossesModal({
       setToast("Could not delete preset — browser storage may be full.");
       return;
     }
-    setPresets(next);
+    setPresets(loadBossPresets());
     setPresetId("");
     setToast("Preset deleted.");
+  };
+
+  const resetSelections = () => {
+    if (enabledCount === 0) {
+      setToast("No bosses selected.");
+      return;
+    }
+    const next = clearAllBossSelections(selections);
+    onReplaceSelections([{ key: currentKey, selections: next }]);
+    const nextDiff: Record<string, string> = {};
+    const nextParty: Record<string, number> = {};
+    for (const boss of BOSS_CRYSTALS) {
+      nextDiff[boss.id] = defaultDifficulty(boss);
+      nextParty[boss.id] = 1;
+    }
+    setDraftDiff(nextDiff);
+    setDraftParty(nextParty);
+    setToast("Cleared all boss selections.");
   };
 
   return (
@@ -331,7 +357,8 @@ export function AddBossesModal({
                 <option value="">Select a preset…</option>
                 {presets.map((p) => (
                   <option key={p.id} value={p.id}>
-                    {p.name} ({p.bosses.length})
+                    {isBuiltinBossPreset(p) ? `${p.name} · MapleHub` : p.name} (
+                    {p.bosses.length})
                   </option>
                 ))}
               </select>
@@ -347,24 +374,33 @@ export function AddBossesModal({
             </button>
             <button
               type="button"
-              onClick={applyPresetHere}
-              disabled={!selectedPreset}
-              className="rounded-lg border border-border px-2.5 py-1.5 text-xs font-semibold transition hover:bg-surface-muted disabled:opacity-40"
-            >
-              Apply here
-            </button>
-            <button
-              type="button"
               onClick={openApplyMulti}
               disabled={!selectedPreset || applyTargets.length === 0}
-              className="rounded-lg bg-accent px-2.5 py-1.5 text-xs font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-40"
+              className="rounded-lg border border-border px-2.5 py-1.5 text-xs font-semibold transition hover:bg-surface-muted disabled:opacity-40"
             >
               Apply to characters…
             </button>
             <button
               type="button"
-              onClick={removePreset}
+              onClick={applyPresetHere}
               disabled={!selectedPreset}
+              className="rounded-lg bg-accent px-2.5 py-1.5 text-xs font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-40"
+            >
+              Apply here
+            </button>
+            <button
+              type="button"
+              onClick={resetSelections}
+              disabled={enabledCount === 0}
+              className="rounded-lg border border-border px-2.5 py-1.5 text-xs font-semibold transition hover:bg-surface-muted disabled:opacity-40"
+              title="Clear all selected bosses for this character"
+            >
+              Reset
+            </button>
+            <button
+              type="button"
+              onClick={removePreset}
+              disabled={!selectedPreset || isBuiltinBossPreset(selectedPreset)}
               className="rounded-lg border border-danger/35 px-2.5 py-1.5 text-xs font-semibold text-danger transition hover:bg-danger/10 disabled:opacity-40"
             >
               Delete
@@ -376,8 +412,8 @@ export function AddBossesModal({
             </p>
           ) : (
             <p className="text-[11px] opacity-55">
-              Save this character&apos;s boss list as a preset, then autofill
-              other characters with the same set.
+              MapleHub mule presets are listed first. Save your own, then Apply
+              here or to other characters.
             </p>
           )}
         </div>
@@ -612,6 +648,12 @@ export function AddBossesModal({
                               : [...prev, t.key],
                           )
                         }
+                      />
+                      <CharacterSprite
+                        src={t.imageUrl}
+                        alt=""
+                        size={28}
+                        reserveSpace
                       />
                       <span className="truncate font-medium">{t.label}</span>
                     </label>

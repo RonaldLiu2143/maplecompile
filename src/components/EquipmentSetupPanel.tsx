@@ -50,6 +50,7 @@ import {
   buildStarterSetup,
   countFilledSlots,
   resolveStarterLoadout,
+  starterLoadoutStarForce,
 } from "@/lib/starter-loadouts";
 import type {
   Equip,
@@ -69,16 +70,17 @@ type PanelMode =
 
 type LoadStatus = "idle" | "loading" | "ready" | "error";
 
-function withHeroicDefaults(equip: Equip): Equip {
+function withHeroicDefaults(equip: Equip, starOverride?: number): Equip {
   const next: Equip = {
     ...equip,
     isNormalFlame: inferNormalFlame(equip),
   };
   if (canStarForce(equip)) {
-    next.starForce = clampStarForce(
-      equip,
-      equip.starForce ?? defaultStarForceForEquip(equip),
-    );
+    const raw =
+      starOverride != null
+        ? starOverride
+        : (equip.starForce ?? defaultStarForceForEquip(equip));
+    next.starForce = clampStarForce(equip, raw);
   } else {
     delete next.starForce;
   }
@@ -602,9 +604,10 @@ export function EquipmentSetupPanel({
       return;
     }
     const raw = buildStarterSetup(equipByType, loadout);
+    const stars = starterLoadoutStarForce(loadout.id);
     const next: EquipSetup = {};
     for (const [type, list] of Object.entries(raw)) {
-      next[type] = (list ?? []).map(withHeroicDefaults);
+      next[type] = (list ?? []).map((e) => withHeroicDefaults(e, stars));
     }
     const filled = countFilledSlots(next);
     if (!filled) {

@@ -166,7 +166,7 @@ export function ShareGalleryModal({
     }
     if (identity === "ign") {
       const nameCheck = filterDisplayText(name, {
-        fieldLabel: "IGN",
+        fieldLabel: "Preset name",
         maxLength: 20,
       });
       if (!nameCheck.ok) {
@@ -220,7 +220,7 @@ export function ShareGalleryModal({
         <p className="mt-1 text-xs opacity-65">
           {isReplace
             ? `Replace “${existingPost?.name ?? "your previous post"}” with this loadout. The old gallery link will be removed.`
-            : "Post this loadout publicly. Choose anonymous (class + code) or your IGN."}
+            : "Post this loadout publicly. Choose anonymous (class + code) or a preset name."}
         </p>
 
         <div className="mt-4 space-y-3 text-sm">
@@ -283,14 +283,14 @@ export function ShareGalleryModal({
           ) : (
             <label className="block">
               <span className="mb-1 block text-xs font-semibold opacity-70">
-                IGN
+                Preset name
               </span>
               <input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 maxLength={20}
-                placeholder="Character name"
+                placeholder="Preset name"
                 className="w-full rounded border border-border/50 bg-background px-3 py-2 text-sm outline-none focus:border-accent"
                 autoFocus
               />

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { ActiveCharacterBar } from "@/components/ActiveCharacterBar";
 import { LogDropModal } from "@/components/diary/LogDropModal";
 import { useDiary } from "@/hooks/useDiary";
 import { useRoster } from "@/hooks/useRoster";
@@ -144,10 +143,7 @@ export default function DiaryPage() {
           this browser.
         </p>
       </div>
-
-      <ActiveCharacterBar onSelect={handleSetPrimary} />
-
-      <div className="grid grid-cols-2 gap-3">
+<div className="grid grid-cols-2 gap-3">
         <CounterCard
           title="Grindstones"
           value={state.grindstone}

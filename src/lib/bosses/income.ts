@@ -53,6 +53,8 @@ export type IncomeSummary = {
   monthlyAsWeeklyMesos: number;
   /** Alias of weeklyMesos — max sellable from this character's weekly clears. */
   maxPossibleMesos: number;
+  /** Sum of crystal value for bosses marked cleared (listed weekly + monthly). */
+  collectedMesos: number;
 };
 
 export type RosterIncomeSummary = {
@@ -62,6 +64,8 @@ export type RosterIncomeSummary = {
   }>;
   /** Sum of each character's max possible weekly mesos. */
   maxPossibleMesos: number;
+  /** Sum of cleared (collected) crystal mesos across roster. */
+  collectedMesos: number;
   /** Weekly boss crystals across roster (capped contribution per char at 14). */
   weeklyCrystalsUsed: number;
   accountCrystalLimit: number;
@@ -179,6 +183,16 @@ export function summarizeIncome(
 
   const weeklyListed = weeklyCandidates.filter((l) => l.sells);
 
+  const clearedById = new Map(
+    selections.map((s) => [s.bossId, !!s.cleared && s.enabled]),
+  );
+  const listedForCollect = [...weeklyListed, ...monthlyLines];
+  const collectedMesos = listedForCollect.reduce(
+    (sum, line) =>
+      clearedById.get(line.bossId) ? sum + line.crystalPersonal : sum,
+    0,
+  );
+
   return {
     lines: [...weeklyCandidates, ...monthlyLines],
     weeklyListed,
@@ -188,6 +202,7 @@ export function summarizeIncome(
     monthlyMesos,
     monthlyAsWeeklyMesos: Math.floor(monthlyMesos / 4),
     maxPossibleMesos: weeklyMesos,
+    collectedMesos,
   };
 }
 
@@ -214,6 +229,10 @@ export function summarizeRosterIncome(
     characters,
     maxPossibleMesos: characters.reduce(
       (sum, c) => sum + c.summary.maxPossibleMesos,
+      0,
+    ),
+    collectedMesos: characters.reduce(
+      (sum, c) => sum + c.summary.collectedMesos,
       0,
     ),
     weeklyCrystalsUsed: characters.reduce(

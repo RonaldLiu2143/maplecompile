@@ -722,6 +722,8 @@ export function writeThemePrefs(prefs: ThemePrefs): void {
   if (!prefsEqual(next, cachedPrefs)) {
     cachedPrefs = next;
   }
+  // Apply CSS vars before notifying so charts/listeners read the new accent.
+  applyThemeToDocument(next);
   notifyThemeChange();
 }
 

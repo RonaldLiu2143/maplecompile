@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ActiveCharacterBar } from "@/components/ActiveCharacterBar";
 import { useMapleDataReload } from "@/hooks/useMapleDataReload";
 import {
   ensureActiveWorkspaceLoaded,
@@ -181,10 +180,7 @@ export default function UpgradePlannerPage() {
           Setup.
         </p>
       </header>
-
-      <ActiveCharacterBar onSwitched={onSwitched} />
-
-      <section className="flex flex-wrap items-center gap-2 rounded-xl border border-border/50 bg-surface/90 px-3 py-2.5">
+<section className="flex flex-wrap items-center gap-2 rounded-xl border border-border/50 bg-surface/90 px-3 py-2.5">
         <span className="text-xs font-semibold opacity-70">
           {meta.classLabel || "—"}
         </span>

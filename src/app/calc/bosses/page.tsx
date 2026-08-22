@@ -3,7 +3,6 @@
 import { ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ActiveCharacterBar } from "@/components/ActiveCharacterBar";
 import {
   ACCOUNT_WEEKLY_CRYSTAL_LIMIT,
   BOSS_CRYSTALS,
@@ -38,6 +37,7 @@ import {
   type RosterEntry,
 } from "@/lib/dashboard/roster";
 import { useRoster } from "@/hooks/useRoster";
+import { ResetCountdowns } from "@/components/ResetCountdowns";
 import { AddBossesModal } from "./add-bosses-modal";
 import type { RosterDragProps } from "@/components/dashboard/RosterCharacterCard";
 
@@ -48,7 +48,6 @@ export default function BossesIncomePage() {
     primary,
     slots,
     makeDragProps,
-    handleSetPrimary,
   } = useRoster();
   const [ready, setReady] = useState(false);
   const [store, setStore] = useState<BossIncomeStore>(() => ({
@@ -205,17 +204,6 @@ export default function BossesIncomePage() {
     });
   };
 
-  const resetClears = (key: string) => {
-    setStore((prev) => {
-      const current = getCharacterBossState(prev, key);
-      const selections = current.selections.map((s) => ({
-        ...s,
-        cleared: false,
-      }));
-      return upsertCharacterState(prev, key, { selections });
-    });
-  };
-
   const replaceSelections = (
     updates: Array<{ key: string; selections: BossClearSelection[] }>,
   ) => {
@@ -265,10 +253,7 @@ export default function BossesIncomePage() {
           unknown world defaults to Heroic.
         </p>
       </header>
-
-      <ActiveCharacterBar onSelect={handleSetPrimary} />
-
-      {capToast ? (
+{capToast ? (
         <p
           role="status"
           className="rounded-lg border border-accent/40 bg-accent-soft/40 px-3 py-2 text-sm font-medium text-accent"
@@ -282,6 +267,7 @@ export default function BossesIncomePage() {
           label="Max possible mesos"
           value={formatMesos(rosterSummary.maxPossibleMesos)}
           hint="Top weekly crystals across roster (party-split)"
+          subValue={`Total meso collected: ${formatMesos(rosterSummary.collectedMesos)}`}
         />
         <Stat
           label="Weekly crystals"
@@ -292,18 +278,11 @@ export default function BossesIncomePage() {
             rosterSummary.accountCrystalLimit
           }
         />
-        <div className="hidden rounded-xl border border-border/40 bg-surface/80 p-4 md:block">
+        <div className="col-span-2 rounded-xl border border-border/40 bg-surface/80 p-3 md:col-span-1 md:p-4">
           <p className="text-xs font-semibold uppercase tracking-wider opacity-60">
-            Roster
+            Next reset
           </p>
-          <div className="mt-2 flex flex-wrap items-center gap-2">
-            <Link
-              href="/roster"
-              className="text-sm font-semibold text-accent hover:underline"
-            >
-              {hasRoster ? "Manage roster" : "Add to roster"}
-            </Link>
-          </div>
+          <ResetCountdowns className="mt-2 justify-start text-left sm:gap-3 sm:text-sm" />
         </div>
       </section>
 
@@ -371,7 +350,6 @@ export default function BossesIncomePage() {
                       setBrokenIcons((prev) => ({ ...prev, [bossId]: true }))
                     }
                     onAddBosses={() => setModalKey(key)}
-                    onResetClears={() => resetClears(key)}
                     onToggleCleared={(bossId) => {
                       const sel = charState.selections.find(
                         (s) => s.bossId === bossId,
@@ -409,7 +387,6 @@ export default function BossesIncomePage() {
                       setBrokenIcons((prev) => ({ ...prev, [bossId]: true }))
                     }
                     onAddBosses={() => setModalKey(LOCAL_BOSS_KEY)}
-                    onResetClears={() => resetClears(LOCAL_BOSS_KEY)}
                     onToggleCleared={(bossId) => {
                       const sel = charState.selections.find(
                         (s) => s.bossId === bossId,
@@ -441,15 +418,15 @@ export default function BossesIncomePage() {
               ? roster.map((entry) => {
                   const key = entryKey(entry);
                   const slot = slots[key];
+                  const ready =
+                    slot?.status === "ready" ? slot.character : null;
                   return {
                     key,
-                    label:
-                      slot?.status === "ready"
-                        ? slot.character.name
-                        : entry.name,
+                    label: ready?.name ?? entry.name,
+                    imageUrl: ready?.characterImgURL ?? null,
                   };
                 })
-              : [{ key: LOCAL_BOSS_KEY, label: "Local" }]
+              : [{ key: LOCAL_BOSS_KEY, label: "Local", imageUrl: null }]
           }
           onClose={() => setModalKey(null)}
           onAdd={({ bossId, difficulty, partySize }) =>
@@ -499,11 +476,13 @@ function Stat({
   value,
   hint,
   warn,
+  subValue,
 }: {
   label: string;
   value: string;
   hint?: string;
   warn?: boolean;
+  subValue?: string;
 }) {
   return (
     <div className="py-1 md:rounded-xl md:border md:border-border/40 md:bg-surface/80 md:p-4">
@@ -516,6 +495,11 @@ function Stat({
       >
         {value}
       </p>
+      {subValue ? (
+        <p className="mt-1 text-xs font-medium tabular-nums text-accent">
+          {subValue}
+        </p>
+      ) : null}
       {hint ? (
         <p className="mt-1 hidden text-xs opacity-55 md:block">{hint}</p>
       ) : null}
@@ -538,7 +522,6 @@ function CharacterBossCard({
   selections,
   summary,
   onAddBosses,
-  onResetClears,
   onToggleCleared,
   onCheckAll,
   brokenIcons,
@@ -555,7 +538,6 @@ function CharacterBossCard({
   selections: BossClearSelection[];
   summary: IncomeSummary;
   onAddBosses: () => void;
-  onResetClears: () => void;
   onToggleCleared: (bossId: string) => void;
   onCheckAll: (cleared: boolean) => void;
   brokenIcons: Record<string, true>;
@@ -718,17 +700,6 @@ function CharacterBossCard({
                     }}
                   >
                     Edit bosses
-                  </button>
-                  <button
-                    type="button"
-                    role="menuitem"
-                    className="block min-h-11 w-full px-3 text-left text-sm hover:bg-accent-soft hover:text-accent"
-                    onClick={() => {
-                      setMenuOpen(false);
-                      onResetClears();
-                    }}
-                  >
-                    Reset clears
                   </button>
                 </div>
               ) : null}

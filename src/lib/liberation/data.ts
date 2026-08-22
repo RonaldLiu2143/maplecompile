@@ -11,6 +11,8 @@ export type TraceBoss = {
   difficulties: TraceDifficulty[];
   /** Black Mage is monthly; everyone else is weekly. */
   frequency: "weekly" | "monthly";
+  /** Max party size for share calc (default 6). */
+  maxParty?: number;
 };
 
 export type LiberationMilestone = {
@@ -141,6 +143,7 @@ export const DESTINY_BOSSES: TraceBoss[] = [
     name: "Adversary",
     image: "bosses/the-first-adversary.webp",
     frequency: "weekly",
+    maxParty: 3,
     difficulties: [
       { label: "Normal", baseTraces: 15 },
       { label: "Hard", baseTraces: 120 },
@@ -151,6 +154,7 @@ export const DESTINY_BOSSES: TraceBoss[] = [
     name: "Malefic Star",
     image: "bosses/malefic-star.webp",
     frequency: "weekly",
+    maxParty: 3,
     difficulties: [
       { label: "Normal", baseTraces: 20 },
       { label: "Hard", baseTraces: 380 },
@@ -170,6 +174,7 @@ export const DESTINY_BOSSES: TraceBoss[] = [
     name: "Limbo",
     image: "bosses/limbo.webp",
     frequency: "weekly",
+    maxParty: 3,
     difficulties: [
       { label: "Normal", baseTraces: 120 },
       { label: "Hard", baseTraces: 360 },
@@ -179,6 +184,7 @@ export const DESTINY_BOSSES: TraceBoss[] = [
     name: "Baldrix",
     image: "bosses/baldrix.webp",
     frequency: "weekly",
+    maxParty: 3,
     difficulties: [
       { label: "Normal", baseTraces: 150 },
       { label: "Hard", baseTraces: 450 },

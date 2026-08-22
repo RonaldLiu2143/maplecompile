@@ -13,6 +13,7 @@ import {
 } from "@/lib/flames";
 import { defaultPotentialTier } from "@/lib/planner";
 import {
+  buildPotentialPreset,
   lineOptionKey,
   normalizePotentialLines,
   parseLineOptionKey,
@@ -279,6 +280,34 @@ export function EquipItemEditor({
             <h3 className="text-sm font-semibold text-muted-foreground">
               Potential
             </h3>
+            <div className="flex flex-wrap gap-1.5">
+              <button
+                type="button"
+                onClick={() =>
+                  onChange({
+                    potentialTier: 3,
+                    potentialLines: buildPotentialPreset(equip, "3line", 3),
+                  })
+                }
+                className="rounded border border-border px-2.5 py-1.5 text-sm font-semibold hover:bg-muted"
+                title="3 main lines with 1 max/prime line (Legendary)"
+              >
+                3 Line
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  onChange({
+                    potentialTier: 3,
+                    potentialLines: buildPotentialPreset(equip, "2prime", 3),
+                  })
+                }
+                className="rounded border border-border px-2.5 py-1.5 text-sm font-semibold hover:bg-muted"
+                title="2 max/prime potential lines (Legendary)"
+              >
+                2 prime
+              </button>
+            </div>
             <label className="flex flex-col gap-1 text-sm">
               Tier
               <select

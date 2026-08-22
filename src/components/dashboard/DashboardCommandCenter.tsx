@@ -55,7 +55,7 @@ export function DashboardPrimaryHero({
 }) {
   if (!primary) {
     return (
-      <section className="border border-border bg-surface px-4 py-5 sm:px-5">
+      <section className="rounded-2xl border border-border bg-surface px-4 py-5 sm:px-5">
         <h2 className="font-display text-xl font-bold tracking-tight">
           No primary yet
         </h2>
@@ -75,7 +75,7 @@ export function DashboardPrimaryHero({
   const errored = slot?.status === "error";
 
   return (
-      <section className="overflow-hidden border border-border bg-surface">
+      <section className="overflow-hidden rounded-2xl border border-border bg-surface">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-accent/25 bg-accent-soft/15 px-3 py-1.5 sm:px-4">
         <div className="min-w-0">
           <p className="text-xs text-muted-foreground">

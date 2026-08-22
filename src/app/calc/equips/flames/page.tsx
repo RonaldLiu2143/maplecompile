@@ -8,7 +8,6 @@ import {
   useState,
 } from "react";
 import Link from "next/link";
-import { ActiveCharacterBar } from "@/components/ActiveCharacterBar";
 import { useMapleDataReload } from "@/hooks/useMapleDataReload";
 import {
   activeCharacterKey,
@@ -132,6 +131,11 @@ export default function FlamesClient() {
   const [manualWa, setManualWa] = useState(0);
   const [probs, setProbs] = useState<ProbMap>({});
   const [probsReady, setProbsReady] = useState(false);
+  const [scouterPresetId, setScouterPresetId] = useState("");
+  const [scouterMsg, setScouterMsg] = useState<string | null>(null);
+  const [scouterPresets, setScouterPresets] = useState<
+    { id: string; name: string }[]
+  >([]);
   const persistTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const calcGen = useRef(0);
   const flameSetupRef = useRef(flameSetup);
@@ -139,6 +143,47 @@ export default function FlamesClient() {
   const skipReloadRef = useRef(false);
 
   setupRef.current = setup;
+
+  const refreshScouterPresets = () => {
+    const list = storage
+      .listScouterPresets()
+      .filter((p) => p.equipSetup && Object.keys(p.equipSetup).length > 0)
+      .map((p) => ({ id: p.id, name: p.name }));
+    setScouterPresets(list);
+  };
+
+  const applyScouterPreset = (id: string) => {
+    setScouterPresetId(id);
+    if (!id) {
+      setScouterMsg(null);
+      return;
+    }
+    const preset = storage.listScouterPresets().find((p) => p.id === id);
+    if (!preset?.equipSetup || !Object.keys(preset.equipSetup).length) {
+      setScouterMsg("That preset has no saved Equipment Setup.");
+      return;
+    }
+    const job = (preset.input?.jobType ||
+      storage.getJobType() ||
+      DEFAULT_JOB) as JobType;
+    const char =
+      preset.input?.charType || storage.getCharType() || DEFAULT_CHAR;
+    const savedSetup = structuredClone(preset.equipSetup);
+    const mergedFlames = flamesFromEquipment(
+      savedSetup,
+      preset.flameSetup ?? {},
+    );
+    skipReloadRef.current = true;
+    setJobType(job);
+    setCharType(char);
+    setSetup(savedSetup);
+    setFlameSetup(mergedFlames);
+    setStatEquiv(defaultStatEquiv(job, char));
+    const items = withFlameMeta(savedSetup).filter(isFlammable);
+    setSelectedId(items[0]?.id ?? null);
+    setScouterMsg(`Loaded gear from “${preset.name}”.`);
+    setTimeout(() => setScouterMsg(null), 3000);
+  };
 
   const flammable = useMemo(
     () => withFlameMeta(setup).filter(isFlammable),
@@ -182,6 +227,7 @@ export default function FlamesClient() {
 
   useEffect(() => {
     loadFromEquipment(true);
+    refreshScouterPresets();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- mount only
   }, []);
 
@@ -421,33 +467,63 @@ export default function FlamesClient() {
           Flame Calculator
         </h1>
         <p className="mt-2 max-w-2xl text-sm opacity-75">
-          Pulls items and flame lines from Equipment. Odds and tables only —
-          stars, cube potential, and base stats are ignored.
+          Pulls items and flame lines from Equipment or a saved Scouter preset
+          (must include Equipment Setup). Odds and tables only — stars, cube
+          potential, and base stats are ignored.
         </p>
+        <div className="mt-3 flex flex-wrap items-end gap-2">
+          <label className="flex min-w-[12rem] flex-1 flex-col gap-1 text-xs font-semibold uppercase tracking-wider opacity-60 sm:max-w-xs">
+            Scouter preset
+            <select
+              className="rounded border border-border bg-background px-2 py-1.5 text-sm font-normal normal-case tracking-normal outline-none focus:border-accent"
+              value={scouterPresetId}
+              onChange={(e) => applyScouterPreset(e.target.value)}
+              onFocus={refreshScouterPresets}
+            >
+              <option value="">Current equipment / manual</option>
+              {scouterPresets.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          {scouterPresets.length === 0 ? (
+            <p className="pb-1.5 text-xs opacity-60">
+              No Scouter presets with saved gear yet — use the manual table or{" "}
+              <Link href="/calc/scouter" className="text-accent underline">
+                save a Scouter preset
+              </Link>{" "}
+              with Equipment Setup.
+            </p>
+          ) : null}
+        </div>
+        {scouterMsg ? (
+          <p className="mt-1 text-xs font-medium text-accent" role="status">
+            {scouterMsg}
+          </p>
+        ) : null}
         {jobType && charType ? (
           <p className="mt-2 text-sm">
             Using setup for{" "}
             <strong>{getJob(jobType)?.name}</strong> /{" "}
             <strong>{getCharName(jobType, charType)}</strong>
             {" · "}
-            <Link href="/calc/equips/setup" className="text-accent underline">
-              Edit setup
+            <Link href="/calc/scouter" className="text-accent underline">
+              Edit in Scouter
             </Link>
           </p>
         ) : (
           <p className="mt-2 text-sm text-danger">
             No saved equipment setup.{" "}
-            <Link href="/calc/equips/setup" className="underline">
-              Create one first
+            <Link href="/calc/scouter" className="underline">
+              Create one in Scouter
             </Link>
             , or use the manual table below.
           </p>
         )}
       </header>
-
-      <ActiveCharacterBar onSwitched={() => loadFromEquipment(true)} />
-
-      <section className="space-y-3 rounded-xl border border-border/40 bg-surface/80 p-4">
+<section className="space-y-3 rounded-xl border border-border/40 bg-surface/80 p-4">
         <h2 className="font-display text-lg font-semibold">
           1) Flame value reference
         </h2>

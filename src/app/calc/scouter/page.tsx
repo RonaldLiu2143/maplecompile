@@ -51,7 +51,6 @@ import {
   migrateGlobalsToPrimaryWorkspace,
   persistLiveToWorkspace,
 } from "@/lib/character-workspace";
-import { ActiveCharacterBar } from "@/components/ActiveCharacterBar";
 import { ScouterActiveCharacterPresetPair } from "@/components/ScouterActiveCharacterPresetPair";
 import { ConfirmModal } from "@/components/ConfirmModal";
 import { EquipmentSetupPanel } from "@/components/EquipmentSetupPanel";
@@ -1469,10 +1468,7 @@ export default function ScouterPage() {
           </p>
         </div>
       </header>
-
-      <ActiveCharacterBar onSwitched={handleActiveCharacterSwitched} />
-
-      <ScouterActiveCharacterPresetPair
+<ScouterActiveCharacterPresetPair
         loadedPresetId={loadedPresetId}
         loadedPresetName={presetName}
         onApplied={({ action, presetId, presetName: pairedName }) => {
@@ -1531,11 +1527,7 @@ export default function ScouterPage() {
                 )}
               </div>
 
-              <details className="w-full border-t border-border/40 pt-2">
-                <summary className="cursor-pointer text-sm font-semibold text-muted-foreground hover:text-foreground">
-                  Save, recall, and share
-                </summary>
-                <div className="mt-2 space-y-1.5">
+              <div className="w-full space-y-1.5 border-t border-border/40 pt-2">
                 <div className="flex flex-wrap items-center justify-end gap-1.5">
                   <input
                     type="text"
@@ -1603,7 +1595,7 @@ export default function ScouterPage() {
                   )}
                   <Link
                     href="/calc/scouter/gallery"
-                    className="min-h-11 rounded border border-border/50 bg-background px-2.5 text-sm font-semibold transition hover:bg-surface-muted"
+                    className="inline-flex min-h-11 items-center justify-center rounded border border-border/50 bg-background px-2.5 text-sm font-semibold transition hover:bg-surface-muted"
                   >
                     Browse gallery
                   </Link>
@@ -1663,8 +1655,7 @@ export default function ScouterPage() {
                     Copy link
                   </button>
                 </div>
-                </div>
-              </details>
+              </div>
             </div>
 
             <MiniScouterCharacterSearch
@@ -2047,27 +2038,39 @@ export default function ScouterPage() {
                 }
                 const max = b.maxLevel ?? 99;
                 return (
-                  <div key={b.id} title={tip} className={cardClass}>
-                    <button
-                      type="button"
-                      className="cursor-pointer"
-                      aria-pressed={active}
-                      aria-label={`${b.label}: ${active ? "on" : "off"}`}
-                      onClick={() => toggleLevelBuff(b.id)}
+                  <div
+                    key={b.id}
+                    title={tip}
+                    role="button"
+                    tabIndex={0}
+                    aria-pressed={active}
+                    aria-label={`${b.label}: ${active ? "on" : "off"}`}
+                    className={`${cardClass} cursor-pointer`}
+                    onClick={() => toggleLevelBuff(b.id)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        toggleLevelBuff(b.id);
+                      }
+                    }}
+                  >
+                    <CdnIcon src={b.icon} alt={b.label} size={24} />
+                    <div
+                      onClick={(e) => e.stopPropagation()}
+                      onKeyDown={(e) => e.stopPropagation()}
                     >
-                      <CdnIcon src={b.icon} alt={b.label} size={24} />
-                    </button>
-                    <LevelInput
-                      value={st.level}
-                      max={max}
-                      title={tip}
-                      onChange={(level) => {
-                        setBuffs((prev) => ({
-                          ...prev,
-                          [b.id]: { on: level > 0, level },
-                        }));
-                      }}
-                    />
+                      <LevelInput
+                        value={st.level}
+                        max={max}
+                        title={tip}
+                        onChange={(level) => {
+                          setBuffs((prev) => ({
+                            ...prev,
+                            [b.id]: { on: level > 0, level },
+                          }));
+                        }}
+                      />
+                    </div>
                   </div>
                 );
               })}

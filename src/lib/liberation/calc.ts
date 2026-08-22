@@ -106,8 +106,9 @@ export function clampTracesHeld(
   return Math.min(max, Math.max(0, Math.floor(n) || 0));
 }
 
-export function clampPartySize(n: number): number {
-  return Math.max(1, Math.min(6, Math.floor(n) || 1));
+export function clampPartySize(n: number, maxParty = 6): number {
+  const max = Math.max(1, Math.min(6, Math.floor(maxParty) || 6));
+  return Math.max(1, Math.min(max, Math.floor(n) || 1));
 }
 
 export function findBoss(
@@ -388,7 +389,7 @@ export function mergeSelections(
       difficulty: validDiff ? difficulty : d.difficulty,
       partySize:
         s.partySize != null && Number.isFinite(Number(s.partySize))
-          ? clampPartySize(s.partySize)
+          ? clampPartySize(s.partySize, boss?.maxParty ?? 6)
           : d.partySize,
       cleared: !!s.cleared,
     };

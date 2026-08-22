@@ -41,6 +41,39 @@ const CRA_HAT = ["highness", "faf"];
 const CRA_TOP = ["eagle eye", "faf"];
 const CRA_BOTTOM = ["trickster", "faf"];
 
+/** Catalog id `broid` — Battle-Roid android for every Heroic starter. */
+const BATTLE_ROID = ["broid", "battle-roid", "battle roid"];
+
+/** @deprecated Prefer `heroic-brilliant` — kept as alias id lookup helper. */
+export const LEGACY_STARTER_IDS: Record<string, string> = {
+  "heroic-cra": "heroic-early",
+  "heroic-absolab": "heroic-early-mid",
+  "heroic-arcane": "heroic-mid",
+  "heroic-eternal": "heroic-brilliant",
+};
+
+/**
+ * Default Star Force when a starter tier is applied (starable pieces only;
+ * clamped per item cap in EquipmentSetupPanel).
+ */
+export function starterLoadoutStarForce(loadoutId: string): number {
+  const id = LEGACY_STARTER_IDS[loadoutId] ?? loadoutId;
+  switch (id) {
+    case "heroic-brilliant":
+    case "heroic-pitched":
+    case "heroic-late":
+      return 22;
+    case "heroic-mid":
+      return 21;
+    case "heroic-early-mid":
+      return 18;
+    case "heroic-early":
+      return 15;
+    default:
+      return 17;
+  }
+}
+
 /**
  * Heroic progression presets from the Equipment Setup PDF matrix.
  * Resolved against the loaded class catalog (job-filtered weapons / armor).
@@ -59,7 +92,7 @@ export const STARTER_LOADOUTS: StarterLoadout[] = [
     id: "heroic-early",
     name: "Early game",
     description:
-      "CRA armor, Fafnir weapon, Pensalir gloves/shoes, Tyrant cape, boss accessories, event rings.",
+      "CRA armor, Fafnir weapon, Pensalir gloves/shoes, Tyrant cape, boss accessories, Eternal Flame + Awake rings.",
     armorMatchers: ["faf", "pensalir"],
     weaponMatchers: ["faf", "fafnir"],
     accessoryMatchers: ["bossAcc", "eventRing", "sengoku", "meister"],
@@ -76,7 +109,10 @@ export const STARTER_LOADOUTS: StarterLoadout[] = [
         "kanna's treasure",
         "kanna-ring",
         "silver blossom",
-        "eventRing",
+        "eternal-flame-ring",
+        "eternal flame",
+        "awake-ring",
+        "awake ring",
       ],
       pendant: ["dominator", "machinator", "chaos horntail", "horned tail"],
       face: ["condensed power", "condensed strength", "condensed"],
@@ -89,6 +125,7 @@ export const STARTER_LOADOUTS: StarterLoadout[] = [
       medal: ["chaos vellum crusher", "chaos-vellum-crusher"],
       heart: ["fairy heart"],
       badge: ["crystal ventus", "ventus-badge"],
+      android: BATTLE_ROID,
     },
   },
   {
@@ -134,6 +171,7 @@ export const STARTER_LOADOUTS: StarterLoadout[] = [
       medal: ["chaos vellum crusher", "chaos-vellum-crusher"],
       heart: ["fairy heart"],
       badge: ["crystal ventus", "ventus-badge"],
+      android: BATTLE_ROID,
     },
   },
   {
@@ -184,6 +222,7 @@ export const STARTER_LOADOUTS: StarterLoadout[] = [
       medal: ["chaos vellum crusher", "chaos-vellum-crusher"],
       heart: ["fairy heart"],
       badge: ["crystal ventus", "ventus-badge"],
+      android: BATTLE_ROID,
     },
   },
   {
@@ -228,6 +267,7 @@ export const STARTER_LOADOUTS: StarterLoadout[] = [
       medal: ["chaos vellum crusher", "chaos-vellum-crusher"],
       heart: ["plasma heart"],
       badge: ["crystal ventus", "ventus-badge"],
+      android: BATTLE_ROID,
     },
   },
   {
@@ -272,6 +312,7 @@ export const STARTER_LOADOUTS: StarterLoadout[] = [
       medal: ["chaos vellum crusher", "chaos-vellum-crusher"],
       heart: ["total control", "complete under control"],
       badge: ["genesis badge", "badge in the beginning"],
+      android: BATTLE_ROID,
     },
   },
   {
@@ -319,17 +360,10 @@ export const STARTER_LOADOUTS: StarterLoadout[] = [
       medal: ["immortal legacy", "radiantBossAcc"],
       heart: ["total control", "complete under control"],
       badge: ["genesis badge", "badge in the beginning"],
+      android: BATTLE_ROID,
     },
   },
 ];
-
-/** @deprecated Prefer `heroic-brilliant` — kept as alias id lookup helper. */
-export const LEGACY_STARTER_IDS: Record<string, string> = {
-  "heroic-cra": "heroic-early",
-  "heroic-absolab": "heroic-early-mid",
-  "heroic-arcane": "heroic-mid",
-  "heroic-eternal": "heroic-brilliant",
-};
 
 const EQUIP_TYPES = [
   "weapon",

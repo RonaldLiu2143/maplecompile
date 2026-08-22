@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ActiveCharacterBar } from "@/components/ActiveCharacterBar";
 import {
   ManageDisplayButton,
   ManageDisplayModal,
@@ -736,10 +735,7 @@ export default function HexaTrackerPage() {
           character. Pair with Scouter when you want levels synced.
         </p>
       </div>
-
-      <ActiveCharacterBar onSelect={onBarSelect} />
-
-      <div className="flex flex-wrap items-center gap-2">
+<div className="flex flex-wrap items-center gap-2">
         <div className="inline-flex rounded-lg border border-border/50 bg-surface/80 p-0.5">
           {(
             [

@@ -187,3 +187,113 @@ export function normalizePotentialLines(
   const src = lines ?? [];
   return [0, 1, 2].map((i) => src[i] ?? null);
 }
+
+/** Prefer matt% when the item looks magic-oriented. */
+function preferMattPercent(equip: Equip): boolean {
+  const att = equip.stats?.att ?? equip.stats?.weaponAtt ?? 0;
+  const matt = equip.stats?.matt ?? equip.stats?.weaponMatt ?? 0;
+  return matt > att || equip.jobType === "magician";
+}
+
+/** Ordered line families for quick presets (first available wins). */
+function preferredPotentialFamilies(equip: Equip): string[] {
+  const type = equip.equipType;
+  const att = preferMattPercent(equip) ? "mattPercent" : "attPercent";
+  const attAlt = preferMattPercent(equip) ? "attPercent" : "mattPercent";
+
+  if (type === "weapon" || type === "secondary" || type === "emblem") {
+    return [
+      att,
+      "bossPercent",
+      "iedPercent",
+      "damagePercent",
+      attAlt,
+      "mainStatPercent",
+    ];
+  }
+  if (type === "gloves") {
+    return ["critDamage", "mainStatPercent", att, "allStatPercent"];
+  }
+  if (
+    type === "ring" ||
+    type === "pendant" ||
+    type === "face" ||
+    type === "eye" ||
+    type === "earring"
+  ) {
+    return [
+      "mainStatPercent",
+      "allStatPercent",
+      att,
+      "mesoPercent",
+      "dropPercent",
+    ];
+  }
+  return [
+    "mainStatPercent",
+    "allStatPercent",
+    att,
+    "skillCooldown",
+    "hpPercent",
+  ];
+}
+
+function valuesByFamily(
+  options: PotentialLineOption[],
+): Map<string, number[]> {
+  const map = new Map<string, number[]>();
+  for (const opt of options) {
+    if (!opt.id) continue;
+    const list = map.get(opt.id) ?? [];
+    list.push(opt.value);
+    map.set(opt.id, list);
+  }
+  for (const [id, vals] of map) {
+    map.set(
+      id,
+      [...new Set(vals)].sort((a, b) => b - a),
+    );
+  }
+  return map;
+}
+
+export type PotentialPresetKind = "3line" | "2prime";
+
+/**
+ * Quick potential fills at the given tier (defaults to Legendary).
+ * - `3line`: 3 preferred main lines; only the first uses max/prime value
+ * - `2prime`: 2 preferred lines, both at max/prime value
+ */
+export function buildPotentialPreset(
+  equip: Equip,
+  kind: PotentialPresetKind,
+  potentialTier: 0 | 1 | 2 | 3 = 3,
+): PotentialLine[] {
+  const options = potentialLineOptions(equip, [], potentialTier);
+  const byFamily = valuesByFamily(options);
+  const families = preferredPotentialFamilies(equip).filter((id) =>
+    byFamily.has(id),
+  );
+  const lines: PotentialLine[] = [];
+
+  if (kind === "2prime") {
+    for (const id of families) {
+      if (lines.length >= 2) break;
+      const max = byFamily.get(id)?.[0];
+      if (max == null) continue;
+      lines.push({ id, value: max });
+    }
+    return lines;
+  }
+
+  // 3 Line — one prime + two non-prime (or next-best) main lines
+  for (const id of families) {
+    if (lines.length >= 3) break;
+    const vals = byFamily.get(id);
+    if (!vals?.length) continue;
+    const value =
+      lines.length === 0 ? vals[0]! : (vals[1] ?? vals[0]!);
+    lines.push({ id, value });
+  }
+  return lines;
+}

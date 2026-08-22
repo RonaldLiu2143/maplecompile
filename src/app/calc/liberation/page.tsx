@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState, type MouseEvent } from "react";
-import { ActiveCharacterBar } from "@/components/ActiveCharacterBar";
 import {
   ManageDisplayButton,
   ManageDisplayModal,
@@ -327,10 +326,7 @@ export default function LiberationPage() {
           Baldrix.
         </p>
       </header>
-
-      <ActiveCharacterBar onSelect={handleSetPrimary} />
-
-      <div className="grid gap-5 xl:grid-cols-[minmax(280px,0.95fr)_minmax(0,1.55fr)]">
+<div className="grid gap-5 xl:grid-cols-[minmax(280px,0.95fr)_minmax(0,1.55fr)]">
         {/* ── Left column ── */}
         <aside className="space-y-4">
           {/* Mode */}
@@ -880,11 +876,12 @@ export default function LiberationPage() {
                           const enabling =
                             sel.difficulty === NOT_DOING &&
                             difficulty !== NOT_DOING;
+                          const maxParty = boss.maxParty ?? 6;
                           patchBoss(boss.name, {
                             difficulty,
                             partySize: enabling
                               ? 1
-                              : clampPartySize(sel.partySize),
+                              : clampPartySize(sel.partySize, maxParty),
                             cleared:
                               difficulty === NOT_DOING ? false : sel.cleared,
                           });
@@ -900,18 +897,20 @@ export default function LiberationPage() {
                       </select>
                       <select
                         className={`${inputClass} w-[5.5rem] shrink-0 py-1.5 text-sm`}
-                        value={sel.partySize}
+                        value={Math.min(sel.partySize, boss.maxParty ?? 6)}
                         disabled={!doing}
                         onChange={(e) =>
                           patchBoss(boss.name, {
                             partySize: clampPartySize(
                               Number(e.target.value),
+                              boss.maxParty ?? 6,
                             ),
                           })
                         }
                         aria-label={`${boss.name} party size`}
                       >
-                        {PARTY_SIZES.map((n) => (
+                        {PARTY_SIZES.filter((n) => n <= (boss.maxParty ?? 6)).map(
+                          (n) => (
                           <option key={n} value={n}>
                             {n === 1 ? "Solo" : `${n}p`}
                           </option>

@@ -20,7 +20,131 @@ export type BossPreset = {
   name: string;
   createdAt: number;
   bosses: BossPresetEntry[];
+  /** MapleHub default mule presets — not deletable / not persisted. */
+  builtin?: boolean;
 };
+
+/**
+ * MapleHub default boss presets (`tmp_mh_BossTracker.js` `bs` / `js` arrays).
+ * Labels like "Normal Slime" map to Guardian Angel Slime; "Normal Akechi" → Mitsuhide.
+ */
+const MAPLEHUB_LABEL_ALIASES: Record<string, string> = {
+  Slime: "Guardian Angel Slime",
+  Akechi: "Akechi Mitsuhide",
+};
+
+/** Raw MapleHub preset configs: keyed by `"Difficulty BossName"` labels. */
+const MAPLEHUB_RAW_PRESETS: Record<
+  string,
+  Record<string, { partySize: number; difficulty: string }>
+> = {
+  "NLomien Mule": {
+    "Normal Lotus": { partySize: 1, difficulty: "Normal" },
+    "Normal Damien": { partySize: 1, difficulty: "Normal" },
+    "Normal Akechi": { partySize: 1, difficulty: "Normal" },
+    "Chaos Papulatus": { partySize: 1, difficulty: "Chaos" },
+    "Chaos Vellum": { partySize: 1, difficulty: "Chaos" },
+    "Hard Magnus": { partySize: 1, difficulty: "Hard" },
+    "Chaos Crimson Queen": { partySize: 1, difficulty: "Chaos" },
+    "Chaos Pierre": { partySize: 1, difficulty: "Chaos" },
+    "Normal Princess No": { partySize: 1, difficulty: "Normal" },
+    "Chaos Von Bon": { partySize: 1, difficulty: "Chaos" },
+    "Chaos Zakum": { partySize: 1, difficulty: "Chaos" },
+    "Normal Cygnus": { partySize: 1, difficulty: "Normal" },
+    "Chaos Pink Bean": { partySize: 1, difficulty: "Chaos" },
+    "Hard Hilla": { partySize: 1, difficulty: "Hard" },
+  },
+  "HLotus Mule": {
+    "Hard Lotus": { partySize: 1, difficulty: "Hard" },
+    "Normal Slime": { partySize: 1, difficulty: "Normal" },
+    "Easy Lucid": { partySize: 1, difficulty: "Easy" },
+    "Normal Damien": { partySize: 1, difficulty: "Normal" },
+    "Normal Akechi": { partySize: 1, difficulty: "Normal" },
+    "Chaos Papulatus": { partySize: 1, difficulty: "Chaos" },
+    "Chaos Vellum": { partySize: 1, difficulty: "Chaos" },
+    "Hard Magnus": { partySize: 1, difficulty: "Hard" },
+    "Chaos Crimson Queen": { partySize: 1, difficulty: "Chaos" },
+    "Chaos Pierre": { partySize: 1, difficulty: "Chaos" },
+    "Normal Princess No": { partySize: 1, difficulty: "Normal" },
+    "Chaos Von Bon": { partySize: 1, difficulty: "Chaos" },
+    "Chaos Zakum": { partySize: 1, difficulty: "Chaos" },
+    "Normal Cygnus": { partySize: 1, difficulty: "Normal" },
+  },
+  "Ctene Mule": {
+    "Hard Lotus": { partySize: 1, difficulty: "Hard" },
+    "Hard Verus Hilla": { partySize: 1, difficulty: "Hard" },
+    "Hard Darknell": { partySize: 1, difficulty: "Hard" },
+    "Hard Will": { partySize: 1, difficulty: "Hard" },
+    "Chaos Slime": { partySize: 1, difficulty: "Chaos" },
+    "Chaos Gloom": { partySize: 1, difficulty: "Chaos" },
+    "Hard Lucid": { partySize: 1, difficulty: "Hard" },
+    "Hard Damien": { partySize: 1, difficulty: "Hard" },
+    "Normal Akechi": { partySize: 1, difficulty: "Normal" },
+    "Chaos Papulatus": { partySize: 1, difficulty: "Chaos" },
+    "Chaos Vellum": { partySize: 1, difficulty: "Chaos" },
+    "Hard Magnus": { partySize: 1, difficulty: "Hard" },
+    "Chaos Crimson Queen": { partySize: 1, difficulty: "Chaos" },
+    "Normal Princess No": { partySize: 1, difficulty: "Normal" },
+  },
+};
+
+function resolveBossIdFromMaplehubLabel(label: string): string | null {
+  // Prefer longest boss name match after optional difficulty prefix.
+  const sorted = [...BOSS_CRYSTALS].sort(
+    (a, b) => b.name.length - a.name.length,
+  );
+  for (const boss of sorted) {
+    if (label === boss.name || label.endsWith(` ${boss.name}`)) {
+      return boss.id;
+    }
+  }
+  for (const [short, full] of Object.entries(MAPLEHUB_LABEL_ALIASES)) {
+    if (label === short || label.endsWith(` ${short}`)) {
+      const boss = BOSS_CRYSTALS.find((b) => b.name === full);
+      return boss?.id ?? null;
+    }
+  }
+  return null;
+}
+
+function maplehubLabelToEntry(
+  label: string,
+  raw: { partySize: number; difficulty: string },
+): BossPresetEntry | null {
+  const bossId = resolveBossIdFromMaplehubLabel(label);
+  if (!bossId) return null;
+  return normalizePresetEntry({
+    bossId,
+    difficulty: raw.difficulty,
+    partySize: raw.partySize,
+  });
+}
+
+function buildBuiltinPresets(): BossPreset[] {
+  const out: BossPreset[] = [];
+  let order = 0;
+  for (const [name, bosses] of Object.entries(MAPLEHUB_RAW_PRESETS)) {
+    const entries: BossPresetEntry[] = [];
+    const seen = new Set<string>();
+    for (const [label, raw] of Object.entries(bosses)) {
+      const entry = maplehubLabelToEntry(label, raw);
+      if (!entry || seen.has(entry.bossId)) continue;
+      seen.add(entry.bossId);
+      entries.push(entry);
+    }
+    if (entries.length === 0) continue;
+    out.push({
+      id: `mh_${name.toLowerCase().replace(/\s+/g, "_")}`,
+      name,
+      createdAt: order++,
+      bosses: entries,
+      builtin: true,
+    });
+  }
+  return out;
+}
+
+export const BUILTIN_BOSS_PRESETS: BossPreset[] = buildBuiltinPresets();
 
 function newId(): string {
   return `bp_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`;
@@ -48,6 +172,7 @@ function normalizePresetEntry(
 function normalizePreset(raw: unknown): BossPreset | null {
   if (!raw || typeof raw !== "object") return null;
   const p = raw as Partial<BossPreset>;
+  if (typeof p.id === "string" && p.id.startsWith("mh_")) return null;
   if (typeof p.id !== "string" || typeof p.name !== "string") return null;
   if (!Array.isArray(p.bosses)) return null;
   const seen = new Set<string>();
@@ -71,7 +196,7 @@ function normalizePreset(raw: unknown): BossPreset | null {
   };
 }
 
-export function loadBossPresets(): BossPreset[] {
+function loadCustomBossPresets(): BossPreset[] {
   if (typeof window === "undefined") return [];
   try {
     const raw = localStorage.getItem(BOSS_PRESETS_KEY);
@@ -86,12 +211,18 @@ export function loadBossPresets(): BossPreset[] {
   }
 }
 
-/** Persist presets (LRU-capped by createdAt). Returns false when storage write fails. */
+/** Builtin MapleHub mule presets + user-saved custom presets. */
+export function loadBossPresets(): BossPreset[] {
+  return [...BUILTIN_BOSS_PRESETS, ...loadCustomBossPresets()];
+}
+
+/** Persist custom presets only (LRU-capped). Returns false when storage write fails. */
 export function saveBossPresets(presets: BossPreset[]): boolean {
   if (typeof window === "undefined") return false;
   try {
+    const custom = presets.filter((p) => !p.builtin && !p.id.startsWith("mh_"));
     const capped = lruCapByTime(
-      presets,
+      custom,
       BOSS_PRESETS_LIMIT,
       (p) => p.createdAt,
     );
@@ -171,9 +302,23 @@ export function applyPresetToSelections(
   );
 }
 
+/** Disable every boss for this character (Edit modal Reset). */
+export function clearAllBossSelections(
+  current: BossClearSelection[],
+): BossClearSelection[] {
+  const base = current.length ? current : defaultSelections();
+  return base.map((s) => ({ ...s, enabled: false, cleared: false }));
+}
+
 export function deleteBossPreset(
   presets: BossPreset[],
   id: string,
 ): BossPreset[] {
+  const target = presets.find((p) => p.id === id);
+  if (target?.builtin) return presets;
   return presets.filter((p) => p.id !== id);
+}
+
+export function isBuiltinBossPreset(preset: BossPreset): boolean {
+  return !!preset.builtin || preset.id.startsWith("mh_");
 }

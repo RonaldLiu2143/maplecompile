@@ -66,11 +66,14 @@ export {
 export {
   BOSS_PRESETS_KEY,
   BOSS_PRESETS_LIMIT,
+  BUILTIN_BOSS_PRESETS,
   loadBossPresets,
   saveBossPresets,
   presetFromSelections,
   applyPresetToSelections,
+  clearAllBossSelections,
   deleteBossPreset,
+  isBuiltinBossPreset,
   type BossPreset,
   type BossPresetEntry,
 } from "./presets";
