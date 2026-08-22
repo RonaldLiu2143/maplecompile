@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { ConfirmModal } from "@/components/ConfirmModal";
 import { AnonymousShareAvatar } from "@/components/character/AnonymousShareAvatar";
 import { getCharName } from "@/lib/jobs";
 import {
@@ -86,6 +87,7 @@ export function ShareGalleryModal({
   const [formError, setFormError] = useState<string | null>(null);
   /** Honeypot — leave empty; bots that autofill are rejected server-side. */
   const [website, setWebsite] = useState("");
+  const [pendingReplaceConfirm, setPendingReplaceConfirm] = useState(false);
 
   const isReplace = Boolean(existingPost);
 
@@ -152,12 +154,29 @@ export function ShareGalleryModal({
     [jobType, charType, anonSample],
   );
 
-  if (!open) return null;
+  if (!open && !pendingReplaceConfirm) return null;
 
   const ignOk =
     name.trim().length > 0 && name.trim().toLowerCase() !== "untitled";
   const canSubmit =
     !submitting && (identity === "anonymous" || ignOk);
+
+  const doSubmit = () => {
+    const noteCheck = filterDisplayText(achievement, {
+      fieldLabel: "Note",
+      maxLength: 120,
+      allowEmpty: true,
+    });
+    if (!noteCheck.ok) return;
+    onConfirm({
+      identity,
+      name: identity === "ign" ? name.trim() : anonPreview,
+      achievement: noteCheck.value,
+      boss300HexaStat: boss300,
+      boss380HexaStat: boss380,
+      replaceExisting: isReplace,
+    });
+  };
 
   const submit = () => {
     if (website.trim()) {
@@ -185,22 +204,15 @@ export function ShareGalleryModal({
     }
     setFormError(null);
     if (isReplace && existingPost) {
-      const ok = window.confirm(
-        `Replace your previous gallery post “${existingPost.name}”?\n\nThe old post will be deleted permanently (new link, views reset to 0).`,
-      );
-      if (!ok) return;
+      setPendingReplaceConfirm(true);
+      return;
     }
-    onConfirm({
-      identity,
-      name: identity === "ign" ? name.trim() : anonPreview,
-      achievement: noteCheck.value,
-      boss300HexaStat: boss300,
-      boss380HexaStat: boss380,
-      replaceExisting: isReplace,
-    });
+    doSubmit();
   };
 
   return (
+    <>
+      {open ? (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
       role="dialog"
@@ -408,5 +420,25 @@ export function ShareGalleryModal({
         </div>
       </div>
     </div>
+      ) : null}
+
+      <ConfirmModal
+        open={pendingReplaceConfirm}
+        title="Replace gallery post?"
+        message={
+          existingPost
+            ? `Replace your previous gallery post “${existingPost.name}”? The old post will be deleted permanently (new link, views reset to 0).`
+            : ""
+        }
+        confirmLabel="Replace"
+        cancelLabel="Cancel"
+        titleId="share-gallery-replace-confirm-title"
+        onCancel={() => setPendingReplaceConfirm(false)}
+        onConfirm={() => {
+          setPendingReplaceConfirm(false);
+          doSubmit();
+        }}
+      />
+    </>
   );
 }

@@ -24,7 +24,6 @@ import {
   isStickyActiveSwitchBlocked,
   restoreLockedActiveCharacter,
   switchActiveCharacter,
-  UNLOCK_TO_CHANGE_ACTIVE_MSG,
 } from "@/lib/active-character";
 import { removeWorkspace } from "@/lib/character-workspace";
 
@@ -43,6 +42,7 @@ export function useRoster({ load = "all" }: { load?: "all" | "primary" } = {}) {
   const [reloadToken, setReloadToken] = useState(0);
   const [dragFrom, setDragFrom] = useState<number | null>(null);
   const [dragOver, setDragOver] = useState<number | null>(null);
+  const [activeSwitchBlockedOpen, setActiveSwitchBlockedOpen] = useState(false);
   const loadedKeys = useRef<Set<string>>(new Set());
 
   function applyRosterState(state: RosterState) {
@@ -227,13 +227,15 @@ export function useRoster({ load = "all" }: { load?: "all" | "primary" } = {}) {
 
   function handleSetPrimary(entry: RosterEntry): boolean {
     if (isStickyActiveSwitchBlocked(entry)) {
-      if (typeof window !== "undefined") {
-        window.alert(UNLOCK_TO_CHANGE_ACTIVE_MSG);
-      }
+      setActiveSwitchBlockedOpen(true);
       return false;
     }
     applyRosterState(switchActiveCharacter(entry));
     return true;
+  }
+
+  function dismissActiveSwitchBlocked() {
+    setActiveSwitchBlockedOpen(false);
   }
 
   function handleMoveUp(index: number) {
@@ -326,6 +328,8 @@ export function useRoster({ load = "all" }: { load?: "all" | "primary" } = {}) {
     slots,
     handleRemove,
     handleSetPrimary,
+    activeSwitchBlockedOpen,
+    dismissActiveSwitchBlocked,
     handleMoveUp,
     handleMoveDown,
     handleRetry,

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { ConfirmModal } from "@/components/ConfirmModal";
 import { CharacterSprite } from "@/components/character/CharacterSprite";
 import {
   BOSS_CRYSTALS,
@@ -86,6 +87,10 @@ export function AddBossesModal({
   const [applyOpen, setApplyOpen] = useState(false);
   const [applyKeys, setApplyKeys] = useState<string[]>([]);
   const [toast, setToast] = useState<string | null>(null);
+  const [pendingDeletePreset, setPendingDeletePreset] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -136,7 +141,7 @@ export function AddBossesModal({
   const selectedPreset = presets.find((p) => p.id === presetId) ?? null;
   const enabledCount = selections.filter((s) => s.enabled).length;
 
-  if (!open) return null;
+  if (!open && pendingDeletePreset == null) return null;
 
   const atWeeklyCap = weeklyCount >= WEEKLY_CRYSTAL_LIMIT;
 
@@ -242,22 +247,30 @@ export function AddBossesModal({
     );
   };
 
-  const removePreset = () => {
+  const requestRemovePreset = () => {
     if (!selectedPreset) return;
     if (isBuiltinBossPreset(selectedPreset)) {
       setToast("MapleHub default presets cannot be deleted.");
       return;
     }
-    const ok = window.confirm(`Delete preset “${selectedPreset.name}”?`);
-    if (!ok) return;
-    const next = deleteBossPreset(presets, selectedPreset.id);
+    setPendingDeletePreset({
+      id: selectedPreset.id,
+      name: selectedPreset.name,
+    });
+  };
+
+  const confirmRemovePreset = () => {
+    if (!pendingDeletePreset) return;
+    const next = deleteBossPreset(presets, pendingDeletePreset.id);
     if (!saveBossPresets(next)) {
       setToast("Could not delete preset — browser storage may be full.");
+      setPendingDeletePreset(null);
       return;
     }
     setPresets(loadBossPresets());
     setPresetId("");
     setToast("Preset deleted.");
+    setPendingDeletePreset(null);
   };
 
   const resetSelections = () => {
@@ -399,7 +412,7 @@ export function AddBossesModal({
             </button>
             <button
               type="button"
-              onClick={removePreset}
+              onClick={requestRemovePreset}
               disabled={!selectedPreset || isBuiltinBossPreset(selectedPreset)}
               className="rounded-lg border border-danger/35 px-2.5 py-1.5 text-xs font-semibold text-danger transition hover:bg-danger/10 disabled:opacity-40"
             >
@@ -697,6 +710,21 @@ export function AddBossesModal({
           </div>
         </div>
       ) : null}
+
+      <ConfirmModal
+        open={pendingDeletePreset != null}
+        title="Delete preset?"
+        message={
+          pendingDeletePreset
+            ? `Delete preset “${pendingDeletePreset.name}”?`
+            : ""
+        }
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        titleId="boss-preset-delete-confirm-title"
+        onCancel={() => setPendingDeletePreset(null)}
+        onConfirm={confirmRemovePreset}
+      />
     </div>
   );
 }

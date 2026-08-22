@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { AlertModal } from "@/components/AlertModal";
 import { CharacterSearchBar } from "@/components/dashboard/CharacterSearchBar";
 import {
   DashboardPrimaryHero,
@@ -14,6 +15,7 @@ import { DashboardOnboardingWizard } from "@/components/dashboard/DashboardOnboa
 import { DashboardPatchNotesCard } from "@/components/dashboard/DashboardPatchNotesCard";
 import { DashboardRosterWeeklySection } from "@/components/dashboard/DashboardWeeklyChecklist";
 import { useRoster } from "@/hooks/useRoster";
+import { UNLOCK_TO_CHANGE_ACTIVE_MSG } from "@/lib/active-character";
 import { entryKey } from "@/lib/dashboard/roster";
 
 function DashboardInner() {
@@ -28,6 +30,8 @@ function DashboardInner() {
     slots,
     handleRemove,
     handleSetPrimary,
+    activeSwitchBlockedOpen,
+    dismissActiveSwitchBlocked,
     handleMoveUp,
     handleMoveDown,
     handleRetry,
@@ -158,6 +162,14 @@ function DashboardInner() {
       ) : null}
 
       {hydrated && hasRoster ? <DashboardPatchNotesCard /> : null}
+
+      <AlertModal
+        open={activeSwitchBlockedOpen}
+        title="Active character locked"
+        message={UNLOCK_TO_CHANGE_ACTIVE_MSG}
+        onClose={dismissActiveSwitchBlocked}
+        titleId="dashboard-active-switch-blocked-title"
+      />
     </div>
   );
 }

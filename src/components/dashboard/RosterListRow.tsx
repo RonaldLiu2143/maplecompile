@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { ConfirmModal } from "@/components/ConfirmModal";
 import type { RosterDragProps } from "@/components/dashboard/RosterCharacterCard";
 import { LiberationStatusTags } from "@/components/dashboard/LiberationStatusTags";
 import {
@@ -394,6 +396,7 @@ export function RosterListRow({
   onRetry?: () => void;
 }) {
   const router = useRouter();
+  const [pendingRemove, setPendingRemove] = useState(false);
   const name = character?.name ?? entry.name;
   const level = character?.level;
   const jobName = character?.jobName;
@@ -426,6 +429,7 @@ export function RosterListRow({
             : jobName ?? "—";
 
   return (
+    <>
     <li
       draggable={canDrag}
       onDragStart={drag?.onDragStart}
@@ -550,8 +554,7 @@ export function RosterListRow({
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
-            const ok = window.confirm(`Remove ${name} from your roster?`);
-            if (ok) onRemove();
+            setPendingRemove(true);
           }}
           className={[
             "inline-flex shrink-0 items-center justify-center rounded-lg border border-danger/35 text-danger transition hover:bg-danger/10",
@@ -605,5 +608,20 @@ export function RosterListRow({
         </div>
       ) : null}
     </li>
+
+      <ConfirmModal
+        open={pendingRemove}
+        title="Remove from roster?"
+        message={`Remove ${name} from your roster?`}
+        confirmLabel="Remove"
+        cancelLabel="Cancel"
+        titleId="roster-list-remove-confirm-title"
+        onCancel={() => setPendingRemove(false)}
+        onConfirm={() => {
+          setPendingRemove(false);
+          onRemove?.();
+        }}
+      />
+    </>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { ConfirmModal } from "@/components/ConfirmModal";
 import { getCharName } from "@/lib/jobs";
 import type { ScouterPreset } from "@/lib/storage";
 import { countFilledSlots } from "@/lib/starter-loadouts";
@@ -38,6 +39,11 @@ export function PresetModal({
   onSaveAsNew,
   onDelete,
 }: Props) {
+  const [pendingOverwrite, setPendingOverwrite] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
+
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
@@ -47,7 +53,7 @@ export function PresetModal({
     return () => document.removeEventListener("keydown", onKey);
   }, [open, onClose]);
 
-  if (!open) return null;
+  if (!open && pendingOverwrite == null) return null;
 
   const isRecall = mode === "recall";
   const title = isRecall ? "Recall Saved Preset" : "Save Preset";
@@ -59,6 +65,8 @@ export function PresetModal({
     : undefined;
 
   return (
+    <>
+      {open ? (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
       role="dialog"
@@ -108,15 +116,10 @@ export function PresetModal({
                   disabled={!trimmedDraft}
                   onClick={() => {
                     if (nameMatch) {
-                      if (
-                        typeof window !== "undefined" &&
-                        !window.confirm(
-                          `Overwrite preset “${nameMatch.name}”?`,
-                        )
-                      ) {
-                        return;
-                      }
-                      onSaveOverwrite(nameMatch.id);
+                      setPendingOverwrite({
+                        id: nameMatch.id,
+                        name: nameMatch.name,
+                      });
                       return;
                     }
                     onSaveAsNew();
@@ -154,13 +157,7 @@ export function PresetModal({
                         onRecall(p.id);
                         return;
                       }
-                      if (
-                        typeof window !== "undefined" &&
-                        !window.confirm(`Overwrite preset “${p.name}”?`)
-                      ) {
-                        return;
-                      }
-                      onSaveOverwrite(p.id);
+                      setPendingOverwrite({ id: p.id, name: p.name });
                     }}
                     className={`flex min-h-[4.5rem] w-full flex-col items-start justify-center gap-0.5 rounded-lg border px-3 py-2.5 pr-8 text-left transition hover:bg-surface-muted ${
                       active || matchesName
@@ -209,5 +206,26 @@ export function PresetModal({
         )}
       </div>
     </div>
+      ) : null}
+
+      <ConfirmModal
+        open={pendingOverwrite != null}
+        title="Overwrite preset?"
+        message={
+          pendingOverwrite
+            ? `Overwrite preset “${pendingOverwrite.name}”?`
+            : ""
+        }
+        confirmLabel="Overwrite"
+        cancelLabel="Cancel"
+        titleId="scouter-preset-overwrite-confirm-title"
+        onCancel={() => setPendingOverwrite(null)}
+        onConfirm={() => {
+          if (!pendingOverwrite) return;
+          onSaveOverwrite(pendingOverwrite.id);
+          setPendingOverwrite(null);
+        }}
+      />
+    </>
   );
 }

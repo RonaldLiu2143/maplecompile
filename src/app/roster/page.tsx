@@ -2,10 +2,12 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { AlertModal } from "@/components/AlertModal";
 import { CharacterProfile } from "@/components/character/CharacterProfile";
 import { CharacterSearchBar } from "@/components/dashboard/CharacterSearchBar";
 import { RosterGrid } from "@/components/dashboard/RosterGrid";
 import { useRoster } from "@/hooks/useRoster";
+import { UNLOCK_TO_CHANGE_ACTIVE_MSG } from "@/lib/active-character";
 import {
   CHARACTER_LOOKUP_NETWORK_ERROR,
   characterProfileHref,
@@ -63,6 +65,8 @@ export default function RosterPage() {
     slots,
     handleRemove,
     handleSetPrimary,
+    activeSwitchBlockedOpen,
+    dismissActiveSwitchBlocked,
     handleRetry,
     handleRosterAdded,
     makeDragProps,
@@ -301,6 +305,14 @@ export default function RosterPage() {
           />
         </section>
       ) : null}
+
+      <AlertModal
+        open={activeSwitchBlockedOpen}
+        title="Active character locked"
+        message={UNLOCK_TO_CHANGE_ACTIVE_MSG}
+        onClose={dismissActiveSwitchBlocked}
+        titleId="roster-active-switch-blocked-title"
+      />
     </div>
   );
 }

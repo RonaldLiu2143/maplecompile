@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useRef, type DragEvent, type MouseEvent } from "react";
+import { useRef, useState, type DragEvent, type MouseEvent } from "react";
+import { ConfirmModal } from "@/components/ConfirmModal";
 import type { LiberationTagFlags } from "@/lib/dashboard/roster-status";
 import {
   LiberationStatusTags,
@@ -136,14 +137,12 @@ export function RosterCharacterCard({
   const showActions = Boolean(onRemove || onSetPrimary);
   const showDragHandle = Boolean(managing || drag?.draggable);
   const draggedRef = useRef(false);
+  const [pendingRemove, setPendingRemove] = useState(false);
 
   function handleRemove(e: MouseEvent) {
     stopCardNav(e);
     if (!onRemove) return;
-    const ok = window.confirm(
-      `Remove ${character.name} from your roster?`,
-    );
-    if (ok) onRemove();
+    setPendingRemove(true);
   }
 
   function handleSetPrimary(e: MouseEvent) {
@@ -171,6 +170,7 @@ export function RosterCharacterCard({
   }
 
   return (
+    <>
     <article
       {...dragAttrs}
       className={dragShellClass(
@@ -315,6 +315,21 @@ export function RosterCharacterCard({
         </div>
       </div>
     </article>
+
+      <ConfirmModal
+        open={pendingRemove}
+        title="Remove from roster?"
+        message={`Remove ${character.name} from your roster?`}
+        confirmLabel="Remove"
+        cancelLabel="Cancel"
+        titleId="roster-card-remove-confirm-title"
+        onCancel={() => setPendingRemove(false)}
+        onConfirm={() => {
+          setPendingRemove(false);
+          onRemove?.();
+        }}
+      />
+    </>
   );
 }
 
@@ -355,15 +370,17 @@ export function RosterCardError({
   onRetry?: () => void;
   drag?: RosterDragProps;
 }) {
+  const [pendingRemove, setPendingRemove] = useState(false);
+
   function handleRemove(e: MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
     if (!onRemove) return;
-    const ok = window.confirm(`Remove ${name} from your roster?`);
-    if (ok) onRemove();
+    setPendingRemove(true);
   }
 
   return (
+    <>
     <div
       role="alert"
       {...withDragAttrs(drag)}
@@ -402,5 +419,20 @@ export function RosterCardError({
         ) : null}
       </div>
     </div>
+
+      <ConfirmModal
+        open={pendingRemove}
+        title="Remove from roster?"
+        message={`Remove ${name} from your roster?`}
+        confirmLabel="Remove"
+        cancelLabel="Cancel"
+        titleId="roster-card-error-remove-confirm-title"
+        onCancel={() => setPendingRemove(false)}
+        onConfirm={() => {
+          setPendingRemove(false);
+          onRemove?.();
+        }}
+      />
+    </>
   );
 }

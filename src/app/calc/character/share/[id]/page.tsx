@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import { ConfirmModal } from "@/components/ConfirmModal";
 import { AnonymousShareAvatar } from "@/components/character/AnonymousShareAvatar";
 import { CharacterSprite } from "@/components/character/CharacterSprite";
 import { EquipGrid } from "@/components/EquipGrid";
@@ -72,6 +73,9 @@ export default function CharacterShareProfilePage() {
   const [load, setLoad] = useState<LoadState>({ status: "loading" });
   const [ownedToken, setOwnedToken] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  const [pendingShareAction, setPendingShareAction] = useState<
+    "unlist" | "delete" | null
+  >(null);
   const { msg, flash } = useFlashMessage(2800);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
@@ -254,13 +258,6 @@ export default function CharacterShareProfilePage() {
 
   const unlistShare = async () => {
     if (!ownedToken) return;
-    if (
-      !window.confirm(
-        "Remove this build from the public gallery?\n\nThe direct link will still work as private.",
-      )
-    ) {
-      return;
-    }
     setBusy("unlist");
     try {
       const res = await fetch(
@@ -292,13 +289,6 @@ export default function CharacterShareProfilePage() {
 
   const deleteShare = async () => {
     if (!ownedToken) return;
-    if (
-      !window.confirm(
-        "Permanently delete this shared build?\n\nThe link will stop working for everyone.",
-      )
-    ) {
-      return;
-    }
     setBusy("delete");
     try {
       const res = await fetch(
@@ -478,7 +468,7 @@ export default function CharacterShareProfilePage() {
             <button
               type="button"
               disabled={busy === "unlist"}
-              onClick={() => void unlistShare()}
+              onClick={() => setPendingShareAction("unlist")}
               className="rounded border border-border/50 bg-background px-3 py-1.5 text-sm font-semibold transition hover:bg-surface-muted disabled:opacity-40"
             >
               {busy === "unlist" ? "Unlisting…" : "Unlist"}
@@ -486,7 +476,7 @@ export default function CharacterShareProfilePage() {
             <button
               type="button"
               disabled={busy === "delete"}
-              onClick={() => void deleteShare()}
+              onClick={() => setPendingShareAction("delete")}
               className="rounded border border-red-500/40 bg-background px-3 py-1.5 text-sm font-semibold text-red-700 transition hover:bg-surface-muted disabled:opacity-40 dark:text-red-400"
             >
               {busy === "delete" ? "Deleting…" : "Delete"}
@@ -494,6 +484,34 @@ export default function CharacterShareProfilePage() {
           </div>
         </section>
       ) : null}
+
+      <ConfirmModal
+        open={pendingShareAction === "unlist"}
+        title="Unlist from gallery?"
+        message="Remove this build from the public gallery? The direct link will still work as private."
+        confirmLabel="Unlist"
+        cancelLabel="Cancel"
+        titleId="share-unlist-confirm-title"
+        onCancel={() => setPendingShareAction(null)}
+        onConfirm={() => {
+          setPendingShareAction(null);
+          void unlistShare();
+        }}
+      />
+
+      <ConfirmModal
+        open={pendingShareAction === "delete"}
+        title="Delete shared build?"
+        message="Permanently delete this shared build? The link will stop working for everyone."
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        titleId="share-delete-confirm-title"
+        onCancel={() => setPendingShareAction(null)}
+        onConfirm={() => {
+          setPendingShareAction(null);
+          void deleteShare();
+        }}
+      />
     </div>
   );
 }

@@ -2,24 +2,27 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { ConfirmModal } from "@/components/ConfirmModal";
 import { AnonymousShareAvatar } from "@/components/character/AnonymousShareAvatar";
 import { CharacterSprite } from "@/components/character/CharacterSprite";
 import {
   characterAvatarKey,
   useCharacterAvatars,
 } from "@/hooks/useCharacterAvatars";
-import { getCharName } from "@/lib/jobs";
-import {
-  GALLERY_LEADERBOARD_LIMIT,
-  type ScouterGalleryItem,
-} from "@/lib/scouter/share";
-import { storage, type ScouterRecentView } from "@/lib/storage";
+import { CLASS_OPTIONS, getCharName } from "@/lib/jobs";
+import type { ScouterGalleryItem } from "@/lib/scouter/share";
+import { storage } from "@/lib/storage";
+
+const inputClass =
+  "min-h-11 w-full rounded-md border border-border/50 bg-background px-2.5 py-1.5 text-sm outline-none focus:border-accent";
+
+type GallerySort = "newest" | "views" | "name";
+type GearFilter = "any" | "yes" | "no";
 
 /** Relative time; pass a client `now` so SSR stays stable. */
 function formatSharedAt(ts: number, now: number | null): string {
   if (!ts) return "—";
   if (now == null) {
-    // Stable SSR / first paint — avoid Date.now() / locale mismatches.
     return new Date(ts).toISOString().slice(0, 10);
   }
   const diff = now - ts;
@@ -36,6 +39,13 @@ function formatSharedAt(ts: number, now: number | null): string {
 function formatBcs(n: number | null | undefined): string {
   if (n == null || !Number.isFinite(n)) return "—";
   return Math.round(n).toLocaleString();
+}
+
+function parseLevelBound(raw: string): number | null {
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  const n = Number.parseInt(trimmed, 10);
+  return Number.isFinite(n) && n >= 0 ? n : null;
 }
 
 function GalleryBcsHexa({
@@ -95,8 +105,6 @@ function IdentityBadge({
   );
 }
 
-type GalleryMode = "leaderboard" | "recent" | "yours";
-
 function isLocalhostHost(): boolean {
   if (typeof window === "undefined") return false;
   const h = window.location.hostname;
@@ -111,21 +119,26 @@ export function GalleryClient({
   error?: string | null;
 }) {
   const [query, setQuery] = useState("");
-  const [mode, setMode] = useState<GalleryMode>("leaderboard");
+  const [classFilter, setClassFilter] = useState("");
+  const [gearFilter, setGearFilter] = useState<GearFilter>("any");
+  const [levelMin, setLevelMin] = useState("");
+  const [levelMax, setLevelMax] = useState("");
+  const [sort, setSort] = useState<GallerySort>("newest");
+  const [mineOnly, setMineOnly] = useState(false);
   const [items, setItems] = useState(initialItems);
-  // Defer localStorage until after mount — sync init mismatches SSR.
   const [owned, setOwned] = useState<
     Record<string, { deleteToken: string; name: string; public: boolean }>
   >({});
-  const [recentViews, setRecentViews] = useState<ScouterRecentView[]>([]);
   const [localAdmin, setLocalAdmin] = useState(false);
   const [now, setNow] = useState<number | null>(null);
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [pendingRemove, setPendingRemove] = useState<ScouterGalleryItem | null>(
+    null,
+  );
 
   useEffect(() => {
     setOwned(storage.getScouterShareTokens());
-    setRecentViews(storage.getScouterRecentViews());
     setLocalAdmin(isLocalhostHost());
     setNow(Date.now());
   }, []);
@@ -148,72 +161,102 @@ export function GalleryClient({
   );
   const avatars = useCharacterAvatars(avatarRefs);
 
-  const viewedAtById = useMemo(() => {
-    const map = new Map<string, number>();
-    for (const row of recentViews) map.set(row.id, row.viewedAt);
-    return map;
-  }, [recentViews]);
-
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const matchesQuery = (item: ScouterGalleryItem) => {
-      if (!q) return true;
-      const className = getCharName(item.jobType, item.charType).toLowerCase();
-      return (
-        item.name.toLowerCase().includes(q) ||
-        className.includes(q) ||
-        item.id.toLowerCase().includes(q) ||
-        String(item.level).includes(q) ||
-        item.achievement.toLowerCase().includes(q) ||
-        item.identity.includes(q) ||
-        (item.characterName?.toLowerCase().includes(q) ?? false) ||
-        (item.characterRegion?.includes(q) ?? false) ||
-        (item.hasEquipment && (q === "gear" || q === "equipment"))
-      );
-    };
+    const minLevel = parseLevelBound(levelMin);
+    const maxLevel = parseLevelBound(levelMax);
 
-    if (mode === "leaderboard") {
-      const base = items.filter(matchesQuery);
-      return [...base]
-        .sort((a, b) => {
-          const dv = (b.views ?? 0) - (a.views ?? 0);
-          if (dv !== 0) return dv;
-          return b.createdAt - a.createdAt;
-        })
-        .slice(0, GALLERY_LEADERBOARD_LIMIT);
+    let rows = items;
+
+    if (mineOnly) {
+      rows = rows.filter((item) => Boolean(owned[item.id]?.deleteToken));
     }
 
-    if (mode === "yours") {
-      return items
-        .filter((item) => Boolean(owned[item.id]?.deleteToken))
-        .filter(matchesQuery)
-        .sort((a, b) => b.createdAt - a.createdAt);
+    if (classFilter) {
+      rows = rows.filter((item) => item.charType === classFilter);
     }
 
-    // Recent = locally viewed shares only (not globally recent posts).
-    const byId = new Map(items.map((item) => [item.id, item]));
-    const rows: ScouterGalleryItem[] = [];
-    for (const row of recentViews) {
-      const item = byId.get(row.id);
-      if (item && matchesQuery(item)) rows.push(item);
+    if (gearFilter === "yes") {
+      rows = rows.filter((item) => item.hasEquipment);
+    } else if (gearFilter === "no") {
+      rows = rows.filter((item) => !item.hasEquipment);
     }
-    return rows;
-  }, [items, query, mode, owned, recentViews]);
 
-  const removeFromGallery = async (item: ScouterGalleryItem) => {
+    if (minLevel != null) {
+      rows = rows.filter((item) => item.level >= minLevel);
+    }
+    if (maxLevel != null) {
+      rows = rows.filter((item) => item.level <= maxLevel);
+    }
+
+    if (q) {
+      rows = rows.filter((item) => item.name.toLowerCase().includes(q));
+    }
+
+    return [...rows].sort((a, b) => {
+      if (sort === "views") {
+        const dv = (b.views ?? 0) - (a.views ?? 0);
+        if (dv !== 0) return dv;
+        return b.createdAt - a.createdAt;
+      }
+      if (sort === "name") {
+        const cmp = a.name.localeCompare(b.name, undefined, {
+          sensitivity: "base",
+        });
+        if (cmp !== 0) return cmp;
+        return b.createdAt - a.createdAt;
+      }
+      return b.createdAt - a.createdAt;
+    });
+  }, [
+    items,
+    query,
+    classFilter,
+    gearFilter,
+    levelMin,
+    levelMax,
+    sort,
+    mineOnly,
+    owned,
+  ]);
+
+  const hasActiveFilters =
+    query.trim() !== "" ||
+    classFilter !== "" ||
+    gearFilter !== "any" ||
+    levelMin.trim() !== "" ||
+    levelMax.trim() !== "" ||
+    sort !== "newest" ||
+    mineOnly;
+
+  const clearFilters = () => {
+    setQuery("");
+    setClassFilter("");
+    setGearFilter("any");
+    setLevelMin("");
+    setLevelMax("");
+    setSort("newest");
+    setMineOnly(false);
+  };
+
+  const requestRemoveFromGallery = (item: ScouterGalleryItem) => {
     const token = owned[item.id];
     const ownedToken = token?.deleteToken;
     const useAdmin = localAdmin && !ownedToken;
     if (!ownedToken && !localAdmin) return;
+    setPendingRemove(item);
+  };
 
-    const ok = window.confirm(
-      useAdmin
-        ? `ADMIN (localhost): Remove “${item.name}” from the public gallery?\n\nNo edit token — local/dev override only. The direct link will still work as private.`
-        : `Remove “${item.name}” from the public gallery?\n\nThe direct link will still work as private.${
-            item.identity === "ign" ? " This IGN can be reused." : ""
-          }`,
-    );
-    if (!ok) return;
+  const confirmRemoveFromGallery = async () => {
+    const item = pendingRemove;
+    if (!item) return;
+    const token = owned[item.id];
+    const ownedToken = token?.deleteToken;
+    const useAdmin = localAdmin && !ownedToken;
+    if (!ownedToken && !localAdmin) {
+      setPendingRemove(null);
+      return;
+    }
 
     setRemovingId(item.id);
     setActionError(null);
@@ -224,9 +267,7 @@ export function GalleryClient({
           method: "DELETE",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(
-            useAdmin
-              ? { admin: true }
-              : { deleteToken: ownedToken },
+            useAdmin ? { admin: true } : { deleteToken: ownedToken },
           ),
         },
       );
@@ -245,14 +286,11 @@ export function GalleryClient({
       );
     } finally {
       setRemovingId(null);
+      setPendingRemove(null);
     }
   };
 
-  const renderRow = (
-    item: ScouterGalleryItem,
-    index: number,
-    opts: { showRank: boolean; timeLabel: "shared" | "viewed" },
-  ) => {
+  const renderRow = (item: ScouterGalleryItem) => {
     const className = getCharName(item.jobType, item.charType);
     const canRemoveOwned = Boolean(owned[item.id]?.deleteToken);
     const canRemove = canRemoveOwned || localAdmin;
@@ -268,20 +306,12 @@ export function GalleryClient({
     const avatarUrl = paired
       ? avatars[characterAvatarKey(paired.region, paired.name)]
       : undefined;
-    const timeTs =
-      opts.timeLabel === "viewed"
-        ? (viewedAtById.get(item.id) ?? item.createdAt)
-        : item.createdAt;
+
     return (
       <tr
         key={item.id}
         className="border-b border-border/30 last:border-0 hover:bg-surface-muted/40"
       >
-        {opts.showRank ? (
-          <td className="px-3 py-2.5 tabular-nums font-semibold opacity-70">
-            {index + 1}
-          </td>
-        ) : null}
         <td className="px-3 py-2.5 font-medium">
           <span className="inline-flex flex-wrap items-center gap-2">
             {item.identity === "anonymous" ? (
@@ -338,7 +368,7 @@ export function GalleryClient({
           {item.achievement || <span className="opacity-50">—</span>}
         </td>
         <td className="px-3 py-2.5 text-xs opacity-70">
-          {formatSharedAt(timeTs, now)}
+          {formatSharedAt(item.createdAt, now)}
         </td>
         <td className="px-3 py-2.5 text-right">
           <div className="inline-flex flex-wrap items-center justify-end gap-1.5">
@@ -352,7 +382,7 @@ export function GalleryClient({
               <button
                 type="button"
                 disabled={removingId === item.id}
-                onClick={() => void removeFromGallery(item)}
+                onClick={() => requestRemoveFromGallery(item)}
                 className="rounded border border-border/50 bg-background px-2.5 py-1 text-xs font-semibold text-red-700 transition hover:bg-surface-muted disabled:opacity-40 dark:text-red-400"
               >
                 {removingId === item.id
@@ -372,28 +402,15 @@ export function GalleryClient({
     if (items.length === 0) {
       return "No public loadouts yet. Use Share to gallery from Scouter.";
     }
-    if (mode === "recent" && recentViews.length === 0) {
-      return "No recently viewed builds. Open a gallery profile to add it here.";
-    }
-    if (mode === "recent" && filtered.length === 0) {
-      return query.trim()
-        ? "No loadouts match your search."
-        : "None of your recently viewed builds are still public.";
-    }
-    if (mode === "yours" && filtered.length === 0) {
-      return query.trim()
-        ? "No loadouts match your search."
+    if (mineOnly && filtered.length === 0) {
+      return hasActiveFilters && query.trim()
+        ? "No builds match your filters."
         : "No posts from this browser yet. Share to gallery from Scouter.";
     }
-    return "No loadouts match your search.";
+    return "No builds match your filters.";
   })();
 
-  const countLabel =
-    mode === "leaderboard"
-      ? `Top ${filtered.length} by views`
-      : mode === "recent"
-        ? `${filtered.length} viewed`
-        : `${filtered.length} post${filtered.length === 1 ? "" : "s"}`;
+  const countLabel = `${filtered.length} of ${items.length} build${items.length === 1 ? "" : "s"}`;
 
   return (
     <div className="space-y-6">
@@ -403,10 +420,9 @@ export function GalleryClient({
             Public Build Gallery
           </h1>
           <p className="mt-1 max-w-2xl text-sm opacity-75">
-            Shared Scouter + Equipment builds (anonymous class-code or IGN).
-            Open a profile to view, import, or edit if you own the token.
-            Leaderboard ranks by profile views; Recent is builds you opened on
-            this device. BCS HEXA is 20 min / KMS.
+            Browse shared Scouter + Equipment builds. Filter by class, gear, or
+            level; use <span className="font-semibold">My posts only</span> for
+            builds you shared from this browser. BCS HEXA is 20 min / KMS.
             {localAdmin ? (
               <>
                 {" "}
@@ -425,45 +441,141 @@ export function GalleryClient({
         </Link>
       </header>
 
-      <div className="flex flex-wrap items-center gap-2">
-        <div
-          className="inline-flex rounded border border-border/50 bg-background p-0.5"
-          role="tablist"
-          aria-label="Gallery view"
-        >
-          {(
-            [
-              ["leaderboard", "Leaderboard"],
-              ["recent", "Recent"],
-              ["yours", "Your posts"],
-            ] as const
-          ).map(([id, label]) => (
-            <button
-              key={id}
-              type="button"
-              role="tab"
-              aria-selected={mode === id}
-              onClick={() => setMode(id)}
-              className={`min-h-11 rounded px-3 text-sm font-semibold transition ${
-                mode === id
-                  ? "bg-accent text-primary-foreground"
-                  : "opacity-70 hover:bg-surface-muted hover:opacity-100"
-              }`}
-            >
-              {label}
-            </button>
-          ))}
+      <section
+        className="space-y-4 rounded-xl border border-border/45 bg-surface/90 p-4"
+        aria-label="Gallery filters"
+      >
+        <div>
+          <label
+            htmlFor="gallery-search"
+            className="text-xs font-semibold uppercase tracking-wide opacity-60"
+          >
+            Search
+          </label>
+          <input
+            id="gallery-search"
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search preset name…"
+            className={`${inputClass} mt-1`}
+            aria-label="Search preset name"
+          />
         </div>
-        <input
-          type="search"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search name, class, achievement…"
-          className="min-h-11 min-w-0 flex-1 rounded border border-border/50 bg-background px-3 py-2 text-base outline-none focus:border-accent md:text-sm"
-          aria-label="Search gallery"
-        />
-        <span className="text-xs opacity-60">{countLabel}</span>
-      </div>
+
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+          <div>
+            <label
+              htmlFor="gallery-class"
+              className="text-xs font-semibold uppercase tracking-wide opacity-60"
+            >
+              Class
+            </label>
+            <select
+              id="gallery-class"
+              value={classFilter}
+              onChange={(e) => setClassFilter(e.target.value)}
+              className={`${inputClass} mt-1`}
+            >
+              <option value="">All classes</option>
+              {CLASS_OPTIONS.map((opt) => (
+                <option key={opt.charType} value={opt.charType}>
+                  {opt.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label
+              htmlFor="gallery-gear"
+              className="text-xs font-semibold uppercase tracking-wide opacity-60"
+            >
+              Gear
+            </label>
+            <select
+              id="gallery-gear"
+              value={gearFilter}
+              onChange={(e) => setGearFilter(e.target.value as GearFilter)}
+              className={`${inputClass} mt-1`}
+            >
+              <option value="any">Any</option>
+              <option value="yes">Has gear</option>
+              <option value="no">No gear</option>
+            </select>
+          </div>
+
+          <div>
+            <span className="text-xs font-semibold uppercase tracking-wide opacity-60">
+              Level
+            </span>
+            <div className="mt-1 flex gap-2">
+              <input
+                type="number"
+                min={0}
+                value={levelMin}
+                onChange={(e) => setLevelMin(e.target.value)}
+                placeholder="Min"
+                className={inputClass}
+                aria-label="Minimum level"
+              />
+              <input
+                type="number"
+                min={0}
+                value={levelMax}
+                onChange={(e) => setLevelMax(e.target.value)}
+                placeholder="Max"
+                className={inputClass}
+                aria-label="Maximum level"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label
+              htmlFor="gallery-sort"
+              className="text-xs font-semibold uppercase tracking-wide opacity-60"
+            >
+              Sort
+            </label>
+            <select
+              id="gallery-sort"
+              value={sort}
+              onChange={(e) => setSort(e.target.value as GallerySort)}
+              className={`${inputClass} mt-1`}
+            >
+              <option value="newest">Newest</option>
+              <option value="views">Most views</option>
+              <option value="name">Name A–Z</option>
+            </select>
+          </div>
+
+          <div className="flex flex-col justify-end">
+            <label className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-md border border-border/50 bg-background px-2.5 py-1.5 text-sm">
+              <input
+                type="checkbox"
+                checked={mineOnly}
+                onChange={(e) => setMineOnly(e.target.checked)}
+                className="size-4 rounded border-border accent-accent"
+              />
+              My posts only
+            </label>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border/30 pt-3">
+          <span className="text-sm tabular-nums opacity-70">{countLabel}</span>
+          {hasActiveFilters ? (
+            <button
+              type="button"
+              onClick={clearFilters}
+              className="text-sm font-semibold text-accent hover:underline"
+            >
+              Clear filters
+            </button>
+          ) : null}
+        </div>
+      </section>
 
       {error ? (
         <p className="rounded-lg border border-danger/40 bg-surface/80 px-4 py-6 text-sm text-red-600">
@@ -486,7 +598,7 @@ export function GalleryClient({
       {filtered.length > 0 ? (
         <>
           <ul className="divide-y divide-border/40 border-y border-border/40 md:hidden">
-            {filtered.map((item, index) => {
+            {filtered.map((item) => {
               const className = getCharName(item.jobType, item.charType);
               const canRemoveOwned = Boolean(owned[item.id]?.deleteToken);
               const canRemove = canRemoveOwned || localAdmin;
@@ -502,10 +614,7 @@ export function GalleryClient({
               const avatarUrl = paired
                 ? avatars[characterAvatarKey(paired.region, paired.name)]
                 : undefined;
-              const timeTs =
-                mode === "recent"
-                  ? (viewedAtById.get(item.id) ?? item.createdAt)
-                  : item.createdAt;
+
               return (
                 <li key={item.id} className="flex gap-3 py-3">
                   <div className="shrink-0">
@@ -522,14 +631,7 @@ export function GalleryClient({
                     ) : null}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate font-semibold">
-                      {mode === "leaderboard" ? (
-                        <span className="mr-1.5 tabular-nums text-muted-foreground">
-                          {index + 1}.
-                        </span>
-                      ) : null}
-                      {item.name}
-                    </p>
+                    <p className="truncate font-semibold">{item.name}</p>
                     <p className="truncate text-sm text-muted-foreground">
                       {className}
                       {item.level ? ` · Lv. ${item.level}` : ""}
@@ -539,7 +641,7 @@ export function GalleryClient({
                     </p>
                     <p className="mt-0.5 text-xs tabular-nums text-muted-foreground">
                       {(item.views ?? 0).toLocaleString()} views ·{" "}
-                      {formatSharedAt(timeTs, now)}
+                      {formatSharedAt(item.createdAt, now)}
                     </p>
                     <div className="mt-2 flex flex-wrap gap-2">
                       <Link
@@ -552,7 +654,7 @@ export function GalleryClient({
                         <button
                           type="button"
                           disabled={removingId === item.id}
-                          onClick={() => void removeFromGallery(item)}
+                          onClick={() => requestRemoveFromGallery(item)}
                           className="inline-flex min-h-11 items-center rounded border border-border px-3 text-sm font-semibold text-red-700 disabled:opacity-40 dark:text-red-400"
                         >
                           {removingId === item.id
@@ -569,44 +671,58 @@ export function GalleryClient({
             })}
           </ul>
           <div className="maple-table-scroll hidden rounded-lg border border-border/50 bg-surface/90 md:block">
-          <table className="w-full min-w-[48rem] text-left text-sm">
-            <thead className="border-b border-border/40 bg-surface-muted/50 text-xs uppercase tracking-wide opacity-70">
-              <tr>
-                {mode === "leaderboard" ? (
-                  <th className="px-3 py-2.5 font-semibold">#</th>
-                ) : null}
-                <th className="px-3 py-2.5 font-semibold">Name</th>
-                <th className="px-3 py-2.5 font-semibold">Class</th>
-                <th className="px-3 py-2.5 font-semibold">Level</th>
-                <th className="px-3 py-2.5 font-semibold">Gear</th>
-                <th className="px-3 py-2.5 font-semibold">Views</th>
-                <th
-                  className="px-3 py-2.5 font-semibold"
-                  title="Boss Converted Stat HEXA · 20 min / KMS"
-                >
-                  BCS HEXA
-                </th>
-                <th className="px-3 py-2.5 font-semibold">Achievement</th>
-                <th className="px-3 py-2.5 font-semibold">
-                  {mode === "recent" ? "Viewed" : "Shared"}
-                </th>
-                <th className="px-3 py-2.5 font-semibold">
-                  <span className="sr-only">Actions</span>
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((item, index) =>
-                renderRow(item, index, {
-                  showRank: mode === "leaderboard",
-                  timeLabel: mode === "recent" ? "viewed" : "shared",
-                }),
-              )}
-            </tbody>
-          </table>
+            <table className="w-full min-w-[48rem] text-left text-sm">
+              <thead className="border-b border-border/40 bg-surface-muted/50 text-xs uppercase tracking-wide opacity-70">
+                <tr>
+                  <th className="px-3 py-2.5 font-semibold">Name</th>
+                  <th className="px-3 py-2.5 font-semibold">Class</th>
+                  <th className="px-3 py-2.5 font-semibold">Level</th>
+                  <th className="px-3 py-2.5 font-semibold">Gear</th>
+                  <th className="px-3 py-2.5 font-semibold">Views</th>
+                  <th
+                    className="px-3 py-2.5 font-semibold"
+                    title="Boss Converted Stat HEXA · 20 min / KMS"
+                  >
+                    BCS HEXA
+                  </th>
+                  <th className="px-3 py-2.5 font-semibold">Achievement</th>
+                  <th className="px-3 py-2.5 font-semibold">Shared</th>
+                  <th className="px-3 py-2.5 font-semibold">
+                    <span className="sr-only">Actions</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>{filtered.map((item) => renderRow(item))}</tbody>
+            </table>
           </div>
         </>
       ) : null}
+
+      <ConfirmModal
+        open={pendingRemove != null}
+        title="Remove from gallery?"
+        message={
+          pendingRemove
+            ? (() => {
+                const token = owned[pendingRemove.id];
+                const ownedToken = token?.deleteToken;
+                const useAdmin = localAdmin && !ownedToken;
+                return useAdmin
+                  ? `ADMIN (localhost): Remove “${pendingRemove.name}” from the public gallery? No edit token — local/dev override only. The direct link will still work as private.`
+                  : `Remove “${pendingRemove.name}” from the public gallery? The direct link will still work as private.${
+                      pendingRemove.identity === "ign"
+                        ? " This IGN can be reused."
+                        : ""
+                    }`;
+              })()
+            : ""
+        }
+        confirmLabel="Remove"
+        cancelLabel="Cancel"
+        titleId="gallery-remove-confirm-title"
+        onCancel={() => setPendingRemove(null)}
+        onConfirm={() => void confirmRemoveFromGallery()}
+      />
     </div>
   );
 }

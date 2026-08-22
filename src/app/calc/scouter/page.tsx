@@ -1109,19 +1109,24 @@ export default function ScouterPage() {
     action();
   };
 
+  const [pendingDeletePreset, setPendingDeletePreset] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
+
   const deletePresetById = (id: string) => {
+    if (!id) {
+      flashPresetMsg("Select a preset");
+      return;
+    }
+    const name = presets.find((p) => p.id === id)?.name ?? "preset";
+    setPendingDeletePreset({ id, name });
+  };
+
+  const confirmDeletePreset = () => {
+    if (!pendingDeletePreset) return;
+    const { id, name } = pendingDeletePreset;
     try {
-      if (!id) {
-        flashPresetMsg("Select a preset");
-        return;
-      }
-      const name = presets.find((p) => p.id === id)?.name ?? "preset";
-      if (
-        typeof window !== "undefined" &&
-        !window.confirm(`Delete preset “${name}”? This cannot be undone.`)
-      ) {
-        return;
-      }
       storage.deleteScouterPreset(id);
       clearPairingsForDeletedPreset(id);
       refreshPresets();
@@ -1133,6 +1138,8 @@ export default function ScouterPage() {
       flashPresetMsg(`Deleted “${name}”`);
     } catch {
       flashPresetMsg("Could not delete");
+    } finally {
+      setPendingDeletePreset(null);
     }
   };
 
@@ -2362,6 +2369,21 @@ export default function ScouterPage() {
             applyUseForStatsIdentity(next.applyIdentity);
           }
         }}
+      />
+
+      <ConfirmModal
+        open={pendingDeletePreset != null}
+        title="Delete preset?"
+        message={
+          pendingDeletePreset
+            ? `Delete preset “${pendingDeletePreset.name}”? This cannot be undone.`
+            : ""
+        }
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        titleId="scouter-delete-preset-confirm-title"
+        onCancel={() => setPendingDeletePreset(null)}
+        onConfirm={confirmDeletePreset}
       />
 
       <ShareGalleryModal

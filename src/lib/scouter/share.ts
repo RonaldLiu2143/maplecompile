@@ -22,6 +22,11 @@ const SHARE_PUBLIC_NAME_PREFIX = "scouter:share:public:name:";
 const SHARE_DELETE_PREFIX = "scouter:share:delete:";
 /** Atomic view counters: scouter:share:views:{id} → number. */
 const SHARE_VIEWS_PREFIX = "scouter:share:views:";
+/** Lightweight gallery list rows — avoids MGET of full share payloads on browse. */
+const SHARE_GALLERY_ROW_PREFIX = "scouter:share:gallery-row:";
+
+/** Upstash MGET batch size for gallery list reads. */
+const GALLERY_MGET_CHUNK = 100;
 
 const ID_ALPHABET =
   "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
@@ -119,6 +124,96 @@ export function shareKey(id: string): string {
 
 function viewsKey(id: string): string {
   return `${SHARE_VIEWS_PREFIX}${id}`;
+}
+
+function galleryRowKey(id: string): string {
+  return `${SHARE_GALLERY_ROW_PREFIX}${id}`;
+}
+
+async function mgetChunked<T>(
+  redis: Redis,
+  keys: string[],
+): Promise<(T | null)[]> {
+  if (!keys.length) return [];
+  const out: (T | null)[] = [];
+  for (let i = 0; i < keys.length; i += GALLERY_MGET_CHUNK) {
+    const chunk = keys.slice(i, i + GALLERY_MGET_CHUNK);
+    const part = (await redis.mget(...chunk)) as (T | null)[];
+    out.push(...part);
+  }
+  return out;
+}
+
+/** Gallery list payload without live view count (merged from views key on read). */
+type ScouterGalleryRow = Omit<ScouterGalleryItem, "views">;
+
+function recordToGalleryRow(
+  raw: ScouterShareRecord,
+  id: string,
+): ScouterGalleryRow | null {
+  if (
+    !raw ||
+    typeof raw !== "object" ||
+    !raw.state?.input ||
+    raw.public === false
+  ) {
+    return null;
+  }
+  const input = raw.state.input;
+  const equipment = normalizeShareEquipment(raw.equipment);
+  const identity = resolveShareIdentity(raw);
+  const character =
+    identity === "anonymous"
+      ? undefined
+      : normalizeShareCharacter(raw.character);
+  const hasEquipment = raw.hasEquipment === true || Boolean(equipment);
+  return {
+    id: raw.id || id,
+    name: (raw.name || "Untitled").trim() || "Untitled",
+    identity,
+    createdAt: Number(raw.createdAt) || 0,
+    level: Number(input.level) || 0,
+    jobType: String(input.jobType || ""),
+    charType: String(input.charType || ""),
+    achievement: normalizeAchievement(raw.achievement),
+    boss300HexaStat: normalizeBossConvertedHexaStat(raw.boss300HexaStat),
+    boss380HexaStat: normalizeBossConvertedHexaStat(raw.boss380HexaStat),
+    hasEquipment,
+    equipCount: equipment ? countEquipPieces(equipment.setup) : 0,
+    ...(character
+      ? {
+          characterName: character.name,
+          characterRegion: character.region,
+        }
+      : {}),
+  };
+}
+
+function mergeGalleryRowWithViews(
+  row: ScouterGalleryRow,
+  viewsRaw: number | string | null | undefined,
+  fallbackViews = 0,
+): ScouterGalleryItem {
+  const viewsFromKey = Number(viewsRaw ?? NaN);
+  const views = Number.isFinite(viewsFromKey)
+    ? Math.max(0, viewsFromKey)
+    : Math.max(0, fallbackViews);
+  return { ...row, views };
+}
+
+async function writeGalleryRow(
+  redis: Redis,
+  record: ScouterShareRecord,
+  id: string,
+): Promise<void> {
+  const row = recordToGalleryRow(record, id);
+  if (!row) return;
+  await redis.set(galleryRowKey(id), row);
+}
+
+async function deleteGalleryRow(redis: Redis, id: string): Promise<void> {
+  if (!id) return;
+  await redis.del(galleryRowKey(id));
 }
 
 export function newShareId(length = 8): string {
@@ -422,6 +517,7 @@ export async function createShare(args: {
     // Listing is best-effort; share link still works if SADD fails.
     try {
       await redis.sadd(SHARE_PUBLIC_SET, id);
+      void writeGalleryRow(redis, record, id).catch(() => undefined);
     } catch {
       // ignore
     }
@@ -687,12 +783,14 @@ export async function updateShare(args: {
   if (isPublic) {
     try {
       await redis.sadd(SHARE_PUBLIC_SET, id);
+      void writeGalleryRow(redis, draft, id).catch(() => undefined);
     } catch {
       // ignore
     }
   } else if (raw.public) {
     await releasePublicNameLock(redis, id, draft);
     await redis.srem(SHARE_PUBLIC_SET, id).catch(() => undefined);
+    void deleteGalleryRow(redis, id).catch(() => undefined);
   }
 
   const viewsRaw = await redis.get<number | string>(viewsKey(id));
@@ -750,9 +848,6 @@ export type ScouterGalleryItem = {
 /** Cap gallery responses so unbounded public sets stay usable. */
 const GALLERY_LIST_LIMIT = 500;
 
-/** Top-N for the views leaderboard. */
-export const GALLERY_LEADERBOARD_LIMIT = 50;
-
 /**
  * Resolve BCS HEXA (20 min / KMS) for a share: prefer stored fields, else
  * derive from the saved loadout via MapleScouter and optionally persist.
@@ -806,7 +901,7 @@ export async function resolveBossConvertedHexaStats(
 }
 
 /**
- * Read-only public gallery list (SMEMBERS + 2× MGET). No BCS backfill SETs.
+ * Read-only public gallery list (SMEMBERS + lightweight row MGET). No BCS backfill.
  * Prefer `listPublicSharesCached` from share-gallery-cache for page/API reads.
  */
 export async function listPublicShares(): Promise<ScouterGalleryItem[]> {
@@ -814,69 +909,58 @@ export async function listPublicShares(): Promise<ScouterGalleryItem[]> {
   const ids = await redis.smembers(SHARE_PUBLIC_SET);
   if (!ids.length) return [];
 
-  const rawList = (await redis.mget(
-    ...ids.map((id) => shareKey(id)),
-  )) as (ScouterShareRecord | null)[];
-
-  const viewsList = (await redis.mget(
-    ...ids.map((id) => viewsKey(id)),
-  )) as (number | string | null)[];
+  const rowKeys = ids.map((id) => galleryRowKey(id));
+  const viewKeys = ids.map((id) => viewsKey(id));
+  const [rowList, viewsList] = await Promise.all([
+    mgetChunked<ScouterGalleryRow>(redis, rowKeys),
+    mgetChunked<number | string>(redis, viewKeys),
+  ]);
 
   const stale: string[] = [];
   const items: ScouterGalleryItem[] = [];
+  const needFullFetch: string[] = [];
 
   for (let i = 0; i < ids.length; i++) {
     const id = ids[i]!;
-    const raw = rawList[i];
-    if (
-      !raw ||
-      typeof raw !== "object" ||
-      !raw.state?.input ||
-      raw.public === false
-    ) {
-      stale.push(id);
+    const cached = rowList[i];
+    if (cached && typeof cached === "object" && cached.id) {
+      items.push(mergeGalleryRowWithViews(cached, viewsList[i]));
       continue;
     }
-    const viewsFromKey = Number(viewsList[i] ?? NaN);
-    const views = Number.isFinite(viewsFromKey)
-      ? Math.max(0, viewsFromKey)
-      : Math.max(0, Number(raw.views) || 0);
-    const input = raw.state.input;
-    const equipment = normalizeShareEquipment(raw.equipment);
-    const identity = resolveShareIdentity(raw);
-    // Never expose roster character on anonymous gallery rows (legacy cleanup).
-    const character =
-      identity === "anonymous"
-        ? undefined
-        : normalizeShareCharacter(raw.character);
-    const hasEquipment =
-      raw.hasEquipment === true || Boolean(equipment);
-    items.push({
-      id: raw.id || id,
-      name: (raw.name || "Untitled").trim() || "Untitled",
-      identity,
-      createdAt: Number(raw.createdAt) || 0,
-      level: Number(input.level) || 0,
-      jobType: String(input.jobType || ""),
-      charType: String(input.charType || ""),
-      achievement: normalizeAchievement(raw.achievement),
-      boss300HexaStat: normalizeBossConvertedHexaStat(raw.boss300HexaStat),
-      boss380HexaStat: normalizeBossConvertedHexaStat(raw.boss380HexaStat),
-      views,
-      hasEquipment,
-      equipCount: equipment ? countEquipPieces(equipment.setup) : 0,
-      ...(character
-        ? {
-            characterName: character.name,
-            characterRegion: character.region,
-          }
-        : {}),
-    });
+    needFullFetch.push(id);
+  }
+
+  if (needFullFetch.length) {
+    const fullList = await mgetChunked<ScouterShareRecord>(
+      redis,
+      needFullFetch.map((id) => shareKey(id)),
+    );
+    const backfillWrites: Promise<unknown>[] = [];
+    for (let i = 0; i < needFullFetch.length; i++) {
+      const id = needFullFetch[i]!;
+      const raw = fullList[i];
+      const row = raw ? recordToGalleryRow(raw, id) : null;
+      if (!row) {
+        stale.push(id);
+        continue;
+      }
+      items.push(
+        mergeGalleryRowWithViews(row, viewsList[ids.indexOf(id)!]),
+      );
+      backfillWrites.push(
+        redis.set(galleryRowKey(id), row).catch(() => undefined),
+      );
+    }
+    if (backfillWrites.length) {
+      void Promise.all(backfillWrites).catch(() => undefined);
+    }
   }
 
   if (stale.length) {
-    // Don't block the gallery response on index cleanup.
     void redis.srem(SHARE_PUBLIC_SET, ...stale).catch(() => undefined);
+    void Promise.all(stale.map((id) => deleteGalleryRow(redis, id))).catch(
+      () => undefined,
+    );
   }
 
   items.sort((a, b) => b.createdAt - a.createdAt);
@@ -959,6 +1043,7 @@ export async function removeFromPublicGallery(args: {
   }
 
   await redis.srem(SHARE_PUBLIC_SET, id ?? "");
+  void deleteGalleryRow(redis, id ?? "").catch(() => undefined);
 }
 
 /**
@@ -978,5 +1063,10 @@ export async function purgeShare(args: {
 
   await releasePublicNameLock(redis, id ?? "", raw);
   await redis.srem(SHARE_PUBLIC_SET, id ?? "");
-  await redis.del(shareKey(id ?? ""), deleteTokenKey(id ?? ""), viewsKey(id ?? ""));
+  await redis.del(
+    shareKey(id ?? ""),
+    deleteTokenKey(id ?? ""),
+    viewsKey(id ?? ""),
+    galleryRowKey(id ?? ""),
+  );
 }
