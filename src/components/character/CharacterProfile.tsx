@@ -418,25 +418,26 @@ function CompactCharacterProfile({
                 <p className="mt-0.5 truncate text-xs font-medium opacity-75 sm:text-sm">
                   {subtitle}
                 </p>
+                <div className="mt-1.5 w-44 max-w-full">
+                  <div className="mb-0.5 flex justify-between gap-2 font-mono text-xs tabular-nums text-foreground/60">
+                    <span>{formatCompact(character.exp)}</span>
+                    <span>
+                      {need != null ? formatCompact(need) : "Max level"}
+                    </span>
+                  </div>
+                  <div className="h-1 overflow-hidden rounded-full bg-surface-muted">
+                    <div
+                      className="h-full rounded-full bg-accent transition-[width]"
+                      style={{ width: `${pct ?? 0}%` }}
+                    />
+                  </div>
+                </div>
               </div>
 
               <RankStatsGrid
                 items={rankStats}
                 className="hidden shrink-0 sm:grid lg:gap-x-5"
               />
-            </div>
-
-            <div className="mt-1.5 max-w-xs min-w-0 sm:max-w-sm">
-              <div className="mb-0.5 flex justify-between gap-2 font-mono text-xs tabular-nums text-foreground/60">
-                <span>{formatCompact(character.exp)}</span>
-                <span>{need != null ? formatCompact(need) : "Max level"}</span>
-              </div>
-              <div className="h-1 overflow-hidden rounded-full bg-surface-muted">
-                <div
-                  className="h-full rounded-full bg-accent transition-[width]"
-                  style={{ width: `${pct ?? 0}%` }}
-                />
-              </div>
             </div>
           </div>
         </div>
