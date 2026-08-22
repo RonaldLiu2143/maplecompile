@@ -290,7 +290,7 @@ export function EquipItemEditor({
                   })
                 }
                 className="rounded border border-border px-2.5 py-1.5 text-sm font-semibold hover:bg-muted"
-                title="3 main lines with 1 max/prime line (Legendary)"
+                title="3 main lines: 1 max + 2 non-prime (e.g. 13 / 10 / 10 Main Stat%)"
               >
                 3 Line
               </button>
@@ -303,7 +303,7 @@ export function EquipItemEditor({
                   })
                 }
                 className="rounded border border-border px-2.5 py-1.5 text-sm font-semibold hover:bg-muted"
-                title="2 max/prime potential lines (Legendary)"
+                title="3 main lines: 2 max + 1 non-prime (e.g. 13 / 13 / 10 Main Stat%)"
               >
                 2 prime
               </button>

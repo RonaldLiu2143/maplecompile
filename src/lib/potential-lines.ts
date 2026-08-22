@@ -261,8 +261,9 @@ export type PotentialPresetKind = "3line" | "2prime";
 
 /**
  * Quick potential fills at the given tier (defaults to Legendary).
- * - `3line`: 3 preferred main lines; only the first uses max/prime value
- * - `2prime`: 2 preferred lines, both at max/prime value
+ * Uses one preferred “main” family (Main Stat% / ATT% / …) for all lines.
+ * - `3line`: max + 2× non-prime — e.g. 13 / 10 / 10 Main Stat%
+ * - `2prime`: 2× max + 1× non-prime — e.g. 13 / 13 / 10 Main Stat%
  */
 export function buildPotentialPreset(
   equip: Equip,
@@ -271,29 +272,27 @@ export function buildPotentialPreset(
 ): PotentialLine[] {
   const options = potentialLineOptions(equip, [], potentialTier);
   const byFamily = valuesByFamily(options);
-  const families = preferredPotentialFamilies(equip).filter((id) =>
+  const family = preferredPotentialFamilies(equip).find((id) =>
     byFamily.has(id),
   );
-  const lines: PotentialLine[] = [];
+  if (!family) return [];
+
+  const vals = byFamily.get(family) ?? [];
+  if (!vals.length) return [];
+  const max = vals[0]!;
+  const nonMax = vals.find((v) => v < max) ?? max;
 
   if (kind === "2prime") {
-    for (const id of families) {
-      if (lines.length >= 2) break;
-      const max = byFamily.get(id)?.[0];
-      if (max == null) continue;
-      lines.push({ id, value: max });
-    }
-    return lines;
+    return [
+      { id: family, value: max },
+      { id: family, value: max },
+      { id: family, value: nonMax },
+    ];
   }
 
-  // 3 Line — one prime + two non-prime (or next-best) main lines
-  for (const id of families) {
-    if (lines.length >= 3) break;
-    const vals = byFamily.get(id);
-    if (!vals?.length) continue;
-    const value =
-      lines.length === 0 ? vals[0]! : (vals[1] ?? vals[0]!);
-    lines.push({ id, value });
-  }
-  return lines;
+  return [
+    { id: family, value: max },
+    { id: family, value: nonMax },
+    { id: family, value: nonMax },
+  ];
 }
