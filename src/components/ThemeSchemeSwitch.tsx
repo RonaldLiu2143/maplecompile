@@ -44,7 +44,7 @@ export function ThemeSchemeSwitch({ className }: { className?: string }) {
       <button
         type="button"
         onClick={() => setLight(true)}
-        className={`rounded-md px-2 py-0.5 text-[0.65rem] font-semibold transition sm:text-[0.7rem] ${
+        className={`rounded-md px-2 py-0.5 text-xs font-semibold transition sm:text-xs ${
           light
             ? "bg-accent text-primary-foreground"
             : "text-foreground/65 hover:bg-surface-muted hover:text-foreground"
@@ -57,7 +57,7 @@ export function ThemeSchemeSwitch({ className }: { className?: string }) {
       <button
         type="button"
         onClick={() => setLight(false)}
-        className={`rounded-md px-2 py-0.5 text-[0.65rem] font-semibold transition sm:text-[0.7rem] ${
+        className={`rounded-md px-2 py-0.5 text-xs font-semibold transition sm:text-xs ${
           !light
             ? "bg-accent text-primary-foreground"
             : "text-foreground/65 hover:bg-surface-muted hover:text-foreground"

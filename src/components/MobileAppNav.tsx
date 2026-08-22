@@ -66,7 +66,7 @@ export function MobileAppHeader() {
       <Link href="/" className="min-w-0 shrink-0">
         <BrandWordmark markSize={20} textClassName="text-lg" />
       </Link>
-      <ResetCountdowns compact className="min-w-0 flex-1 text-[0.7rem] sm:text-xs" />
+      <ResetCountdowns compact className="min-w-0 flex-1 text-xs sm:text-xs" />
       <div className="shrink-0">
         <ThemePicker compact placement="below" />
       </div>

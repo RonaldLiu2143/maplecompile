@@ -22,8 +22,8 @@ export function LiberationStatusTags({
   if (!genesis && !destiny) return null;
 
   const size = compact
-    ? "px-1.5 py-px text-[0.65rem]"
-    : "px-2 py-0.5 text-[0.7rem]";
+    ? "px-1.5 py-px text-xs"
+    : "px-2 py-0.5 text-xs";
 
   return (
     <span className="inline-flex flex-wrap items-center gap-1">

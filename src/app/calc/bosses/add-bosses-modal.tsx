@@ -360,7 +360,7 @@ export function AddBossesModal({
           </div>
 
           <div className="flex flex-wrap items-end gap-2 rounded-lg border border-border/40 bg-background/50 p-2">
-            <label className="flex min-w-[10rem] flex-1 flex-col gap-1 text-[0.65rem] font-semibold uppercase tracking-wider opacity-60">
+            <label className="flex min-w-[10rem] flex-1 flex-col gap-1 text-xs font-semibold uppercase tracking-wider opacity-60">
               Preset
               <select
                 className="rounded border border-border bg-background px-2 py-1.5 text-sm font-normal normal-case tracking-normal outline-none focus:border-accent"

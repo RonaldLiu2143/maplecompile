@@ -229,7 +229,7 @@ export function RosterCharacterCard({
               draggable={false}
             />
           ) : (
-            <div className="flex h-[72px] w-[72px] items-center justify-center rounded-lg bg-surface-muted text-[0.65rem] font-semibold uppercase tracking-wide opacity-50">
+            <div className="flex h-[72px] w-[72px] items-center justify-center rounded-lg bg-surface-muted text-xs font-semibold uppercase tracking-wide opacity-50">
               {character.name.slice(0, 2)}
             </div>
           )}

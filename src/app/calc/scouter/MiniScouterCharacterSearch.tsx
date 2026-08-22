@@ -144,7 +144,7 @@ export function MiniScouterCharacterSearch({
               className="h-10 w-10 shrink-0 object-contain"
             />
           ) : (
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded bg-surface-muted text-[0.55rem] opacity-50">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded bg-surface-muted text-xs opacity-50">
               —
             </div>
           )}

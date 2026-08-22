@@ -148,7 +148,7 @@ export function LogDropModal({
       >
         <div className="flex items-start justify-between gap-3 border-b border-border/50 px-4 py-3">
           <div className="min-w-0">
-            <p className="text-[0.65rem] font-semibold uppercase tracking-wider opacity-55">
+            <p className="text-xs font-semibold uppercase tracking-wider opacity-55">
               Step {step} of 3
             </p>
             <h2

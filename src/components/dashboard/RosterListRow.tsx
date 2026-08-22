@@ -125,7 +125,7 @@ function AvatarThumb({
       className={[
         "flex shrink-0 items-center justify-center rounded-md bg-surface-muted font-semibold uppercase tracking-wide opacity-50",
         compact
-          ? "h-10 w-10 text-[0.55rem]"
+          ? "h-10 w-10 text-xs"
           : "h-12 w-12 text-[0.6rem]",
       ].join(" ")}
       aria-hidden
@@ -178,7 +178,7 @@ function StatusLinkChip({
       href={href}
       className={[
         "inline-flex shrink-0 items-center rounded-md border font-semibold tabular-nums transition hover:opacity-90",
-        compact ? "px-2 py-0.5 text-xs" : "px-2 py-0.5 text-[0.75rem]",
+        compact ? "px-2 py-0.5 text-xs" : "px-2 py-0.5 text-xs",
         statusToneClass(tone),
         priority === "sm" ? "hidden sm:inline-flex" : "",
       ].join(" ")}

@@ -138,7 +138,7 @@ export function DashboardDiarySection({
       </div>
 
       <div className="mt-3 flex min-h-0 flex-1 flex-col">
-        <p className="mb-1.5 shrink-0 text-[0.65rem] font-semibold uppercase tracking-wider opacity-55">
+        <p className="mb-1.5 shrink-0 text-xs font-semibold uppercase tracking-wider opacity-55">
           Recent drops
           {state.pitchLogs.length > 0 ? (
             <span className="ml-1 opacity-70">
@@ -177,7 +177,7 @@ export function DashboardDiarySection({
                       pitchLogs: state.pitchLogs.filter((l) => l.id !== log.id),
                     })
                   }
-                  className="shrink-0 rounded border border-border px-1.5 py-0.5 text-[0.65rem] font-semibold opacity-70 hover:bg-surface-muted hover:opacity-100"
+                  className="shrink-0 rounded border border-border px-1.5 py-0.5 text-xs font-semibold opacity-70 hover:bg-surface-muted hover:opacity-100"
                   title="Remove"
                 >
                   ✕

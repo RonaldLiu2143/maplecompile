@@ -28,7 +28,7 @@ import { useMapleDataReload } from "@/hooks/useMapleDataReload";
 
 function RankChip({ label, value }: { label: string; value: string }) {
   return (
-    <span className="inline-flex max-w-full items-center rounded-md border border-border/70 bg-surface-muted/50 px-1.5 py-0.5 text-[0.65rem] font-semibold leading-tight tabular-nums">
+    <span className="inline-flex max-w-full items-center rounded-md border border-border/70 bg-surface-muted/50 px-1.5 py-0.5 text-xs font-semibold leading-tight tabular-nums">
       <span className="text-foreground/70">{label}</span>
       <span className="mx-1 text-foreground/35" aria-hidden>
         ·
@@ -49,7 +49,7 @@ function Panel({
 }) {
   return (
     <section className="rounded-xl border border-border/55 bg-surface/90 p-3.5 sm:p-4">
-      <h3 className="font-display text-[0.7rem] font-bold uppercase tracking-[0.14em] text-accent">
+      <h3 className="font-display text-xs font-bold uppercase tracking-[0.14em] text-accent">
         {title}
       </h3>
       <dl className="mt-2.5 divide-y divide-border/35">{children}</dl>
@@ -86,22 +86,22 @@ function MetricCard({
 }) {
   return (
     <div className="rounded-xl border border-border/45 bg-surface-muted/35 px-3.5 py-3 sm:px-4 sm:py-3.5">
-      <p className="text-[0.7rem] font-semibold uppercase tracking-wider text-foreground/50">
+      <p className="text-xs font-semibold uppercase tracking-wider text-foreground/50">
         {label}
       </p>
       <dl className="mt-2 space-y-1.5">
         <div className="flex items-baseline justify-between gap-2">
-          <dt className="text-[0.75rem] text-foreground/55">Daily avg</dt>
+          <dt className="text-xs text-foreground/55">Daily avg</dt>
           <dd className="font-mono text-base font-bold tabular-nums">{avg}</dd>
         </div>
         <div className="flex items-baseline justify-between gap-2">
-          <dt className="text-[0.75rem] text-foreground/55">Daily %</dt>
+          <dt className="text-xs text-foreground/55">Daily %</dt>
           <dd className="font-mono text-base font-semibold tabular-nums">
             {dailyPct}
           </dd>
         </div>
         <div className="flex items-baseline justify-between gap-2">
-          <dt className="text-[0.75rem] text-foreground/55">Total</dt>
+          <dt className="text-xs text-foreground/55">Total</dt>
           <dd className="font-mono text-base font-semibold tabular-nums">
             {total}
           </dd>
@@ -114,7 +114,7 @@ function MetricCard({
 function MiniStat({ label, value }: { label: string; value: string }) {
   return (
     <div className="min-w-0">
-      <p className="truncate text-[0.65rem] font-semibold uppercase tracking-wider opacity-55">
+      <p className="truncate text-xs font-semibold uppercase tracking-wider opacity-55">
         {label}
       </p>
       <p className="mt-0.5 font-mono text-sm font-bold tabular-nums">{value}</p>
@@ -179,17 +179,17 @@ function EtaToLevelSection({
   return (
     <div className="mt-5 border-t border-border/40 pt-4">
       <div>
-        <h4 className="font-display text-[0.7rem] font-bold uppercase tracking-[0.14em] text-foreground/55">
+        <h4 className="font-display text-xs font-bold uppercase tracking-[0.14em] text-foreground/55">
           ETA to Level
         </h4>
-        <p className="mt-1 text-[0.7rem] text-foreground/50">
+        <p className="mt-1 text-xs text-foreground/50">
           Base rate: 7d average ({baseLabel}/day)
         </p>
       </div>
 
       <div className="mt-3">
         <label className="flex max-w-xs flex-col gap-1">
-          <span className="text-[0.65rem] font-semibold uppercase tracking-wider text-foreground/50">
+          <span className="text-xs font-semibold uppercase tracking-wider text-foreground/50">
             Daily EXP rate
           </span>
           <input
@@ -201,7 +201,7 @@ function EtaToLevelSection({
             className="rounded-lg border border-border/60 bg-surface px-3 py-1.5 font-mono text-sm tabular-nums outline-none focus:border-accent"
             aria-describedby="eta-exp-hint"
           />
-          <span id="eta-exp-hint" className="text-[0.65rem] text-foreground/45">
+          <span id="eta-exp-hint" className="text-xs text-foreground/45">
             Edit rate or a milestone&apos;s days to keep ETAs consistent
           </span>
         </label>
@@ -269,7 +269,7 @@ function EtaToLevelSection({
         })}
       </ul>
       {rate !== avg7n ? (
-        <p className="mt-2 text-[0.65rem] text-foreground/45">
+        <p className="mt-2 text-xs text-foreground/45">
           Using custom rate {formatCompact(rate)}/day (7d avg{" "}
           {formatCompact(avg7n)}/day)
         </p>
@@ -350,7 +350,7 @@ function CompactCharacterProfile({
             />
           ) : (
             <div
-              className="flex items-center justify-center rounded-lg bg-surface-muted text-[0.65rem] opacity-60"
+              className="flex items-center justify-center rounded-lg bg-surface-muted text-xs opacity-60"
               style={{ width: avatarPx, height: avatarPx }}
             >
               No img
@@ -370,12 +370,12 @@ function CompactCharacterProfile({
                   {character.name}
                 </h2>
                 {character.isHeroic ? (
-                  <span className="rounded-md bg-accent-soft px-1.5 py-0.5 text-[0.65rem] font-semibold text-accent">
+                  <span className="rounded-md bg-accent-soft px-1.5 py-0.5 text-xs font-semibold text-accent">
                     Heroic
                   </span>
                 ) : null}
                 {world ? (
-                  <span className="rounded-md border border-border px-1.5 py-0.5 text-[0.65rem] font-semibold opacity-70">
+                  <span className="rounded-md border border-border px-1.5 py-0.5 text-xs font-semibold opacity-70">
                     {world}
                   </span>
                 ) : null}
@@ -412,7 +412,7 @@ function CompactCharacterProfile({
           </div>
 
           <div className={`max-w-sm ${dense ? "mt-2" : "mt-3"}`}>
-            <div className="mb-1 flex justify-between gap-3 font-mono text-[0.65rem] tabular-nums text-foreground/60">
+            <div className="mb-1 flex justify-between gap-3 font-mono text-xs tabular-nums text-foreground/60">
               <span>{formatCompact(character.exp)}</span>
               <span>
                 {need != null ? formatCompact(need) : "Max level"}
@@ -615,7 +615,7 @@ function FullCharacterProfile({
                   />
                 </div>
 
-                <p className="mt-4 text-[0.7rem] leading-relaxed text-foreground/45">
+                <p className="mt-4 text-xs leading-relaxed text-foreground/45">
                   Sources: {character.sources.join(" · ")} · fetched{" "}
                   {new Date(character.fetchedAt).toLocaleString()}
                 </p>
@@ -648,7 +648,7 @@ function FullCharacterProfile({
               title="Legion"
               footer={
                 !character.legionLevel ? (
-                  <p className="mt-3 text-[0.7rem] leading-relaxed text-foreground/50">
+                  <p className="mt-3 text-xs leading-relaxed text-foreground/50">
                     Legion stats appear on the account’s highest-level character
                     in the world (same rule as official rankings).
                   </p>

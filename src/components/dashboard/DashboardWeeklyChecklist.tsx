@@ -207,7 +207,7 @@ export function DashboardRosterWeeklySection({
 
       <div className={roster.length > 0 ? "mt-1.5 min-h-0 flex-1" : "mt-2 min-h-0 flex-1"}>
         {roster.length === 0 ? (
-          <p className="text-[0.7rem] opacity-70">
+          <p className="text-xs opacity-70">
             No characters yet. Search a GMS character above, then tap Add to
             roster — or{" "}
             <Link

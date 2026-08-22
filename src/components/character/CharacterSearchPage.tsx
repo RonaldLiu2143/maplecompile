@@ -111,29 +111,29 @@ function SavedRow({
               {entry.name}
             </p>
             {jobWorld ? (
-              <p className="mt-0.5 truncate text-[0.7rem] text-foreground/55">
+              <p className="mt-0.5 truncate text-xs text-foreground/55">
                 {jobWorld}
                 <span className="opacity-60">
                   {` · ${entry.region.toUpperCase()}`}
                 </span>
               </p>
             ) : (
-              <p className="mt-0.5 truncate text-[0.7rem] text-foreground/55">
+              <p className="mt-0.5 truncate text-xs text-foreground/55">
                 {entry.region.toUpperCase()}
               </p>
             )}
-            <p className="mt-1 text-[0.8rem] font-semibold tabular-nums">
+            <p className="mt-1 text-sm font-semibold tabular-nums">
               {entry.level != null ? (
                 <>
                   Lv. {entry.level}
                   {pct != null ? (
-                    <span className="ml-1 text-[0.7rem] font-medium text-foreground/55">
+                    <span className="ml-1 text-xs font-medium text-foreground/55">
                       ({pct.toFixed(2)}%)
                     </span>
                   ) : null}
                 </>
               ) : (
-                <span className="text-[0.7rem] font-medium text-foreground/50">
+                <span className="text-xs font-medium text-foreground/50">
                   Saved
                 </span>
               )}
@@ -277,7 +277,7 @@ export function CharacterSearchPage() {
               </p>
             </div>
             {hydrated && saved.length > 0 ? (
-              <span className="font-mono text-[0.65rem] tabular-nums text-foreground/50">
+              <span className="font-mono text-xs tabular-nums text-foreground/50">
                 {saved.length}
               </span>
             ) : null}

@@ -1280,7 +1280,7 @@ export default function HexaTrackerPage() {
           <div className="mt-3 space-y-4">
             {groups.map((group) => (
               <div key={group.key} className="space-y-2">
-                <p className="text-[0.7rem] font-semibold uppercase tracking-wider opacity-55">
+                <p className="text-xs font-semibold uppercase tracking-wider opacity-55">
                   {group.label}
                 </p>
                 <div className="grid gap-2 sm:grid-cols-2">

@@ -85,7 +85,7 @@ export function ExpRangeGraph({
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p
           className={`font-semibold uppercase tracking-wider opacity-55 ${
-            compact ? "text-[0.65rem]" : "text-[0.75rem] sm:text-sm"
+            compact ? "text-xs" : "text-xs sm:text-sm"
           }`}
         >
           {compact ? "Daily EXP" : `${days}d chart`}
@@ -106,7 +106,7 @@ export function ExpRangeGraph({
                 onClick={() => setDays(r)}
                 className={`rounded-md font-semibold tabular-nums transition ${
                   compact
-                    ? "px-2 py-0.5 text-[0.7rem]"
+                    ? "px-2 py-0.5 text-xs"
                     : "px-2.5 py-1 text-xs sm:text-sm"
                 } ${
                   active
@@ -124,7 +124,7 @@ export function ExpRangeGraph({
 
       {avg ? (
         <p className="mt-1.5 font-mono text-sm font-bold tabular-nums">
-          <span className="mr-1.5 text-[0.65rem] font-semibold uppercase tracking-wider opacity-55">
+          <span className="mr-1.5 text-xs font-semibold uppercase tracking-wider opacity-55">
             {days}d avg
           </span>
           {avg}
@@ -132,7 +132,7 @@ export function ExpRangeGraph({
       ) : hasLine ? (
         <p
           className={`mt-1.5 font-semibold uppercase tracking-wider opacity-55 ${
-            compact ? "text-[0.65rem]" : "text-[0.7rem] sm:text-xs"
+            compact ? "text-xs" : "text-xs sm:text-xs"
           }`}
         >
           Last {days} days
@@ -223,7 +223,7 @@ export function LevelProgressGraph({
         <p
           className={`font-semibold tracking-wide ${
             compact
-              ? "text-[0.65rem] uppercase tracking-wider opacity-55"
+              ? "text-xs uppercase tracking-wider opacity-55"
               : "font-display text-sm font-bold sm:text-base"
           }`}
         >
@@ -232,7 +232,7 @@ export function LevelProgressGraph({
         <div
           className={`${
             compact
-              ? "inline-flex items-center gap-2 text-[0.7rem]"
+              ? "inline-flex items-center gap-2 text-xs"
               : "absolute right-0 bottom-1 inline-flex items-center gap-2.5 text-xs sm:text-sm"
           }`}
           role="group"

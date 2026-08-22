@@ -71,7 +71,7 @@ export function DashboardDailiesSection({ hydrated }: { hydrated: boolean }) {
           <h2 className="font-display text-sm font-bold tracking-tight sm:text-base">
             Dailies
           </h2>
-          <p className="mt-0.5 text-[0.65rem] opacity-60">
+          <p className="mt-0.5 text-xs opacity-60">
             Account checklist · resets 00:00 UTC (see Daily timer above)
           </p>
         </div>
@@ -81,7 +81,7 @@ export function DashboardDailiesSection({ hydrated }: { hydrated: boolean }) {
           </Chip>
           <Link
             href="/calc/diary"
-            className="rounded-md border border-border px-2 py-1 text-[0.65rem] font-semibold transition hover:bg-surface-muted"
+            className="rounded-md border border-border px-2 py-1 text-xs font-semibold transition hover:bg-surface-muted"
           >
             Diary
           </Link>
@@ -91,7 +91,7 @@ export function DashboardDailiesSection({ hydrated }: { hydrated: boolean }) {
               onClick={() =>
                 setStore((prev) => (prev ? clearAllDailies(prev) : prev))
               }
-              className="rounded-md border border-border px-2 py-1 text-[0.65rem] font-semibold transition hover:bg-surface-muted"
+              className="rounded-md border border-border px-2 py-1 text-xs font-semibold transition hover:bg-surface-muted"
             >
               Reset
             </button>
@@ -101,7 +101,7 @@ export function DashboardDailiesSection({ hydrated }: { hydrated: boolean }) {
               onClick={() =>
                 setStore((prev) => (prev ? markAllDailiesDone(prev) : prev))
               }
-              className="rounded-md border border-border px-2 py-1 text-[0.65rem] font-semibold transition hover:bg-surface-muted"
+              className="rounded-md border border-border px-2 py-1 text-xs font-semibold transition hover:bg-surface-muted"
             >
               All done
             </button>
@@ -146,7 +146,7 @@ export function DashboardDailiesSection({ hydrated }: { hydrated: boolean }) {
                     {slot.label}
                   </span>
                   {slot.hint ? (
-                    <span className="ml-1 text-[0.65rem] opacity-45">
+                    <span className="ml-1 text-xs opacity-45">
                       {slot.hint}
                     </span>
                   ) : null}

@@ -25,18 +25,18 @@ typography:
     letterSpacing: "0.01em"
   body:
     fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif"
-    fontSize: "1rem"
+    fontSize: "1.125rem"
     fontWeight: 400
     lineHeight: 1.5
     letterSpacing: "normal"
   label:
     fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif"
-    fontSize: "0.875rem"
+    fontSize: "1rem"
     fontWeight: 600
     lineHeight: 1.4
   caption:
     fontFamily: "Geist, ui-sans-serif, system-ui, sans-serif"
-    fontSize: "0.75rem"
+    fontSize: "0.875rem"
     fontWeight: 500
     lineHeight: 1.4
 rounded:
@@ -102,12 +102,12 @@ Geist is the default UI face. Inter and Plus Jakarta Sans are optional theme ove
 
 | Role | Size | Tailwind | Use |
 |------|------|----------|-----|
-| Body | 16px / 1rem | `text-base` | Form inputs, paragraphs (prevents iOS zoom) |
-| UI label | 14px | `text-sm` | Section titles, table cells, buttons |
-| Caption | 12px | `text-xs` | Metadata, badges, column hints — **floor for functional text** |
+| Body | 18px / 1.125rem | `text-base` | Form inputs, paragraphs |
+| UI label | 16px | `text-sm` | Section titles, table cells, buttons |
+| Caption | 14px | `text-xs` | Metadata, badges, column hints — **floor for functional text** |
 | Display | clamp 1.75–3rem | `font-display` | Page titles only |
 
-**Do not use sub-12px (`text-[10px]`, `text-[11px]`, `text-[9px]`) for functional controls, labels, or data the user must read.** Game-faithful tooltips (equip editor) may stay smaller when mimicking in-game UI.
+**Do not use sub-14px (`text-[10px]`, `text-[11px]`, `text-[0.65rem]`) for functional controls, labels, or data the user must read.** Game-faithful tooltips (equip editor) may stay smaller when mimicking in-game UI.
 
 Prose measure: 45–75ch. Tabular nums for stats. Light-on-dark: slightly more line-height on long copy.
 
@@ -148,6 +148,6 @@ Border radius `6–8px` (`rounded-md` / `rounded-lg`). No gradient text. Lucide 
 
 - Icon-card grids for tool lists (use icon + label rows).
 - Uppercase kickers above headings.
-- Sub-12px functional type.
+- Sub-14px functional type.
 - Shrink touch targets below 44px on desktop “for density”.
 - Deploy to Vercel unless explicitly asked.
