@@ -54,6 +54,7 @@ export {
 export {
   getMissingRequiredScouterFields,
   focusScouterField,
+  SCOUTER_STAT_LABELS,
   type MissingScouterField,
   type ScouterRequiredMode,
 } from "./validate";

@@ -21,6 +21,7 @@ import {
   getClassSpecificRequirements,
   getMissingRequiredScouterFields,
   focusScouterField,
+  SCOUTER_STAT_LABELS,
   type BuffState,
   type LinkState,
   type MissingScouterField,
@@ -117,14 +118,6 @@ const ScouterAuxPanels = dynamic(
 
 const headCell =
   "border border-border/50 bg-surface-muted px-2 py-1.5 text-sm font-medium";
-
-const STAT_LABELS: Record<StatKey, string> = {
-  str: "STR",
-  dex: "DEX",
-  int: "INT",
-  luk: "LUK",
-  hp: "Max HP",
-};
 
 function applyTriple(t: StatTriple): number {
   return t.base * (1 + t.percent / 100) + t.flat;
@@ -1250,9 +1243,9 @@ export default function ScouterPage() {
           { label: "Attack", kind: "att" as const },
         ];
       }
-      const pri = mainKeys.map((k) => ({ label: STAT_LABELS[k], key: k }));
+      const pri = mainKeys.map((k) => ({ label: SCOUTER_STAT_LABELS[k], key: k }));
       const sec = secondaryKeys.map((k) => ({
-        label: STAT_LABELS[k],
+        label: SCOUTER_STAT_LABELS[k],
         key: k,
       }));
       return [

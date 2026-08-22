@@ -1,7 +1,7 @@
 import { resolveMainSecondary } from "./calc";
 import type { ScouterInput, StatKey, StatTriple } from "./types";
 
-const STAT_LABELS: Record<StatKey, string> = {
+export const SCOUTER_STAT_LABELS: Record<StatKey, string> = {
   str: "STR",
   dex: "DEX",
   int: "INT",
@@ -45,7 +45,7 @@ export function getMissingRequiredScouterFields(
 
   const pushStat = (key: StatKey) => {
     if (tripleEmpty(input.stats[key])) {
-      missing.push({ id: `stat-${key}`, label: STAT_LABELS[key] });
+      missing.push({ id: `stat-${key}`, label: SCOUTER_STAT_LABELS[key] });
     }
   };
 
@@ -70,7 +70,7 @@ export function getMissingRequiredScouterFields(
     if (!mainKeys.some((k) => tripleFilled(input.stats[k]))) {
       const key = mainKeys[0];
       if (key) {
-        missing.push({ id: `stat-${key}`, label: STAT_LABELS[key] });
+        missing.push({ id: `stat-${key}`, label: SCOUTER_STAT_LABELS[key] });
       }
     }
     if (
@@ -78,7 +78,7 @@ export function getMissingRequiredScouterFields(
       !secondaryKeys.some((k) => tripleFilled(input.stats[k]))
     ) {
       const key = secondaryKeys[0]!;
-      missing.push({ id: `stat-${key}`, label: STAT_LABELS[key] });
+      missing.push({ id: `stat-${key}`, label: SCOUTER_STAT_LABELS[key] });
     }
   } else {
     for (const key of mainKeys) pushStat(key);

@@ -10,6 +10,7 @@ import {
   OZ_CONTINUOUS_STATUS,
   OZ_RING_MAX,
   getVisibleOzRings,
+  SCOUTER_STAT_LABELS,
   type BuffState,
   type LinkState,
   type ScouterInput,
@@ -22,14 +23,6 @@ import {
   scouterCellClass,
   scouterLabelCellClass,
 } from "./scouter-field-primitives";
-
-const STAT_LABELS: Record<StatKey, string> = {
-  str: "STR",
-  dex: "DEX",
-  int: "INT",
-  luk: "LUK",
-  hp: "Max HP",
-};
 
 export type ScouterAuxPanelsProps = {
   buffs: BuffState;
@@ -67,9 +60,6 @@ export function ScouterAuxPanels({
   ozWeaponLabel,
   ozStatKeys,
 }: ScouterAuxPanelsProps) {
-  const labelCell = scouterLabelCellClass;
-  const cell = scouterCellClass;
-
   return (
     <div className="space-y-2">
       <section className="overflow-hidden rounded-lg border border-border/60 bg-surface/90">
@@ -196,7 +186,7 @@ export function ScouterAuxPanels({
           })}
         </div>
         <div className="grid grid-cols-[1fr_4.5rem] border-t border-border/30">
-          <div className={`${labelCell} !py-1 text-xs`}>Wild Hunter Legion</div>
+          <div className={`${scouterLabelCellClass} !py-1 text-xs`}>Wild Hunter Legion</div>
           <ScouterNumInput
             value={input.wildHunterLegion}
             onChange={(wildHunterLegion) => patch({ wildHunterLegion })}
@@ -276,7 +266,7 @@ export function ScouterAuxPanels({
             Additional EXP (+1 Mob Targeted)
           </label>
           <div className="grid grid-cols-[1fr_4.5rem]">
-            <div className={`${labelCell} !py-1 text-xs`}>Final Attack</div>
+            <div className={`${scouterLabelCellClass} !py-1 text-xs`}>Final Attack</div>
             <ScouterNumInput
               value={input.legionArtifactFinalAttack}
               onChange={(legionArtifactFinalAttack) =>
@@ -324,7 +314,7 @@ export function ScouterAuxPanels({
           <label className="flex flex-col gap-0.5 text-xs">
             Continuous Use Status
             <select
-              className={`${cell} w-full !py-1 text-xs`}
+              className={`${scouterCellClass} w-full !py-1 text-xs`}
               value={input.ozContinuousStatus}
               onChange={(e) => {
                 const ozContinuousStatus = e.target.value as "noUse" | "use";
@@ -382,7 +372,7 @@ export function ScouterAuxPanels({
 
           <div className="overflow-hidden rounded border border-border/40">
             <div className="grid grid-cols-[1fr_4.5rem]">
-              <div className={`${labelCell} !py-1 text-xs`}>
+              <div className={`${scouterLabelCellClass} !py-1 text-xs`}>
                 Weapon Total {ozWeaponLabel}
               </div>
               <ScouterNumInput
@@ -400,8 +390,8 @@ export function ScouterAuxPanels({
                   : (ozSecondaryStat: number) => patch({ ozSecondaryStat });
               return (
                 <div key={key} className="grid grid-cols-[1fr_4.5rem]">
-                  <div className={`${labelCell} !py-1 text-xs`}>
-                    {STAT_LABELS[key]}
+                  <div className={`${scouterLabelCellClass} !py-1 text-xs`}>
+                    {SCOUTER_STAT_LABELS[key]}
                   </div>
                   <ScouterNumInput
                     value={value}

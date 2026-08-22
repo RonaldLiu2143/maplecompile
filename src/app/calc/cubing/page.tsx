@@ -339,8 +339,10 @@ export default function CubingCalculatorPage() {
             </p>
           </div>
 
-          <TableScrollRegion label="Cubing results table">
-          <div className="rounded-lg border border-border/50">
+          <TableScrollRegion
+            label="Cubing results table"
+            className="rounded-lg border border-border/50"
+          >
             <table className="w-full min-w-[28rem] border-collapse text-sm">
               <thead>
                 <tr className="border-b border-border/40 text-left">
@@ -385,7 +387,6 @@ export default function CubingCalculatorPage() {
                 ))}
               </tbody>
             </table>
-          </div>
           </TableScrollRegion>
         </section>
       )}

@@ -344,9 +344,7 @@ function SimMetric({
       }`}
     >
       <p
-        className={`font-semibold uppercase tracking-wide opacity-55 ${
-          compact ? "text-xs" : "text-xs"
-        }`}
+        className="font-semibold uppercase tracking-wide opacity-55 text-xs"
       >
         {label}
       </p>
@@ -357,11 +355,7 @@ function SimMetric({
       >
         {value}
       </p>
-      <p
-        className={`tabular-nums opacity-60 ${
-          compact ? "text-xs" : "text-xs"
-        }`}
-      >
+      <p className="tabular-nums opacity-60 text-xs">
         ({delta})
       </p>
     </div>

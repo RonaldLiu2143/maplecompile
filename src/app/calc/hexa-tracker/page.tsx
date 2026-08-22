@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AlertModal } from "@/components/AlertModal";
 import {
   ManageDisplayButton,
   ManageDisplayModal,
@@ -12,7 +11,6 @@ import { useRoster } from "@/hooks/useRoster";
 import {
   isActiveCharacterLocked,
   isStickyActiveSwitchBlocked,
-  UNLOCK_TO_CHANGE_ACTIVE_MSG,
 } from "@/lib/active-character";
 import { getWorkspace } from "@/lib/character-workspace";
 import { readSessionCharacter } from "@/lib/character/client";
@@ -128,7 +126,7 @@ function ResourceCost({
 }
 
 function formatDate(d: Date | null): string {
-  if (!d) return "—";
+  if (!d) return "â";
   try {
     return new Intl.DateTimeFormat(undefined, {
       year: "numeric",
@@ -161,7 +159,7 @@ function ProgressBar({
           {current.toLocaleString()} / {max.toLocaleString()}
           {leftLabel ? (
             <span className="ml-1 font-normal opacity-60">
-              · {left.toLocaleString()} {leftLabel}
+              Â· {left.toLocaleString()} {leftLabel}
             </span>
           ) : null}
         </span>
@@ -277,7 +275,7 @@ function SkillNodeCard({
             ariaLabel={`${label} current`}
             onChange={onCurrent}
           />
-          <span className="text-xs opacity-40">→</span>
+          <span className="text-xs opacity-40">â</span>
           <CompactLevelInput
             value={target}
             max={maxLevel}
@@ -291,7 +289,7 @@ function SkillNodeCard({
 }
 
 export default function HexaTrackerPage() {
-  const { hydrated, roster, primary, slots, handleSetPrimary, activeSwitchBlockedOpen, dismissActiveSwitchBlocked } = useRoster();
+  const { hydrated, roster, primary, slots, handleSetPrimary } = useRoster();
   const [ready, setReady] = useState(false);
   const [state, setState] = useState<HexaTrackerState | null>(null);
   const [rosterKey, setRosterKey] = useState("");
@@ -433,7 +431,7 @@ export default function HexaTrackerPage() {
   const selectRosterCharacter = (key: string) => {
     const entry = roster.find((e) => entryKey(e) === key);
     // Sticky primary only when unlocked (or selecting the locked character).
-    // While locked, My Characters is a local temporary view — do not call
+    // While locked, My Characters is a local temporary view â do not call
     // switchActiveCharacter / handleSetPrimary.
     if (entry && !isStickyActiveSwitchBlocked(entry)) {
       handleSetPrimary(entry);
@@ -463,15 +461,6 @@ export default function HexaTrackerPage() {
     }
   };
 
-
-  const onBarSelect = (entry: RosterEntry) => {
-    if (!handleSetPrimary(entry)) return;
-    const key = entryKey(entry);
-    setRosterKey(key);
-    setViewMode("characters");
-    setPriorityIndex(0);
-    setState(loadHexaTracker(key));
-  };
 
   const progress = useMemo(() => {
     if (!activeState) return null;
@@ -587,7 +576,7 @@ export default function HexaTrackerPage() {
     );
   }, [upgradePathSteps.length]);
 
-  /** Prev/Next only move the peek cursor — they never change skill levels. */
+  /** Prev/Next only move the peek cursor â they never change skill levels. */
   const prevPriorityPeek = () => {
     if (clampedPriorityIndex <= 0) return;
     setPriorityIndex((i) => Math.max(0, i - 1));
@@ -641,7 +630,7 @@ export default function HexaTrackerPage() {
         <h1 className="font-display text-2xl font-bold tracking-tight">
           HEXA / Fragment Tracker
         </h1>
-        <p className="text-sm opacity-60">Loading…</p>
+        <p className="text-sm opacity-60">Loadingâ¦</p>
       </div>
     );
   }
@@ -660,7 +649,7 @@ export default function HexaTrackerPage() {
           HEXA / Fragment Tracker
         </h1>
         <p className="mt-1 text-sm opacity-70">
-          Track Sol Erda fragments, core levels, and time-to-goal — per
+          Track Sol Erda fragments, core levels, and time-to-goal â per
           character. Pair with Scouter when you want levels synced.
         </p>
       </div>
@@ -772,8 +761,8 @@ export default function HexaTrackerPage() {
                         <p className="font-mono text-xs tabular-nums opacity-65">
                           {character?.level != null
                             ? `Lv.${character.level}`
-                            : "—"}
-                          {isPrimary(entry, primary) ? " ★" : ""}
+                            : "â"}
+                          {isPrimary(entry, primary) ? " â" : ""}
                         </p>
                       </button>
                     );
@@ -786,11 +775,11 @@ export default function HexaTrackerPage() {
             rosterKey &&
             entryKey(primary) !== rosterKey ? (
               <p className="mt-2 text-xs text-amber-600 opacity-90">
-                Viewing temporarily — Active character stays locked
+                Viewing temporarily â Active character stays locked
               </p>
             ) : (
               <p className="mt-2 text-xs opacity-55">
-                Tap a character to edit HEXA · ★ is the active default
+                Tap a character to edit HEXA Â· â is the active default
               </p>
             )}
           </section>
@@ -810,12 +799,12 @@ export default function HexaTrackerPage() {
             {CLASS_OPTIONS.find((o) => o.charType === previewCharType)?.name ??
               previewCharType}
           </span>{" "}
-          — levels save locally as a sandbox, not tied to a roster character.
+          â levels save locally as a sandbox, not tied to a roster character.
         </p>
       )}
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.35fr)]">
-        {/* —— Summary / rate —— */}
+        {/* ââ Summary / rate ââ */}
         <div className="space-y-3">
           <section className="rounded-xl border border-border/45 bg-surface/90 p-4">
             <div className="flex items-baseline justify-between gap-2">
@@ -943,7 +932,7 @@ export default function HexaTrackerPage() {
                 <p className="text-sm font-bold tabular-nums">
                   {eta && dailyRate > 0
                     ? Math.ceil(eta.daysLeft).toLocaleString()
-                    : "—"}
+                    : "â"}
                 </p>
               </div>
               <div className="rounded-lg bg-background/50 px-2 py-2">
@@ -1028,7 +1017,7 @@ export default function HexaTrackerPage() {
                 Converted score (base{" "}
                 {DEFAULT_BOSS_CONVERTED_STAT.toLocaleString()}
                 ). Rank is by highest path score (
-                <span className="font-semibold">1000 − order index</span>
+                <span className="font-semibold">1000 â order index</span>
                 ); fragment cost is the tiebreaker. Prev/Next peek along that
                 sequence without changing skill levels.
               </p>
@@ -1060,7 +1049,7 @@ export default function HexaTrackerPage() {
                           {featuredUp.node.label}
                         </p>
                         <p className="text-xs opacity-60">
-                          Level {featuredUp.node.current} →{" "}
+                          Level {featuredUp.node.current} â{" "}
                           {featuredUp.nextLevel}
                           {clampedPriorityIndex > 0 ? (
                             <span className="ml-1 opacity-50">
@@ -1073,7 +1062,7 @@ export default function HexaTrackerPage() {
                       {featuredUp.score > 0 ? (
                         <span
                           className="shrink-0 rounded-md bg-accent-soft/50 px-1.5 py-0.5 text-xs font-bold tabular-nums text-accent"
-                          title="MapleHub path priority score (1000 − order index)"
+                          title="MapleHub path priority score (1000 â order index)"
                         >
                           +{featuredUp.score}
                         </span>
@@ -1138,7 +1127,7 @@ export default function HexaTrackerPage() {
                             >
                               <div
                                 className="group relative"
-                                title={`${run.label}: Lv.${run.fromLevel} → ${run.toLevel}`}
+                                title={`${run.label}: Lv.${run.fromLevel} â ${run.toLevel}`}
                               >
                                 <div className="relative h-8 w-8">
                                   {icon ? (
@@ -1163,7 +1152,7 @@ export default function HexaTrackerPage() {
                               </div>
                               {idx < upgradePathRuns.length - 1 ? (
                                 <span className="px-0.5 text-sm opacity-40">
-                                  →
+                                  â
                                 </span>
                               ) : null}
                             </div>
@@ -1233,14 +1222,14 @@ export default function HexaTrackerPage() {
               </div>
             ) : (
               <p className="mt-3 text-sm opacity-65">
-                All nodes at target — nice work.
+                All nodes at target â nice work.
               </p>
             )}
           </section>
 
         </div>
 
-        {/* —— Skills —— */}
+        {/* ââ Skills ââ */}
         <section className="rounded-xl border border-border/45 bg-surface/90 p-4">
           <div className="flex items-center justify-between gap-2">
             <h2 className="text-sm font-semibold">Skills Configuration</h2>
@@ -1362,13 +1351,6 @@ export default function HexaTrackerPage() {
         visibleIds={visibleIds}
         onClose={() => setManageOpen(false)}
         onSave={applyDisplayIds}
-      />
-      <AlertModal
-        open={activeSwitchBlockedOpen}
-        title="Active character locked"
-        message={UNLOCK_TO_CHANGE_ACTIVE_MSG}
-        onClose={dismissActiveSwitchBlocked}
-        titleId="hexa-active-switch-blocked-title"
       />
     </div>
   );
