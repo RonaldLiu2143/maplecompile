@@ -68,7 +68,6 @@ export function ThemePicker({
   );
   const [open, setOpen] = useState(false);
   const [customOpen, setCustomOpen] = useState(false);
-  const [saveName, setSaveName] = useState("");
   const [saveMsg, setSaveMsg] = useState<string | null>(null);
   const panelId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
@@ -147,15 +146,14 @@ export function ThemePicker({
       setSaveMsg(`You can save up to ${MAX_CUSTOM_COLORS} custom colors.`);
       return;
     }
-    const name = saveName.trim() || hex;
+    const name = hex.toUpperCase();
     writeThemePrefs({
       ...prefs,
       customColors: [
         ...customColors,
-        { id: nanoid(), name: name.slice(0, 32), hex, hue },
+        { id: nanoid(), name, hex, hue },
       ],
     });
-    setSaveName("");
     setSaveMsg("Saved to presets.");
     setCustomOpen(false);
   };
@@ -303,25 +301,12 @@ export function ThemePicker({
             Custom color
           </button>
           {showCustom ? (
-            <div className="mt-2 space-y-2">
-              <ColorGraph color={activeColor} onChange={setColor} />
-              <div className="flex flex-wrap items-center gap-1.5">
-                <input
-                  type="text"
-                  value={saveName}
-                  onChange={(e) => setSaveName(e.target.value)}
-                  placeholder="Preset name (optional)"
-                  maxLength={32}
-                  className="min-w-0 flex-1 rounded-md border border-border/50 bg-background px-2 py-1.5 text-[11px] outline-none focus:border-accent"
-                />
-                <button
-                  type="button"
-                  onClick={handleSaveCustom}
-                  className="shrink-0 rounded-md border border-accent/50 bg-accent-soft px-2.5 py-1.5 text-[11px] font-semibold text-foreground hover:bg-accent hover:text-primary-foreground"
-                >
-                  Save custom color
-                </button>
-              </div>
+            <div className="mt-2 space-y-1">
+              <ColorGraph
+                color={activeColor}
+                onChange={setColor}
+                onSave={handleSaveCustom}
+              />
               {saveMsg ? (
                 <p className="text-[10px] text-muted-foreground" role="status">
                   {saveMsg}

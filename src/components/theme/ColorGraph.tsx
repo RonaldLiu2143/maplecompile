@@ -36,9 +36,11 @@ function paintGraph(ctx: CanvasRenderingContext2D, w: number, h: number) {
 export function ColorGraph({
   color,
   onChange,
+  onSave,
 }: {
   color: string;
   onChange: (hex: string) => void;
+  onSave?: () => void;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const hex = parseAccentHex(color) ?? "#3b82f6";
@@ -106,26 +108,37 @@ export function ColorGraph({
           aria-hidden
         />
       </div>
-      <label className="flex items-center gap-2 rounded-md border border-border/50 bg-background px-2 py-1.5">
-        <span className="text-[11px] font-semibold text-muted-foreground">
-          HEX
-        </span>
-        <span className="font-mono text-xs text-muted-foreground">#</span>
-        <input
-          value={draft}
-          spellCheck={false}
-          autoComplete="off"
-          maxLength={6}
-          aria-label="Theme color hex"
-          className="min-w-0 flex-1 bg-transparent font-mono text-xs uppercase outline-none"
-          onChange={(e) => {
-            const raw = e.target.value.replace(/[^0-9a-fA-F]/g, "").slice(0, 6);
-            setDraft(raw);
-            const next = parseAccentHex(raw);
-            if (next) onChange(next);
-          }}
-        />
-      </label>
+      <div className="flex items-stretch gap-1.5">
+        <label className="flex min-w-0 flex-1 items-center gap-2 rounded-md border border-border/50 bg-background px-2 py-1.5">
+          <span className="text-[11px] font-semibold text-muted-foreground">
+            HEX
+          </span>
+          <span className="font-mono text-xs text-muted-foreground">#</span>
+          <input
+            value={draft}
+            spellCheck={false}
+            autoComplete="off"
+            maxLength={6}
+            aria-label="Theme color hex"
+            className="min-w-0 flex-1 bg-transparent font-mono text-xs uppercase outline-none"
+            onChange={(e) => {
+              const raw = e.target.value.replace(/[^0-9a-fA-F]/g, "").slice(0, 6);
+              setDraft(raw);
+              const next = parseAccentHex(raw);
+              if (next) onChange(next);
+            }}
+          />
+        </label>
+        {onSave ? (
+          <button
+            type="button"
+            onClick={onSave}
+            className="w-1/4 min-w-[3.25rem] shrink-0 rounded-md border border-accent/50 bg-accent-soft px-2 text-[11px] font-semibold text-foreground hover:bg-accent hover:text-primary-foreground"
+          >
+            Save
+          </button>
+        ) : null}
+      </div>
     </div>
   );
 }
