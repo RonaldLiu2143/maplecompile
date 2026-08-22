@@ -9,19 +9,14 @@ import { EquipGrid } from "@/components/EquipGrid";
 import { useFlashMessage } from "@/hooks/useFlashMessage";
 import {
   activeCharacterKey,
-  importBuildToCharacter,
   persistLiveToWorkspace,
 } from "@/lib/character-workspace";
 import {
   fetchCharacterLookup,
   readSessionCharacter,
 } from "@/lib/character/client";
-import {
-  CHARACTER_NAME_REGEX,
-  type NexonRegion,
-} from "@/lib/character/lookup";
-import { isStickyActiveSwitchBlocked } from "@/lib/active-character";
-import { addToRoster, setPrimary } from "@/lib/dashboard/roster";
+import { SCOUTER_FROM_LOOKUP_HREF } from "@/lib/character/open-in-scouter";
+import { type NexonRegion } from "@/lib/character/lookup";
 import { getCharName } from "@/lib/jobs";
 import { pairScouterAndEquip } from "@/lib/pairing";
 import {
@@ -78,7 +73,6 @@ export default function CharacterShareProfilePage() {
   const [ownedToken, setOwnedToken] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const { msg, flash } = useFlashMessage(2800);
-  const [importName, setImportName] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
   useEffect(() => {
@@ -109,12 +103,6 @@ export default function CharacterShareProfilePage() {
         storage.recordScouterShareView(id);
         const tokens = storage.getScouterShareTokens();
         setOwnedToken(tokens[id]?.deleteToken ?? null);
-        const suggested =
-          data.character?.name ||
-          (data.identity !== "anonymous" ? data.ign || data.name : "") ||
-          "";
-        setImportName(suggested);
-        // Region comes from the share character when present (no picker).
       } catch (err) {
         if (cancelled) return;
         setLoad({
@@ -188,91 +176,25 @@ export default function CharacterShareProfilePage() {
     ? getCharName(input.jobType, input.charType)
     : "";
 
-  const importRegion: NexonRegion =
-    record?.character?.region === "eu" ? "eu" : "na";
-
-  const applyLocally = (opts: {
-    scouter: boolean;
-    equipment: boolean;
-    pair: boolean;
-  }) => {
+  const openInScouter = () => {
     if (!record?.state.input) return;
     const displayName = (record.name || record.ign || "").trim();
-    if (opts.scouter) {
-      storage.setScouterLast({
-        input: structuredClone(record.state.input),
-        buffs: structuredClone(record.state.buffs),
-        links: structuredClone(record.state.links),
-        hexa: clampHexaForGms(record.state.hexa ?? []),
-        ...(displayName ? { name: displayName } : {}),
-      });
-    }
-    if (opts.equipment && record.equipment) {
+    storage.setScouterLast({
+      input: structuredClone(record.state.input),
+      buffs: structuredClone(record.state.buffs),
+      links: structuredClone(record.state.links),
+      hexa: clampHexaForGms(record.state.hexa ?? []),
+      ...(displayName ? { name: displayName } : {}),
+    });
+    if (record.equipment) {
       storage.setJobType(record.equipment.jobType as never);
       storage.setCharType(record.equipment.charType);
       storage.setEquipSetup(structuredClone(record.equipment.setup));
-    }
-    if (opts.pair && opts.scouter) {
       pairScouterAndEquip();
     }
-    // Scouter / Equipment mount reloads the active character workspace over
-    // live storage — keep workspace in sync so the share isn't clobbered.
+    // Scouter mount reloads the active workspace over live storage.
     persistLiveToWorkspace(activeCharacterKey());
-  };
-
-  const importToRoster = () => {
-    if (!record?.state.input) return;
-    const name = importName.trim();
-    if (!CHARACTER_NAME_REGEX.test(name)) {
-      flash("Enter a valid character name (2–13 letters)");
-      return;
-    }
-    setBusy("import");
-    try {
-      addToRoster({ name, region: importRegion });
-      // Locked active character is sticky — don't overwrite primary when
-      // browsing/importing shares (unless the import target is the lock).
-      const importTarget = { name, region: importRegion };
-      if (!isStickyActiveSwitchBlocked(importTarget)) {
-        setPrimary(importTarget);
-      }
-      importBuildToCharacter({
-        region: importRegion,
-        name,
-        scouterLast: {
-          input: record.state.input,
-          buffs: record.state.buffs,
-          links: record.state.links,
-          hexa: clampHexaForGms(record.state.hexa ?? []),
-          name: (record.name || record.ign || name).trim(),
-        },
-        equipSetup: record.equipment?.setup,
-        jobType: record.equipment?.jobType || record.state.input.jobType,
-        charType: record.equipment?.charType || record.state.input.charType,
-      });
-      if (record.equipment && equipCount > 0) {
-        pairScouterAndEquip();
-      }
-      flash(`Imported to ${name} (${importRegion.toUpperCase()})`);
-    } catch (err) {
-      flash(err instanceof Error ? err.message : "Import failed");
-    } finally {
-      setBusy(null);
-    }
-  };
-
-  const openInScouter = () => {
-    applyLocally({ scouter: true, equipment: false, pair: false });
-    router.push("/calc/scouter?from=share");
-  };
-
-  const openInEquipment = () => {
-    if (!record?.equipment) {
-      flash("This share has no equipment snapshot");
-      return;
-    }
-    applyLocally({ scouter: false, equipment: true, pair: false });
-    router.push("/calc/equips/setup?from=share");
+    router.push(SCOUTER_FROM_LOOKUP_HREF);
   };
 
   const updateShare = async () => {
@@ -471,57 +393,21 @@ export default function CharacterShareProfilePage() {
             </p>
           </div>
         </div>
-        <div className="flex shrink-0 flex-col items-stretch gap-2 sm:items-end">
-          <div className="flex flex-wrap items-center justify-end gap-2">
-            <span
-              className="rounded border border-border/50 bg-surface-muted/40 px-2 py-1.5 text-xs font-semibold uppercase tracking-wide opacity-80"
-              title="Region from this build profile"
-            >
-              {importRegion}
-            </span>
-            <input
-              value={importName}
-              onChange={(e) => setImportName(e.target.value)}
-              className="w-36 rounded border border-border/50 bg-background px-2.5 py-1.5 text-sm sm:w-40"
-              placeholder="IGN"
-              maxLength={13}
-              aria-label="Import character name"
-            />
-            <button
-              type="button"
-              disabled={busy === "import"}
-              onClick={importToRoster}
-              title="Add this IGN to your roster and save Scouter + Equipment into that character’s workspace"
-              className="rounded-md bg-accent px-3 py-1.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-40"
-            >
-              {busy === "import" ? "Importing…" : "Import to roster"}
-            </button>
-            <Link
-              href="/calc/scouter/gallery"
-              className="rounded-md border border-border/50 bg-surface px-3 py-1.5 text-sm font-semibold transition hover:bg-surface-muted"
-            >
-              Gallery
-            </Link>
-          </div>
-          <div className="flex flex-wrap justify-end gap-2">
-            <button
-              type="button"
-              onClick={openInScouter}
-              title="Load Scouter stats into your current draft and open Scouter (does not add to roster)"
-              className="rounded-md border border-border/50 bg-background px-3 py-1.5 text-sm font-semibold transition hover:bg-surface-muted"
-            >
-              Open in Scouter
-            </button>
-            <button
-              type="button"
-              onClick={openInEquipment}
-              disabled={!record.equipment || equipCount === 0}
-              title="Load equipment into Equipment Setup (does not add to roster)"
-              className="rounded-md border border-border/50 bg-background px-3 py-1.5 text-sm font-semibold transition hover:bg-surface-muted disabled:opacity-40"
-            >
-              Open in Equipment
-            </button>
-          </div>
+        <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+          <Link
+            href="/calc/scouter/gallery"
+            className="rounded-md border border-border/50 bg-surface px-3 py-1.5 text-sm font-semibold transition hover:bg-surface-muted"
+          >
+            Gallery
+          </Link>
+          <button
+            type="button"
+            onClick={openInScouter}
+            title="Load this build into Scouter (stats + gear)"
+            className="rounded-md border border-border/50 bg-background px-3 py-1.5 text-sm font-semibold transition hover:bg-surface-muted"
+          >
+            Open in Scouter
+          </button>
         </div>
       </header>
 
