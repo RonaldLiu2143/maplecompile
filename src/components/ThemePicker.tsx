@@ -41,6 +41,14 @@ const APPEARANCE_ICONS = {
   light: Sun,
 } as const;
 
+function BwLabel({ className }: { className?: string }) {
+  return (
+    <span className={className}>
+      B<span aria-hidden>/</span>W
+    </span>
+  );
+}
+
 export function ThemePicker({
   compact = false,
   placement = "above",
@@ -200,7 +208,7 @@ export function ThemePicker({
                     }
                     aria-hidden
                   />
-                  {p.name}
+                  {isBw ? <BwLabel /> : p.name}
                 </button>
               );
             })}
@@ -301,7 +309,7 @@ export function ThemePicker({
             }
             aria-hidden
           />
-          {themeHueLabel(activeHue)}
+          {isBwColor ? <BwLabel /> : themeHueLabel(activeHue)}
         </span>
       </button>
       {open ? <div className="mt-1">{panel}</div> : null}

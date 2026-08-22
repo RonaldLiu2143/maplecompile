@@ -206,15 +206,17 @@ export function inkAccentForScheme(scheme: ThemeScheme): string {
   return scheme === "light" ? INK_ACCENT_LIGHT : INK_ACCENT_DARK;
 }
 
+/** Label for the neutral black/white color preset (no hue tint). */
+export const THEME_BW_LABEL = "B/W";
+
 /** Diagonal B/W swatch — split top-right to bottom-left. */
 export function bwSwatchBackground(): string {
   return `linear-gradient(to bottom left, ${INK_ACCENT_DARK} 50%, ${INK_ACCENT_LIGHT} 50%)`;
 }
 
 export const THEME_HUE_PRESETS = [
-  { id: "ink", name: "B/W", hue: null, hex: INK_ACCENT_DARK },
-  { id: "red", name: "Red", hue: 25, hex: "#e18747" },
-  { id: "orange", name: "Orange", hue: 55, hex: "#e1d447" },
+  { id: "ink", name: THEME_BW_LABEL, hue: null, hex: INK_ACCENT_DARK },
+  { id: "red", name: "Red", hue: 12, hex: "#ef4444" },
   { id: "green", name: "Green", hue: 145, hex: "#47e187" },
   { id: "blue", name: "Blue", hue: 250, hex: "#3b82f6" },
   { id: "violet", name: "Violet", hue: 300, hex: "#e147e1" },
@@ -313,9 +315,9 @@ export function parseThemeHue(value: unknown): number | null {
 }
 
 export function themeHueLabel(hue: number | null | undefined): string {
-  if (hue == null) return "B/W";
+  if (hue == null) return THEME_BW_LABEL;
   const parsed = parseThemeHue(hue);
-  if (parsed == null) return "B/W";
+  if (parsed == null) return THEME_BW_LABEL;
   const named = THEME_HUE_PRESETS.find(
     (p) => p.hue != null && hueDistance(p.hue, parsed) <= 8,
   );
