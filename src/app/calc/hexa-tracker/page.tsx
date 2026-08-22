@@ -15,6 +15,7 @@ import {
 } from "@/lib/active-character";
 import { getWorkspace } from "@/lib/character-workspace";
 import { readSessionCharacter } from "@/lib/character/client";
+import type { CharacterLookupResult } from "@/lib/character/lookup";
 import { entryKey, isPrimary, readRosterState } from "@/lib/dashboard/roster";
 import {
   readHexaDisplay,
@@ -73,19 +74,21 @@ const SOL_ERDA_ICON =
 
 type ViewMode = "characters" | "preview";
 
-/** Resolve HEXA job class for a roster key without switching sticky primary. */
+/** HEXA skills follow the roster character's actual class, not Scouter sandbox class. */
 function charTypeForRosterKey(
   key: string,
   entry: RosterEntry | undefined,
+  character?: CharacterLookupResult | null,
 ): string {
+  const jobName =
+    character?.jobName ??
+    (entry ? readSessionCharacter(entry.name, entry.region)?.jobName : undefined);
+  const fromJob = classFromJobName(jobName);
+  if (fromJob?.charType) return fromJob.charType;
+
   if (!key) return storage.getCharType() || "adele";
   const ws = getWorkspace(key);
   if (ws?.charType) return ws.charType;
-  if (entry) {
-    const session = readSessionCharacter(entry.name, entry.region);
-    const mapped = classFromJobName(session?.jobName);
-    if (mapped?.charType) return mapped.charType;
-  }
   return storage.getCharType() || "adele";
 }
 
@@ -295,7 +298,6 @@ export default function HexaTrackerPage() {
     { key: string; label: string; primary: boolean }[]
   >([]);
   const [msg, setMsg] = useState<string | null>(null);
-  const [charType, setCharType] = useState("adele");
   const [viewMode, setViewMode] = useState<ViewMode>("characters");
   const [previewCharType, setPreviewCharType] = useState("adele");
   const [previewState, setPreviewState] = useState<HexaTrackerState | null>(
@@ -314,8 +316,15 @@ export default function HexaTrackerPage() {
   const rosterKeyRef = useRef("");
   const lastPrimaryKeyRef = useRef<string | null>(null);
 
+  const rosterCharType = useMemo(() => {
+    const entry = roster.find((e) => entryKey(e) === rosterKey);
+    const slot = rosterKey ? slots[rosterKey] : undefined;
+    const character = slot?.status === "ready" ? slot.character : null;
+    return charTypeForRosterKey(rosterKey, entry, character);
+  }, [rosterKey, roster, slots]);
+
   const activeCharType =
-    viewMode === "preview" ? previewCharType : charType;
+    viewMode === "preview" ? previewCharType : rosterCharType;
   const activeState =
     viewMode === "preview" ? previewState : state;
 
@@ -373,9 +382,6 @@ export default function HexaTrackerPage() {
             : shown[0] || preferred || "";
     setRosterKey(key);
     rosterKeyRef.current = key;
-    const { entries } = readRosterState();
-    const entry = entries.find((e) => entryKey(e) === key);
-    setCharType(charTypeForRosterKey(key, entry));
     const tracker = loadHexaTracker(key || null);
     setState(tracker);
     setPreviewState((prev) => prev ?? loadHexaTracker("__preview__"));
@@ -436,7 +442,6 @@ export default function HexaTrackerPage() {
     setPriorityIndex(0);
     const tracker = loadHexaTracker(key || null);
     setState(tracker);
-    setCharType(charTypeForRosterKey(key, entry));
   };
 
   const applyDisplayIds = (ids: string[]) => {
@@ -469,7 +474,6 @@ export default function HexaTrackerPage() {
     setViewMode("characters");
     setPriorityIndex(0);
     setState(loadHexaTracker(key));
-    setCharType(charTypeForRosterKey(key, entry));
   };
 
   const progress = useMemo(() => {
