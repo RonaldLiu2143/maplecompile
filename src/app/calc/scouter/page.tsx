@@ -51,7 +51,6 @@ import {
   migrateGlobalsToPrimaryWorkspace,
   persistLiveToWorkspace,
 } from "@/lib/character-workspace";
-import { ScouterActiveCharacterPresetPair } from "@/components/ScouterActiveCharacterPresetPair";
 import { ConfirmModal } from "@/components/ConfirmModal";
 import { EquipmentSetupPanel } from "@/components/EquipmentSetupPanel";
 import { HexaEfficiencyPanel } from "./hexa-efficiency";
@@ -1468,28 +1467,6 @@ export default function ScouterPage() {
           </p>
         </div>
       </header>
-<ScouterActiveCharacterPresetPair
-        loadedPresetId={loadedPresetId}
-        loadedPresetName={presetName}
-        onApplied={({ action, presetId, presetName: pairedName }) => {
-          if (action === "unlink") return;
-          // Pair is metadata-only — keep the unsaved form; just reflect the link.
-          if (action === "pair") {
-            if (presetId) {
-              setLoadedPresetId(presetId);
-              setSelectedPresetId(presetId);
-            }
-            if (pairedName?.trim()) setPresetName(pairedName.trim());
-            refreshPresets();
-            return;
-          }
-          reloadDraftFromLiveStorage({
-            loadedPresetId: presetId,
-            loadedPresetName: pairedName,
-          });
-          refreshPresets();
-        }}
-      />
 
       <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.95fr)]">
         {/* —— Left: Enter Directly —— */}
@@ -1526,8 +1503,13 @@ export default function ScouterPage() {
                   </p>
                 )}
               </div>
+            </div>
 
-              <div className="w-full space-y-1.5 border-t border-border/40 pt-2">
+            <MiniScouterCharacterSearch
+              onUseForStats={handleUseForStats}
+            />
+
+            <div className="w-full space-y-1.5 border-t border-border/40 pt-2">
                 <div className="flex flex-wrap items-center justify-end gap-1.5">
                   <input
                     type="text"
@@ -1654,11 +1636,6 @@ export default function ScouterPage() {
                   </button>
                 </div>
               </div>
-            </div>
-
-            <MiniScouterCharacterSearch
-              onUseForStats={handleUseForStats}
-            />
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-4">

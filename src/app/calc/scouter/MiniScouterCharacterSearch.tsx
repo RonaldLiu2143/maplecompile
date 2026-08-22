@@ -12,7 +12,7 @@ import {
 } from "@/lib/character/lookup";
 
 const inputClass =
-  "min-h-11 rounded border border-border/50 bg-background px-2 py-1 text-base outline-none focus:border-accent md:min-h-0 md:text-xs";
+  "min-h-11 rounded border border-border/50 bg-background px-2.5 py-1 text-base outline-none focus:border-accent";
 
 function characterKey(c: Pick<CharacterLookupResult, "name" | "region">): string {
   return `${c.region}:${c.name.toLowerCase()}`;
@@ -122,7 +122,7 @@ export function MiniScouterCharacterSearch({
       </form>
 
       <p className="text-[11px] leading-snug text-muted-foreground">
-        Gallery posts only show the sprite, not the character name.
+        Gallery posts only show the sprite.
       </p>
 
       {error ? (

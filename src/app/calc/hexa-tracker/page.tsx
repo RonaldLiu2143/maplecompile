@@ -46,19 +46,11 @@ import {
 import { hexaSlotLabels } from "@/lib/hexa-skill-labels";
 import {
   HEXA_MAX_LEVEL,
-  clearHexaScouterPairing,
-  characterHasScouterDraft,
   defaultHexaTrackerState,
-  formatHexaPairingLabel,
-  getHexaScouterPairing,
-  importLevelsFromPairedScouter,
   listRosterOptions,
   loadHexaTracker,
-  pairHexaWithScouter,
   primaryRosterKey,
   saveHexaTracker,
-  syncTrackerLevelsToPairedScouter,
-  type HexaScouterPairing,
   type HexaTrackerState,
 } from "@/lib/hexa-tracker";
 import { CLASS_OPTIONS, classFromJobName } from "@/lib/jobs";
@@ -298,9 +290,6 @@ export default function HexaTrackerPage() {
   const { hydrated, roster, primary, slots, handleSetPrimary } = useRoster();
   const [ready, setReady] = useState(false);
   const [state, setState] = useState<HexaTrackerState | null>(null);
-  const [pairing, setPairing] = useState<HexaScouterPairing | null>(null);
-  const [presets, setPresets] = useState<{ id: string; name: string }[]>([]);
-  const [selectedPresetId, setSelectedPresetId] = useState("");
   const [rosterKey, setRosterKey] = useState("");
   const [rosterOptions, setRosterOptions] = useState<
     { key: string; label: string; primary: boolean }[]
@@ -316,7 +305,6 @@ export default function HexaTrackerPage() {
     readHexaDisplay(),
   );
   const [manageOpen, setManageOpen] = useState(false);
-  const [pairOpen, setPairOpen] = useState(false);
   const [showUpgradePath, setShowUpgradePath] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
   const [bcsDraft, setBcsDraft] = useState(String(DEFAULT_BOSS_CONVERTED_STAT));
@@ -352,19 +340,12 @@ export default function HexaTrackerPage() {
     [roster, visibleIds],
   );
 
-  const filteredRosterOptions = useMemo(() => {
-    const set = new Set(visibleIds);
-    return rosterOptions.filter((o) => set.has(o.key));
-  }, [rosterOptions, visibleIds]);
 
   rosterKeyRef.current = rosterKey;
 
   const refresh = useCallback(() => {
     const options = listRosterOptions();
     setRosterOptions(options);
-    setPresets(
-      storage.listScouterPresets().map((p) => ({ id: p.id, name: p.name })),
-    );
     const liveCharType = storage.getCharType() || "adele";
     setPreviewCharType((prev) => prev || liveCharType);
     const prefs = readHexaDisplay();
@@ -397,7 +378,6 @@ export default function HexaTrackerPage() {
     setCharType(charTypeForRosterKey(key, entry));
     const tracker = loadHexaTracker(key || null);
     setState(tracker);
-    setPairing(getHexaScouterPairing(key || null));
     setPreviewState((prev) => prev ?? loadHexaTracker("__preview__"));
     setReady(true);
   }, []);
@@ -417,8 +397,6 @@ export default function HexaTrackerPage() {
     }
     const saved = saveHexaTracker(next, key || null);
     setState(saved);
-    // Keep paired scouter draft hexa in sync for this character.
-    syncTrackerLevelsToPairedScouter(key || null, saved.levels);
   };
 
   const setLevel = (index: number, level: number) => {
@@ -458,7 +436,6 @@ export default function HexaTrackerPage() {
     setPriorityIndex(0);
     const tracker = loadHexaTracker(key || null);
     setState(tracker);
-    setPairing(getHexaScouterPairing(key || null));
     setCharType(charTypeForRosterKey(key, entry));
   };
 
@@ -480,54 +457,6 @@ export default function HexaTrackerPage() {
     }
   };
 
-  const onPair = () => {
-    try {
-      if (!selectedPresetId && !characterHasScouterDraft(rosterKey || null)) {
-        flash(
-          rosterKey
-            ? "Open Scouter for this character (or pick a preset) first"
-            : "Enter scouter stats or pick a preset first",
-        );
-        return;
-      }
-      const trackerEmpty = !(activeState?.levels.some((n) => n > 0));
-      const next = pairHexaWithScouter({
-        scouterPresetId: selectedPresetId || null,
-        rosterKey: rosterKey || null,
-        syncLevelsToScouter: true,
-      });
-      setPairing(next);
-      if (trackerEmpty) {
-        const imported = importLevelsFromPairedScouter(rosterKey || null);
-        if (imported?.levels.some((n) => n > 0)) {
-          setState(imported);
-          flash("Paired — imported HEXA levels from Scouter");
-          refresh();
-          return;
-        }
-      }
-      flash("Paired HEXA ↔ Scouter");
-      refresh();
-    } catch (err) {
-      flash(err instanceof Error ? err.message : "Pairing failed");
-    }
-  };
-
-  const onUnpair = () => {
-    clearHexaScouterPairing(rosterKey || null);
-    setPairing(null);
-    flash("Unpaired");
-  };
-
-  const onImport = () => {
-    const next = importLevelsFromPairedScouter(rosterKey || null);
-    if (!next) {
-      flash("No hexa levels found on paired scouter");
-      return;
-    }
-    setState(next);
-    flash("Imported levels from Scouter");
-  };
 
   const onBarSelect = (entry: RosterEntry) => {
     if (isStickyActiveSwitchBlocked(entry)) {
@@ -540,7 +469,6 @@ export default function HexaTrackerPage() {
     setViewMode("characters");
     setPriorityIndex(0);
     setState(loadHexaTracker(key));
-    setPairing(getHexaScouterPairing(key));
     setCharType(charTypeForRosterKey(key, entry));
   };
 
@@ -1309,102 +1237,6 @@ export default function HexaTrackerPage() {
             )}
           </section>
 
-          {viewMode === "characters" ? (
-            <section className="rounded-xl border border-border/45 bg-surface/90 px-4 py-3">
-              <button
-                type="button"
-                onClick={() => setPairOpen((v) => !v)}
-                className="flex w-full items-center justify-between gap-2 text-left text-sm font-semibold"
-              >
-                <span>
-                  {pairing
-                    ? formatHexaPairingLabel(pairing)
-                    : "Scouter pairing (optional)"}
-                </span>
-                <span className="text-xs opacity-55">
-                  {pairOpen ? "Hide" : "Show"}
-                </span>
-              </button>
-              {pairOpen ? (
-                <div className="mt-3 space-y-2 border-t border-border/40 pt-3">
-                  {msg ? (
-                    <p className="text-xs font-medium text-accent">{msg}</p>
-                  ) : null}
-                  <div className="flex flex-wrap gap-2">
-                    {pairing ? (
-                      <>
-                        <button
-                          type="button"
-                          onClick={onImport}
-                          className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold hover:bg-surface-muted"
-                        >
-                          Import levels from Scouter
-                        </button>
-                        <button
-                          type="button"
-                          onClick={onUnpair}
-                          className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold hover:bg-surface-muted"
-                        >
-                          Unpair
-                        </button>
-                      </>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={onPair}
-                        className="rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:opacity-90"
-                      >
-                        Pair with Scouter
-                      </button>
-                    )}
-                    <Link
-                      href="/calc/scouter"
-                      className="rounded-lg border border-border px-3 py-1.5 text-xs font-semibold hover:bg-surface-muted"
-                    >
-                      Open Scouter
-                    </Link>
-                  </div>
-                  {!pairing ? (
-                    <div className="grid gap-2 sm:grid-cols-2">
-                      <label className="flex flex-col gap-1 text-xs font-semibold opacity-70">
-                        Scouter source
-                        <select
-                          value={selectedPresetId}
-                          onChange={(e) => setSelectedPresetId(e.target.value)}
-                          className={inputClass}
-                        >
-                          <option value="">Current draft</option>
-                          {presets.map((p) => (
-                            <option key={p.id} value={p.id}>
-                              {p.name}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                      <label className="flex flex-col gap-1 text-xs font-semibold opacity-70">
-                        Roster character
-                        <select
-                          value={rosterKey}
-                          onChange={(e) =>
-                            selectRosterCharacter(e.target.value)
-                          }
-                          className={inputClass}
-                        >
-                          <option value="">None</option>
-                          {filteredRosterOptions.map((o) => (
-                            <option key={o.key} value={o.key}>
-                              {o.label}
-                              {o.primary ? " ★" : ""}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                    </div>
-                  ) : null}
-                </div>
-              ) : null}
-            </section>
-          ) : null}
         </div>
 
         {/* —— Skills —— */}

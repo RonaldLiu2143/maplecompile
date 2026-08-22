@@ -9,11 +9,7 @@ import {
 } from "react";
 import Link from "next/link";
 import { useMapleDataReload } from "@/hooks/useMapleDataReload";
-import {
-  activeCharacterKey,
-  ensureActiveWorkspaceLoaded,
-  persistLiveToWorkspace,
-} from "@/lib/character-workspace";
+import { ensureActiveWorkspaceLoaded } from "@/lib/character-workspace";
 import {
   buildFlameTable,
   calcFlameProbability,
@@ -85,26 +81,6 @@ function flamesFromEquipment(
   return next;
 }
 
-function writeFlamesOntoSetup(
-  setup: EquipSetup,
-  id: string,
-  lines: FlameLine[],
-): EquipSetup {
-  const next: EquipSetup = {};
-  for (const [slot, list] of Object.entries(setup)) {
-    if (!Array.isArray(list)) {
-      next[slot] = list;
-      continue;
-    }
-    next[slot] = list.map((equip) =>
-      equip.id === id
-        ? { ...equip, flames: lines.length ? lines : undefined }
-        : equip,
-    );
-  }
-  return next;
-}
-
 function formatChance(chance: number): string {
   if (chance <= 0) return "0%";
   if (chance >= 1) return "100%";
@@ -136,7 +112,6 @@ export default function FlamesClient() {
   const [scouterPresets, setScouterPresets] = useState<
     { id: string; name: string }[]
   >([]);
-  const persistTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const calcGen = useRef(0);
   const flameSetupRef = useRef(flameSetup);
   const setupRef = useRef(setup);
@@ -370,14 +345,8 @@ export default function FlamesClient() {
     }
     const next = { ...flameSetup, [id]: nextLines };
     setFlameSetup(next);
-    if (persistTimer.current) clearTimeout(persistTimer.current);
-    persistTimer.current = setTimeout(() => {
-      const nextSetup = writeFlamesOntoSetup(setupRef.current, id, nextLines);
-      skipReloadRef.current = true;
-      storage.setFlameSetup(next);
-      storage.setEquipSetup(nextSetup);
-      persistLiveToWorkspace(activeCharacterKey());
-    }, 200);
+    // Keep edits local to this calculator — do not write shared equip/flame
+    // storage used by Scouter / Equipment Setup.
   };
 
   const flameKind = selected?.isNormalFlame ? "normal" : "special";
