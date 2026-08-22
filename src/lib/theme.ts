@@ -206,8 +206,13 @@ export function inkAccentForScheme(scheme: ThemeScheme): string {
   return scheme === "light" ? INK_ACCENT_LIGHT : INK_ACCENT_DARK;
 }
 
+/** Diagonal B/W swatch — split top-right to bottom-left. */
+export function bwSwatchBackground(): string {
+  return `linear-gradient(to bottom left, ${INK_ACCENT_DARK} 50%, ${INK_ACCENT_LIGHT} 50%)`;
+}
+
 export const THEME_HUE_PRESETS = [
-  { id: "ink", name: "Ink", hue: null, hex: INK_ACCENT_DARK },
+  { id: "ink", name: "B/W", hue: null, hex: INK_ACCENT_DARK },
   { id: "red", name: "Red", hue: 25, hex: "#e18747" },
   { id: "orange", name: "Orange", hue: 55, hex: "#e1d447" },
   { id: "green", name: "Green", hue: 145, hex: "#47e187" },
@@ -308,9 +313,9 @@ export function parseThemeHue(value: unknown): number | null {
 }
 
 export function themeHueLabel(hue: number | null | undefined): string {
-  if (hue == null) return "Ink";
+  if (hue == null) return "B/W";
   const parsed = parseThemeHue(hue);
-  if (parsed == null) return "Ink";
+  if (parsed == null) return "B/W";
   const named = THEME_HUE_PRESETS.find(
     (p) => p.hue != null && hueDistance(p.hue, parsed) <= 8,
   );

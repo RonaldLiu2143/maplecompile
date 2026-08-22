@@ -13,6 +13,7 @@ import {
   DEFAULT_THEME_HUE,
   DEFAULT_THEME_PREFS,
   FONT_PRESETS,
+  bwSwatchBackground,
   getThemePreset,
   inkAccentForScheme,
   THEME_HUE_PRESETS,
@@ -105,9 +106,10 @@ export function ThemePicker({
 
   const activeHue = prefs.hue === null ? null : (parseThemeHue(prefs.hue) ?? DEFAULT_THEME_HUE);
   const scheme = getThemePreset(prefs.id).scheme;
+  const isBwColor = prefs.hue === null;
   const activeColor =
     parseAccentHex(prefs.accent) ??
-    (prefs.hue === null ? inkAccentForScheme(scheme) : matched?.hex ?? DEFAULT_THEME_COLOR);
+    (isBwColor ? inkAccentForScheme(scheme) : matched?.hex ?? DEFAULT_THEME_COLOR);
   const activeFont = prefs.font ?? DEFAULT_THEME_PREFS.font ?? "geist";
 
   const panel = (
@@ -175,8 +177,7 @@ export function ThemePicker({
           >
             {THEME_HUE_PRESETS.map((p) => {
               const active = !showCustom && matched?.id === p.id;
-              const swatchColor =
-                p.hue == null ? inkAccentForScheme(scheme) : p.hex;
+              const isBw = p.hue == null;
               return (
                 <button
                   key={p.id}
@@ -192,7 +193,11 @@ export function ThemePicker({
                 >
                   <span
                     className="size-6 rounded-md border border-border/50"
-                    style={{ backgroundColor: swatchColor }}
+                    style={
+                      isBw
+                        ? { background: bwSwatchBackground() }
+                        : { backgroundColor: p.hex }
+                    }
                     aria-hidden
                   />
                   {p.name}
@@ -289,7 +294,11 @@ export function ThemePicker({
         <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-accent opacity-90">
           <span
             className="size-3 rounded-sm border border-border/50"
-            style={{ backgroundColor: activeColor }}
+            style={
+              isBwColor
+                ? { background: bwSwatchBackground() }
+                : { backgroundColor: activeColor }
+            }
             aria-hidden
           />
           {themeHueLabel(activeHue)}
