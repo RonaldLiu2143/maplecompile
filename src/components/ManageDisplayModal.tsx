@@ -207,7 +207,7 @@ export function ManageDisplayModal({
                           </span>
                           {primaryMark ? (
                             <span
-                              className="text-[10px] font-bold text-amber-500"
+                              className="text-xs font-bold text-amber-500"
                               title="Primary"
                             >
                               ★
@@ -225,7 +225,7 @@ export function ManageDisplayModal({
                       </div>
                       <span
                         className={[
-                          "shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
+                          "shrink-0 rounded-md px-1.5 py-0.5 text-xs font-semibold uppercase tracking-wide",
                           selected
                             ? "bg-accent/20 text-accent"
                             : "bg-surface-muted opacity-55",

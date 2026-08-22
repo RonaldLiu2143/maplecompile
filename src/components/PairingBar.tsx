@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useState, type ReactNode } from "react";
+import { LiveStatusMessage } from "@/components/LiveStatusMessage";
 import { useFlashMessage } from "@/hooks/useFlashMessage";
 import { useMapleDataReload } from "@/hooks/useMapleDataReload";
 import {
@@ -233,9 +234,10 @@ export function PairingBar({
               Uses your gear when calculating damage
             </p>
           </div>
-          {msg ? (
-            <p className="text-xs font-medium text-accent">{msg}</p>
-          ) : null}
+          <LiveStatusMessage
+            message={msg}
+            className="text-xs font-medium text-accent"
+          />
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {cta.action === "unpair" ? (

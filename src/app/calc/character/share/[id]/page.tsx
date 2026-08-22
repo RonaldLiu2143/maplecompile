@@ -7,6 +7,7 @@ import { ConfirmModal } from "@/components/ConfirmModal";
 import { AnonymousShareAvatar } from "@/components/character/AnonymousShareAvatar";
 import { CharacterSprite } from "@/components/character/CharacterSprite";
 import { EquipGrid } from "@/components/EquipGrid";
+import { LiveStatusMessage } from "@/components/LiveStatusMessage";
 import { useFlashMessage } from "@/hooks/useFlashMessage";
 import {
   activeCharacterKey,
@@ -353,7 +354,7 @@ export default function CharacterShareProfilePage() {
             />
           ) : null}
           <div className="min-w-0 flex-1">
-            <p className="text-[0.65rem] font-semibold uppercase tracking-wide opacity-60">
+            <p className="text-xs font-semibold uppercase tracking-wide opacity-60">
               Character build profile
             </p>
             <h1 className="font-display text-xl font-bold tracking-tight sm:text-2xl">
@@ -375,7 +376,7 @@ export default function CharacterShareProfilePage() {
                 {record.achievement}
               </p>
             ) : null}
-            <p className="mt-1 text-[0.7rem] opacity-55">
+            <p className="mt-1 text-xs opacity-55">
               {(record.views ?? 0).toLocaleString()} views
               {record.boss300HexaStat != null
                 ? ` · BCS HEXA 300 ${formatStat(record.boss300HexaStat)} / 380 ${formatStat(record.boss380HexaStat)}`
@@ -401,11 +402,10 @@ export default function CharacterShareProfilePage() {
         </div>
       </header>
 
-      {msg ? (
-        <p className="rounded border border-accent/30 bg-accent/10 px-3 py-2 text-sm text-accent">
-          {msg}
-        </p>
-      ) : null}
+      <LiveStatusMessage
+        message={msg}
+        className="rounded border border-accent/30 bg-accent/10 px-3 py-2 text-sm text-accent"
+      />
 
       <section className="grid items-start gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.95fr)]">
         <div className="space-y-4">

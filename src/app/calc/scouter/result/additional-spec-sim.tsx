@@ -244,7 +244,7 @@ function LevelInput({
       placeholder="0"
       disabled={disabled}
       readOnly={disabled}
-      className={`w-full rounded border border-border/40 bg-background px-0 py-0 text-center text-[10px] tabular-nums outline-none placeholder:text-foreground/30 focus:border-accent disabled:cursor-not-allowed disabled:opacity-70 ${className}`}
+      className={`w-full rounded border border-border/40 bg-background px-0 py-0 text-center text-xs tabular-nums outline-none placeholder:text-foreground/30 focus:border-accent disabled:cursor-not-allowed disabled:opacity-70 ${className}`}
       value={display}
       onFocus={
         disabled ? undefined : () => setDraft(n === 0 ? "" : String(n))
@@ -345,7 +345,7 @@ function SimMetric({
     >
       <p
         className={`font-semibold uppercase tracking-wide opacity-55 ${
-          compact ? "text-[9px]" : "text-[10px]"
+          compact ? "text-xs" : "text-xs"
         }`}
       >
         {label}
@@ -359,7 +359,7 @@ function SimMetric({
       </p>
       <p
         className={`tabular-nums opacity-60 ${
-          compact ? "text-[10px]" : "text-[11px]"
+          compact ? "text-xs" : "text-xs"
         }`}
       >
         ({delta})
@@ -379,7 +379,7 @@ function SimField({
 }) {
   return (
     <label className="flex min-w-0 flex-col gap-1">
-      <span className="truncate text-[11px] font-medium opacity-70">{label}</span>
+      <span className="truncate text-xs font-medium opacity-70">{label}</span>
       <input
         type="text"
         inputMode="decimal"
@@ -795,7 +795,7 @@ export function AdditionalSpecSimulation({
                     type="number"
                     min={0}
                     max={b.maxLevel ?? 99}
-                    className="w-full rounded border border-border/40 bg-background px-0 py-0 text-center text-[10px] tabular-nums outline-none focus:border-accent"
+                    className="w-full rounded border border-border/40 bg-background px-0 py-0 text-center text-xs tabular-nums outline-none focus:border-accent"
                     value={st.level}
                     onChange={(e) => {
                       const raw = Number(e.target.value) || 0;
@@ -870,7 +870,7 @@ export function AdditionalSpecSimulation({
                       title={ring.label}
                       min={0}
                       max={OZ_RING_MAX}
-                      className="w-full rounded border border-border/40 bg-background px-0 py-0 text-center text-[10px] tabular-nums outline-none focus:border-accent"
+                      className="w-full rounded border border-border/40 bg-background px-0 py-0 text-center text-xs tabular-nums outline-none focus:border-accent"
                       value={simOz[ring.field]}
                       onChange={(e) =>
                         setOzLevel(ring.field, Number(e.target.value) || 0)

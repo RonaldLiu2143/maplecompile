@@ -139,10 +139,10 @@ function RateRow({
   user: ReactNode;
   rate: number;
 }) {
-  const cell = "px-1.5 py-0.5 text-center text-[11px] tabular-nums text-white";
+  const cell = "px-1.5 py-0.5 text-center text-xs tabular-nums text-white";
   return (
     <tr>
-      <td className="px-1.5 py-0.5 text-center text-[11px] font-semibold text-white">
+      <td className="px-1.5 py-0.5 text-center text-xs font-semibold text-white">
         {label}
       </td>
       <td className={cell}>{boss}</td>
@@ -178,7 +178,7 @@ function BossHoverTooltipBody({
           </p>
           <p className="text-sm font-semibold leading-tight">{row.nameEn}</p>
         </div>
-        <p className="shrink-0 text-[11px] font-medium opacity-70">
+        <p className="shrink-0 text-xs font-medium opacity-70">
           Party {row.partyLimit}
         </p>
       </div>
@@ -197,9 +197,9 @@ function BossHoverTooltipBody({
               return (
                 <div key={phase.label} className="space-y-0.5">
                   <div className="flex items-center justify-between rounded-md bg-white/10 px-1.5 py-0.5">
-                    <span className="text-[11px] font-medium">{phase.label}</span>
+                    <span className="text-xs font-medium">{phase.label}</span>
                     {multi ? (
-                      <span className="text-[11px] font-semibold tabular-nums">
+                      <span className="text-xs font-semibold tabular-nums">
                         {formatBossHp(phase.total)}
                       </span>
                     ) : null}
@@ -209,14 +209,14 @@ function BossHoverTooltipBody({
                       {phase.entities.map((hp, i) => (
                         <div
                           key={`${phase.label}-${i}`}
-                          className="flex h-4 min-w-0 flex-1 items-center justify-center overflow-hidden rounded bg-rose-600 px-1 text-[9px] font-semibold tabular-nums text-white"
+                          className="flex h-4 min-w-0 flex-1 items-center justify-center overflow-hidden rounded bg-rose-600 px-1 text-xs font-semibold tabular-nums text-white"
                         >
                           {formatBossHp(hp)}
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <div className="flex h-4 items-center justify-center rounded bg-rose-600 px-1.5 text-[10px] font-semibold tabular-nums text-white">
+                    <div className="flex h-4 items-center justify-center rounded bg-rose-600 px-1.5 text-xs font-semibold tabular-nums text-white">
                       {formatBossHp(phase.total)}
                     </div>
                   )}
@@ -261,13 +261,13 @@ function BossHoverTooltipBody({
                   className="h-7 w-7"
                 />
               ) : (
-                <span className="inline-flex h-7 max-w-[4.5rem] items-center rounded bg-white/10 px-1 text-[9px] leading-tight">
+                <span className="inline-flex h-7 max-w-[4.5rem] items-center rounded bg-white/10 px-1 text-xs leading-tight">
                   {drop.name}
                 </span>
               )}
               {drop.amount > 1 ? (
                 <span
-                  className={`absolute -bottom-1 -right-1 min-w-[1.1rem] rounded-full border border-black bg-white px-0.5 text-center text-[9px] font-bold leading-4 ${
+                  className={`absolute -bottom-1 -right-1 min-w-[1.1rem] rounded-full border border-black bg-white px-0.5 text-center text-xs font-bold leading-4 ${
                     drop.personal ? "text-rose-600" : "text-amber-800"
                   }`}
                 >
@@ -283,14 +283,14 @@ function BossHoverTooltipBody({
         <table className="w-full">
           <thead>
             <tr>
-              <th className="px-1.5 py-0.5 text-center text-[10px] font-medium text-white/80" />
-              <th className="px-1.5 py-0.5 text-center text-[10px] font-medium text-white/80">
+              <th className="px-1.5 py-0.5 text-center text-xs font-medium text-white/80" />
+              <th className="px-1.5 py-0.5 text-center text-xs font-medium text-white/80">
                 Boss
               </th>
-              <th className="px-1.5 py-0.5 text-center text-[10px] font-medium text-white/80">
+              <th className="px-1.5 py-0.5 text-center text-xs font-medium text-white/80">
                 User
               </th>
-              <th className="px-1.5 py-0.5 text-center text-[10px] font-medium text-white/80">
+              <th className="px-1.5 py-0.5 text-center text-xs font-medium text-white/80">
                 Rate
               </th>
             </tr>
@@ -323,15 +323,15 @@ function BossHoverTooltipBody({
           </tbody>
         </table>
 
-        <p className={`mt-1.5 text-center text-[11px] font-medium ${fdClass}`}>
+        <p className={`mt-1.5 text-center text-xs font-medium ${fdClass}`}>
           {fdMsg}
         </p>
 
         <div className="mt-1.5 flex w-full items-center justify-between border-t border-white/10 px-1 pt-1.5">
-          <span className="text-[11px] font-semibold text-white">
+          <span className="text-xs font-semibold text-white">
             Ascent coefficient
           </span>
-          <span className="text-[11px] font-medium tabular-nums text-white">
+          <span className="text-xs font-medium tabular-nums text-white">
             {row.ascentDisplay.toFixed(2)}
           </span>
         </div>
@@ -352,7 +352,7 @@ function PortraitBadge({
   return (
     <span
       title={title}
-      className={`inline-flex h-4 min-w-4 items-center justify-center rounded-full border border-white px-0.5 text-[9px] font-bold leading-none text-white shadow ${
+      className={`inline-flex h-4 min-w-4 items-center justify-center rounded-full border border-white px-0.5 text-xs font-bold leading-none text-white shadow ${
         tone === "green" ? "bg-emerald-500" : "bg-rose-500"
       }`}
     >
@@ -604,17 +604,17 @@ function BossClearCard({
         ) : null}
       </div>
 
-      <p className="text-[11px] font-bold tabular-nums tracking-tight leading-tight">
+      <p className="text-xs font-bold tabular-nums tracking-tight leading-tight">
         {formatNum(Math.round(row.userStat))}
       </p>
 
       <span
-        className={`max-w-full truncate rounded-full px-1 py-px text-[9px] font-bold leading-tight ${labelPillClass(row.label)}`}
+        className={`max-w-full truncate rounded-full px-1 py-px text-xs font-bold leading-tight ${labelPillClass(row.label)}`}
       >
         {row.label}
       </span>
 
-      <p className={`text-[10px] font-bold tabular-nums leading-tight ${pctColor}`}>
+      <p className={`text-xs font-bold tabular-nums leading-tight ${pctColor}`}>
         {row.isPartyBoss ? (
           <span className="opacity-70">[Party] </span>
         ) : null}
@@ -643,7 +643,7 @@ function ConvertedStatCell({
     >
       <p
         className={`font-medium uppercase tracking-wide opacity-55 ${
-          compact ? "text-[10px]" : "text-[11px]"
+          compact ? "text-xs" : "text-xs"
         }`}
       >
         {label}
@@ -922,7 +922,7 @@ export default function ScouterDetailedResultPage() {
             >
               <div className="space-y-3">
                 {simOverlay ? (
-                  <p className="rounded-md bg-accent-soft/50 px-2 py-1 text-[11px] font-medium text-accent">
+                  <p className="rounded-md bg-accent-soft/50 px-2 py-1 text-xs font-medium text-accent">
                     Showing Additional Spec Simulation
                   </p>
                 ) : null}
@@ -1040,7 +1040,7 @@ export default function ScouterDetailedResultPage() {
                 </div>
               }
             >
-              <div className="mb-2 flex flex-wrap gap-1.5 text-[10px]">
+              <div className="mb-2 flex flex-wrap gap-1.5 text-xs">
                 <span className="rounded-full bg-emerald-500/15 px-1.5 py-0.5 font-semibold text-emerald-800 dark:text-emerald-300">
                   Easy / Possible
                 </span>

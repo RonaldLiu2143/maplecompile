@@ -778,7 +778,7 @@ export function EquipmentSetupPanel({
               <h2 className="text-sm font-semibold text-accent">
                 Equipment Setup & Set Effects
               </h2>
-              <p className="text-[11px] opacity-55">
+              <p className="text-xs opacity-55">
                 {classDisplayName
                   ? `${classDisplayName} · follows Character Stats`
                   : "Follows Character Stats class"}{" "}
@@ -902,7 +902,7 @@ export function EquipmentSetupPanel({
               {!embedded ? (
                 <div className="flex max-w-full flex-col items-stretch gap-1 self-end rounded-md border border-border/50 bg-surface/50 px-1.5 py-1">
                   <div className="inline-flex max-w-full flex-wrap items-center justify-end gap-1">
-                    <span className="px-0.5 text-[9px] font-bold uppercase tracking-wide opacity-55">
+                    <span className="px-0.5 text-xs font-bold uppercase tracking-wide opacity-55">
                       My presets
                     </span>
                     <input
@@ -913,7 +913,7 @@ export function EquipmentSetupPanel({
                         setCustomPresetName(e.target.value);
                       }}
                       placeholder={classDisplayName || "Preset name"}
-                      className="w-[7.5rem] rounded border border-border bg-surface px-1.5 py-1 text-[11px] outline-none focus:border-accent sm:w-[9rem]"
+                      className="w-[7.5rem] rounded border border-border bg-surface px-1.5 py-1 text-xs outline-none focus:border-accent sm:w-[9rem]"
                       aria-label="Custom preset name"
                       disabled={status !== "ready"}
                     />
@@ -924,7 +924,7 @@ export function EquipmentSetupPanel({
                         status !== "ready" ||
                         (!customPresetName.trim() && !loadedCustomPresetId)
                       }
-                      className="rounded bg-accent px-2 py-1 text-[11px] font-semibold text-primary-foreground hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+                      className="rounded bg-accent px-2 py-1 text-xs font-semibold text-primary-foreground hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
                       title={
                         loadedCustomPresetId
                           ? "Overwrite the loaded preset"
@@ -937,7 +937,7 @@ export function EquipmentSetupPanel({
                       type="button"
                       onClick={() => saveCustomPreset(true)}
                       disabled={status !== "ready" || !customPresetName.trim()}
-                      className="rounded border border-border px-2 py-1 text-[11px] font-semibold hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
+                      className="rounded border border-border px-2 py-1 text-xs font-semibold hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
                       title="Keep the current preset and save a copy under this name"
                     >
                       Save as new
@@ -947,7 +947,7 @@ export function EquipmentSetupPanel({
                     <select
                       value={customPresetId}
                       onChange={(e) => setCustomPresetId(e.target.value)}
-                      className="max-w-[9rem] rounded border border-border bg-surface px-1.5 py-1 text-[11px] font-semibold outline-none focus:border-accent"
+                      className="max-w-[9rem] rounded border border-border bg-surface px-1.5 py-1 text-xs font-semibold outline-none focus:border-accent"
                       aria-label="Saved custom presets"
                       disabled={status !== "ready"}
                     >
@@ -962,7 +962,7 @@ export function EquipmentSetupPanel({
                       type="button"
                       onClick={() => loadCustomPreset(customPresetId)}
                       disabled={status !== "ready" || !customPresetId}
-                      className="rounded border border-border px-2 py-1 text-[11px] font-semibold hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
+                      className="rounded border border-border px-2 py-1 text-xs font-semibold hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
                     >
                       Load
                     </button>
@@ -973,7 +973,7 @@ export function EquipmentSetupPanel({
                         status !== "ready" ||
                         !(customPresetId || loadedCustomPresetId)
                       }
-                      className="rounded border border-border px-2 py-1 text-[11px] font-semibold text-danger hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
+                      className="rounded border border-border px-2 py-1 text-xs font-semibold text-danger hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
                     >
                       Delete
                     </button>

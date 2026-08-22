@@ -70,7 +70,7 @@ export function DashboardDiscordCard() {
         <h2 className="font-display text-base font-semibold">
           Discord announcements
         </h2>
-        <p className="text-[11px] font-semibold uppercase tracking-wide opacity-50">
+        <p className="text-xs font-semibold uppercase tracking-wide opacity-50">
           Latest announcement
         </p>
       </div>

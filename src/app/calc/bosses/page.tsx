@@ -619,7 +619,7 @@ function CharacterBossCard({
             className="h-11 w-11 shrink-0 object-contain"
           />
         ) : (
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-surface-muted text-[10px] font-semibold uppercase opacity-50">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-surface-muted text-xs font-semibold uppercase opacity-50">
             {loading ? "…" : name.slice(0, 2)}
           </div>
         )}
@@ -640,14 +640,14 @@ function CharacterBossCard({
                 </h3>
               )}
               {primaryMark ? (
-                <span className="text-[10px] opacity-60" title="Primary">
+                <span className="text-xs opacity-60" title="Primary">
                   ★
                 </span>
               ) : null}
               {hasBosses ? (
                 <span
                   className={[
-                    "inline-flex shrink-0 items-center rounded-full px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-primary-foreground",
+                    "inline-flex shrink-0 items-center rounded-full px-1.5 py-0.5 text-xs font-bold tabular-nums text-primary-foreground",
                     clearedCount === rows.length
                       ? "bg-emerald-600 dark:bg-emerald-400"
                       : "bg-accent",
@@ -721,7 +721,7 @@ function CharacterBossCard({
             )}
           </p>
           {job ? <p className="text-xs opacity-70">{job}</p> : null}
-          <p className="text-[11px] opacity-55">
+          <p className="text-xs opacity-55">
             {worldName ? `${worldName} · ` : ""}
             {priceWorld === "heroic" ? "Heroic prices" : "Interactive prices"}
           </p>
@@ -782,7 +782,7 @@ function CharacterBossCard({
                             onError={() => onBrokenIcon(line.bossId)}
                           />
                         ) : (
-                          <span className="text-[10px] font-semibold opacity-50">
+                          <span className="text-xs font-semibold opacity-50">
                             {line.bossName.slice(0, 2)}
                           </span>
                         )}
@@ -809,7 +809,7 @@ function CharacterBossCard({
 
             <div className="hidden overflow-x-auto md:block">
               <table className="w-full table-fixed text-left text-sm leading-tight">
-                <thead className="text-[11px] uppercase tracking-wider opacity-55">
+                <thead className="text-xs uppercase tracking-wider opacity-55">
                   <tr>
                     <th className="w-6 p-0.5 font-semibold">
                       <span className="sr-only">Cleared</span>
@@ -868,7 +868,7 @@ function CharacterBossCard({
                                   onError={() => onBrokenIcon(line.bossId)}
                                 />
                               ) : (
-                                <span className="text-[9px] font-semibold opacity-50">
+                                <span className="text-xs font-semibold opacity-50">
                                   {line.bossName.slice(0, 2)}
                                 </span>
                               )}
@@ -876,7 +876,7 @@ function CharacterBossCard({
                             <span className="truncate whitespace-nowrap text-sm">
                               {label}
                               {line.frequency === "monthly" ? (
-                                <span className="ml-1 text-[10px] font-normal opacity-55">
+                                <span className="ml-1 text-xs font-normal opacity-55">
                                   monthly
                                 </span>
                               ) : null}

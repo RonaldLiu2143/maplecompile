@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { TableScrollRegion } from "@/components/TableScrollRegion";
 import { useMapleDataReload } from "@/hooks/useMapleDataReload";
 import {
   ensureActiveWorkspaceLoaded,
@@ -265,7 +266,7 @@ export default function UpgradePlannerPage() {
       ) : null}
 
       {!pending && filtered.length > 0 ? (
-        <div className="maple-table-scroll rounded-xl border border-border/50">
+        <TableScrollRegion label="Upgrade planner rankings" className="rounded-xl border border-border/50">
           <table className="w-full min-w-[36rem] border-collapse text-left text-sm">
             <thead className="bg-surface-muted/60 text-xs uppercase tracking-wide opacity-70">
               <tr>
@@ -292,11 +293,11 @@ export default function UpgradePlannerPage() {
                     <p className="font-semibold">{row.label}</p>
                     <p className="text-xs opacity-60">{row.detail}</p>
                     {row.notes ? (
-                      <p className="text-[10px] opacity-45">{row.notes}</p>
+                      <p className="text-xs opacity-45">{row.notes}</p>
                     ) : null}
                   </td>
                   <td className="px-3 py-2">
-                    <span className="rounded border border-border/50 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide opacity-80">
+                    <span className="rounded border border-border/50 px-1.5 py-0.5 text-xs font-semibold uppercase tracking-wide opacity-80">
                       {kindLabel(row.kind)}
                     </span>
                   </td>
@@ -313,14 +314,14 @@ export default function UpgradePlannerPage() {
               ))}
             </tbody>
           </table>
-        </div>
+        </TableScrollRegion>
       ) : null}
 
       {pending ? (
         <p className="text-sm opacity-60">Ranking upgrades…</p>
       ) : null}
 
-      <p className="text-[10px] opacity-50">
+      <p className="text-xs opacity-50">
         Costs are Heroic / GMS approximations. Efficiency = FD% per 1B mesos.
         Pair Scouter + Equipment for the most accurate base.
       </p>

@@ -75,13 +75,13 @@ function SetBreakdownBlock({ b }: { b: SetBreakdown }) {
     >
       <div className="flex w-full min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5">
         <span
-          className="inline-flex h-3.5 w-3.5 shrink-0 items-center justify-center text-[10px] opacity-60"
+          className="inline-flex h-3.5 w-3.5 shrink-0 items-center justify-center text-xs opacity-60"
           aria-hidden
         >
           {open ? "▾" : "▸"}
         </span>
         <span className="text-[13px] font-semibold leading-tight">{name}</span>
-        <span className="text-[10px] leading-tight opacity-60">
+        <span className="text-xs leading-tight opacity-60">
           {b.numEquipped} eq
           {b.luckyApplied ? " · lucky" : ""}
         </span>
@@ -103,7 +103,7 @@ function SetBreakdownBlock({ b }: { b: SetBreakdown }) {
       {open && tiers.length > 0 ? (
         <ul
           id={panelId}
-          className="mt-0.5 min-h-0 flex-1 space-y-0 pl-5 text-[11px] leading-tight"
+          className="mt-0.5 min-h-0 flex-1 space-y-0 pl-5 text-xs leading-tight"
           aria-labelledby={headerId}
         >
           {tiers.map((tier) => {

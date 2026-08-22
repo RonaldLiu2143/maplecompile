@@ -286,7 +286,7 @@ export function ShareGalleryModal({
                   Anonymous display name
                 </p>
                 <p className="mt-0.5 font-medium tabular-nums">{anonPreview}</p>
-                <p className="mt-1 text-[10px] opacity-55">
+                <p className="mt-1 text-xs opacity-55">
                   Uses a placeholder icon (not your character sprite). Unique
                   code is assigned when you post ({classLabel}· + share id).
                 </p>
@@ -306,7 +306,7 @@ export function ShareGalleryModal({
                 className="w-full rounded border border-border/50 bg-background px-3 py-2 text-sm outline-none focus:border-accent"
                 autoFocus
               />
-              <span className="mt-0.5 block text-[10px] opacity-50">
+              <span className="mt-0.5 block text-xs opacity-50">
                 Must be unique in the public gallery.
               </span>
             </label>
@@ -334,7 +334,7 @@ export function ShareGalleryModal({
             ) : (
               <div className="grid grid-cols-2 gap-2">
                 <div className="rounded border border-border/40 bg-background/80 px-3 py-2">
-                  <p className="text-[10px] font-semibold uppercase opacity-60">
+                  <p className="text-xs font-semibold uppercase opacity-60">
                     Boss 300 HEXA
                   </p>
                   <p className="mt-0.5 text-base font-semibold tabular-nums text-accent">
@@ -342,7 +342,7 @@ export function ShareGalleryModal({
                   </p>
                 </div>
                 <div className="rounded border border-border/40 bg-background/80 px-3 py-2">
-                  <p className="text-[10px] font-semibold uppercase opacity-60">
+                  <p className="text-xs font-semibold uppercase opacity-60">
                     Boss 380 HEXA
                   </p>
                   <p className="mt-0.5 text-base font-semibold tabular-nums text-accent">
@@ -365,7 +365,7 @@ export function ShareGalleryModal({
               placeholder="e.g. Hard Kalos 4-man clear"
               className="w-full resize-none rounded border border-border/50 bg-background px-3 py-2 text-sm outline-none focus:border-accent"
             />
-            <span className="mt-0.5 block text-[10px] opacity-50">
+            <span className="mt-0.5 block text-xs opacity-50">
               {achievement.trim().length}/120
             </span>
           </label>

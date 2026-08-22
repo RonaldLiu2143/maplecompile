@@ -7,6 +7,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { TableScrollRegion } from "@/components/TableScrollRegion";
 import Link from "next/link";
 import { useMapleDataReload } from "@/hooks/useMapleDataReload";
 import { ensureActiveWorkspaceLoaded } from "@/lib/character-workspace";
@@ -524,10 +525,11 @@ export default function FlamesClient() {
             s.displaySections.includes("table"),
           );
           return (
-            <div key={section} className="maple-table-scroll">
+            <div key={section}>
               <h3 className="mb-2 text-sm font-semibold opacity-80">
                 {block.category}
               </h3>
+              <TableScrollRegion label={`${block.category} flame tier table`}>
               <table className="w-full min-w-[32rem] border-collapse text-sm">
                 <thead>
                   <tr className="border-b border-border/40 text-left">
@@ -555,6 +557,7 @@ export default function FlamesClient() {
                   ))}
                 </tbody>
               </table>
+              </TableScrollRegion>
             </div>
           );
         })}
@@ -599,11 +602,11 @@ export default function FlamesClient() {
                   gridTemplateColumns: "6.5rem repeat(7, minmax(0, 1fr))",
                 }}
               >
-                <div className="text-[10px] font-semibold opacity-50">Stat</div>
+                <div className="text-xs font-semibold opacity-50">Stat</div>
                 {[1, 2, 3, 4, 5, 6, 7].map((t) => (
                   <div
                     key={t}
-                    className="text-center text-[10px] font-semibold opacity-50"
+                    className="text-center text-xs font-semibold opacity-50"
                   >
                     T{t}
                   </div>
@@ -763,7 +766,7 @@ export default function FlamesClient() {
                     height={36}
                     className="h-9 w-9 object-contain"
                   />
-                  <span className="text-[11px] font-semibold tabular-nums">
+                  <span className="text-xs font-semibold tabular-nums">
                     {formatChance(chance)}
                   </span>
                 </div>
@@ -781,7 +784,7 @@ export default function FlamesClient() {
             <h3 className="mb-2 text-sm font-semibold">
               Flames needed for an X% chance of a better result
             </h3>
-            <div className="maple-table-scroll rounded-lg border border-border/30">
+            <TableScrollRegion label="Flames needed by item" className="rounded-lg border border-border/30">
               <table className="w-full min-w-[28rem] border-collapse text-sm">
                 <thead>
                   <tr className="border-b border-border/30 bg-surface-muted/50 text-left text-xs opacity-70">
@@ -826,7 +829,7 @@ export default function FlamesClient() {
                   ))}
                 </tbody>
               </table>
-            </div>
+            </TableScrollRegion>
           </div>
         </section>
       )}

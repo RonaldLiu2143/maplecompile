@@ -72,7 +72,7 @@ function CdnIcon({
 
 function LevelBadge({ value }: { value: number | string }) {
   return (
-    <span className="w-full rounded border border-border/40 bg-background px-0 py-0 text-center text-[10px] tabular-nums">
+    <span className="w-full rounded border border-border/40 bg-background px-0 py-0 text-center text-xs tabular-nums">
       {value}
     </span>
   );

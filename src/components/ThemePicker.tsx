@@ -213,7 +213,7 @@ export function ThemePicker({
                   onClick={() => setThemeId(p.id)}
                   aria-pressed={active}
                   className={[
-                    "inline-flex items-center justify-center gap-1 rounded-md px-2 py-1.5 text-[11px] font-semibold transition-colors",
+                    "inline-flex items-center justify-center gap-1 rounded-md px-2 py-1.5 text-xs font-semibold transition-colors",
                     active
                       ? "bg-accent text-primary-foreground"
                       : "text-muted-foreground hover:bg-accent-soft hover:text-foreground",
@@ -247,7 +247,7 @@ export function ThemePicker({
                   onClick={() => setPreset(p)}
                   aria-pressed={active}
                   className={[
-                    "flex flex-col items-center gap-1 rounded-lg border px-1.5 py-1.5 text-[10px] font-semibold transition-colors",
+                    "flex flex-col items-center gap-1 rounded-lg border px-1.5 py-1.5 text-xs font-semibold transition-colors",
                     active
                       ? "border-accent bg-accent-soft text-foreground"
                       : "border-border/50 text-muted-foreground hover:border-border hover:text-foreground",
@@ -276,7 +276,7 @@ export function ThemePicker({
                     aria-pressed={active}
                     title={saved.hex}
                     className={[
-                      "flex w-full flex-col items-center gap-1 rounded-lg border px-1.5 py-1.5 text-[10px] font-semibold transition-colors",
+                      "flex w-full flex-col items-center gap-1 rounded-lg border px-1.5 py-1.5 text-xs font-semibold transition-colors",
                       active
                         ? "border-accent bg-accent-soft text-foreground"
                         : "border-border/50 text-muted-foreground hover:border-border hover:text-foreground",
@@ -287,7 +287,7 @@ export function ThemePicker({
                       style={{ backgroundColor: saved.hex }}
                       aria-hidden
                     />
-                    <span className="max-w-full truncate font-mono text-[9px]">
+                    <span className="max-w-full truncate font-mono text-xs">
                       {saved.name}
                     </span>
                   </button>
@@ -311,7 +311,7 @@ export function ThemePicker({
               setSaveMsg(null);
             }}
             className={[
-              "mt-1.5 w-full rounded-lg border px-2 py-1.5 text-left text-[11px] font-semibold transition-colors",
+              "mt-1.5 w-full rounded-lg border px-2 py-1.5 text-left text-xs font-semibold transition-colors",
               showCustom
                 ? "border-accent bg-accent-soft text-foreground"
                 : "border-border/50 text-muted-foreground hover:border-border hover:text-foreground",
@@ -327,7 +327,7 @@ export function ThemePicker({
                 onSave={handleSaveCustom}
               />
               {saveMsg ? (
-                <p className="text-[10px] text-muted-foreground" role="status">
+                <p className="text-xs text-muted-foreground" role="status">
                   {saveMsg}
                 </p>
               ) : null}
@@ -357,7 +357,7 @@ export function ThemePicker({
                   ].join(" ")}
                 >
                   <span className="block text-sm font-semibold">{p.name}</span>
-                  <span className="block text-[11px] text-muted-foreground">
+                  <span className="block text-xs text-muted-foreground">
                     {p.description}
                   </span>
                 </button>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { TableScrollRegion } from "@/components/TableScrollRegion";
 import {
   MODE_STARS,
   PLAN_STARS,
@@ -538,7 +539,7 @@ export default function StarforceCalculatorPage() {
                 Mode 1. Stars below your current ★ stay editable for re-climb
                 after a boom (e.g. 22★ → {destroyRecoverStar(21)}★).
               </p>
-              <div className="maple-table-scroll">
+              <TableScrollRegion label="Starforce step plan">
                 <table className="w-full min-w-[28rem] border-collapse text-sm">
                   <thead>
                     <tr className="border-b border-border/40 text-left">
@@ -608,7 +609,7 @@ export default function StarforceCalculatorPage() {
                     })}
                   </tbody>
                 </table>
-              </div>
+              </TableScrollRegion>
             </section>
           )}
 
@@ -616,7 +617,7 @@ export default function StarforceCalculatorPage() {
             <h2 className="font-display text-lg font-semibold">
               Boom rates by mode (15–21)
             </h2>
-            <div className="maple-table-scroll">
+            <TableScrollRegion label="Boom rates by enhance mode">
               <table className="w-full min-w-[24rem] border-collapse text-sm">
                 <thead>
                   <tr className="border-b border-border/40 text-left">
@@ -655,7 +656,7 @@ export default function StarforceCalculatorPage() {
                   ))}
                 </tbody>
               </table>
-            </div>
+            </TableScrollRegion>
           </section>
         </>
       )}
@@ -927,7 +928,7 @@ export default function StarforceCalculatorPage() {
               </div>
             ))}
           </div>
-          <div className="maple-table-scroll">
+          <TableScrollRegion label="Simulation cost percentiles">
             <table className="w-full min-w-[20rem] border-collapse text-sm">
               <thead>
                 <tr className="border-b border-border/40 text-left">
@@ -952,7 +953,7 @@ export default function StarforceCalculatorPage() {
                 ))}
               </tbody>
             </table>
-          </div>
+          </TableScrollRegion>
         </section>
       )}
 

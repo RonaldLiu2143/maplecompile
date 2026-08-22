@@ -14,25 +14,16 @@ import {
   defaultLinkState,
   defaultScouterInput,
   getHexaSlots,
-  HEXA_MAX_LEVEL,
-  INNER_ABILITY_OPTIONS,
-  LINK_DEFS,
-  OZ_CONTINUOUS_STATUS,
-  OZ_RING_MAX,
-  getVisibleOzRings,
   resolveMainSecondary,
   resolveOzRingStats,
-  SCOUTER_CDN,
   supportsOneHandSword,
   clampHexaForGms,
   getClassSpecificRequirements,
   getMissingRequiredScouterFields,
   focusScouterField,
-  clampScouterField,
   type BuffState,
   type LinkState,
   type MissingScouterField,
-  type ScouterCappedField,
   type ScouterInput,
   type StatKey,
   type StatTriple,
@@ -64,7 +55,6 @@ import {
 import { countFilledSlots } from "@/lib/starter-loadouts";
 import { readRosterState } from "@/lib/dashboard/roster";
 import type { CharacterLookupResult } from "@/lib/character/lookup";
-import { parseUserNumber } from "@/lib/scouter/parse-number";
 import { filterDisplayText } from "@/lib/content-filter";
 import {
   DEFAULT_BOSS_CONVERTED_STAT,
@@ -82,6 +72,13 @@ import {
 } from "@/lib/pairing";
 import type { MapleScouterCalculatedData } from "@/lib/scouter/to-user-stat";
 import type { JobType, EquipSetup, FlameSetup } from "@/lib/types";
+import {
+  ScouterCdnIcon as CdnIcon,
+  ScouterFieldCell as FieldCell,
+  ScouterNumInput as NumInput,
+  scouterCellClass as cell,
+  scouterLabelCellClass as labelCell,
+} from "./scouter-field-primitives";
 
 const PresetModal = dynamic(
   () => import("./preset-modal").then((m) => ({ default: m.PresetModal })),
@@ -101,10 +98,23 @@ const HexaEfficiencyPanel = dynamic(
     })),
 );
 
-const cell =
-  "border border-border/50 bg-background px-2 py-2 text-base outline-none focus:relative focus:z-10 focus:border-accent min-h-11 sm:py-1.5 sm:text-sm";
-const labelCell =
-  "border border-border/50 bg-surface-muted/50 px-2 py-1.5 text-sm font-medium";
+const ScouterAuxPanels = dynamic(
+  () =>
+    import("./scouter-aux-panels").then((m) => ({
+      default: m.ScouterAuxPanels,
+    })),
+  {
+    loading: () => (
+      <div
+        className="rounded-lg border border-dashed border-border/50 bg-surface-muted/20 px-4 py-10 text-center text-sm text-muted-foreground"
+        aria-busy="true"
+      >
+        Loading buffs &amp; links…
+      </div>
+    ),
+  },
+);
+
 const headCell =
   "border border-border/50 bg-surface-muted px-2 py-1.5 text-sm font-medium";
 
@@ -116,171 +126,8 @@ const STAT_LABELS: Record<StatKey, string> = {
   hp: "Max HP",
 };
 
-/** Allow digits / one decimal / optional sign while typing (incl. leading `.`). */
-const NUM_DRAFT_RE = /^[+-]?[\d,]*\.?[\d,]*$/;
-
 function applyTriple(t: StatTriple): number {
   return t.base * (1 + t.percent / 100) + t.flat;
-}
-
-function NumInput({
-  value,
-  onChange,
-  className = "",
-  placeholder = "0",
-  readOnly,
-  fieldId,
-  capField,
-  max,
-  decimals,
-}: {
-  value: number;
-  onChange?: (n: number) => void;
-  className?: string;
-  placeholder?: string;
-  readOnly?: boolean;
-  /** Focus target for missing-field modal (`data-scouter-field`). */
-  fieldId?: string;
-  /** Apply shared scouter combat caps (hundredths or integer). */
-  capField?: ScouterCappedField;
-  max?: number;
-  decimals?: number;
-}) {
-  const n = Number.isFinite(value) ? value : 0;
-  // Draft while focused so typing `.` then `5` works with empty/zero placeholder.
-  const [draft, setDraft] = useState<string | null>(null);
-  const display = draft !== null ? draft : n === 0 ? "" : String(n);
-
-  const commit = (raw: number) => {
-    if (!onChange) return;
-    let next = Number.isFinite(raw) ? raw : 0;
-    if (capField) next = clampScouterField(capField, next);
-    else {
-      if (typeof max === "number") next = Math.min(Math.max(0, next), max);
-      if (typeof decimals === "number") {
-        if (decimals <= 0) next = Math.round(next);
-        else {
-          const f = 10 ** decimals;
-          next = Math.round(next * f) / f;
-        }
-      }
-    }
-    onChange(next);
-  };
-
-  return (
-    <input
-      type="text"
-      inputMode="decimal"
-      readOnly={readOnly}
-      placeholder={placeholder}
-      data-scouter-field={fieldId}
-      className={`${cell} w-full min-w-0 text-right tabular-nums placeholder:text-foreground/30 ${
-        readOnly ? "bg-surface-muted/40 text-foreground/70" : ""
-      } ${className}`}
-      value={display}
-      onFocus={
-        !readOnly
-          ? () => setDraft(n === 0 ? "" : String(n))
-          : undefined
-      }
-      onBlur={
-        !readOnly
-          ? () => {
-              if (draft !== null) {
-                commit(parseUserNumber(draft) ?? 0);
-              }
-              setDraft(null);
-            }
-          : undefined
-      }
-      onChange={
-        !readOnly && onChange
-          ? (e) => {
-              const raw = e.target.value;
-              if (raw !== "" && !NUM_DRAFT_RE.test(raw.trim())) return;
-              setDraft(raw);
-              if (raw.trim() === "") {
-                commit(0);
-                return;
-              }
-              const next = parseUserNumber(raw);
-              // Keep draft for intermediates like `.` / `-.` without wiping.
-              if (next != null) commit(next);
-            }
-          : undefined
-      }
-    />
-  );
-}
-
-/** Small numeric control — empty/gray placeholder when 0 (buffs / links / oz / hexa). */
-function LevelInput({
-  value,
-  onChange,
-  min = 0,
-  max,
-  title,
-  className = "",
-  disabled,
-}: {
-  value: number;
-  onChange: (n: number) => void;
-  min?: number;
-  max: number;
-  title?: string;
-  className?: string;
-  disabled?: boolean;
-}) {
-  const n = Number.isFinite(value) ? value : 0;
-  const [draft, setDraft] = useState<string | null>(null);
-  const display = draft !== null ? draft : n === 0 ? "" : String(n);
-
-  return (
-    <input
-      type="text"
-      inputMode="numeric"
-      title={title}
-      placeholder="0"
-      disabled={disabled}
-      readOnly={disabled}
-      className={`w-full rounded border border-border/40 bg-background px-0 py-0 text-center text-xs tabular-nums outline-none placeholder:text-foreground/30 focus:border-accent disabled:cursor-not-allowed disabled:opacity-70 ${className}`}
-      value={display}
-      onFocus={
-        disabled ? undefined : () => setDraft(n === 0 ? "" : String(n))
-      }
-      onBlur={
-        disabled
-          ? undefined
-          : () => {
-              if (draft !== null) {
-                const raw = Number(draft) || 0;
-                onChange(Math.min(Math.max(min, raw), max));
-              }
-              setDraft(null);
-            }
-      }
-      onChange={
-        disabled
-          ? undefined
-          : (e) => {
-              const raw = e.target.value;
-              if (raw !== "" && !/^\d*$/.test(raw.trim())) return;
-              if (raw.trim() === "") {
-                setDraft(raw);
-                onChange(0);
-                return;
-              }
-              const parsed = Number(raw);
-              if (Number.isFinite(parsed)) {
-                const clamped = Math.min(Math.max(min, parsed), max);
-                setDraft(String(clamped));
-                onChange(clamped);
-              }
-            }
-      }
-    />
-  );
 }
 
 function TripleRow({
@@ -313,64 +160,6 @@ function TripleRow({
         />
       </div>
     </div>
-  );
-}
-
-function FieldCell({
-  label,
-  children,
-}: {
-  label: string;
-  children: ReactNode;
-}) {
-  return (
-    <div className="grid min-w-0 grid-cols-[minmax(6.5rem,1.15fr)_minmax(4rem,0.85fr)]">
-      <div className={`${labelCell} min-w-0 truncate`} title={label}>
-        {label}
-      </div>
-      {children}
-    </div>
-  );
-}
-
-function CdnIcon({
-  src,
-  alt,
-  fallback,
-  size = 32,
-}: {
-  src: string | null;
-  alt: string;
-  fallback?: string;
-  size?: number;
-}) {
-  if (!src) {
-    return (
-      <div
-        className="flex items-center justify-center rounded bg-surface-muted text-[8px] font-bold tracking-tight"
-        style={{ width: size, height: size }}
-        title={alt}
-      >
-        {fallback ?? alt.slice(0, 3).toUpperCase()}
-      </div>
-    );
-  }
-  const href =
-    src.startsWith("http://") || src.startsWith("https://")
-      ? src
-      : `${SCOUTER_CDN}${src}`;
-  return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
-      src={href}
-      alt={alt}
-      width={size}
-      height={size}
-      className="object-contain"
-      style={{ width: size, height: size }}
-      loading="lazy"
-      referrerPolicy="no-referrer"
-    />
   );
 }
 
@@ -1969,344 +1758,23 @@ export default function ScouterPage() {
           </div>
         </section>
 
-        {/* —— Right: Buffs / Links / HEXA —— */}
-        <div className="space-y-2">
-          <section className="overflow-hidden rounded-lg border border-border/60 bg-surface/90">
-            <div className="flex items-center justify-between border-b border-border/40 px-2 py-1">
-              <h2 className="text-xs font-semibold">Buffs</h2>
-              <label className="flex items-center gap-1.5 text-xs font-medium">
-                <input
-                  type="checkbox"
-                  className="size-3 accent-[var(--accent)]"
-                  checked={allBuffsOn}
-                  onChange={toggleSelectAllBuffs}
-                />
-                Select All
-              </label>
-            </div>
-            <div className="grid grid-cols-8 gap-1 p-1.5 sm:grid-cols-10">
-              {BUFF_DEFS.map((b) => {
-                const st = buffs[b.id] ?? { on: false, level: 0 };
-                const active =
-                  b.control === "check" ? st.on : st.level > 0;
-                const tip = `${b.label} — ${b.bonus}`;
-                const cardClass = `flex flex-col items-center gap-0.5 rounded border p-1 ${
-                  active
-                    ? "border-accent bg-accent-soft/40"
-                    : "border-border/40 bg-background"
-                }`;
-                if (b.control === "check") {
-                  return (
-                    <label
-                      key={b.id}
-                      title={tip}
-                      className={`${cardClass} cursor-pointer`}
-                    >
-                      <CdnIcon src={b.icon} alt={b.label} size={24} />
-                      <input
-                        type="checkbox"
-                        className="pointer-events-none size-3 accent-[var(--accent)]"
-                        checked={st.on}
-                        onChange={(e) =>
-                          setBuffChecked(b.id, e.target.checked)
-                        }
-                      />
-                    </label>
-                  );
-                }
-                const max = b.maxLevel ?? 99;
-                return (
-                  <div
-                    key={b.id}
-                    title={tip}
-                    role="button"
-                    tabIndex={0}
-                    aria-pressed={active}
-                    aria-label={`${b.label}: ${active ? "on" : "off"}`}
-                    className={`${cardClass} cursor-pointer`}
-                    onClick={() => toggleLevelBuff(b.id)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        toggleLevelBuff(b.id);
-                      }
-                    }}
-                  >
-                    <CdnIcon src={b.icon} alt={b.label} size={24} />
-                    <div
-                      onClick={(e) => e.stopPropagation()}
-                      onKeyDown={(e) => e.stopPropagation()}
-                    >
-                      <LevelInput
-                        value={st.level}
-                        max={max}
-                        title={tip}
-                        onChange={(level) => {
-                          setBuffs((prev) => ({
-                            ...prev,
-                            [b.id]: { on: level > 0, level },
-                          }));
-                        }}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </section>
-
-          <section className="overflow-hidden rounded-lg border border-border/60 bg-surface/90">
-            <div className="border-b border-border/40 px-2 py-1">
-              <h2 className="text-xs font-semibold">Links/Legion</h2>
-            </div>
-            <div className="grid grid-cols-8 gap-1 p-1.5 sm:grid-cols-10">
-              {LINK_DEFS.map((l) => {
-                const tip = `${l.label} — ${l.bonus}`;
-                return (
-                  <div
-                    key={l.id}
-                    className="flex flex-col items-center gap-0.5 rounded border border-border/40 bg-background p-1"
-                  >
-                    <span title={tip} className="cursor-help">
-                      <CdnIcon
-                        src={l.icon}
-                        alt={l.label}
-                        fallback={l.short}
-                        size={24}
-                      />
-                    </span>
-                    <LevelInput
-                      value={links[l.id] ?? 0}
-                      max={l.maxLevel}
-                      title={tip}
-                      onChange={(capped) => {
-                        setLinks((prev) => ({ ...prev, [l.id]: capped }));
-                      }}
-                    />
-                  </div>
-                );
-              })}
-            </div>
-            <div className="grid grid-cols-[1fr_4.5rem] border-t border-border/30">
-              <div className={`${labelCell} !py-1 text-xs`}>
-                Wild Hunter Legion
-              </div>
-              <NumInput
-                value={input.wildHunterLegion}
-                onChange={(wildHunterLegion) => patch({ wildHunterLegion })}
-                className="!py-1 text-xs"
-              />
-            </div>
-          </section>
-
-          <section className="overflow-hidden rounded-lg border border-border/60 bg-surface/90">
-            <div className="border-b border-border/40 px-2 py-1">
-              <h2 className="text-xs font-semibold">HEXA Enhancement</h2>
-            </div>
-            <div className="grid grid-cols-6 gap-1 p-1.5 sm:grid-cols-7">
-              {hexaSlots.map((slot, i) => {
-                const locked = !!slot.unavailableInGms;
-                return (
-                  <div
-                    key={slot.id}
-                    title={
-                      locked
-                        ? `${slot.label} (not available in GMS)`
-                        : slot.label
-                    }
-                    className={`flex flex-col items-center gap-0.5 rounded border border-border/40 p-1 ${
-                      locked
-                        ? "bg-surface-muted/40 opacity-40 grayscale"
-                        : "bg-background"
-                    }`}
-                  >
-                    <CdnIcon
-                      src={slot.iconSuffix}
-                      alt={slot.label}
-                      fallback={slot.label.slice(0, 3)}
-                      size={24}
-                    />
-                    <LevelInput
-                      value={locked ? 0 : (hexa[i] ?? 0)}
-                      max={HEXA_MAX_LEVEL}
-                      title={
-                        locked
-                          ? `${slot.label} (not available in GMS)`
-                          : slot.label
-                      }
-                      disabled={locked}
-                      onChange={(level) => {
-                        if (locked) return;
-                        setHexa((prev) => {
-                          const next = [...prev];
-                          next[i] = level;
-                          return clampHexaForGms(next);
-                        });
-                      }}
-                    />
-                  </div>
-                );
-              })}
-            </div>
-          </section>
-
-          <section className="overflow-hidden rounded-lg border border-border/60 bg-surface/90">
-            <div className="border-b border-border/40 px-2 py-1">
-              <h2 className="text-xs font-semibold">Legion Artifact</h2>
-            </div>
-            <div className="space-y-1.5 p-1.5">
-              <label className="flex items-center gap-1.5 text-xs">
-                <input
-                  type="checkbox"
-                  className="size-3 accent-[var(--accent)]"
-                  checked={input.legionArtifactAdditionalExp}
-                  onChange={(e) =>
-                    patch({ legionArtifactAdditionalExp: e.target.checked })
-                  }
-                />
-                Additional EXP (+1 Mob Targeted)
-              </label>
-              <div className="grid grid-cols-[1fr_4.5rem]">
-                <div className={`${labelCell} !py-1 text-xs`}>Final Attack</div>
-                <NumInput
-                  value={input.legionArtifactFinalAttack}
-                  onChange={(legionArtifactFinalAttack) =>
-                    patch({
-                      legionArtifactFinalAttack: Math.min(
-                        40,
-                        Math.max(0, legionArtifactFinalAttack),
-                      ),
-                    })
-                  }
-                  className="!py-1 text-xs"
-                />
-              </div>
-            </div>
-          </section>
-
-          <section className="overflow-hidden rounded-lg border border-border/60 bg-surface/90">
-            <div className="border-b border-border/40 px-2 py-1">
-              <h2 className="text-xs font-semibold">Special Inner Ability</h2>
-            </div>
-            <div className="flex flex-col gap-1 p-1.5 text-xs">
-              {INNER_ABILITY_OPTIONS.map((opt) => (
-                <label key={opt.id} className="flex items-center gap-1.5">
-                  <input
-                    type="radio"
-                    name="specialInnerAbility"
-                    className="size-3 accent-[var(--accent)]"
-                    checked={input.specialInnerAbility === opt.id}
-                    onChange={() => patch({ specialInnerAbility: opt.id })}
-                  />
-                  {opt.label}
-                </label>
-              ))}
-            </div>
-          </section>
-
-          <section className="overflow-hidden rounded-lg border border-border/60 bg-surface/90">
-            <div className="border-b border-border/40 px-2 py-1">
-              <h2 className="text-xs font-semibold">Oz Ring</h2>
-            </div>
-            <div className="space-y-1.5 p-1.5">
-              <label className="flex flex-col gap-0.5 text-xs">
-                Continuous Use Status
-                <select
-                  className={`${cell} w-full !py-1 text-xs`}
-                  value={input.ozContinuousStatus}
-                  onChange={(e) => {
-                    const ozContinuousStatus = e.target.value as "noUse" | "use";
-                    // Clear rings that don't apply to the new Continuous Use mode.
-                    if (ozContinuousStatus === "use") {
-                      patch({
-                        ozContinuousStatus,
-                        ozRestraintLevel: 0,
-                        ozWeaponJumpLevel: 0,
-                        ozRingOfSumLevel: 0,
-                      });
-                    } else {
-                      patch({
-                        ozContinuousStatus,
-                        ozContinuousLevel: 0,
-                      });
-                    }
-                  }}
-                >
-                  {OZ_CONTINUOUS_STATUS.map((o) => (
-                    <option key={o.id} value={o.id}>
-                      {o.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <div
-                className={`grid gap-1 ${
-                  input.ozContinuousStatus === "use"
-                    ? "grid-cols-1 max-w-[5.5rem]"
-                    : "grid-cols-3"
-                }`}
-              >
-                {getVisibleOzRings(input.ozContinuousStatus).map((ring) => (
-                  <div
-                    key={ring.id}
-                    title={ring.label}
-                    className="flex flex-col items-center gap-0.5 rounded border border-border/40 bg-background p-1"
-                  >
-                    <CdnIcon src={ring.icon} alt={ring.label} size={24} />
-                    <LevelInput
-                      value={input[ring.field]}
-                      max={OZ_RING_MAX}
-                      title={ring.label}
-                      onChange={(capped) => {
-                        patch({ [ring.field]: capped });
-                      }}
-                    />
-                  </div>
-                ))}
-              </div>
-
-              <div className="overflow-hidden rounded border border-border/40">
-                <div className="grid grid-cols-[1fr_4.5rem]">
-                  <div className={`${labelCell} !py-1 text-xs`}>
-                    Weapon Total {ozWeaponLabel}
-                  </div>
-                  <NumInput
-                    value={input.ozWeaponTotalAtt}
-                    onChange={(ozWeaponTotalAtt) =>
-                      patch({ ozWeaponTotalAtt })
-                    }
-                    className="!py-1 text-xs"
-                  />
-                </div>
-                {ozStatKeys.slice(0, 2).map((key, i) => {
-                  const value =
-                    i === 0 ? input.ozPrimaryStat : input.ozSecondaryStat;
-                  const onChange =
-                    i === 0
-                      ? (ozPrimaryStat: number) => patch({ ozPrimaryStat })
-                      : (ozSecondaryStat: number) =>
-                          patch({ ozSecondaryStat });
-                  return (
-                    <div
-                      key={key}
-                      className="grid grid-cols-[1fr_4.5rem]"
-                    >
-                      <div className={`${labelCell} !py-1 text-xs`}>
-                        {STAT_LABELS[key]}
-                      </div>
-                      <NumInput
-                        value={value}
-                        onChange={onChange}
-                        className="!py-1 text-xs"
-                      />
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </section>
-        </div>
+        <ScouterAuxPanels
+          buffs={buffs}
+          setBuffs={setBuffs}
+          links={links}
+          setLinks={setLinks}
+          hexa={hexa}
+          setHexa={setHexa}
+          input={input}
+          patch={patch}
+          hexaSlots={hexaSlots}
+          allBuffsOn={allBuffsOn}
+          toggleSelectAllBuffs={toggleSelectAllBuffs}
+          setBuffChecked={setBuffChecked}
+          toggleLevelBuff={toggleLevelBuff}
+          ozWeaponLabel={ozWeaponLabel}
+          ozStatKeys={ozStatKeys}
+        />
       </div>
 
       {draftReady ? (

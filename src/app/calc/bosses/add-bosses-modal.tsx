@@ -424,7 +424,7 @@ export function AddBossesModal({
               {toast}
             </p>
           ) : (
-            <p className="text-[11px] opacity-55">
+            <p className="text-xs opacity-55">
               MapleHub mule presets are listed first. Save your own, then Apply
               here or to other characters.
             </p>
@@ -532,7 +532,7 @@ export function AddBossesModal({
                               }
                             />
                           ) : (
-                            <span className="flex h-5 w-5 items-center justify-center text-[9px] font-semibold opacity-50 sm:h-6 sm:w-6">
+                            <span className="flex h-5 w-5 items-center justify-center text-xs font-semibold opacity-50 sm:h-6 sm:w-6">
                               {boss.name.slice(0, 2)}
                             </span>
                           )}

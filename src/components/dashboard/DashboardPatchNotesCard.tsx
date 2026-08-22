@@ -67,7 +67,7 @@ export function DashboardPatchNotesCard() {
     <section className="rounded-xl border border-border/50 bg-surface/80 p-4">
       <div className="flex items-baseline justify-between gap-2">
         <h2 className="font-display text-base font-semibold">Patch notes</h2>
-        <span className="rounded bg-accent-soft/60 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-accent">
+        <span className="rounded bg-accent-soft/60 px-1.5 py-0.5 text-xs font-bold uppercase tracking-wide text-accent">
           Update
         </span>
       </div>

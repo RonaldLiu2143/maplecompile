@@ -515,7 +515,7 @@ export function RosterListRow({
             onClick={onRetry}
             className={[
               "font-semibold text-accent underline-offset-2 hover:underline",
-              compact ? "mt-0.5 text-[11px]" : "mt-1 text-xs",
+              compact ? "mt-0.5 text-xs" : "mt-1 text-xs",
             ].join(" ")}
           >
             Retry

@@ -44,7 +44,7 @@ function ConvertedStatCell({
 }) {
   return (
     <div className="rounded-lg border border-border/30 bg-background/60 px-2 py-1.5">
-      <p className="text-[10px] font-medium uppercase tracking-wide opacity-55">
+      <p className="text-xs font-medium uppercase tracking-wide opacity-55">
         {label}
       </p>
       <p

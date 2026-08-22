@@ -154,7 +154,7 @@ function ProgressBar({
   const pct = max > 0 ? Math.min(100, (current / max) * 100) : 0;
   return (
     <div className="min-w-0 flex-1 space-y-1">
-      <div className="flex items-center justify-between text-[11px]">
+      <div className="flex items-center justify-between text-xs">
         <span className="font-medium opacity-70">{label}</span>
         <span className="tabular-nums font-semibold">
           {current.toLocaleString()} / {max.toLocaleString()} ({pct.toFixed(0)}
@@ -234,7 +234,7 @@ export function HexaEfficiencyPanel({
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <div>
           <h2 className="text-sm font-semibold">Hexa Efficiency</h2>
-          <p className="text-[11px] opacity-60">
+          <p className="text-xs opacity-60">
             HEXA enhancement order · MapleHub FD bands
             {orderResult.classId ? ` · ${orderResult.classId}` : ""}
             {` · band ${orderResult.bandTarget.toLocaleString()}`}
@@ -251,7 +251,7 @@ export function HexaEfficiencyPanel({
 
       <div className="space-y-3 rounded-lg border border-border/40 bg-background/60 p-3">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="w-28 shrink-0 text-[11px] font-semibold opacity-70">
+          <span className="w-28 shrink-0 text-xs font-semibold opacity-70">
             Start from
           </span>
           <TabButton active={fromCurrent} onClick={() => setFromCurrent(true)}>
@@ -266,7 +266,7 @@ export function HexaEfficiencyPanel({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <span className="w-28 shrink-0 text-[11px] font-semibold opacity-70">
+          <span className="w-28 shrink-0 text-xs font-semibold opacity-70">
             HEXA Converted
           </span>
           <input
@@ -288,7 +288,7 @@ export function HexaEfficiencyPanel({
           />
           <button
             type="button"
-            className="text-[11px] font-medium opacity-70 underline-offset-2 hover:underline"
+            className="text-xs font-medium opacity-70 underline-offset-2 hover:underline"
             onClick={onResetBcs}
           >
             Use HEXA 380 ({derivedBossConvertedStat.toLocaleString()})
@@ -311,7 +311,7 @@ export function HexaEfficiencyPanel({
                 onChange={() => toggleFilter(f)}
               />
               <span
-                className={`inline-flex size-5 items-center justify-center rounded text-[10px] font-bold text-white ${CORE_META[f].badge}`}
+                className={`inline-flex size-5 items-center justify-center rounded text-xs font-bold text-white ${CORE_META[f].badge}`}
               >
                 {f}
               </span>
@@ -332,7 +332,7 @@ export function HexaEfficiencyPanel({
         <ProgressBar label="Fragments" current={spent.piece} max={MAX_PIECE} />
         <ProgressBar label="Sol Erda" current={spent.erda} max={MAX_ERDA} />
       </div>
-      <p className="mt-1 text-[10px] opacity-50">
+      <p className="mt-1 text-xs opacity-50">
         Priority follows MapleHub class FD leveling bands for your HEXA
         Converted score (nearest band {orderResult.bandTarget.toLocaleString()}
         ); fragment cost is the tiebreaker. Sol Janus is excluded from combat
@@ -361,7 +361,7 @@ export function HexaEfficiencyPanel({
                   loading="lazy"
                   referrerPolicy="no-referrer"
                 />
-                <span className="absolute right-0 bottom-0 rounded-sm bg-black/75 px-0.5 text-[9px] font-bold leading-none tabular-nums text-white">
+                <span className="absolute right-0 bottom-0 rounded-sm bg-black/75 px-0.5 text-xs font-bold leading-none tabular-nums text-white">
                   {level}
                 </span>
                 <span
@@ -393,7 +393,7 @@ export function HexaEfficiencyPanel({
               className="flex items-center gap-2 rounded-md border border-border/40 px-2 py-1.5"
             >
               <span
-                className={`inline-flex size-5 shrink-0 items-center justify-center rounded text-[10px] font-bold text-white ${CORE_META[group].badge}`}
+                className={`inline-flex size-5 shrink-0 items-center justify-center rounded text-xs font-bold text-white ${CORE_META[group].badge}`}
               >
                 {group}
               </span>
@@ -408,7 +408,7 @@ export function HexaEfficiencyPanel({
                 />
               ) : null}
               <div className="min-w-0 flex-1">
-                <div className="flex items-center justify-between text-[11px]">
+                <div className="flex items-center justify-between text-xs">
                   <span className="truncate font-medium">{slot.label}</span>
                   <span className="tabular-nums font-semibold">
                     Lv.{lv} · {pct.toFixed(0)}%

@@ -370,7 +370,7 @@ export default function LiberationPage() {
                 Roster
               </Link>
             ) : (
-              <span className="ml-auto rounded-md border border-border/40 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider opacity-60">
+              <span className="ml-auto rounded-md border border-border/40 px-2 py-0.5 text-xs font-semibold uppercase tracking-wider opacity-60">
                 Preview
               </span>
             )}
@@ -439,7 +439,7 @@ export default function LiberationPage() {
                         >
                           <span
                             className={[
-                              "absolute left-1 top-1 flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-bold text-white",
+                              "absolute left-1 top-1 flex h-4 w-4 items-center justify-center rounded-full text-xs font-bold text-white",
                               tab === "destiny"
                                 ? "bg-amber-600"
                                 : "bg-emerald-700",
@@ -458,14 +458,14 @@ export default function LiberationPage() {
                               className="mt-1 h-12 w-12 object-contain"
                             />
                           ) : (
-                            <div className="mt-1 flex h-12 w-12 items-center justify-center rounded-md bg-surface-muted text-[10px] font-bold uppercase opacity-50">
+                            <div className="mt-1 flex h-12 w-12 items-center justify-center rounded-md bg-surface-muted text-xs font-bold uppercase opacity-50">
                               {name.slice(0, 2)}
                             </div>
                           )}
-                          <p className="w-full truncate text-center text-[10px] font-semibold leading-tight">
+                          <p className="w-full truncate text-center text-xs font-semibold leading-tight">
                             {name}
                           </p>
-                          <p className="font-mono text-[10px] tabular-nums opacity-65">
+                          <p className="font-mono text-xs tabular-nums opacity-65">
                             {isLib
                               ? "Liberated"
                               : `${rate}%`}
@@ -477,7 +477,7 @@ export default function LiberationPage() {
                   </div>
                 </div>
               )}
-              <p className="mt-2 text-[10px] opacity-55">
+              <p className="mt-2 text-xs opacity-55">
                 Tap a character to edit · Gear icon to show/hide
               </p>
             </section>
@@ -555,7 +555,7 @@ export default function LiberationPage() {
             </div>
 
             <div className="space-y-2 rounded-lg bg-surface-muted/40 p-3">
-              <p className="text-[10px] font-semibold uppercase tracking-wider opacity-55">
+              <p className="text-xs font-semibold uppercase tracking-wider opacity-55">
                 Quick numbers
               </p>
               <Row
@@ -565,7 +565,7 @@ export default function LiberationPage() {
               <Row label="Time left" value={weeksLabel(result.weeksNeeded)} />
             </div>
 
-            <p className="text-[11px] leading-relaxed opacity-60">
+            <p className="text-xs leading-relaxed opacity-60">
               Tip: this mission needs up to{" "}
               {result.missionCap.toLocaleString()} {currencyShort}. Extra
               carryover accelerates the next step after you advance the quest.
@@ -693,7 +693,7 @@ export default function LiberationPage() {
                     });
                   }}
                 />
-                <span className="text-[11px] opacity-50">
+                <span className="text-xs opacity-50">
                   Leave blank for 0 · this mission max{" "}
                   {result.missionCap.toLocaleString()}
                 </span>
@@ -858,7 +858,7 @@ export default function LiberationPage() {
                         {doing ? gained : 0}
                       </span>
                       {boss.frequency === "monthly" ? (
-                        <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wider opacity-50">
+                        <span className="shrink-0 text-xs font-semibold uppercase tracking-wider opacity-50">
                           monthly
                         </span>
                       ) : null}

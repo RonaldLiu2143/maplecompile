@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { AlertModal } from "@/components/AlertModal";
 import {
   ManageDisplayButton,
   ManageDisplayModal,
@@ -154,7 +155,7 @@ function ProgressBar({
   const left = Math.max(0, max - current);
   return (
     <div className="space-y-1">
-      <div className="flex items-center justify-between gap-2 text-[11px]">
+      <div className="flex items-center justify-between gap-2 text-xs">
         <span className="font-medium opacity-70">{label}</span>
         <span className="tabular-nums font-semibold">
           {current.toLocaleString()} / {max.toLocaleString()}
@@ -262,7 +263,7 @@ function SkillNodeCard({
         )}
         <div className="min-w-0 flex-1">
           <p className="truncate text-xs font-semibold leading-tight">{label}</p>
-          <div className="mt-0.5 flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-[10px] opacity-70">
+          <div className="mt-0.5 flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-xs opacity-70">
             <ResourceCost kind="fragment" amount={fragmentsNeeded} />
             {solErdaNeeded > 0 ? (
               <ResourceCost kind="erda" amount={solErdaNeeded} />
@@ -290,7 +291,7 @@ function SkillNodeCard({
 }
 
 export default function HexaTrackerPage() {
-  const { hydrated, roster, primary, slots, handleSetPrimary } = useRoster();
+  const { hydrated, roster, primary, slots, handleSetPrimary, activeSwitchBlockedOpen, dismissActiveSwitchBlocked } = useRoster();
   const [ready, setReady] = useState(false);
   const [state, setState] = useState<HexaTrackerState | null>(null);
   const [rosterKey, setRosterKey] = useState("");
@@ -464,11 +465,7 @@ export default function HexaTrackerPage() {
 
 
   const onBarSelect = (entry: RosterEntry) => {
-    if (isStickyActiveSwitchBlocked(entry)) {
-      flash(UNLOCK_TO_CHANGE_ACTIVE_MSG);
-      return;
-    }
-    handleSetPrimary(entry);
+    if (!handleSetPrimary(entry)) return;
     const key = entryKey(entry);
     setRosterKey(key);
     setViewMode("characters");
@@ -765,14 +762,14 @@ export default function HexaTrackerPage() {
                             className="h-12 w-12 object-contain"
                           />
                         ) : (
-                          <div className="flex h-12 w-12 items-center justify-center rounded-md bg-surface-muted text-[10px] font-bold uppercase opacity-50">
+                          <div className="flex h-12 w-12 items-center justify-center rounded-md bg-surface-muted text-xs font-bold uppercase opacity-50">
                             {name.slice(0, 2)}
                           </div>
                         )}
-                        <p className="w-full truncate text-center text-[10px] font-semibold leading-tight">
+                        <p className="w-full truncate text-center text-xs font-semibold leading-tight">
                           {name}
                         </p>
-                        <p className="font-mono text-[10px] tabular-nums opacity-65">
+                        <p className="font-mono text-xs tabular-nums opacity-65">
                           {character?.level != null
                             ? `Lv.${character.level}`
                             : "—"}
@@ -788,11 +785,11 @@ export default function HexaTrackerPage() {
             primary &&
             rosterKey &&
             entryKey(primary) !== rosterKey ? (
-              <p className="mt-2 text-[10px] text-amber-600 opacity-90">
+              <p className="mt-2 text-xs text-amber-600 opacity-90">
                 Viewing temporarily — Active character stays locked
               </p>
             ) : (
-              <p className="mt-2 text-[10px] opacity-55">
+              <p className="mt-2 text-xs opacity-55">
                 Tap a character to edit HEXA · ★ is the active default
               </p>
             )}
@@ -896,7 +893,7 @@ export default function HexaTrackerPage() {
               </label>
             </div>
             <div className="mt-3 space-y-2">
-              <p className="text-[10px] font-semibold uppercase tracking-wide opacity-55">
+              <p className="text-xs font-semibold uppercase tracking-wide opacity-55">
                 Additional sources
               </p>
               <label className="flex items-center justify-between gap-2 text-sm">
@@ -956,7 +953,7 @@ export default function HexaTrackerPage() {
                 </p>
               </div>
             </div>
-            <p className="mt-2 text-[10px] opacity-55">
+            <p className="mt-2 text-xs opacity-55">
               Based on remaining fragment costs (
               {progress.fragmentsRemainingAfterInventory.toLocaleString()}{" "}
               frags).
@@ -990,7 +987,7 @@ export default function HexaTrackerPage() {
                 className={inputClass}
               />
             </label>
-            <p className="mt-2 text-[10px] opacity-55">
+            <p className="mt-2 text-xs opacity-55">
               Base {DEFAULT_BOSS_CONVERTED_STAT.toLocaleString()} (max 6 digits).
               Priority uses the nearest class FD band for this score without
               changing the value you entered.
@@ -1018,7 +1015,7 @@ export default function HexaTrackerPage() {
               <button
                 type="button"
                 onClick={() => setInfoOpen((v) => !v)}
-                className="absolute right-0 top-0 flex h-5 w-5 items-center justify-center rounded-full border border-border/50 text-[10px] font-bold opacity-55 transition hover:opacity-100"
+                className="absolute right-0 top-0 flex h-5 w-5 items-center justify-center rounded-full border border-border/50 text-xs font-bold opacity-55 transition hover:opacity-100"
                 aria-label="About upgrade priority"
                 aria-expanded={infoOpen}
               >
@@ -1026,7 +1023,7 @@ export default function HexaTrackerPage() {
               </button>
             </div>
             {infoOpen ? (
-              <p className="mt-2 rounded-lg bg-background/50 px-2.5 py-2 text-[11px] leading-relaxed opacity-70">
+              <p className="mt-2 rounded-lg bg-background/50 px-2.5 py-2 text-xs leading-relaxed opacity-70">
                 Priorities follow MapleHub class FD leveling bands for your HEXA
                 Converted score (base{" "}
                 {DEFAULT_BOSS_CONVERTED_STAT.toLocaleString()}
@@ -1052,7 +1049,7 @@ export default function HexaTrackerPage() {
                     ) : (
                       <div className="h-9 w-9 rounded border border-border/50 bg-surface-muted" />
                     )}
-                    <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 text-[10px] font-bold leading-none text-primary-foreground">
+                    <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 text-xs font-bold leading-none text-primary-foreground">
                       {featuredUp.node.current}
                     </span>
                   </div>
@@ -1075,7 +1072,7 @@ export default function HexaTrackerPage() {
                       </div>
                       {featuredUp.score > 0 ? (
                         <span
-                          className="shrink-0 rounded-md bg-accent-soft/50 px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-accent"
+                          className="shrink-0 rounded-md bg-accent-soft/50 px-1.5 py-0.5 text-xs font-bold tabular-nums text-accent"
                           title="MapleHub path priority score (1000 − order index)"
                         >
                           +{featuredUp.score}
@@ -1156,7 +1153,7 @@ export default function HexaTrackerPage() {
                                   ) : (
                                     <div className="h-8 w-8 rounded border border-border/50 bg-surface-muted" />
                                   )}
-                                  <span className="absolute -right-1 -top-1 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-accent px-0.5 text-[9px] font-bold leading-none text-primary-foreground">
+                                  <span className="absolute -right-1 -top-1 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-accent px-0.5 text-xs font-bold leading-none text-primary-foreground">
                                     {run.toLevel}
                                   </span>
                                   {idx === activePathRunIndex ? (
@@ -1365,6 +1362,13 @@ export default function HexaTrackerPage() {
         visibleIds={visibleIds}
         onClose={() => setManageOpen(false)}
         onSave={applyDisplayIds}
+      />
+      <AlertModal
+        open={activeSwitchBlockedOpen}
+        title="Active character locked"
+        message={UNLOCK_TO_CHANGE_ACTIVE_MSG}
+        onClose={dismissActiveSwitchBlocked}
+        titleId="hexa-active-switch-blocked-title"
       />
     </div>
   );
