@@ -147,6 +147,7 @@ export function ExpRangeGraph({
       >
         {hasLine ? (
           <ThemeLineChart
+            type="bar"
             labels={labelSlice}
             values={slice}
             height={compact ? 140 : 220}
@@ -191,6 +192,26 @@ export function LevelProgressGraph({
       ? labels.slice(-days)
       : slice.map((_, i) => String(i + 1));
   const values = slice.map((lv, i) => fractionalLevel(lv, expSlice[i]));
+
+  // Pin y-axis to session range so gain fills the chart (start to end).
+  let yMin: number | undefined;
+  let yMax: number | undefined;
+  if (values.length >= 2) {
+    const start = values[0]!;
+    const end = values[values.length - 1]!;
+    const lo = Math.min(start, end);
+    const hi = Math.max(start, end);
+    const pad = Math.max((hi - lo) * 0.05, 0.002);
+    yMin = lo - pad;
+    yMax = hi + pad;
+    if (yMin === yMax) {
+      yMin -= 0.01;
+      yMax += 0.01;
+    }
+  } else if (values.length === 1) {
+    yMin = values[0]! - 0.01;
+    yMax = values[0]! + 0.01;
+  }
 
   return (
     <div className={compact ? "mt-3 border-t border-border/40 pt-3" : ""}>
@@ -249,6 +270,8 @@ export function LevelProgressGraph({
           height={compact ? 132 : 184}
           yFormatter={formatLevelTick}
           valueFormatter={formatLevelTick}
+          yMin={yMin}
+          yMax={yMax}
         />
       </div>
     </div>

@@ -1,6 +1,6 @@
-import { MAPLE_LEAF_D, MAPLE_STEM_D } from "@/lib/maple-leaf";
+import Image from "next/image";
 
-/** Maple leaf mark for MapleCompile wordmarks (nav, hero). Uses currentColor. */
+/** MapleStory-style maple leaf mark (nav, hero). Blue two-tone PNG. */
 
 export function BrandMark({
   className,
@@ -13,30 +13,15 @@ export function BrandMark({
   title?: string;
 }) {
   return (
-    <svg
+    <Image
+      src="/maple-leaf.png"
+      alt={title ?? ""}
       width={size}
       height={size}
-      viewBox="0 0 32 32"
-      fill="none"
+      className={["shrink-0 object-contain", className].filter(Boolean).join(" ")}
       aria-hidden={title ? undefined : true}
-      role={title ? "img" : undefined}
-      className={className}
-    >
-      {title ? <title>{title}</title> : null}
-      <path
-        d={MAPLE_STEM_D}
-        stroke="currentColor"
-        strokeWidth="1.75"
-        strokeLinecap="round"
-      />
-      <path
-        d={MAPLE_LEAF_D}
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.55"
-        strokeLinejoin="round"
-      />
-    </svg>
+      unoptimized
+    />
   );
 }
 
@@ -54,7 +39,7 @@ export function BrandWordmark({
 }) {
   return (
     <Tag className={["inline-flex items-center gap-2", className].join(" ")}>
-      <BrandMark size={markSize} className="shrink-0 text-accent" />
+      <BrandMark size={markSize} />
       <span
         className={[
           "font-display font-bold text-accent",

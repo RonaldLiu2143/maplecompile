@@ -49,7 +49,6 @@ function MoreLink({
       aria-current={active ? "page" : undefined}
       className={cn(
         "flex min-h-11 items-center gap-2.5 rounded-lg px-3 text-sm transition-colors duration-150",
-        link.nested && "ml-3 border-l border-border/40 pl-3",
         active
           ? "bg-muted font-semibold text-foreground"
           : "text-foreground/85 hover:bg-muted hover:text-foreground",
