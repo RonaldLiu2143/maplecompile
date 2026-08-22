@@ -5,11 +5,11 @@ import { syncThemeFavicon } from "@/lib/maple-leaf";
 export const THEME_STORAGE_KEY = "maplecompile-theme";
 export const THEME_CHANGE_EVENT = "maplecompile-theme-change";
 
-export const THEME_IDS = ["compile", "contrast", "light"] as const;
+export const THEME_IDS = ["compile", "light"] as const;
 export type ThemeId = (typeof THEME_IDS)[number];
 
 /** Removed presets — remapped to Compile when reading stored prefs. */
-const LEGACY_THEME_IDS = new Set(["maple", "mist", "night-grape"]);
+const LEGACY_THEME_IDS = new Set(["maple", "mist", "night-grape", "contrast"]);
 
 export type ThemeScheme = "dark" | "light";
 
@@ -29,13 +29,6 @@ export const THEME_PRESETS: readonly ThemePreset[] = [
     description: "Black canvas, white actions.",
     scheme: "dark",
     defaultAccent: "#f5f5f5",
-  },
-  {
-    id: "contrast",
-    name: "Contrast",
-    description: "True black, true white, maximum clarity.",
-    scheme: "dark",
-    defaultAccent: "#ffffff",
   },
   {
     id: "light",
@@ -205,8 +198,16 @@ export const DEFAULT_THEME_PREFS: ThemePrefs = {
  * Layer 4 hue cards — same dashboard, different OKLCH hue.
  * Ink is chroma 0 (current neutrals). Named hues match the video’s red / green / blue.
  */
+/** Ink accent: white on dark canvas, black on light canvas. */
+export const INK_ACCENT_DARK = "#f5f5f5";
+export const INK_ACCENT_LIGHT = "#111111";
+
+export function inkAccentForScheme(scheme: ThemeScheme): string {
+  return scheme === "light" ? INK_ACCENT_LIGHT : INK_ACCENT_DARK;
+}
+
 export const THEME_HUE_PRESETS = [
-  { id: "ink", name: "Ink", hue: null, hex: "#f5f5f5" },
+  { id: "ink", name: "Ink", hue: null, hex: INK_ACCENT_DARK },
   { id: "red", name: "Red", hue: 25, hex: "#e18747" },
   { id: "orange", name: "Orange", hue: 55, hex: "#e1d447" },
   { id: "green", name: "Green", hue: 145, hex: "#47e187" },
@@ -414,30 +415,24 @@ export function getThemePreset(id: ThemeId): ThemePreset {
   return THEME_PRESETS.find((p) => p.id === id) ?? THEME_PRESETS[0]!;
 }
 
-/** Remembers last dark preset so Light ↔ Dark can restore Contrast. */
-let lastDarkThemeId: ThemeId = "compile";
-
 export function isLightThemeId(id: ThemeId): boolean {
   return getThemePreset(id).scheme === "light";
 }
 
-/** Dark side of the Light/Dark switch: Contrast if that was last, else Compile. */
+/** Dark side of the Light/Dark switch — always Compile. */
 export function preferredDarkThemeId(): ThemeId {
-  return lastDarkThemeId === "contrast" ? "contrast" : "compile";
+  return "compile";
 }
 
-export function rememberDarkThemeId(id: ThemeId): void {
-  if (!isLightThemeId(id)) lastDarkThemeId = id;
-}
+/** @deprecated No-op — kept for callers that sync scheme on mount. */
+export function rememberDarkThemeId(_id: ThemeId): void {}
 
 /**
- * Flip between Light and a dark preset (Compile, or Contrast if that was active).
- * Preserves accent / font / backdrop prefs.
+ * Flip between Light and Compile. Preserves accent / font / backdrop prefs.
  */
 export function setThemeScheme(scheme: ThemeScheme): void {
   const prefs = readThemePrefs();
   if (scheme === "light") {
-    if (!isLightThemeId(prefs.id)) rememberDarkThemeId(prefs.id);
     if (prefs.id === "light") {
       applyThemeToDocument(prefs);
       return;
@@ -445,12 +440,11 @@ export function setThemeScheme(scheme: ThemeScheme): void {
     writeThemePrefs({ ...prefs, id: "light" });
     return;
   }
-  const darkId = preferredDarkThemeId();
-  if (prefs.id === darkId) {
+  if (prefs.id === "compile") {
     applyThemeToDocument(prefs);
     return;
   }
-  writeThemePrefs({ ...prefs, id: darkId });
+  writeThemePrefs({ ...prefs, id: "compile" });
 }
 
 export function getFontPreset(id: FontId): FontPreset {
@@ -555,15 +549,17 @@ function canonicalize(prefs: ThemePrefs): ThemePrefs {
   const font = prefs.font ?? DEFAULT_FONT_ID;
   const hue =
     prefs.hue === null ? null : (parseThemeHue(prefs.hue ?? null) ?? DEFAULT_THEME_HUE);
-  const inkHex = THEME_HUE_PRESETS.find((p) => p.hue == null)?.hex ?? "#f5f5f5";
+  const scheme = getThemePreset(prefs.id).scheme;
+  const inkHex = inkAccentForScheme(scheme);
   const accent =
     parseAccentHex(prefs.accent) ??
     (hue == null ? inkHex : DEFAULT_THEME_COLOR);
+  const resolvedAccent = hue == null ? inkHex : accent;
   const next: ThemePrefs = {
     id: prefs.id,
     font,
     hue,
-    accent,
+    accent: resolvedAccent,
     backdrop,
     backdropUrl,
     dim: clampDim(prefs.dim ?? defaultDimForBackdrop(backdrop)),
@@ -600,10 +596,7 @@ export function normalizeThemePrefs(raw: unknown): ThemePrefs {
     accent = DEFAULT_THEME_COLOR;
   }
   if (hue == null) {
-    const inkHex = THEME_HUE_PRESETS.find((p) => p.hue == null)?.hex ?? "#f5f5f5";
-    if (!accentRaw || THEME_ACCENT_SWATCHES.includes(accent)) {
-      accent = inkHex;
-    }
+    accent = inkAccentForScheme(getThemePreset(id).scheme);
   }
   let backdrop: BackdropId = isBackdropId(obj.backdrop)
     ? obj.backdrop
@@ -793,13 +786,14 @@ export function applyThemeToDocument(prefs: ThemePrefs): void {
     }
   }
 
-  const inkHex = THEME_HUE_PRESETS.find((p) => p.hue == null)?.hex ?? "#f5f5f5";
+  const inkHex = inkAccentForScheme(preset.scheme);
   const accent =
     parseAccentHex(prefs.accent) ?? (hue == null ? inkHex : DEFAULT_THEME_COLOR);
-  root.style.setProperty("--accent", accent);
+  const resolvedAccent = hue == null ? inkHex : accent;
+  root.style.setProperty("--accent", resolvedAccent);
   root.style.setProperty(
     "--accent-soft",
-    softAccentFrom(accent, preset.scheme),
+    softAccentFrom(resolvedAccent, preset.scheme),
   );
 
   if (activeBackdrop === "none") {
@@ -819,7 +813,7 @@ export function applyThemeToDocument(prefs: ThemePrefs): void {
     }
   }
 
-  syncThemeFavicon(accent);
+  syncThemeFavicon(resolvedAccent);
 }
 
 /** Inline script source for FOUC-free boot (keep in sync with applyThemeToDocument). */
@@ -833,5 +827,5 @@ export function themeBootScript(): string {
   const wBlur = WALLPAPER_DEFAULT_BLUR;
   const defHue = DEFAULT_THEME_HUE;
   const defAccent = DEFAULT_THEME_COLOR;
-  return `(function(){try{var k=${JSON.stringify(THEME_STORAGE_KEY)};var ids=${JSON.stringify([...THEME_IDS])};var fonts=${JSON.stringify([...FONT_IDS])};var backs=${JSON.stringify([...BACKDROP_IDS])};var schemes={compile:"dark",contrast:"dark",light:"light"};var raw=localStorage.getItem(k);var prefs=raw?JSON.parse(raw):{};var id=ids.indexOf(prefs.id)>=0?prefs.id:"compile";var font=fonts.indexOf(prefs.font)>=0?prefs.font:${JSON.stringify(DEFAULT_FONT_ID)};var defAccent=${JSON.stringify(defAccent)};var accent=typeof prefs.accent==="string"&&/^#[0-9a-fA-F]{6}$/.test(prefs.accent)?prefs.accent.toLowerCase():defAccent;var warm=["#c9a227","#e8c547","#7a5610","#8a6410","#ea580c","#f59e0b"];if(warm.indexOf(accent)>=0)accent=defAccent;var hue=${defHue};var hasHue=Object.prototype.hasOwnProperty.call(prefs,"hue");if(!hasHue){var inkAccents=["#f5f5f5","#ffffff","#111111","#a3a3a3","#737373"];if(inkAccents.indexOf(accent)>=0)accent=defAccent}else if(prefs.hue==null||prefs.hue===""){hue=null}else if(typeof prefs.hue==="number"&&isFinite(prefs.hue)){hue=((Math.round(prefs.hue)%360)+360)%360}var backdrop=backs.indexOf(prefs.backdrop)>=0?prefs.backdrop:${JSON.stringify(defBack)};var url=null;if(typeof prefs.backdropUrl==="string"){var t=prefs.backdropUrl.trim();if((t.charAt(0)==='"'&&t.charAt(t.length-1)==='"')||(t.charAt(0)==="'"&&t.charAt(t.length-1)==="'")||(t.charAt(0)==="<"&&t.charAt(t.length-1)===">"))t=t.slice(1,-1).trim();if(t.indexOf("//")===0)t="https:"+t;else if(!/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(t))t="https://"+t;if(t&&t.length<=2048){try{var u=new URL(t);if((u.protocol==="http:"||u.protocol==="https:")&&u.hostname)url=u.href}catch(e){}}}if(backdrop==="custom"&&!url)backdrop=${JSON.stringify(defBack)};var dimDef=backdrop==="none"?0:${wDim};var blurDef=backdrop==="none"?0:${wBlur};var dim=typeof prefs.dim==="number"&&isFinite(prefs.dim)?Math.max(0,Math.min(${DIM_MAX},Math.round(prefs.dim))):dimDef;var blur=typeof prefs.blur==="number"&&isFinite(prefs.blur)?Math.max(0,Math.min(${BLUR_MAX},Math.round(prefs.blur))):blurDef;var scheme=schemes[id]||"dark";var r=document.documentElement;r.setAttribute("data-theme",id);r.setAttribute("data-font",font);r.setAttribute("data-backdrop",backdrop);r.style.colorScheme=scheme;if(scheme==="dark")r.classList.add("dark");else r.classList.remove("dark");if(hue==null){r.removeAttribute("data-tint");r.style.removeProperty("--tint-h");["--accent","--accent-soft","--accent-foreground","--primary","--primary-hover","--primary-active","--primary-foreground","--ring","--sidebar-primary","--sidebar-primary-foreground","--sidebar-ring"].forEach(function(p){r.style.removeProperty(p)})}else{r.setAttribute("data-tint","");r.style.setProperty("--tint-h",String(hue));var base=scheme==="light"?"oklch(0.40 0.14 "+hue+")":"oklch(0.78 0.16 "+hue+")";var fg=scheme==="light"?"#ffffff":"#0a0a0a";r.style.setProperty("--accent",base);r.style.setProperty("--accent-soft",scheme==="light"?"oklch(0.94 0.04 "+hue+")":"oklch(0.24 0.05 "+hue+")");r.style.setProperty("--accent-foreground",fg);r.style.setProperty("--primary",base);r.style.setProperty("--primary-hover",scheme==="light"?"oklch(0.32 0.15 "+hue+")":"oklch(0.84 0.14 "+hue+")");r.style.setProperty("--primary-active",scheme==="light"?"oklch(0.28 0.14 "+hue+")":"oklch(0.70 0.16 "+hue+")");r.style.setProperty("--primary-foreground",fg);r.style.setProperty("--ring",base);r.style.setProperty("--sidebar-primary",base);r.style.setProperty("--sidebar-primary-foreground",fg);r.style.setProperty("--sidebar-ring",base)}if(accent){r.style.setProperty("--accent",accent);var hr=parseInt(accent.slice(1,3),16),hg=parseInt(accent.slice(3,5),16),hb=parseInt(accent.slice(5,7),16);var soft=scheme==="dark"?"rgb("+Math.round(hr*0.22)+" "+Math.round(hg*0.22)+" "+Math.round(hb*0.28)+")":"rgb("+Math.min(255,Math.round(hr+(255-hr)*0.72))+" "+Math.min(255,Math.round(hg+(255-hg)*0.72))+" "+Math.min(255,Math.round(hb+(255-hb)*0.65))+")";r.style.setProperty("--accent-soft",soft)}if(backdrop==="none"){r.style.setProperty("--mc-dim","0");r.style.setProperty("--mc-blur","0px");r.style.removeProperty("--mc-wallpaper-image")}else{r.style.setProperty("--mc-dim",String(dim/100));r.style.setProperty("--mc-blur",blur+"px");if(backdrop==="custom"&&url)r.style.setProperty("--mc-wallpaper-image","url("+JSON.stringify(url)+")");else r.style.removeProperty("--mc-wallpaper-image")}}catch(e){var d=document.documentElement;d.setAttribute("data-theme","compile");d.setAttribute("data-font",${JSON.stringify(DEFAULT_FONT_ID)});d.setAttribute("data-backdrop",${JSON.stringify(defBack)});d.setAttribute("data-tint","");d.style.setProperty("--tint-h",String(${defHue}));d.classList.add("dark");d.style.colorScheme="dark";d.style.setProperty("--mc-dim","0");d.style.setProperty("--mc-blur","0px")}})();`;
+  return `(function(){try{var k=${JSON.stringify(THEME_STORAGE_KEY)};var ids=${JSON.stringify([...THEME_IDS])};var fonts=${JSON.stringify([...FONT_IDS])};var backs=${JSON.stringify([...BACKDROP_IDS])};var schemes={compile:"dark",light:"light"};var raw=localStorage.getItem(k);var prefs=raw?JSON.parse(raw):{};var id=ids.indexOf(prefs.id)>=0?prefs.id:"compile";var font=fonts.indexOf(prefs.font)>=0?prefs.font:${JSON.stringify(DEFAULT_FONT_ID)};var defAccent=${JSON.stringify(defAccent)};var accent=typeof prefs.accent==="string"&&/^#[0-9a-fA-F]{6}$/.test(prefs.accent)?prefs.accent.toLowerCase():defAccent;var warm=["#c9a227","#e8c547","#7a5610","#8a6410","#ea580c","#f59e0b"];if(warm.indexOf(accent)>=0)accent=defAccent;var hue=${defHue};var hasHue=Object.prototype.hasOwnProperty.call(prefs,"hue");if(!hasHue){var inkAccents=["#f5f5f5","#ffffff","#111111","#a3a3a3","#737373"];if(inkAccents.indexOf(accent)>=0)accent=defAccent}else if(prefs.hue==null||prefs.hue===""){hue=null}else if(typeof prefs.hue==="number"&&isFinite(prefs.hue)){hue=((Math.round(prefs.hue)%360)+360)%360}var backdrop=backs.indexOf(prefs.backdrop)>=0?prefs.backdrop:${JSON.stringify(defBack)};var url=null;if(typeof prefs.backdropUrl==="string"){var t=prefs.backdropUrl.trim();if((t.charAt(0)==='"'&&t.charAt(t.length-1)==='"')||(t.charAt(0)==="'"&&t.charAt(t.length-1)==="'")||(t.charAt(0)==="<"&&t.charAt(t.length-1)===">"))t=t.slice(1,-1).trim();if(t.indexOf("//")===0)t="https:"+t;else if(!/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(t))t="https://"+t;if(t&&t.length<=2048){try{var u=new URL(t);if((u.protocol==="http:"||u.protocol==="https:")&&u.hostname)url=u.href}catch(e){}}}if(backdrop==="custom"&&!url)backdrop=${JSON.stringify(defBack)};var dimDef=backdrop==="none"?0:${wDim};var blurDef=backdrop==="none"?0:${wBlur};var dim=typeof prefs.dim==="number"&&isFinite(prefs.dim)?Math.max(0,Math.min(${DIM_MAX},Math.round(prefs.dim))):dimDef;var blur=typeof prefs.blur==="number"&&isFinite(prefs.blur)?Math.max(0,Math.min(${BLUR_MAX},Math.round(prefs.blur))):blurDef;var scheme=schemes[id]||"dark";if(hue==null)accent=scheme==="light"?${JSON.stringify(INK_ACCENT_LIGHT)}:${JSON.stringify(INK_ACCENT_DARK)};var r=document.documentElement;r.setAttribute("data-theme",id);r.setAttribute("data-font",font);r.setAttribute("data-backdrop",backdrop);r.style.colorScheme=scheme;if(scheme==="dark")r.classList.add("dark");else r.classList.remove("dark");if(hue==null){r.removeAttribute("data-tint");r.style.removeProperty("--tint-h");["--accent","--accent-soft","--accent-foreground","--primary","--primary-hover","--primary-active","--primary-foreground","--ring","--sidebar-primary","--sidebar-primary-foreground","--sidebar-ring"].forEach(function(p){r.style.removeProperty(p)})}else{r.setAttribute("data-tint","");r.style.setProperty("--tint-h",String(hue));var base=scheme==="light"?"oklch(0.40 0.14 "+hue+")":"oklch(0.78 0.16 "+hue+")";var fg=scheme==="light"?"#ffffff":"#0a0a0a";r.style.setProperty("--accent",base);r.style.setProperty("--accent-soft",scheme==="light"?"oklch(0.94 0.04 "+hue+")":"oklch(0.24 0.05 "+hue+")");r.style.setProperty("--accent-foreground",fg);r.style.setProperty("--primary",base);r.style.setProperty("--primary-hover",scheme==="light"?"oklch(0.32 0.15 "+hue+")":"oklch(0.84 0.14 "+hue+")");r.style.setProperty("--primary-active",scheme==="light"?"oklch(0.28 0.14 "+hue+")":"oklch(0.70 0.16 "+hue+")");r.style.setProperty("--primary-foreground",fg);r.style.setProperty("--ring",base);r.style.setProperty("--sidebar-primary",base);r.style.setProperty("--sidebar-primary-foreground",fg);r.style.setProperty("--sidebar-ring",base)}if(accent){r.style.setProperty("--accent",accent);var hr=parseInt(accent.slice(1,3),16),hg=parseInt(accent.slice(3,5),16),hb=parseInt(accent.slice(5,7),16);var soft=scheme==="dark"?"rgb("+Math.round(hr*0.22)+" "+Math.round(hg*0.22)+" "+Math.round(hb*0.28)+")":"rgb("+Math.min(255,Math.round(hr+(255-hr)*0.72))+" "+Math.min(255,Math.round(hg+(255-hg)*0.72))+" "+Math.min(255,Math.round(hb+(255-hb)*0.65))+")";r.style.setProperty("--accent-soft",soft)}if(backdrop==="none"){r.style.setProperty("--mc-dim","0");r.style.setProperty("--mc-blur","0px");r.style.removeProperty("--mc-wallpaper-image")}else{r.style.setProperty("--mc-dim",String(dim/100));r.style.setProperty("--mc-blur",blur+"px");if(backdrop==="custom"&&url)r.style.setProperty("--mc-wallpaper-image","url("+JSON.stringify(url)+")");else r.style.removeProperty("--mc-wallpaper-image")}}catch(e){var d=document.documentElement;d.setAttribute("data-theme","compile");d.setAttribute("data-font",${JSON.stringify(DEFAULT_FONT_ID)});d.setAttribute("data-backdrop",${JSON.stringify(defBack)});d.setAttribute("data-tint","");d.style.setProperty("--tint-h",String(${defHue}));d.classList.add("dark");d.style.colorScheme="dark";d.style.setProperty("--mc-dim","0");d.style.setProperty("--mc-blur","0px")}})();`;
 }

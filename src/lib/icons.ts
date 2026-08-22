@@ -5,7 +5,6 @@ import {
   BookOpen,
   CircleHelp,
   Compass,
-  Contrast,
   Crown,
   Dices,
   Flame,
@@ -68,4 +67,4 @@ export function iconForHref(href: string): LucideIcon {
   return ROUTE_ICONS[href] ?? Sparkles;
 }
 
-export { Contrast, Moon, Palette, Sun };
+export { Moon, Palette, Sun };

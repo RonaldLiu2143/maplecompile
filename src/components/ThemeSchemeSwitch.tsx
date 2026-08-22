@@ -1,12 +1,10 @@
 "use client";
 
-import { useEffect, useSyncExternalStore } from "react";
+import { useSyncExternalStore } from "react";
 import {
   DEFAULT_THEME_PREFS,
   isLightThemeId,
-  preferredDarkThemeId,
   readThemePrefs,
-  rememberDarkThemeId,
   setThemeScheme,
   subscribeThemePrefs,
 } from "@/lib/theme";
@@ -18,7 +16,6 @@ function getServerThemePrefs() {
 
 /**
  * Compact Light / Dark control for the sticky top bar.
- * Light ↔ Compile; if the user was on Contrast, Dark restores Contrast.
  * Theme DOM apply lives in SiteShell (`useApplyThemeToDocument`).
  */
 export function ThemeSchemeSwitch({ className }: { className?: string }) {
@@ -27,10 +24,6 @@ export function ThemeSchemeSwitch({ className }: { className?: string }) {
     readThemePrefs,
     getServerThemePrefs,
   );
-
-  useEffect(() => {
-    rememberDarkThemeId(prefs.id);
-  }, [prefs.id]);
 
   const light = isLightThemeId(prefs.id);
 
@@ -70,11 +63,6 @@ export function ThemeSchemeSwitch({ className }: { className?: string }) {
             : "text-foreground/65 hover:bg-surface-muted hover:text-foreground"
         }`}
         aria-pressed={!light}
-        title={
-          preferredDarkThemeId() === "contrast"
-            ? "Dark (Contrast)"
-            : "Dark (Compile)"
-        }
       >
         <Moon className="mr-1 inline size-3" aria-hidden />
         Dark

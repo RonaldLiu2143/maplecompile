@@ -16,7 +16,7 @@ export default function AccessibilityPage() {
         <li>Skip-to-main-content link on every page</li>
         <li>Document language set to English</li>
         <li>Visible focus styles on navigation and footer links</li>
-        <li>Compile, Contrast, and Light themes in the theme picker</li>
+        <li>Dark and Light themes in the theme picker</li>
         <li>Mobile navigation with an overlay and explicit open/close controls</li>
       </ul>
       <h2>Known limits</h2>

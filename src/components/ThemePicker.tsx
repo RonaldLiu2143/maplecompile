@@ -13,6 +13,8 @@ import {
   DEFAULT_THEME_HUE,
   DEFAULT_THEME_PREFS,
   FONT_PRESETS,
+  getThemePreset,
+  inkAccentForScheme,
   THEME_HUE_PRESETS,
   THEME_PRESETS,
   hexToHue,
@@ -27,7 +29,7 @@ import {
   type ThemeId,
   type ThemePrefs,
 } from "@/lib/theme";
-import { Contrast, Moon, Palette, Sun, Type } from "lucide-react";
+import { Moon, Palette, Sun, Type } from "lucide-react";
 
 function getServerThemePrefs(): ThemePrefs {
   return DEFAULT_THEME_PREFS;
@@ -35,7 +37,6 @@ function getServerThemePrefs(): ThemePrefs {
 
 const APPEARANCE_ICONS = {
   compile: Moon,
-  contrast: Contrast,
   light: Sun,
 } as const;
 
@@ -85,10 +86,12 @@ export function ThemePicker({
 
   const setPreset = (preset: (typeof THEME_HUE_PRESETS)[number]) => {
     setCustomOpen(false);
+    const scheme = getThemePreset(prefs.id).scheme;
     writeThemePrefs({
       ...prefs,
       hue: preset.hue,
-      accent: preset.hex,
+      accent:
+        preset.hue == null ? inkAccentForScheme(scheme) : preset.hex,
     });
   };
 
@@ -101,10 +104,10 @@ export function ThemePicker({
   };
 
   const activeHue = prefs.hue === null ? null : (parseThemeHue(prefs.hue) ?? DEFAULT_THEME_HUE);
+  const scheme = getThemePreset(prefs.id).scheme;
   const activeColor =
     parseAccentHex(prefs.accent) ??
-    matched?.hex ??
-    DEFAULT_THEME_COLOR;
+    (prefs.hue === null ? inkAccentForScheme(scheme) : matched?.hex ?? DEFAULT_THEME_COLOR);
   const activeFont = prefs.font ?? DEFAULT_THEME_PREFS.font ?? "geist";
 
   const panel = (
@@ -131,19 +134,14 @@ export function ThemePicker({
             Appearance
           </p>
           <div
-            className="grid grid-cols-3 gap-1 rounded-lg border border-border/50 bg-background p-0.5"
+            className="grid grid-cols-2 gap-1 rounded-lg border border-border/50 bg-background p-0.5"
             role="group"
             aria-label="Appearance"
           >
             {THEME_PRESETS.map((p) => {
               const active = prefs.id === p.id;
               const Icon = APPEARANCE_ICONS[p.id];
-              const label =
-                p.id === "compile"
-                  ? "Dark"
-                  : p.id === "contrast"
-                    ? "Contrast"
-                    : "Light";
+              const label = p.id === "compile" ? "Dark" : "Light";
               return (
                 <button
                   key={p.id}
@@ -177,6 +175,8 @@ export function ThemePicker({
           >
             {THEME_HUE_PRESETS.map((p) => {
               const active = !showCustom && matched?.id === p.id;
+              const swatchColor =
+                p.hue == null ? inkAccentForScheme(scheme) : p.hex;
               return (
                 <button
                   key={p.id}
@@ -192,7 +192,7 @@ export function ThemePicker({
                 >
                   <span
                     className="size-6 rounded-md border border-border/50"
-                    style={{ backgroundColor: p.hex }}
+                    style={{ backgroundColor: swatchColor }}
                     aria-hidden
                   />
                   {p.name}
