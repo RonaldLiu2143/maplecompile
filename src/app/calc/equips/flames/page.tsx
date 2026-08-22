@@ -114,10 +114,7 @@ export default function FlamesClient() {
   >([]);
   const calcGen = useRef(0);
   const flameSetupRef = useRef(flameSetup);
-  const setupRef = useRef(setup);
   const skipReloadRef = useRef(false);
-
-  setupRef.current = setup;
 
   const refreshScouterPresets = () => {
     const list = storage
