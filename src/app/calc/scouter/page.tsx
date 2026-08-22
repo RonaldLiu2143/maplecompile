@@ -1627,9 +1627,7 @@ export default function ScouterPage() {
                             </Link>
                           </>
                         )
-                      : (
-                        "Not posted publicly"
-                      )}
+                      : null}
                 </p>
                 <div
                   className={`flex min-h-[2rem] flex-wrap items-center justify-end gap-1.5 ${
