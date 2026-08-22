@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   BUFF_DEFS,
@@ -52,12 +53,9 @@ import {
   persistLiveToWorkspace,
 } from "@/lib/character-workspace";
 import { ConfirmModal } from "@/components/ConfirmModal";
-import { EquipmentSetupPanel } from "@/components/EquipmentSetupPanel";
-import { HexaEfficiencyPanel } from "./hexa-efficiency";
-import type { EquipSetup, FlameSetup, JobType } from "@/lib/types";
-import { ShareGalleryModal } from "./share-gallery-modal";
+import { ScouterEquipmentSection } from "./scouter-equipment-section";
 import { MiniScouterCharacterSearch } from "./MiniScouterCharacterSearch";
-import { PresetModal, type PresetModalMode } from "./preset-modal";
+import type { PresetModalMode } from "./preset-modal";
 import {
   BossConvertedStatPanel,
   bossConvertedFromMaple,
@@ -83,9 +81,28 @@ import {
   getLinkedScouterPreset,
 } from "@/lib/pairing";
 import type { MapleScouterCalculatedData } from "@/lib/scouter/to-user-stat";
+import type { JobType, EquipSetup, FlameSetup } from "@/lib/types";
+
+const PresetModal = dynamic(
+  () => import("./preset-modal").then((m) => ({ default: m.PresetModal })),
+);
+
+const ShareGalleryModal = dynamic(
+  () =>
+    import("./share-gallery-modal").then((m) => ({
+      default: m.ShareGalleryModal,
+    })),
+);
+
+const HexaEfficiencyPanel = dynamic(
+  () =>
+    import("./hexa-efficiency").then((m) => ({
+      default: m.HexaEfficiencyPanel,
+    })),
+);
 
 const cell =
-  "border border-border/50 bg-background px-2 py-2 text-base outline-none focus:relative focus:z-10 focus:border-accent min-h-11 sm:min-h-0 sm:py-1.5 sm:text-sm";
+  "border border-border/50 bg-background px-2 py-2 text-base outline-none focus:relative focus:z-10 focus:border-accent min-h-11 sm:py-1.5 sm:text-sm";
 const labelCell =
   "border border-border/50 bg-surface-muted/50 px-2 py-1.5 text-sm font-medium";
 const headCell =
@@ -227,7 +244,7 @@ function LevelInput({
       placeholder="0"
       disabled={disabled}
       readOnly={disabled}
-      className={`w-full rounded border border-border/40 bg-background px-0 py-0 text-center text-[10px] tabular-nums outline-none placeholder:text-foreground/30 focus:border-accent disabled:cursor-not-allowed disabled:opacity-70 ${className}`}
+      className={`w-full rounded border border-border/40 bg-background px-0 py-0 text-center text-xs tabular-nums outline-none placeholder:text-foreground/30 focus:border-accent disabled:cursor-not-allowed disabled:opacity-70 ${className}`}
       value={display}
       onFocus={
         disabled ? undefined : () => setDraft(n === 0 ? "" : String(n))
@@ -1510,20 +1527,20 @@ export default function ScouterPage() {
                   placeholder="Preset name"
                   value={presetName}
                   onChange={(e) => setPresetName(e.target.value)}
-                  className="h-9 min-w-0 flex-1 rounded border border-border/50 bg-background px-2.5 text-sm outline-none focus:border-accent sm:max-w-[14rem]"
+                  className="min-h-11 min-w-0 flex-1 rounded border border-border/50 bg-background px-2.5 text-sm outline-none focus:border-accent sm:max-w-[14rem]"
                   aria-label="Preset name"
                 />
                 <button
                   type="button"
                   onClick={() => setPresetModal("recall")}
-                  className="inline-flex h-9 items-center rounded border border-border/50 bg-background px-2.5 text-sm font-semibold transition hover:bg-surface-muted"
+                  className="inline-flex min-h-11 items-center rounded border border-border/50 bg-background px-2.5 text-sm font-semibold transition hover:bg-surface-muted"
                 >
                   Recall Saved Preset
                 </button>
                 <button
                   type="button"
                   onClick={() => setPresetModal("save")}
-                  className="inline-flex h-9 items-center rounded bg-accent px-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
+                  className="inline-flex min-h-11 items-center rounded bg-accent px-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
                 >
                   Save Preset
                 </button>
@@ -1533,7 +1550,7 @@ export default function ScouterPage() {
                   type="button"
                   onClick={() => void shareLoadout({ asPublic: false })}
                   disabled={sharing}
-                  className="inline-flex h-9 items-center rounded border border-border/50 bg-background px-2.5 text-sm font-semibold transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
+                  className="inline-flex min-h-11 items-center rounded border border-border/50 bg-background px-2.5 text-sm font-semibold transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
                   title="Create a private link anyone can open if they have it"
                 >
                   {sharing && !galleryModalOpen
@@ -1545,7 +1562,7 @@ export default function ScouterPage() {
                     type="button"
                     onClick={openGalleryShareModal}
                     disabled={sharing}
-                    className="inline-flex h-9 items-center rounded bg-accent px-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+                    className="inline-flex min-h-11 items-center rounded bg-accent px-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
                     title="Update the public gallery post linked to this preset"
                   >
                     {sharing && galleryModalOpen
@@ -1557,7 +1574,7 @@ export default function ScouterPage() {
                     type="button"
                     onClick={openGalleryShareModal}
                     disabled={sharing}
-                    className="inline-flex h-9 items-center rounded border border-border/50 bg-background px-2.5 text-sm font-semibold transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
+                    className="inline-flex min-h-11 items-center rounded border border-border/50 bg-background px-2.5 text-sm font-semibold transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
                     title={
                       getMissingRequiredScouterFields(input).length
                         ? "Fill required character stats before posting"
@@ -1571,7 +1588,7 @@ export default function ScouterPage() {
                 )}
                 <Link
                   href="/calc/scouter/gallery"
-                  className="inline-flex h-9 items-center justify-center rounded border border-border/50 bg-background px-2.5 text-sm font-semibold transition hover:bg-surface-muted"
+                  className="inline-flex min-h-11 items-center justify-center rounded border border-border/50 bg-background px-2.5 text-sm font-semibold transition hover:bg-surface-muted"
                 >
                   Browse gallery
                 </Link>
@@ -1608,14 +1625,14 @@ export default function ScouterPage() {
                     type="text"
                     readOnly
                     value={shareUrl}
-                    className="h-9 min-w-0 flex-1 rounded border border-border/50 bg-background px-2.5 text-sm outline-none focus:border-accent sm:max-w-xs"
+                    className="min-h-11 min-w-0 flex-1 rounded border border-border/50 bg-background px-2.5 text-sm outline-none focus:border-accent sm:max-w-xs"
                     aria-label="Share link"
                     onFocus={(e) => e.currentTarget.select()}
                   />
                   <button
                     type="button"
                     onClick={() => void copyShareUrl()}
-                    className="inline-flex h-9 items-center rounded border border-border/50 bg-background px-2.5 text-sm font-semibold transition hover:bg-surface-muted"
+                    className="inline-flex min-h-11 items-center rounded border border-border/50 bg-background px-2.5 text-sm font-semibold transition hover:bg-surface-muted"
                   >
                     Copy link
                   </button>
@@ -1957,7 +1974,7 @@ export default function ScouterPage() {
           <section className="overflow-hidden rounded-lg border border-border/60 bg-surface/90">
             <div className="flex items-center justify-between border-b border-border/40 px-2 py-1">
               <h2 className="text-xs font-semibold">Buffs</h2>
-              <label className="flex items-center gap-1 text-[11px] font-medium">
+              <label className="flex items-center gap-1.5 text-xs font-medium">
                 <input
                   type="checkbox"
                   className="size-3 accent-[var(--accent)]"
@@ -2293,16 +2310,11 @@ export default function ScouterPage() {
       </div>
 
       {draftReady ? (
-        <section className="overflow-hidden rounded-lg border border-border bg-surface p-3 sm:p-4">
-          <EquipmentSetupPanel
-            variant="embedded"
-            showClassSelect={false}
-            clearSetupOnClassChange
-            jobType={(input.jobType || DEFAULT_JOB) as JobType}
-            charType={input.charType || DEFAULT_CHAR}
-            reloadToken={equipReloadToken}
-          />
-        </section>
+        <ScouterEquipmentSection
+          jobType={(input.jobType || DEFAULT_JOB) as JobType}
+          charType={input.charType || DEFAULT_CHAR}
+          reloadToken={equipReloadToken}
+        />
       ) : null}
 
       {showHexaEff ? (

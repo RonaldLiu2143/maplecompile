@@ -25,7 +25,7 @@ import type {
 import { entryKey } from "@/lib/dashboard/roster";
 
 const inputClass =
-  "min-h-11 rounded border border-border bg-background px-3 py-2 text-base outline-none focus:border-accent md:min-h-0 md:text-sm";
+  "min-h-11 rounded border border-border bg-background px-3 py-2 text-base outline-none focus:border-accent sm:text-sm";
 
 function toSavedFields(result: CharacterLookupResult): SavedCharacterInput {
   return {

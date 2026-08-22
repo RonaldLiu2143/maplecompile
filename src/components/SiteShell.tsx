@@ -63,7 +63,7 @@ function NavSection({
             asChild
             variant="ghost"
             className={cn(
-              "h-9 w-full justify-start gap-2",
+              "min-h-11 h-auto w-full justify-start gap-2 py-2",
               active && NAV_ACTIVE,
             )}
           >
@@ -107,7 +107,7 @@ function NavGroup({
           type="button"
           variant="ghost"
           className={cn(
-            "h-9 w-full justify-between",
+            "min-h-11 h-auto w-full justify-between py-2",
             childActive && "font-semibold",
           )}
         >
@@ -133,7 +133,7 @@ function NavGroup({
                 key={link.href}
                 asChild
                 variant="ghost"
-                className={cn("h-8 w-full justify-start gap-2", active && NAV_ACTIVE)}
+                className={cn("min-h-11 h-auto w-full justify-start gap-2 py-2", active && NAV_ACTIVE)}
               >
                 <Link href={link.href} aria-current={active ? "page" : undefined}>
                   <Icon className="size-3.5 shrink-0" aria-hidden />
@@ -228,6 +228,7 @@ export function SiteShell({
                 type="button"
                 variant="ghost"
                 size="icon"
+                className="size-11"
                 onClick={toggle}
                 aria-expanded={open}
                 aria-controls="site-sidebar-nav"
@@ -295,7 +296,7 @@ export function SiteShell({
                         variant="ghost"
                         size="icon"
                         className={cn(
-                          "size-10",
+                          "size-11",
                           active && NAV_ACTIVE,
                         )}
                       >

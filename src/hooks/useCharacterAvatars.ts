@@ -29,7 +29,9 @@ export function characterAvatarKey(
  */
 export function useCharacterAvatars(
   refs: CharacterAvatarRef[],
+  options?: { defer?: boolean },
 ): Record<string, string | null> {
+  const defer = options?.defer ?? false;
   const requestKey = useMemo(() => {
     const seen = new Set<string>();
     const unique: CharacterAvatarRef[] = [];
@@ -59,8 +61,33 @@ export function useCharacterAvatars(
   // Seeding from sessionStorage in useState() causes Recoverable hydration
   // errors (server has no session → no <img>; client cache → <img>).
   const [avatars, setAvatars] = useState<Record<string, string | null>>({});
+  const [fetchReady, setFetchReady] = useState(!defer);
 
   useEffect(() => {
+    if (!defer) {
+      setFetchReady(true);
+      return;
+    }
+    let cancelled = false;
+    const start = () => {
+      if (!cancelled) setFetchReady(true);
+    };
+    if (typeof requestIdleCallback === "function") {
+      const id = requestIdleCallback(start, { timeout: 1200 });
+      return () => {
+        cancelled = true;
+        cancelIdleCallback(id);
+      };
+    }
+    const timer = window.setTimeout(start, 150);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [defer]);
+
+  useEffect(() => {
+    if (!fetchReady) return;
     let cancelled = false;
 
     const seeded: Record<string, string | null> = {};
@@ -109,7 +136,7 @@ export function useCharacterAvatars(
     return () => {
       cancelled = true;
     };
-  }, [requestKey, uniqueRefs]);
+  }, [requestKey, uniqueRefs, fetchReady]);
 
   return avatars;
 }

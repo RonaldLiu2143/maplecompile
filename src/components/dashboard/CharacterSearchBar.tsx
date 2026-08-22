@@ -20,7 +20,7 @@ import {
 import { LoaderCircle, Search } from "lucide-react";
 
 const inputClass =
-  "min-h-11 rounded border border-border bg-background px-3 py-2 text-base outline-none focus:border-accent md:min-h-0 md:text-sm";
+  "min-h-11 rounded border border-border bg-background px-3 py-2 text-base outline-none focus:border-accent sm:text-sm";
 
 export function CharacterSearchBar({
   roster,

@@ -79,21 +79,21 @@ export function SiteFooter() {
         Not affiliated with Nexon. MapleStory is © Nexon.{" "}
         <Link
           href="/accessibility"
-          className="inline-flex min-h-11 items-center underline-offset-2 hover:text-primary hover:underline md:min-h-0"
+          className="inline-flex min-h-11 items-center underline-offset-2 hover:text-primary hover:underline"
         >
           Accessibility
         </Link>
         {" · "}
         <Link
           href="/privacy"
-          className="inline-flex min-h-11 items-center underline-offset-2 hover:text-primary hover:underline md:min-h-0"
+          className="inline-flex min-h-11 items-center underline-offset-2 hover:text-primary hover:underline"
         >
           Privacy
         </Link>
         {" · "}
         <Link
           href="/terms"
-          className="inline-flex min-h-11 items-center underline-offset-2 hover:text-primary hover:underline md:min-h-0"
+          className="inline-flex min-h-11 items-center underline-offset-2 hover:text-primary hover:underline"
         >
           Terms
         </Link>

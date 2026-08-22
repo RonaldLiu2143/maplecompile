@@ -129,7 +129,7 @@ export function PresetModal({
                   <span className="text-xs font-bold text-accent">
                     {nameMatch ? "Overwrite matching name" : "Save as new"}
                   </span>
-                  <span className="line-clamp-2 text-[11px] font-medium opacity-70">
+                  <span className="line-clamp-2 text-xs font-medium opacity-70">
                     {trimmedDraft || "Type a preset name first"}
                   </span>
                 </button>
@@ -168,7 +168,7 @@ export function PresetModal({
                     <span className="line-clamp-2 text-xs font-semibold">
                       {p.name}
                     </span>
-                    <span className="truncate text-[11px] opacity-60">
+                    <span className="truncate text-xs opacity-60">
                       {classLabelFor(p)}
                       {p.input?.level != null ? ` · Lv.${p.input.level}` : ""}
                       {gearPieces != null
@@ -176,11 +176,11 @@ export function PresetModal({
                         : ""}
                     </span>
                     {active ? (
-                      <span className="text-[10px] font-semibold text-accent">
+                      <span className="text-xs font-semibold text-accent">
                         Current
                       </span>
                     ) : matchesName ? (
-                      <span className="text-[10px] font-semibold text-accent">
+                      <span className="text-xs font-semibold text-accent">
                         Name match
                       </span>
                     ) : null}
@@ -194,7 +194,7 @@ export function PresetModal({
                         e.stopPropagation();
                         onDelete(p.id);
                       }}
-                      className="absolute right-1.5 top-1.5 rounded px-1.5 py-0.5 text-[11px] font-bold text-red-700 opacity-70 transition hover:bg-red-500/15 hover:opacity-100 dark:text-red-400"
+                      className="absolute right-1.5 top-1.5 rounded px-1.5 py-0.5 text-xs font-bold text-red-700 opacity-70 transition hover:bg-red-500/15 hover:opacity-100 dark:text-red-400"
                     >
                       ×
                     </button>

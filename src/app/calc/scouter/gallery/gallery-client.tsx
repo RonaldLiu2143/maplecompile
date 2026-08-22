@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { ConfirmModal } from "@/components/ConfirmModal";
+import { TableScrollRegion } from "@/components/TableScrollRegion";
 import { AnonymousShareAvatar } from "@/components/character/AnonymousShareAvatar";
 import { CharacterSprite } from "@/components/character/CharacterSprite";
 import {
@@ -57,22 +58,22 @@ function GalleryBcsHexa({
 }) {
   return (
     <div
-      className="grid min-w-[7.5rem] grid-cols-2 gap-1.5"
+      className="grid min-w-[9rem] grid-cols-2 gap-1.5"
       title="Boss Converted Stat HEXA · 20 min / KMS"
     >
-      <div className="rounded border border-border/40 bg-background/80 px-1.5 py-1">
-        <p className="text-[9px] font-semibold uppercase tracking-wide opacity-55">
-          300
+      <div className="rounded border border-border/40 bg-background/80 px-2 py-1">
+        <p className="text-xs font-semibold leading-tight opacity-70">
+          Boss 300
         </p>
-        <p className="text-xs font-semibold tabular-nums text-accent">
+        <p className="text-sm font-semibold tabular-nums text-accent">
           {formatBcs(boss300HexaStat)}
         </p>
       </div>
-      <div className="rounded border border-border/40 bg-background/80 px-1.5 py-1">
-        <p className="text-[9px] font-semibold uppercase tracking-wide opacity-55">
-          380
+      <div className="rounded border border-border/40 bg-background/80 px-2 py-1">
+        <p className="text-xs font-semibold leading-tight opacity-70">
+          Boss 380
         </p>
-        <p className="text-xs font-semibold tabular-nums text-accent">
+        <p className="text-sm font-semibold tabular-nums text-accent">
           {formatBcs(boss380HexaStat)}
         </p>
       </div>
@@ -88,7 +89,7 @@ function IdentityBadge({
   if (identity === "anonymous") {
     return (
       <span
-        className="ml-1.5 inline-block rounded border border-border/50 px-1 py-0.5 text-[9px] font-semibold uppercase tracking-wide opacity-60"
+        className="ml-1.5 inline-block rounded border border-border/50 px-1.5 py-0.5 text-xs font-semibold uppercase tracking-wide opacity-70"
         title="Anonymous class + share code"
       >
         Anon
@@ -97,7 +98,7 @@ function IdentityBadge({
   }
   return (
     <span
-      className="ml-1.5 inline-block rounded border border-accent/40 bg-accent/10 px-1 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-accent"
+      className="ml-1.5 inline-block rounded border border-accent/40 bg-accent/10 px-1.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-accent"
       title="In-game name"
     >
       IGN
@@ -159,7 +160,7 @@ export function GalleryClient({
       ),
     [items],
   );
-  const avatars = useCharacterAvatars(avatarRefs);
+  const avatars = useCharacterAvatars(avatarRefs, { defer: true });
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -330,7 +331,7 @@ export function GalleryClient({
               <IdentityBadge identity={item.identity} />
               {item.hasEquipment ? (
                 <span
-                  className="ml-1.5 inline-block rounded border border-emerald-500/40 bg-emerald-500/10 px-1 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-400"
+                  className="ml-1.5 inline-block rounded border border-emerald-500/40 bg-emerald-500/10 px-1.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-400"
                   title={
                     item.equipCount
                       ? `${item.equipCount} equipped pieces`
@@ -422,7 +423,7 @@ export function GalleryClient({
           <p className="mt-1 max-w-2xl text-sm opacity-75">
             Browse shared Scouter + Equipment builds. Filter by class, gear, or
             level; use <span className="font-semibold">My posts only</span> for
-            builds you shared from this browser. BCS HEXA is 20 min / KMS.
+            builds you shared from this browser. Boss Converted Stat uses 20 min / KMS.
             {localAdmin ? (
               <>
                 {" "}
@@ -670,7 +671,11 @@ export function GalleryClient({
               );
             })}
           </ul>
-          <div className="maple-table-scroll hidden rounded-lg border border-border/50 bg-surface/90 md:block">
+          <TableScrollRegion
+            label="Public build gallery table. Scroll horizontally for more columns."
+            className="hidden md:block"
+          >
+            <div className="rounded-lg border border-border/50 bg-surface/90">
             <table className="w-full min-w-[48rem] text-left text-sm">
               <thead className="border-b border-border/40 bg-surface-muted/50 text-xs uppercase tracking-wide opacity-70">
                 <tr>
@@ -681,9 +686,9 @@ export function GalleryClient({
                   <th className="px-3 py-2.5 font-semibold">Views</th>
                   <th
                     className="px-3 py-2.5 font-semibold"
-                    title="Boss Converted Stat HEXA · 20 min / KMS"
+                    title="Boss Converted Stat with HEXA · 20 min / KMS (Boss 300 / Boss 380)"
                   >
-                    BCS HEXA
+                    Boss Converted Stat
                   </th>
                   <th className="px-3 py-2.5 font-semibold">Achievement</th>
                   <th className="px-3 py-2.5 font-semibold">Shared</th>
@@ -694,7 +699,8 @@ export function GalleryClient({
               </thead>
               <tbody>{filtered.map((item) => renderRow(item))}</tbody>
             </table>
-          </div>
+            </div>
+          </TableScrollRegion>
         </>
       ) : null}
 

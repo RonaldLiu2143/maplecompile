@@ -99,7 +99,7 @@ export function MobileAppNav() {
                 href={tab.href}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "flex min-h-11 flex-col items-center justify-center gap-0.5 border-t-2 text-[11px] leading-none touch-manipulation transition-colors duration-150",
+                  "flex min-h-11 flex-col items-center justify-center gap-0.5 border-t-2 text-xs leading-none touch-manipulation transition-colors duration-150",
                   active
                     ? "border-accent font-semibold text-foreground"
                     : "border-transparent text-muted-foreground hover:text-foreground",
@@ -116,7 +116,7 @@ export function MobileAppNav() {
             aria-controls="mobile-more-nav"
             onClick={() => setMoreOpen(true)}
             className={cn(
-              "flex min-h-11 flex-col items-center justify-center gap-0.5 border-t-2 text-[11px] leading-none touch-manipulation transition-colors duration-150",
+              "flex min-h-11 flex-col items-center justify-center gap-0.5 border-t-2 text-xs leading-none touch-manipulation transition-colors duration-150",
               moreActive || moreOpen
                 ? "border-accent font-semibold text-foreground"
                 : "border-transparent text-muted-foreground hover:text-foreground",

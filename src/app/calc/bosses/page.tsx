@@ -900,7 +900,7 @@ function CharacterBossCard({
               <button
                 type="button"
                 onClick={() => onCheckAll(!allCleared)}
-                className="inline-flex min-h-11 items-center gap-1.5 rounded-md border border-border/50 bg-background px-3 text-sm font-semibold opacity-90 transition-colors hover:border-accent/40 hover:bg-accent-soft hover:text-accent md:min-h-0 md:px-2 md:py-1 md:text-xs"
+                className="inline-flex min-h-11 items-center gap-1.5 rounded-md border border-border/50 bg-background px-3 text-sm font-semibold opacity-90 transition-colors hover:border-accent/40 hover:bg-accent-soft hover:text-accent"
               >
                 <input
                   type="checkbox"
