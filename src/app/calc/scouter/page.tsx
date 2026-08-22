@@ -1471,125 +1471,108 @@ export default function ScouterPage() {
       <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.95fr)]">
         {/* —— Left: Enter Directly —— */}
         <section className="overflow-hidden rounded-lg border border-border bg-surface">
-          <div className="flex flex-col gap-2.5 border-b border-border/40 px-3 py-2.5">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-baseline gap-2">
-                  <h2 className="text-sm font-semibold">
-                    Character Stats
-                  </h2>
-                  {loadedPresetId ? (
-                    <span className="rounded-full bg-muted px-2 py-0.5 text-sm font-semibold">
-                      Editing “
-                      {presetName.trim() ||
-                        presets.find((p) => p.id === loadedPresetId)?.name ||
-                        "preset"}
-                      ”
-                    </span>
-                  ) : (
-                    <span className="text-sm text-muted-foreground">
-                      Unsaved draft
-                    </span>
-                  )}
-                </div>
-                {statsPairLabel ? (
-                  <p className="mt-0.5 text-sm font-medium">
-                    {statsPairLabel}
-                  </p>
-                ) : (
-                  <p className="mt-0.5 text-sm text-muted-foreground">
-                    Enter values from your character window. Save presets
-                    (stats + gear) locally, or share a link.
-                  </p>
-                )}
-              </div>
+          <div className="flex flex-col gap-1.5 border-b border-border/40 px-3 py-2">
+            <div className="flex flex-wrap items-baseline gap-2">
+              <h2 className="text-sm font-semibold">Character Stats</h2>
+              {loadedPresetId ? (
+                <span className="rounded-full bg-muted px-2 py-0.5 text-sm font-semibold">
+                  Editing “
+                  {presetName.trim() ||
+                    presets.find((p) => p.id === loadedPresetId)?.name ||
+                    "preset"}
+                  ”
+                </span>
+              ) : (
+                <span className="text-sm text-muted-foreground">
+                  Unsaved draft
+                </span>
+              )}
             </div>
+            {statsPairLabel ? (
+              <p className="text-sm font-medium">{statsPairLabel}</p>
+            ) : null}
 
             <MiniScouterCharacterSearch
               onUseForStats={handleUseForStats}
             />
 
-            <div className="w-full space-y-1.5 border-t border-border/40 pt-2">
-                <div className="flex flex-wrap items-center justify-end gap-1.5">
-                  <input
-                    type="text"
-                    placeholder="Preset name"
-                    value={presetName}
-                    onChange={(e) => setPresetName(e.target.value)}
-                    className="min-h-11 min-w-0 flex-1 rounded border border-border/50 bg-background px-2.5 text-sm outline-none focus:border-accent sm:max-w-[14rem]"
-                    aria-label="Preset name"
-                  />
+            <div className="flex flex-col gap-1.5 border-t border-border/40 pt-1.5">
+              <div className="flex flex-wrap items-center gap-1.5">
+                <input
+                  type="text"
+                  placeholder="Preset name"
+                  value={presetName}
+                  onChange={(e) => setPresetName(e.target.value)}
+                  className="h-9 min-w-0 flex-1 rounded border border-border/50 bg-background px-2.5 text-sm outline-none focus:border-accent sm:max-w-[14rem]"
+                  aria-label="Preset name"
+                />
+                <button
+                  type="button"
+                  onClick={() => setPresetModal("recall")}
+                  className="inline-flex h-9 items-center rounded border border-border/50 bg-background px-2.5 text-sm font-semibold transition hover:bg-surface-muted"
+                >
+                  Recall Saved Preset
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPresetModal("save")}
+                  className="inline-flex h-9 items-center rounded bg-accent px-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
+                >
+                  Save Preset
+                </button>
+              </div>
+              <div className="flex flex-wrap items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => void shareLoadout({ asPublic: false })}
+                  disabled={sharing}
+                  className="inline-flex h-9 items-center rounded border border-border/50 bg-background px-2.5 text-sm font-semibold transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
+                  title="Create a private link anyone can open if they have it"
+                >
+                  {sharing && !galleryModalOpen
+                    ? "Sharing…"
+                    : "Copy private link"}
+                </button>
+                {existingGalleryPost ? (
                   <button
                     type="button"
-                    onClick={() => setPresetModal("recall")}
-                    className="min-h-11 rounded border border-border/50 bg-background px-2.5 text-sm font-semibold transition hover:bg-surface-muted"
-                  >
-                    Recall Saved Preset
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setPresetModal("save")}
-                    className="min-h-11 rounded bg-accent px-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
-                  >
-                    Save Preset
-                  </button>
-                </div>
-                <div className="flex flex-wrap items-center justify-end gap-1.5">
-                  <button
-                    type="button"
-                    onClick={() => void shareLoadout({ asPublic: false })}
+                    onClick={openGalleryShareModal}
                     disabled={sharing}
-                    className="min-h-11 rounded border border-border/50 bg-background px-2.5 text-sm font-semibold transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
-                    title="Create a private link anyone can open if they have it"
+                    className="inline-flex h-9 items-center rounded bg-accent px-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+                    title="Update the public gallery post linked to this preset"
                   >
-                    {sharing && !galleryModalOpen
-                      ? "Sharing…"
-                      : "Copy private link"}
+                    {sharing && galleryModalOpen
+                      ? "Updating…"
+                      : "Update public post"}
                   </button>
-                  {existingGalleryPost ? (
-                    <button
-                      type="button"
-                      onClick={openGalleryShareModal}
-                      disabled={sharing}
-                      className="min-h-11 rounded bg-accent px-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
-                      title="Update the public gallery post linked to this preset"
-                    >
-                      {sharing && galleryModalOpen
-                        ? "Updating…"
-                        : "Update public post"}
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={openGalleryShareModal}
-                      disabled={sharing}
-                      className="min-h-11 rounded border border-border/50 bg-background px-2.5 text-sm font-semibold transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
-                      title={
-                        getMissingRequiredScouterFields(input).length
-                          ? "Fill required character stats before posting"
-                          : "Review and post to the public gallery"
-                      }
-                    >
-                      {sharing && galleryModalOpen
-                        ? "Posting…"
-                        : "Post to gallery"}
-                    </button>
-                  )}
-                  <Link
-                    href="/calc/scouter/gallery"
-                    className="inline-flex min-h-11 items-center justify-center rounded border border-border/50 bg-background px-2.5 text-sm font-semibold transition hover:bg-surface-muted"
+                ) : (
+                  <button
+                    type="button"
+                    onClick={openGalleryShareModal}
+                    disabled={sharing}
+                    className="inline-flex h-9 items-center rounded border border-border/50 bg-background px-2.5 text-sm font-semibold transition hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
+                    title={
+                      getMissingRequiredScouterFields(input).length
+                        ? "Fill required character stats before posting"
+                        : "Review and post to the public gallery"
+                    }
                   >
-                    Browse gallery
-                  </Link>
-                </div>
-                {/* Fixed-height status so flash / gallery text does not reflow Character Stats */}
+                    {sharing && galleryModalOpen
+                      ? "Posting…"
+                      : "Post to gallery"}
+                  </button>
+                )}
+                <Link
+                  href="/calc/scouter/gallery"
+                  className="inline-flex h-9 items-center justify-center rounded border border-border/50 bg-background px-2.5 text-sm font-semibold transition hover:bg-surface-muted"
+                >
+                  Browse gallery
+                </Link>
+              </div>
+              {presetMsg || existingGalleryPost ? (
                 <p
-                  className={`min-h-[1.125rem] text-right text-sm leading-[1.125rem] ${
-                    presetMsg
-                      ? "font-medium text-foreground"
-                      : "text-muted-foreground"
-                  }`}
-                  role={presetMsg ? "status" : undefined}
+                  className="text-right text-sm leading-snug font-medium text-foreground"
+                  role="status"
                 >
                   {presetMsg
                     ? presetMsg
@@ -1611,31 +1594,27 @@ export default function ScouterPage() {
                         )
                       : null}
                 </p>
-                <div
-                  className={`flex min-h-[2rem] flex-wrap items-center justify-end gap-1.5 ${
-                    shareUrl ? "" : "invisible"
-                  }`}
-                  aria-hidden={!shareUrl}
-                >
+              ) : null}
+              {shareUrl ? (
+                <div className="flex flex-wrap items-center gap-1.5">
                   <input
                     type="text"
                     readOnly
-                    value={shareUrl ?? ""}
-                    className="min-w-0 flex-1 rounded border border-border/50 bg-background px-2.5 py-1.5 text-sm outline-none focus:border-accent sm:max-w-xs"
+                    value={shareUrl}
+                    className="h-9 min-w-0 flex-1 rounded border border-border/50 bg-background px-2.5 text-sm outline-none focus:border-accent sm:max-w-xs"
                     aria-label="Share link"
                     onFocus={(e) => e.currentTarget.select()}
-                    tabIndex={shareUrl ? 0 : -1}
                   />
                   <button
                     type="button"
                     onClick={() => void copyShareUrl()}
-                    disabled={!shareUrl}
-                    className="min-h-11 rounded border border-border/50 bg-background px-2.5 text-sm font-semibold transition hover:bg-surface-muted disabled:opacity-40"
+                    className="inline-flex h-9 items-center rounded border border-border/50 bg-background px-2.5 text-sm font-semibold transition hover:bg-surface-muted"
                   >
                     Copy link
                   </button>
                 </div>
-              </div>
+              ) : null}
+            </div>
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-4">

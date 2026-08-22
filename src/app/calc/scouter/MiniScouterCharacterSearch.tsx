@@ -12,7 +12,7 @@ import {
 } from "@/lib/character/lookup";
 
 const inputClass =
-  "min-h-11 rounded border border-border/50 bg-background px-2.5 py-1 text-base outline-none focus:border-accent";
+  "h-9 rounded border border-border/50 bg-background px-2.5 text-sm outline-none focus:border-accent";
 
 function characterKey(c: Pick<CharacterLookupResult, "name" | "region">): string {
   return `${c.region}:${c.name.toLowerCase()}`;
@@ -86,13 +86,14 @@ export function MiniScouterCharacterSearch({
   }
 
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-1">
       <form
         onSubmit={onSubmit}
         className="flex flex-wrap items-center gap-1.5"
+        title="Gallery posts only show the sprite."
       >
         <input
-          className={`${inputClass} min-w-[8rem] flex-1`}
+          className={`${inputClass} w-[12rem] max-w-full`}
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Character name"
@@ -115,18 +116,18 @@ export function MiniScouterCharacterSearch({
         <button
           type="submit"
           disabled={pending || name.trim().length < 2}
-          className="min-h-11 rounded border border-border/50 bg-background px-3 text-sm font-semibold transition hover:bg-surface-muted disabled:opacity-40"
+          className="inline-flex h-9 items-center rounded border border-border/50 bg-background px-3 text-sm font-semibold transition hover:bg-surface-muted disabled:opacity-40"
         >
           {pending ? "…" : "Search"}
         </button>
       </form>
 
-      <p className="text-[11px] leading-snug text-muted-foreground">
+      <p className="text-xs leading-snug text-muted-foreground">
         Gallery posts only show the sprite.
       </p>
 
       {error ? (
-        <p role="alert" className="text-[11px] text-red-600 dark:text-red-400">
+        <p role="alert" className="text-xs text-red-600 dark:text-red-400">
           {error}
         </p>
       ) : null}
@@ -149,7 +150,7 @@ export function MiniScouterCharacterSearch({
           )}
           <div className="min-w-0 flex-1">
             <p className="truncate text-xs font-semibold">{result.name}</p>
-            <p className="truncate text-[11px] opacity-65">
+            <p className="truncate text-xs opacity-65">
               Lv. {result.level}
               {result.jobName ? ` · ${result.jobName}` : ""}
               {result.worldName ? ` · ${result.worldName}` : ""}
@@ -160,7 +161,7 @@ export function MiniScouterCharacterSearch({
             onClick={() => void handleUse()}
             disabled={using || isActive}
             aria-pressed={isActive}
-            className={`shrink-0 rounded px-2.5 py-1 text-xs font-semibold transition ${
+            className={`inline-flex h-9 shrink-0 items-center rounded px-2.5 text-xs font-semibold transition ${
               isActive
                 ? "cursor-not-allowed border border-border/50 bg-surface-muted text-foreground/45"
                 : "bg-accent text-primary-foreground hover:opacity-90 disabled:opacity-50"
