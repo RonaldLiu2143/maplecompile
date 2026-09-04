@@ -126,7 +126,7 @@ function ResourceCost({
 }
 
 function formatDate(d: Date | null): string {
-  if (!d) return "â";
+  if (!d) return "—";
   try {
     return new Intl.DateTimeFormat(undefined, {
       year: "numeric",
@@ -159,18 +159,18 @@ function ProgressBar({
           {current.toLocaleString()} / {max.toLocaleString()}
           {leftLabel ? (
             <span className="ml-1 font-normal opacity-60">
-              Â· {left.toLocaleString()} {leftLabel}
+              · {left.toLocaleString()} {leftLabel}
             </span>
           ) : null}
         </span>
-      </div>
+        </div>
       <div className="h-2 overflow-hidden rounded-full bg-surface-muted">
         <div
           className="h-full rounded-full bg-accent transition-all"
           style={{ width: `${pct}%` }}
         />
+        </div>
       </div>
-    </div>
   );
 }
 
@@ -247,8 +247,8 @@ function SkillNodeCard({
         />
       </div>
       <div className="flex items-center gap-2.5">
-        {icon ? (
-          // eslint-disable-next-line @next/next/no-img-element
+      {icon ? (
+        // eslint-disable-next-line @next/next/no-img-element
           <img
             src={icon}
             alt=""
@@ -258,15 +258,15 @@ function SkillNodeCard({
           />
         ) : (
           <div className="h-8 w-8 shrink-0 rounded bg-surface-muted" />
-        )}
-        <div className="min-w-0 flex-1">
+      )}
+      <div className="min-w-0 flex-1">
           <p className="truncate text-xs font-semibold leading-tight">{label}</p>
           <div className="mt-0.5 flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-xs opacity-70">
             <ResourceCost kind="fragment" amount={fragmentsNeeded} />
             {solErdaNeeded > 0 ? (
               <ResourceCost kind="erda" amount={solErdaNeeded} />
-            ) : null}
-          </div>
+        ) : null}
+      </div>
         </div>
         <div className="flex shrink-0 items-center gap-1.5">
           <CompactLevelInput
@@ -275,7 +275,7 @@ function SkillNodeCard({
             ariaLabel={`${label} current`}
             onChange={onCurrent}
           />
-          <span className="text-xs opacity-40">â</span>
+          <span className="text-xs opacity-40">→</span>
           <CompactLevelInput
             value={target}
             max={maxLevel}
@@ -431,7 +431,7 @@ export default function HexaTrackerPage() {
   const selectRosterCharacter = (key: string) => {
     const entry = roster.find((e) => entryKey(e) === key);
     // Sticky primary only when unlocked (or selecting the locked character).
-    // While locked, My Characters is a local temporary view â do not call
+    // While locked, My Characters is a local temporary view — do not call
     // switchActiveCharacter / handleSetPrimary.
     if (entry && !isStickyActiveSwitchBlocked(entry)) {
       handleSetPrimary(entry);
@@ -576,7 +576,7 @@ export default function HexaTrackerPage() {
     );
   }, [upgradePathSteps.length]);
 
-  /** Prev/Next only move the peek cursor â they never change skill levels. */
+  /** Prev/Next only move the peek cursor — they never change skill levels. */
   const prevPriorityPeek = () => {
     if (clampedPriorityIndex <= 0) return;
     setPriorityIndex((i) => Math.max(0, i - 1));
@@ -630,7 +630,7 @@ export default function HexaTrackerPage() {
         <h1 className="font-display text-2xl font-bold tracking-tight">
           HEXA / Fragment Tracker
         </h1>
-        <p className="text-sm opacity-60">Loadingâ¦</p>
+        <p className="text-sm opacity-60">Loading…</p>
       </div>
     );
   }
@@ -649,7 +649,7 @@ export default function HexaTrackerPage() {
           HEXA / Fragment Tracker
         </h1>
         <p className="mt-1 text-sm opacity-70">
-          Track Sol Erda fragments, core levels, and time-to-goal â per
+          Track Sol Erda fragments, core levels, and time-to-goal — per
           character. Pair with Scouter when you want levels synced.
         </p>
       </div>
@@ -707,88 +707,88 @@ export default function HexaTrackerPage() {
 
       {viewMode === "characters" ? (
         roster.length > 0 ? (
-          <section className="rounded-xl border border-border/40 bg-surface/80 p-3">
-            <div className="mb-2 flex items-center justify-between gap-2">
-              <h2 className="text-xs font-semibold uppercase tracking-wider opacity-60">
-                My Characters
-              </h2>
-              <ManageDisplayButton onClick={() => setManageOpen(true)} />
-            </div>
-            {visibleEntries.length === 0 ? (
-              <p className="rounded-lg border border-dashed border-border/50 px-3 py-4 text-center text-xs opacity-65">
-                All characters are hidden. Use the gear icon to show some.
-              </p>
-            ) : (
-              <div className="overflow-x-auto">
-                <div className="flex w-max gap-2">
-                  {visibleEntries.map((entry) => {
-                    const key = entryKey(entry);
-                    const active = rosterKey === key;
-                    const slot = slots[key];
-                    const character =
-                      slot?.status === "ready" ? slot.character : null;
-                    const name = character?.name ?? entry.name;
-                    const avatar = character?.characterImgURL;
-                    return (
-                      <button
-                        key={key}
-                        type="button"
-                        onClick={() => selectRosterCharacter(key)}
-                        className={[
+        <section className="rounded-xl border border-border/40 bg-surface/80 p-3">
+          <div className="mb-2 flex items-center justify-between gap-2">
+            <h2 className="text-xs font-semibold uppercase tracking-wider opacity-60">
+              My Characters
+            </h2>
+            <ManageDisplayButton onClick={() => setManageOpen(true)} />
+          </div>
+          {visibleEntries.length === 0 ? (
+            <p className="rounded-lg border border-dashed border-border/50 px-3 py-4 text-center text-xs opacity-65">
+              All characters are hidden. Use the gear icon to show some.
+            </p>
+          ) : (
+            <div className="overflow-x-auto">
+              <div className="flex w-max gap-2">
+                {visibleEntries.map((entry) => {
+                  const key = entryKey(entry);
+                  const active = rosterKey === key;
+                  const slot = slots[key];
+                  const character =
+                    slot?.status === "ready" ? slot.character : null;
+                  const name = character?.name ?? entry.name;
+                  const avatar = character?.characterImgURL;
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => selectRosterCharacter(key)}
+                      className={[
                           "flex min-h-11 w-[4.75rem] shrink-0 flex-col items-center gap-1 rounded-xl border px-1.5 py-2 transition",
-                          active
-                            ? "border-accent bg-accent-soft/45"
-                            : "border-border/50 bg-background/40 hover:border-accent/40",
-                        ].join(" ")}
-                      >
-                        {avatar ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            src={avatar}
-                            alt=""
-                            width={48}
-                            height={48}
-                            className="h-12 w-12 object-contain"
-                          />
-                        ) : (
+                        active
+                          ? "border-accent bg-accent-soft/45"
+                          : "border-border/50 bg-background/40 hover:border-accent/40",
+                      ].join(" ")}
+                    >
+                      {avatar ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={avatar}
+                          alt=""
+                          width={48}
+                          height={48}
+                          className="h-12 w-12 object-contain"
+                        />
+                      ) : (
                           <div className="flex h-12 w-12 items-center justify-center rounded-md bg-surface-muted text-xs font-bold uppercase opacity-50">
-                            {name.slice(0, 2)}
-                          </div>
-                        )}
+                          {name.slice(0, 2)}
+                        </div>
+                      )}
                         <p className="w-full truncate text-center text-xs font-semibold leading-tight">
-                          {name}
-                        </p>
+                        {name}
+                      </p>
                         <p className="font-mono text-xs tabular-nums opacity-65">
-                          {character?.level != null
-                            ? `Lv.${character.level}`
-                            : "â"}
-                          {isPrimary(entry, primary) ? " â" : ""}
-                        </p>
-                      </button>
-                    );
-                  })}
-                </div>
+                        {character?.level != null
+                          ? `Lv.${character.level}`
+                            : "—"}
+                          {isPrimary(entry, primary) ? " ★" : ""}
+                      </p>
+                    </button>
+                  );
+                })}
               </div>
-            )}
+            </div>
+          )}
             {isActiveCharacterLocked() &&
             primary &&
             rosterKey &&
             entryKey(primary) !== rosterKey ? (
               <p className="mt-2 text-xs text-amber-600 opacity-90">
-                Viewing temporarily â Active character stays locked
+                Viewing temporarily — Active character stays locked
               </p>
             ) : (
               <p className="mt-2 text-xs opacity-55">
-                Tap a character to edit HEXA Â· â is the active default
+                Tap a character to edit HEXA · ★ is the active default
               </p>
             )}
-          </section>
-        ) : (
-          <p className="text-xs opacity-65">
-            No roster yet.{" "}
-            <Link href="/roster" className="text-accent hover:underline">
-              Add characters
-            </Link>{" "}
+        </section>
+      ) : (
+        <p className="text-xs opacity-65">
+          No roster yet.{" "}
+          <Link href="/roster" className="text-accent hover:underline">
+            Add characters
+          </Link>{" "}
             or use Job Preview to plan a class.
           </p>
         )
@@ -799,12 +799,12 @@ export default function HexaTrackerPage() {
             {CLASS_OPTIONS.find((o) => o.charType === previewCharType)?.name ??
               previewCharType}
           </span>{" "}
-          â levels save locally as a sandbox, not tied to a roster character.
+          — levels save locally as a sandbox, not tied to a roster character.
         </p>
       )}
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.35fr)]">
-        {/* ââ Summary / rate ââ */}
+        {/* —— Summary / rate —— */}
         <div className="space-y-3">
           <section className="rounded-xl border border-border/45 bg-surface/90 p-4">
             <div className="flex items-baseline justify-between gap-2">
@@ -932,7 +932,7 @@ export default function HexaTrackerPage() {
                 <p className="text-sm font-bold tabular-nums">
                   {eta && dailyRate > 0
                     ? Math.ceil(eta.daysLeft).toLocaleString()
-                    : "â"}
+                    : "—"}
                 </p>
               </div>
               <div className="rounded-lg bg-background/50 px-2 py-2">
@@ -1017,7 +1017,7 @@ export default function HexaTrackerPage() {
                 Converted score (base{" "}
                 {DEFAULT_BOSS_CONVERTED_STAT.toLocaleString()}
                 ). Rank is by highest path score (
-                <span className="font-semibold">1000 â order index</span>
+                <span className="font-semibold">1000 − order index</span>
                 ); fragment cost is the tiebreaker. Prev/Next peek along that
                 sequence without changing skill levels.
               </p>
@@ -1049,7 +1049,7 @@ export default function HexaTrackerPage() {
                           {featuredUp.node.label}
                         </p>
                         <p className="text-xs opacity-60">
-                          Level {featuredUp.node.current} â{" "}
+                          Level {featuredUp.node.current} →{" "}
                           {featuredUp.nextLevel}
                           {clampedPriorityIndex > 0 ? (
                             <span className="ml-1 opacity-50">
@@ -1062,7 +1062,7 @@ export default function HexaTrackerPage() {
                       {featuredUp.score > 0 ? (
                         <span
                           className="shrink-0 rounded-md bg-accent-soft/50 px-1.5 py-0.5 text-xs font-bold tabular-nums text-accent"
-                          title="MapleHub path priority score (1000 â order index)"
+                          title="MapleHub path priority score (1000 − order index)"
                         >
                           +{featuredUp.score}
                         </span>
@@ -1083,7 +1083,7 @@ export default function HexaTrackerPage() {
                       ) : null}
                     </div>
                   </div>
-                </div>
+      </div>
 
                 {upgradePathRuns.length > 1 ? (
                   <div>
@@ -1127,7 +1127,7 @@ export default function HexaTrackerPage() {
                             >
                               <div
                                 className="group relative"
-                                title={`${run.label}: Lv.${run.fromLevel} â ${run.toLevel}`}
+                                title={`${run.label}: Lv.${run.fromLevel} → ${run.toLevel}`}
                               >
                                 <div className="relative h-8 w-8">
                                   {icon ? (
@@ -1152,7 +1152,7 @@ export default function HexaTrackerPage() {
                               </div>
                               {idx < upgradePathRuns.length - 1 ? (
                                 <span className="px-0.5 text-sm opacity-40">
-                                  â
+                                  →
                                 </span>
                               ) : null}
                             </div>
@@ -1222,14 +1222,14 @@ export default function HexaTrackerPage() {
               </div>
             ) : (
               <p className="mt-3 text-sm opacity-65">
-                All nodes at target â nice work.
+                All nodes at target — nice work.
               </p>
             )}
           </section>
 
         </div>
 
-        {/* ââ Skills ââ */}
+        {/* —— Skills —— */}
         <section className="rounded-xl border border-border/45 bg-surface/90 p-4">
           <div className="flex items-center justify-between gap-2">
             <h2 className="text-sm font-semibold">Skills Configuration</h2>
@@ -1278,7 +1278,7 @@ export default function HexaTrackerPage() {
           </div>
 
           <div className="mt-3 space-y-4">
-            {groups.map((group) => (
+        {groups.map((group) => (
               <div key={group.key} className="space-y-2">
                 <p className="text-xs font-semibold uppercase tracking-wider opacity-55">
                   {group.label}
@@ -1286,7 +1286,7 @@ export default function HexaTrackerPage() {
                 <div className="grid gap-2 sm:grid-cols-2">
                   {group.nodes.map((node) => {
                     if (node.slotIndex == null) {
-                      return (
+                return (
                         <SkillNodeCard
                           key={node.id}
                           icon={HEXA_STAT_ICON_URL}
@@ -1323,7 +1323,7 @@ export default function HexaTrackerPage() {
                     return (
                       <SkillNodeCard
                         key={node.id}
-                        icon={iconUrl(slot?.iconSuffix ?? null)}
+                    icon={iconUrl(slot?.iconSuffix ?? null)}
                         label={node.label}
                         current={node.current}
                         target={node.target}
@@ -1332,12 +1332,12 @@ export default function HexaTrackerPage() {
                         solErdaNeeded={node.solErdaNeeded}
                         onCurrent={(n) => setLevel(node.slotIndex!, n)}
                         onTarget={(n) => setTarget(node.slotIndex!, n)}
-                      />
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
+                  />
+                );
+              })}
+            </div>
+          </div>
+        ))}
           </div>
         </section>
       </div>

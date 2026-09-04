@@ -122,14 +122,6 @@ export const BUFF_DEFS: BuffDef[] = [
     defaultOn: true,
   },
   {
-    id: "guildBlessing",
-    label: "Guild Blessing",
-    bonus: "+30 Attack",
-    icon: "/doping_v2/guild.png",
-    control: "check",
-    defaultOn: true,
-  },
-  {
     id: "extreme",
     label: "Extreme Red Potion",
     bonus: "+30 Attack, +2000 HP",
@@ -234,24 +226,6 @@ export const BUFF_DEFS: BuffDef[] = [
     label: "Fish Bun Sprinkle",
     bonus: "+30 Attack",
     icon: "/doping_v2/fish.png",
-    control: "check",
-    defaultOn: false,
-    mutexGroup: "atkFood",
-  },
-  {
-    id: "whiteBear",
-    label: "Polar Friends",
-    bonus: "+80 Attack",
-    icon: "/doping_v2/whiteBear.png",
-    control: "check",
-    defaultOn: false,
-    mutexGroup: "atkFood",
-  },
-  {
-    id: "dragonsMeal",
-    label: "Baby Dragon's Food",
-    bonus: "+7 Attack (non-INT)",
-    icon: "/doping_v2/dragonsmeal.png",
     control: "check",
     defaultOn: false,
     mutexGroup: "atkFood",
@@ -534,7 +508,6 @@ export function getHexaSlots(charType: string): HexaSlot[] {
       group: "common",
       label: "Class Common",
       iconSuffix: cls(11),
-      unavailableInGms: true,
     },
     {
       id: "solJanus",
@@ -554,8 +527,8 @@ export function getHexaSlots(charType: string): HexaSlot[] {
 export const HEXA_SLOT_COUNT = 14;
 export const HEXA_MAX_LEVEL = 30;
 
-/** Indices in hexa[] for cores not available in GMS (skill3, class common). */
-export const GMS_UNAVAILABLE_HEXA_INDICES = [10, 11] as const;
+/** Indices in hexa[] for cores not available in GMS (skill3 only). */
+export const GMS_UNAVAILABLE_HEXA_INDICES = [10] as const;
 
 export function clampHexaForGms(hexa: number[]): number[] {
   const next = [...hexa];

@@ -90,12 +90,10 @@ export function ScouterAuxPanels({
                 <label
                   key={b.id}
                   title={tip}
+                  aria-label={tip}
                   className={`${cardClass} cursor-pointer touch-manipulation`}
                 >
-                  <ScouterCdnIcon src={b.icon} alt={b.label} size={24} />
-                  <span className="line-clamp-2 max-w-full text-center text-xs leading-tight opacity-80">
-                    {b.label}
-                  </span>
+                  <ScouterCdnIcon src={b.icon} alt="" size={24} />
                   <input
                     type="checkbox"
                     className="pointer-events-none size-4 accent-[var(--accent)]"
@@ -123,10 +121,7 @@ export function ScouterAuxPanels({
                   }
                 }}
               >
-                <ScouterCdnIcon src={b.icon} alt={b.label} size={24} />
-                <span className="line-clamp-2 max-w-full text-center text-xs leading-tight opacity-80">
-                  {b.label}
-                </span>
+                <ScouterCdnIcon src={b.icon} alt="" size={24} />
                 <div
                   className="w-full"
                   onClick={(e) => e.stopPropagation()}
@@ -160,19 +155,15 @@ export function ScouterAuxPanels({
             return (
               <div
                 key={l.id}
+                title={tip}
                 className="flex min-h-11 flex-col items-center gap-0.5 rounded border border-border/40 bg-background p-1.5"
               >
-                <span title={tip} className="cursor-help">
-                  <ScouterCdnIcon
-                    src={l.icon}
-                    alt={l.label}
-                    fallback={l.short}
-                    size={24}
-                  />
-                </span>
-                <span className="line-clamp-2 max-w-full text-center text-xs leading-tight opacity-80">
-                  {l.label}
-                </span>
+                <ScouterCdnIcon
+                  src={l.icon}
+                  alt=""
+                  fallback={l.short}
+                  size={24}
+                />
                 <ScouterLevelInput
                   value={links[l.id] ?? 0}
                   max={l.maxLevel}
@@ -218,13 +209,10 @@ export function ScouterAuxPanels({
               >
                 <ScouterCdnIcon
                   src={slot.iconSuffix}
-                  alt={slot.label}
+                  alt=""
                   fallback={slot.label.slice(0, 3)}
                   size={24}
                 />
-                <span className="line-clamp-2 max-w-full text-center text-xs leading-tight opacity-80">
-                  {slot.label}
-                </span>
                 <ScouterLevelInput
                   value={locked ? 0 : (hexa[i] ?? 0)}
                   max={HEXA_MAX_LEVEL}

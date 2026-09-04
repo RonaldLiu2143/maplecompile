@@ -154,13 +154,13 @@ export function nextLevelCost(
 
 /**
  * MapleScouter / tracker slot index → cost table type.
- * 0–3 Mastery, 4–7 Boost, 8 Origin, 9 Ascent, 10–11 GMS-unavailable,
- * 12–13 Common (Janus / Hecate).
+ * 0–3 Mastery, 4–7 Boost, 8 Origin, 9 Ascent, 10 GMS-unavailable (skill3),
+ * 11 Class Common (Origin costs), 12–13 Common (Janus / Hecate).
  */
 export function skillTypeForSlot(index: number): HexaSkillType | null {
   if (index >= 0 && index <= 3) return "Mastery";
   if (index >= 4 && index <= 7) return "Boost";
-  if (index === 8) return "Origin";
+  if (index === 8 || index === 11) return "Origin";
   if (index === 9) return "Ascent";
   if (index === 12 || index === 13) return "Common";
   return null;
@@ -409,7 +409,7 @@ export function groupConsecutiveUpgradeRuns(
   return runs;
 }
 
-/** GMS-trackable slot indices (excludes unreleased skill3 / class common). */
+/** GMS-trackable slot indices (excludes unreleased skill3). */
 export const GMS_HEXA_SLOT_INDICES = [
-  0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 13,
+  0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13,
 ] as const;

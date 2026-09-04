@@ -79,14 +79,14 @@ export function toMapleScouterUserStat(args: {
     reinCore4: String(h[7] ?? 0),
     skillCore1: String(h[8] ?? 0),
     skillCore2: String(h[9] ?? 0),
-    // Skill Core 3 + class common not released in GMS
+    // Skill Core 3 not released in GMS
     skillCore3: "0",
     skillCore4: "0",
     skillCore5: "0",
     skillCore6: "0",
     // MapleScouter: Sol Hecate → generalCore2, class common (_11) → generalCore3
     generalCore2: String(h[13] ?? 0),
-    generalCore3: "0",
+    generalCore3: String(h[11] ?? 0),
     generalCore4: "0",
     hexaStat: 0,
   };
@@ -101,7 +101,7 @@ export function toMapleScouterUserStat(args: {
       unionsPower: buffOn(buffs, "unionsPower"),
       urus: buffOn(buffs, "urus"),
       heroesHawl: buffOn(buffs, "heroesHawl"),
-      guildBlessing: buffOn(buffs, "guildBlessing"),
+      guildBlessing: false,
       noblessBoss: buffLevel(buffs, "noblessBoss") > 0,
       noblessDmg: buffLevel(buffs, "noblessDmg") > 0,
       noblessCriDmg: buffLevel(buffs, "noblessCriDmg") > 0,
@@ -134,7 +134,7 @@ export function toMapleScouterUserStat(args: {
       house: buffOn(buffs, "house"),
       wedding: false,
       specialWedding: false,
-      whiteBear: buffOn(buffs, "whiteBear"),
+      whiteBear: false,
       ultraVip: false,
       superVip: false,
       truffle: false,
@@ -149,7 +149,7 @@ export function toMapleScouterUserStat(args: {
       legendHero: buffOn(buffs, "legendHero"),
       jangBi: buffOn(buffs, "jangBi"),
       fish: buffOn(buffs, "fish"),
-      dragonsMeal: buffOn(buffs, "dragonsMeal"),
+      dragonsMeal: false,
     },
     linkSkill: {
       ark: linkLevel(links, "ark"),
