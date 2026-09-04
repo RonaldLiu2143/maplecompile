@@ -568,9 +568,11 @@ function CompactCharacterProfile({
 function FullCharacterProfile({
   character,
   actions,
+  showOpenInScouter = true,
 }: {
   character: CharacterLookupResult;
   actions?: ReactNode;
+  showOpenInScouter?: boolean;
 }) {
   const router = useRouter();
   const pct = character.expPercent;
@@ -846,16 +848,18 @@ function FullCharacterProfile({
       </div>
 
       <div className="flex flex-wrap gap-2.5 text-sm">
-        <button
-          type="button"
-          onClick={() => {
-            applyCharacterLookupToScouter(character);
-            router.push(SCOUTER_FROM_LOOKUP_HREF);
-          }}
-          className="rounded-lg border border-border px-3 py-1.5 font-semibold transition hover:bg-surface-muted"
-        >
-          Open in Scouter
-        </button>
+        {showOpenInScouter ? (
+          <button
+            type="button"
+            onClick={() => {
+              applyCharacterLookupToScouter(character);
+              router.push(SCOUTER_FROM_LOOKUP_HREF);
+            }}
+            className="rounded-lg border border-border px-3 py-1.5 font-semibold transition hover:bg-surface-muted"
+          >
+            Open in Scouter
+          </button>
+        ) : null}
         <a
           href={`https://mapleranks.com/u/${character.region === "eu" ? "eu/" : ""}${encodeURIComponent(character.name)}`}
           target="_blank"
@@ -884,6 +888,7 @@ export function CharacterProfile({
   compact = false,
   dense = false,
   actions,
+  showOpenInScouter = true,
 }: {
   character: CharacterLookupResult;
   /**
@@ -898,6 +903,8 @@ export function CharacterProfile({
   dense?: boolean;
   /** Optional action buttons (Save, Add to roster, etc.). */
   actions?: ReactNode;
+  /** Full profile footer link into Scouter (hidden on Character Search). */
+  showOpenInScouter?: boolean;
 }) {
   if (compact || dense) {
     return (
@@ -912,6 +919,7 @@ export function CharacterProfile({
     <FullCharacterProfile
       character={character}
       actions={actions}
+      showOpenInScouter={showOpenInScouter}
     />
   );
 }

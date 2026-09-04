@@ -57,8 +57,8 @@ function StarIcon({ filled }: { filled?: boolean }) {
   );
 }
 
-/** MapleRanks-style Saved card: avatar, name, job/world, Lv + %, EXP bar. */
-function SavedRow({
+/** Bookmark card: avatar, name, job/world, Lv + %, EXP bar. */
+function BookmarkedRow({
   entry,
   active,
   onSelect,
@@ -80,7 +80,7 @@ function SavedRow({
   return (
     <li
       className={[
-        "w-[15.5rem] shrink-0 overflow-hidden rounded-xl border transition sm:w-[16.5rem]",
+        "overflow-hidden rounded-xl border transition",
         active
           ? "border-accent/55 bg-accent-soft/35"
           : "border-border/50 bg-surface/80 hover:border-border hover:bg-surface",
@@ -134,7 +134,7 @@ function SavedRow({
                 </>
               ) : (
                 <span className="text-xs font-medium text-foreground/50">
-                  Saved
+                  Bookmarked
                 </span>
               )}
             </p>
@@ -144,8 +144,8 @@ function SavedRow({
         <button
           type="button"
           onClick={onRemove}
-          title="Remove from Saved"
-          aria-label={`Unsave ${entry.name}`}
+          title="Remove bookmark"
+          aria-label={`Remove bookmark for ${entry.name}`}
           className="rounded-lg p-1.5 text-accent opacity-70 transition hover:bg-accent-soft hover:opacity-100"
         >
           <StarIcon filled />
@@ -255,6 +255,64 @@ export function CharacterSearchPage() {
     toggle(toSavedFields(result));
   }
 
+  const bookmarkedPanel = (
+    <aside className="lg:sticky lg:top-4 lg:self-start">
+      <div className="flex flex-wrap items-end justify-between gap-2">
+        <div>
+          <h2 className="font-display text-sm font-bold text-foreground">
+            Bookmarked
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Bookmarks only — not your roster.
+          </p>
+        </div>
+        {hydrated && saved.length > 0 ? (
+          <span className="font-mono text-xs tabular-nums text-foreground/50">
+            {saved.length}
+          </span>
+        ) : null}
+      </div>
+
+      {!hydrated ? (
+        <p className="mt-3 text-sm opacity-60">Loading…</p>
+      ) : saved.length === 0 ? (
+        <p className="mt-3 rounded-xl border border-dashed border-border/50 bg-surface-muted/30 px-3 py-5 text-center text-sm text-foreground/55">
+          Star a profile to bookmark it here.
+        </p>
+      ) : (
+        <ul className="mt-3 flex max-h-[min(70vh,40rem)] flex-col gap-2.5 overflow-y-auto pb-1">
+          {saved.map((entry) => {
+            const key = entryKey(entry);
+            const isActive = activeKey === key;
+            return (
+              <BookmarkedRow
+                key={key}
+                entry={
+                  isActive && result
+                    ? {
+                        ...entry,
+                        level: result.level,
+                        exp: result.exp,
+                        jobName: result.jobName,
+                        worldName: result.worldName ?? entry.worldName,
+                        characterImgURL:
+                          result.characterImgURL ?? entry.characterImgURL,
+                      }
+                    : entry
+                }
+                active={isActive}
+                onSelect={() => {
+                  void loadCharacter(entry.name, entry.region);
+                }}
+                onRemove={() => unsave(entry)}
+              />
+            );
+          })}
+        </ul>
+      )}
+    </aside>
+  );
+
   return (
     <div className="flex flex-col gap-5 py-1 md:gap-6 md:py-2">
       <header className="space-y-1">
@@ -267,64 +325,8 @@ export function CharacterSearchPage() {
         </p>
       </header>
 
-      <div className="flex flex-col gap-5">
-        <aside className="border-b border-border/55 pb-4">
-          <div className="flex flex-wrap items-end justify-between gap-2">
-            <div>
-              <h2 className="font-display text-sm font-bold text-foreground">
-                Saved Characters
-              </h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Bookmarks only — not your roster.
-              </p>
-            </div>
-            {hydrated && saved.length > 0 ? (
-              <span className="font-mono text-xs tabular-nums text-foreground/50">
-                {saved.length}
-              </span>
-            ) : null}
-          </div>
-
-          {!hydrated ? (
-            <p className="mt-3 text-sm opacity-60">Loading…</p>
-          ) : saved.length === 0 ? (
-            <p className="mt-3 rounded-xl border border-dashed border-border/50 bg-surface-muted/30 px-3 py-5 text-center text-sm text-foreground/55">
-              Add characters to your saved list to get started!
-            </p>
-          ) : (
-            <ul className="mt-3 flex gap-2.5 overflow-x-auto pb-1">
-              {saved.map((entry) => {
-                const key = entryKey(entry);
-                const isActive = activeKey === key;
-                return (
-                  <SavedRow
-                    key={key}
-                    entry={
-                      isActive && result
-                        ? {
-                            ...entry,
-                            level: result.level,
-                            exp: result.exp,
-                            jobName: result.jobName,
-                            worldName: result.worldName ?? entry.worldName,
-                            characterImgURL:
-                              result.characterImgURL ?? entry.characterImgURL,
-                          }
-                        : entry
-                    }
-                    active={isActive}
-                    onSelect={() => {
-                      void loadCharacter(entry.name, entry.region);
-                    }}
-                    onRemove={() => unsave(entry)}
-                  />
-                );
-              })}
-            </ul>
-          )}
-        </aside>
-
-        <section className="space-y-3">
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_18rem] lg:items-start lg:gap-6 xl:grid-cols-[minmax(0,1fr)_20rem]">
+        <section className="min-w-0 space-y-3">
           <form
             onSubmit={(e) => void onSubmit(e)}
             className="flex flex-col gap-2 rounded-xl border-2 border-border bg-surface p-3 sm:flex-row sm:flex-wrap sm:items-end sm:gap-3 sm:p-5"
@@ -385,6 +387,7 @@ export function CharacterSearchPage() {
             <div className={pending ? "opacity-60 transition-opacity" : undefined}>
               <CharacterProfile
                 character={result}
+                showOpenInScouter={false}
                 actions={
                   hydrated ? (
                     <button
@@ -399,7 +402,7 @@ export function CharacterSearchPage() {
                       aria-pressed={profileSaved}
                     >
                       <StarIcon filled={profileSaved} />
-                      {profileSaved ? "Saved" : "Save"}
+                      {profileSaved ? "Bookmarked" : "Bookmark"}
                     </button>
                   ) : null
                 }
@@ -419,6 +422,10 @@ export function CharacterSearchPage() {
             </p>
           ) : null}
         </section>
+
+        <div className="border-t border-border/55 pt-4 lg:border-t-0 lg:pt-0">
+          {bookmarkedPanel}
+        </div>
       </div>
     </div>
   );
