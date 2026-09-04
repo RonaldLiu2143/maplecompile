@@ -1,6 +1,6 @@
 /** Genesis / Destiny liberation data aligned with MapleHub liberation calculator. */
 
-export type LiberationType = "genesis" | "destiny";
+export type LiberationType = "genesis" | "destiny1" | "destiny2";
 
 export type TraceDifficulty = { label: string; baseTraces: number };
 
@@ -34,8 +34,12 @@ export const DESTINY_CARRYOVER_CAP = 15000;
 export const GENESIS_CARRYOVER_CAP = 1500;
 
 export const GENESIS_TARGET = 6500;
-/** First Destiny weapon at 7,500; second stage finishes at Baldrix (45,000). */
-export const DESTINY_TARGET = 45000;
+/** Destiny Liberation 1 finishes after Kaling (first weapon at 7,500). */
+export const DESTINY1_TARGET = 7500;
+/** Destiny Liberation 2 finishes at Baldrix stage (45,000). */
+export const DESTINY2_TARGET = 45000;
+/** @deprecated Prefer {@link DESTINY2_TARGET}. */
+export const DESTINY_TARGET = DESTINY2_TARGET;
 
 export const BOSS_ICON_CDN = "https://cdn.maplehub.app";
 
@@ -118,7 +122,7 @@ export const GENESIS_BOSSES: TraceBoss[] = [
   },
 ];
 
-/** Destiny-tab bosses (MapleHub `he`). */
+/** Destiny weekly bosses (shared by Destiny Liberation 1 and 2). */
 export const DESTINY_BOSSES: TraceBoss[] = [
   {
     name: "Seren",
@@ -258,7 +262,8 @@ export const GENESIS_MILESTONES: LiberationMilestone[] = [
   },
 ];
 
-export const DESTINY_MILESTONES: LiberationMilestone[] = [
+/** Destiny Liberation 1 — quest line through Kaling (first weapon at 7,500). */
+export const DESTINY1_MILESTONES: LiberationMilestone[] = [
   {
     label: "Seren — 0",
     bossName: "Seren",
@@ -277,6 +282,10 @@ export const DESTINY_MILESTONES: LiberationMilestone[] = [
     requiredTraces: 4500,
     value: "4500|Kaling",
   },
+];
+
+/** Destiny Liberation 2 — First Adversary through Baldrix. */
+export const DESTINY2_MILESTONES: LiberationMilestone[] = [
   {
     label: "First Adversary — 7,500",
     bossName: "Adversary",
@@ -297,16 +306,37 @@ export const DESTINY_MILESTONES: LiberationMilestone[] = [
   },
 ];
 
+/** @deprecated Prefer {@link DESTINY1_MILESTONES} / {@link DESTINY2_MILESTONES}. */
+export const DESTINY_MILESTONES: LiberationMilestone[] = [
+  ...DESTINY1_MILESTONES,
+  ...DESTINY2_MILESTONES,
+];
+
+export function isDestinyType(type: LiberationType): boolean {
+  return type === "destiny1" || type === "destiny2";
+}
+
+/** Normalize legacy `"destiny"` storage / URLs to Destiny Liberation 1. */
+export function coerceLiberationType(raw: unknown): LiberationType {
+  if (raw === "destiny2") return "destiny2";
+  if (raw === "destiny1" || raw === "destiny") return "destiny1";
+  return "genesis";
+}
+
 export function bossesFor(type: LiberationType): TraceBoss[] {
-  return type === "destiny" ? DESTINY_BOSSES : GENESIS_BOSSES;
+  return isDestinyType(type) ? DESTINY_BOSSES : GENESIS_BOSSES;
 }
 
 export function milestonesForType(type: LiberationType): LiberationMilestone[] {
-  return type === "destiny" ? DESTINY_MILESTONES : GENESIS_MILESTONES;
+  if (type === "destiny1") return DESTINY1_MILESTONES;
+  if (type === "destiny2") return DESTINY2_MILESTONES;
+  return GENESIS_MILESTONES;
 }
 
 export function targetForType(type: LiberationType): number {
-  return type === "destiny" ? DESTINY_TARGET : GENESIS_TARGET;
+  if (type === "destiny1") return DESTINY1_TARGET;
+  if (type === "destiny2") return DESTINY2_TARGET;
+  return GENESIS_TARGET;
 }
 
 /**
@@ -314,8 +344,8 @@ export function targetForType(type: LiberationType): number {
  * (gap from selected quest to the next milestone, or to the final target).
  *
  * Genesis: 500 early, then 1,000 per step.
- * Destiny stage 1: 2,000 → 2,500 → 3,000.
- * Destiny stage 2 (through Baldrix): 10,000 → 12,500 → 15,000.
+ * Destiny 1: 2,000 → 2,500 → 3,000 (through first weapon).
+ * Destiny 2: 10,000 → 12,500 → 15,000 (through Baldrix).
  */
 export function missionCapFor(
   type: LiberationType,
@@ -334,9 +364,15 @@ export function missionCapFor(
 }
 
 export function currencyLabel(type: LiberationType): string {
-  return type === "destiny"
+  return isDestinyType(type)
     ? "Adversary's Determination"
     : "Traces of Darkness";
+}
+
+export function liberationTabLabel(type: LiberationType): string {
+  if (type === "destiny1") return "Destiny 1";
+  if (type === "destiny2") return "Destiny 2";
+  return "Genesis";
 }
 
 export function bossIconSrc(boss: TraceBoss): string {

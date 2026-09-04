@@ -7,8 +7,12 @@ import {
   mergeSelections,
   type TraceSelection,
 } from "./calc";
-import type { LiberationType } from "./data";
-import { targetForType } from "./data";
+import {
+  coerceLiberationType,
+  milestonesForType,
+  targetForType,
+  type LiberationType,
+} from "./data";
 
 export const LIBERATION_STORAGE_KEY = "maplecompile.liberation.v2";
 export const PREVIEW_KEY = "__preview__";
@@ -24,13 +28,14 @@ export type LiberationCharacterInputs = {
   liberationQuest: string;
   bossSelections: TraceSelection[];
   completionRate: number;
-  /** Weapon / quest line marked finished (per Genesis or Destiny). */
+  /** Weapon / quest line marked finished (per Genesis or Destiny stage). */
   liberated: boolean;
 };
 
 export type CharacterLiberationBundle = {
   genesis: LiberationCharacterInputs;
-  destiny: LiberationCharacterInputs;
+  destiny1: LiberationCharacterInputs;
+  destiny2: LiberationCharacterInputs;
   currentTab: LiberationType;
 };
 
@@ -44,6 +49,12 @@ export type LiberationStore = {
 
 function todayISO(): string {
   return new Date().toISOString().slice(0, 10);
+}
+
+function clampQuestToType(type: LiberationType, quest: string): string {
+  const list = milestonesForType(type);
+  if (list.some((m) => m.value === quest)) return quest;
+  return defaultLiberationQuest(type);
 }
 
 export function defaultInputs(
@@ -65,7 +76,8 @@ export function defaultInputs(
 export function defaultBundle(): CharacterLiberationBundle {
   return {
     genesis: defaultInputs("genesis"),
-    destiny: defaultInputs("destiny"),
+    destiny1: defaultInputs("destiny1"),
+    destiny2: defaultInputs("destiny2"),
     currentTab: "genesis",
   };
 }
@@ -76,14 +88,18 @@ function normalizeInputs(
 ): LiberationCharacterInputs {
   const base = defaultInputs(type);
   if (!raw || typeof raw !== "object") return base;
+  const liberationQuest = clampQuestToType(
+    type,
+    typeof raw.liberationQuest === "string" && raw.liberationQuest
+      ? raw.liberationQuest
+      : defaultLiberationQuest(type),
+  );
   return {
     liberationType: type,
     currentTraces: clampTracesHeld(
       Number(raw.currentTraces) || 0,
       type,
-      typeof raw.liberationQuest === "string" && raw.liberationQuest
-        ? raw.liberationQuest
-        : defaultLiberationQuest(type),
+      liberationQuest,
     ),
     targetTraces: targetForType(type),
     startDate:
@@ -91,10 +107,7 @@ function normalizeInputs(
         ? raw.startDate
         : base.startDate,
     genesisPass: !!raw.genesisPass,
-    liberationQuest:
-      typeof raw.liberationQuest === "string" && raw.liberationQuest
-        ? raw.liberationQuest
-        : defaultLiberationQuest(type),
+    liberationQuest,
     bossSelections: mergeSelections(type, raw.bossSelections),
     completionRate: Math.max(
       0,
@@ -104,31 +117,41 @@ function normalizeInputs(
   };
 }
 
+type LegacyBundle = Partial<CharacterLiberationBundle> & {
+  destiny?: LiberationCharacterInputs;
+};
+
 function normalizeBundle(
-  raw: Partial<CharacterLiberationBundle> | null | undefined,
+  raw: LegacyBundle | null | undefined,
 ): CharacterLiberationBundle {
   const base = defaultBundle();
   if (!raw || typeof raw !== "object") return base;
+
   // Migrate flat v1-style character payload
   if (
     "currentTraces" in raw &&
     !("genesis" in raw) &&
-    !("destiny" in raw)
+    !("destiny" in raw) &&
+    !("destiny1" in raw)
   ) {
     const flat = raw as unknown as LiberationCharacterInputs;
-    const type =
-      flat.liberationType === "destiny" ? "destiny" : "genesis";
+    const type = coerceLiberationType(flat.liberationType);
     const inputs = normalizeInputs(flat, type);
     return {
-      genesis: type === "genesis" ? inputs : defaultInputs("genesis"),
-      destiny: type === "destiny" ? inputs : defaultInputs("destiny"),
+      ...base,
+      [type]: inputs,
       currentTab: type,
     };
   }
+
+  const legacyDestiny = raw.destiny1 ?? raw.destiny;
+  const currentTab = coerceLiberationType(raw.currentTab);
+
   return {
     genesis: normalizeInputs(raw.genesis, "genesis"),
-    destiny: normalizeInputs(raw.destiny, "destiny"),
-    currentTab: raw.currentTab === "destiny" ? "destiny" : "genesis",
+    destiny1: normalizeInputs(legacyDestiny, "destiny1"),
+    destiny2: normalizeInputs(raw.destiny2, "destiny2"),
+    currentTab,
   };
 }
 
@@ -155,28 +178,11 @@ function migrateV1(raw: string): LiberationStore | null {
       startDate?: string;
       selections?: TraceSelection[];
     };
-    const type = parsed.type === "destiny" ? "destiny" : "genesis";
+    const type = coerceLiberationType(parsed.type);
     const questFromMilestone = (n: number): string => {
-      const list: Array<[number, string]> =
-        type === "destiny"
-          ? [
-              [0, "0|Seren"],
-              [2000, "2000|Kalos"],
-              [4500, "4500|Kaling"],
-              [7500, "7500|Adversary"],
-              [17500, "17500|Limbo"],
-              [30000, "30000|Baldrix"],
-            ]
-          : [
-              [0, "0|Von Leon"],
-              [500, "500|Arkarium"],
-              [1000, "1000|Magnus"],
-              [1500, "1500|Lotus"],
-              [2500, "2500|Damien"],
-              [3500, "3500|Will"],
-              [4500, "4500|Lucid"],
-              [5500, "5500|Verus Hilla"],
-            ];
+      const list = milestonesForType(type).map(
+        (m) => [m.requiredTraces, m.value] as [number, string],
+      );
       let best = list[0]![1];
       for (const [req, val] of list) {
         if ((n || 0) >= req) best = val;
@@ -210,8 +216,8 @@ function migrateV1(raw: string): LiberationStore | null {
 
     const store = defaultStore();
     store.characterData[PREVIEW_KEY] = {
-      genesis: type === "genesis" ? inputs : defaultInputs("genesis"),
-      destiny: type === "destiny" ? inputs : defaultInputs("destiny"),
+      ...defaultBundle(),
+      [type]: inputs,
       currentTab: type,
     };
     return store;
@@ -244,7 +250,7 @@ export function readLiberationStore(): LiberationStore {
     const characterData: Record<string, CharacterLiberationBundle> = {};
     const src = parsed.characterData ?? {};
     for (const [id, bundle] of Object.entries(src)) {
-      characterData[id] = normalizeBundle(bundle);
+      characterData[id] = normalizeBundle(bundle as LegacyBundle);
     }
     if (!characterData[PREVIEW_KEY]) {
       characterData[PREVIEW_KEY] = defaultBundle();
@@ -301,7 +307,8 @@ function compactStoreForStorage(store: LiberationStore): LiberationStore {
     characterData[id] = {
       currentTab: bundle.currentTab,
       genesis: compactInputsForStorage(bundle.genesis),
-      destiny: compactInputsForStorage(bundle.destiny),
+      destiny1: compactInputsForStorage(bundle.destiny1),
+      destiny2: compactInputsForStorage(bundle.destiny2),
     };
   }
   return { ...store, characterData };
@@ -355,7 +362,10 @@ export function upsertActiveInputs(
   const bundle = store.characterData[key] ?? defaultBundle();
   const type = patch.liberationType ?? bundle.currentTab;
   const current = bundle[type];
-  const nextInputs = normalizeInputs({ ...current, ...patch, liberationType: type }, type);
+  const nextInputs = normalizeInputs(
+    { ...current, ...patch, liberationType: type },
+    type,
+  );
   return {
     ...store,
     characterData: {

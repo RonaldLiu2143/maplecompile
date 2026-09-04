@@ -31,6 +31,9 @@ import {
   tracesFromClear,
   upsertActiveInputs,
   writeLiberationStore,
+  currencyLabel,
+  liberationTabLabel,
+  isDestinyType,
   type LiberationCharacterInputs,
   type LiberationMode,
   type LiberationStore,
@@ -196,7 +199,8 @@ export default function LiberationPage() {
       const key = getActiveKey(prev);
       const bundle = prev.characterData[key] ?? {
         genesis: defaultInputs("genesis"),
-        destiny: defaultInputs("destiny"),
+        destiny1: defaultInputs("destiny1"),
+        destiny2: defaultInputs("destiny2"),
         currentTab: "genesis" as const,
       };
       return {
@@ -311,8 +315,8 @@ export default function LiberationPage() {
   const pct = liberated ? 100 : Math.min(100, result.completionRate);
 
   const currencyShort =
-    type === "destiny" ? "Adversary's Determination" : "Traces of Darkness";
-  const currencyTiny = type === "destiny" ? "AD" : "traces";
+    isDestinyType(type) ? "Adversary's Determination" : "Traces of Darkness";
+  const currencyTiny = isDestinyType(type) ? "AD" : "traces";
 
   return (
     <div className="space-y-6">
@@ -322,7 +326,7 @@ export default function LiberationPage() {
         </h1>
         <p className="mt-2 max-w-2xl text-sm opacity-75">
           See how many weeks until Genesis or Destiny liberation from your
-          weekly bosses. Destiny goes through First Adversary, Limbo, and
+          weekly bosses. Destiny 1 goes through Kaling; Destiny 2 through
           Baldrix.
         </p>
       </header>
@@ -440,13 +444,17 @@ export default function LiberationPage() {
                           <span
                             className={[
                               "absolute left-1 top-1 flex h-4 w-4 items-center justify-center rounded-full text-xs font-bold text-white",
-                              tab === "destiny"
-                                ? "bg-amber-600"
-                                : "bg-emerald-700",
+                              tab === "genesis"
+                                ? "bg-emerald-700"
+                                : "bg-amber-600",
                             ].join(" ")}
-                            title={tab === "destiny" ? "Destiny" : "Genesis"}
+                            title={liberationTabLabel(tab)}
                           >
-                            {tab === "destiny" ? "D" : "G"}
+                            {tab === "genesis"
+                              ? "G"
+                              : tab === "destiny1"
+                                ? "D1"
+                                : "D2"}
                           </span>
                           {avatar ? (
                             // eslint-disable-next-line @next/next/no-img-element
@@ -505,9 +513,7 @@ export default function LiberationPage() {
               </p>
               <p className="mt-1 text-xs opacity-65">
                 {liberated
-                  ? type === "destiny"
-                    ? "Destiny weapon liberated"
-                    : "Genesis weapon liberated"
+                  ? `${liberationTabLabel(type)} weapon liberated`
                   : achieved
                     ? "Liberation finished"
                     : "When you should finish (estimate)"}
@@ -536,7 +542,7 @@ export default function LiberationPage() {
               <h3 className="text-sm font-semibold">What you earn</h3>
               <Row
                 label={
-                  type === "destiny" ? "Each week (AD)" : "Each week (traces)"
+                  isDestinyType(type) ? "Each week (AD)" : "Each week (traces)"
                 }
                 value={String(result.weeklyTraces)}
               />
@@ -585,7 +591,8 @@ export default function LiberationPage() {
                 {(
                   [
                     ["genesis", "GENESIS"],
-                    ["destiny", "DESTINY"],
+                    ["destiny1", "DESTINY 1"],
+                    ["destiny2", "DESTINY 2"],
                   ] as const
                 ).map(([id, label]) => (
                   <button
@@ -618,8 +625,8 @@ export default function LiberationPage() {
                   ].join(" ")}
                   title={
                     liberated
-                      ? `Unmark ${type === "destiny" ? "Destiny" : "Genesis"} as liberated`
-                      : `Mark ${type === "destiny" ? "Destiny" : "Genesis"} weapon as liberated`
+                      ? `Unmark ${liberationTabLabel(type)} as liberated`
+                      : `Mark ${liberationTabLabel(type)} weapon as liberated`
                   }
                 >
                   {liberated ? "Liberated" : "Mark liberated"}
@@ -662,7 +669,7 @@ export default function LiberationPage() {
 
               <label className="flex flex-col gap-1 text-sm sm:col-span-2">
                 <span className="text-xs font-medium opacity-65">
-                  {type === "destiny"
+                  {isDestinyType(type)
                     ? "Adversary's Determination you have"
                     : "Traces of Darkness you have"}
                 </span>

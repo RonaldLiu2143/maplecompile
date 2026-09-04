@@ -17,6 +17,7 @@ import {
   type CharacterLiberationBundle,
   type LiberationStore,
 } from "@/lib/liberation/persist";
+import type { LiberationType } from "@/lib/liberation/data";
 import {
   loadPairingMap,
   type ScouterEquipPairing,
@@ -40,7 +41,7 @@ export type RosterStatusSnapshot = {
   liberation: {
     hasData: boolean;
     pct: number;
-    tab: "genesis" | "destiny";
+    tab: LiberationType;
     genesisLiberated: boolean;
     destinyLiberated: boolean;
   };
@@ -56,7 +57,7 @@ export type RosterStatusSnapshot = {
 
 function liberationPct(bundle: CharacterLiberationBundle): {
   pct: number;
-  tab: "genesis" | "destiny";
+  tab: LiberationType;
 } {
   const tab = bundle.currentTab;
   const inputs = bundle[tab];
@@ -74,7 +75,8 @@ function flagsFromBundle(
 ): LiberationTagFlags {
   return {
     genesis: !!bundle?.genesis.liberated,
-    destiny: !!bundle?.destiny.liberated,
+    destiny:
+      !!bundle?.destiny1.liberated || !!bundle?.destiny2.liberated,
   };
 }
 
@@ -103,15 +105,18 @@ function liberationSnapshot(
   if (!bundle) return empty;
   const { pct, tab } = liberationPct(bundle);
   const genesisLiberated = !!bundle.genesis.liberated;
-  const destinyLiberated = !!bundle.destiny.liberated;
+  const destinyLiberated =
+    !!bundle.destiny1.liberated || !!bundle.destiny2.liberated;
   const touched =
     libStore.selectedCharacterIds.includes(key) ||
     genesisLiberated ||
     destinyLiberated ||
     bundle.genesis.currentTraces > 0 ||
-    bundle.destiny.currentTraces > 0 ||
+    bundle.destiny1.currentTraces > 0 ||
+    bundle.destiny2.currentTraces > 0 ||
     bundle.genesis.completionRate > 0 ||
-    bundle.destiny.completionRate > 0;
+    bundle.destiny1.completionRate > 0 ||
+    bundle.destiny2.completionRate > 0;
   return {
     hasData: touched,
     pct,

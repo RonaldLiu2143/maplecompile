@@ -60,6 +60,7 @@ export function RosterGrid({
   selectedKey,
   emptyTitle,
   emptyBody,
+  gridClassName,
   makeDragProps,
   onRemove,
   onSetPrimary,
@@ -73,6 +74,8 @@ export function RosterGrid({
   selectedKey?: string | null;
   emptyTitle?: string;
   emptyBody?: string;
+  /** Override default responsive card grid. */
+  gridClassName?: string;
   makeDragProps: (index: number) => RosterDragProps | undefined;
   onRemove: (entry: RosterEntry) => void;
   onSetPrimary: (entry: RosterEntry) => void;
@@ -120,7 +123,11 @@ export function RosterGrid({
   }
 
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-2">
+    <div
+      className={
+        gridClassName ?? "grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-2"
+      }
+    >
       {roster.map((entry, index) => {
         const key = entryKey(entry);
         const slot = slots[key];

@@ -81,7 +81,9 @@ export function defaultTraceSelections(
 }
 
 export function defaultLiberationQuest(type: LiberationType): string {
-  return type === "destiny" ? "0|Seren" : "0|Von Leon";
+  if (type === "destiny1") return "0|Seren";
+  if (type === "destiny2") return "7500|Adversary";
+  return "0|Von Leon";
 }
 
 export function parseQuestTraces(liberationQuest: string): number {
