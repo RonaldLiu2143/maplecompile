@@ -314,18 +314,18 @@ export function CharacterSearchPage() {
   );
 
   return (
-    <div className="flex flex-col gap-5 py-1 md:gap-6 md:py-2">
+    <div className="flex w-full flex-col gap-5 py-1 md:gap-6 md:py-2">
       <header className="space-y-1">
         <h1 className="font-display text-2xl font-bold tracking-tight md:text-4xl">
           Character Search
         </h1>
-        <p className="max-w-xl text-sm text-foreground/65">
+        <p className="max-w-3xl text-sm text-foreground/65">
           Look up any GMS character. Star a bookmark here; pin a primary on
           Dashboard or Roster for tools.
         </p>
       </header>
 
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_18rem] lg:items-start lg:gap-6 xl:grid-cols-[minmax(0,1fr)_20rem]">
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,24rem)] lg:items-start lg:gap-8 xl:grid-cols-[minmax(0,1fr)_minmax(20rem,28rem)]">
         <section className="min-w-0 space-y-3">
           <form
             onSubmit={(e) => void onSubmit(e)}

@@ -160,6 +160,9 @@ export function SiteShell({
   const [ready, setReady] = useState(false);
   useApplyThemeToDocument();
 
+  const wideMain =
+    pathname === "/roster" || pathname === "/calc/character";
+
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 767px)");
 
@@ -331,7 +334,10 @@ export function SiteShell({
 
         <main
           id="main-content"
-          className="mx-auto w-full max-w-7xl min-w-0 flex-1 px-3 py-4 md:px-4 md:py-8"
+          className={cn(
+            "mx-auto w-full min-w-0 flex-1 px-3 py-4 md:px-5 md:py-8 lg:px-6",
+            wideMain ? "max-w-[100rem]" : "max-w-7xl",
+          )}
         >
           {children}
         </main>

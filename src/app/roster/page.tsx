@@ -158,21 +158,21 @@ export default function RosterPage() {
   const selectedLabel = selected?.name ?? "Character";
 
   return (
-    <div className="mx-auto flex max-w-6xl flex-col gap-6 py-4 lg:gap-8">
-      <header className="min-w-0 max-w-2xl">
+    <div className="flex w-full flex-col gap-6 py-1 lg:gap-8 lg:py-2">
+      <header className="min-w-0">
         <p className="text-sm font-semibold uppercase tracking-wider text-accent opacity-80">
           MapleCompile
         </p>
         <h1 className="font-display mt-1 text-3xl font-bold tracking-tight sm:text-4xl">
           Roster
         </h1>
-        <p className="mt-2 text-sm opacity-80">
+        <p className="mt-2 max-w-3xl text-sm opacity-80">
           Primary character opens here by default. Tap a card to switch
           profiles, drag to reorder, star for primary, trash to remove.
         </p>
       </header>
 
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_18rem] lg:items-start lg:gap-6 xl:grid-cols-[minmax(0,1fr)_20rem]">
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,24rem)] lg:items-start lg:gap-8 xl:grid-cols-[minmax(0,1fr)_minmax(20rem,28rem)]">
         <div className="min-w-0 space-y-5">
           {hydrated ? (
             <CharacterSearchBar roster={roster} onAdded={handleRosterAdded} />
