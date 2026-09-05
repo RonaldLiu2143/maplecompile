@@ -246,6 +246,7 @@ function applyStats(
   input.reboot = bool(special.isReboot);
   input.liberation = bool(special.genesis);
   input.mugongSoul = num(special.mugongSoul) > 0 || bool(special.mugongSoul);
+  input.firstHeritage = bool(special.destiny2ndSkill);
   input.oneHandSword = bool(special.oneHandSword);
 
   const continuousUse = bool(special.useContinuousRingAsMainRing);

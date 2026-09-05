@@ -23,6 +23,7 @@ import {
   focusScouterField,
   SCOUTER_STAT_LABELS,
   importMapleScouterPresetJson,
+  downloadMapleScouterPreset,
   type BuffState,
   type LinkState,
   type MissingScouterField,
@@ -972,6 +973,24 @@ export default function ScouterPage() {
     flashPresetMsg(`Imported “${saved.name}” from MapleScouter`);
   };
 
+  const exportMapleScouterFromState = (args: {
+    name: string;
+    input: ScouterInput;
+    buffs: BuffState;
+    links: LinkState;
+    hexa: number[];
+  }) => {
+    downloadMapleScouterPreset({
+      label: args.name,
+      input: args.input,
+      buffs: args.buffs,
+      links: args.links,
+      hexa: clampHexaForGms(args.hexa),
+      is30min: bcsFightMinutes === 30,
+    });
+    flashPresetMsg(`Downloaded “${args.name}” as MapleScouter JSON`);
+  };
+
   /** Label / class this scouter draft with a looked-up IGN — does not change Active Character. */
   const handleUseForStats = (character: CharacterLookupResult): boolean => {
     const mapped = classFromJobName(character.jobName);
@@ -1488,10 +1507,23 @@ export default function ScouterPage() {
               [
                 ["reboot", "Reboot", input.reboot],
                 ["liberation", "Liberation", input.liberation],
+                [
+                  "firstHeritage",
+                  "First Heritage",
+                  input.firstHeritage,
+                ],
                 ["mugongSoul", "Mugong Soul", input.mugongSoul],
               ] as const
             ).map(([key, label, checked]) => (
-              <label key={key} className="flex items-center gap-1.5">
+              <label
+                key={key}
+                className="flex items-center gap-1.5"
+                title={
+                  key === "firstHeritage"
+                    ? "Destiny weapon 2nd transcendence skill (최초의 유산) — +10% ATT/MATT"
+                    : undefined
+                }
+              >
                 <input
                   type="checkbox"
                   className="size-3.5 accent-[var(--accent)]"
@@ -1854,6 +1886,31 @@ export default function ScouterPage() {
         onSaveAsNew={() => savePreset({ asNew: true })}
         onDelete={(id) => deletePresetById(id)}
         onImportMapleScouterFile={importMapleScouterFile}
+        onExportMapleScouterPreset={(preset) => {
+          if (!preset.input) {
+            flashPresetMsg("Preset has no stats to export");
+            return;
+          }
+          exportMapleScouterFromState({
+            name: preset.name,
+            input: preset.input,
+            buffs: preset.buffs ?? defaultBuffState(),
+            links: preset.links ?? defaultLinkState(),
+            hexa: preset.hexa ?? defaultHexaLevels().map(() => 0),
+          });
+        }}
+        onExportCurrentMapleScouter={() => {
+          const name =
+            presetName.trim() ||
+            `Lv ${input.level} ${getCharName(input.jobType, input.charType)}`;
+          exportMapleScouterFromState({
+            name,
+            input,
+            buffs,
+            links,
+            hexa,
+          });
+        }}
       />
 
       <ConfirmModal

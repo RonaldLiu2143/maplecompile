@@ -52,6 +52,11 @@ export type ScouterInput = {
   liberation: boolean;
   mugongSoul: boolean;
   /**
+   * Destiny weapon 2nd transcendence skill (최초의 유산 / First Heritage).
+   * Maps to MapleScouter `special.destiny2ndSkill` (+10% ATT/MATT buff).
+   */
+  firstHeritage: boolean;
+  /**
    * Hero / Paladin / Soul Master: one-handed sword (true) vs two-handed (false).
    * Maps to MapleScouter `special.oneHandSword`.
    */
@@ -162,6 +167,7 @@ export function defaultScouterInput(
     reboot: false,
     liberation: false,
     mugongSoul: false,
+    firstHeritage: false,
     oneHandSword: false,
     legionArtifactAdditionalExp: true,
     legionArtifactFinalAttack: 0,

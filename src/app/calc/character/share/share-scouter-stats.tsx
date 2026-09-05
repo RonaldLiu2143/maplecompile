@@ -164,6 +164,7 @@ export function ShareScouterStatsPanel({ input }: { input: ScouterInput }) {
           [
             ["Reboot", input.reboot],
             ["Liberation", input.liberation],
+            ["First Heritage", input.firstHeritage],
             ["Mugong Soul", input.mugongSoul],
           ] as const
         ).map(([label, on]) => (

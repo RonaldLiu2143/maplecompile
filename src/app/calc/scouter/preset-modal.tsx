@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Upload } from "lucide-react";
+import { Download, Upload } from "lucide-react";
 import { ConfirmModal } from "@/components/ConfirmModal";
 import { getCharName } from "@/lib/jobs";
 import type { ScouterPreset } from "@/lib/storage";
@@ -24,6 +24,10 @@ type Props = {
   onDelete: (id: string) => void;
   /** Import a MapleScouter downloaded preset JSON as a new slot. */
   onImportMapleScouterFile?: (file: File) => Promise<void> | void;
+  /** Download a saved preset as MapleScouter JSON. */
+  onExportMapleScouterPreset?: (preset: ScouterPreset) => void;
+  /** Download the current Scouter form as MapleScouter JSON. */
+  onExportCurrentMapleScouter?: () => void;
 };
 
 function classLabelFor(p: ScouterPreset): string {
@@ -42,6 +46,8 @@ export function PresetModal({
   onSaveAsNew,
   onDelete,
   onImportMapleScouterFile,
+  onExportMapleScouterPreset,
+  onExportCurrentMapleScouter,
 }: Props) {
   const [pendingOverwrite, setPendingOverwrite] = useState<{
     id: string;
@@ -191,7 +197,7 @@ export function PresetModal({
                           }
                           setPendingOverwrite({ id: p.id, name: p.name });
                         }}
-                        className={`flex min-h-[4.5rem] w-full flex-col items-start justify-center gap-0.5 rounded-lg border px-3 py-2.5 pr-8 text-left transition hover:bg-surface-muted ${
+                        className={`flex min-h-[4.5rem] w-full flex-col items-start justify-center gap-0.5 rounded-lg border px-3 py-2.5 pr-14 text-left transition hover:bg-surface-muted ${
                           active || matchesName
                             ? "border-accent bg-accent-soft/35"
                             : "border-border/50 bg-background"
@@ -219,20 +225,36 @@ export function PresetModal({
                           </span>
                         ) : null}
                       </button>
-                      {isRecall ? (
-                        <button
-                          type="button"
-                          title={`Delete “${p.name}”`}
-                          aria-label={`Delete preset ${p.name}`}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onDelete(p.id);
-                          }}
-                          className="absolute right-1.5 top-1.5 rounded px-1.5 py-0.5 text-xs font-bold text-red-700 opacity-70 transition hover:bg-red-500/15 hover:opacity-100 dark:text-red-400"
-                        >
-                          ×
-                        </button>
-                      ) : null}
+                      <div className="absolute right-1 top-1 flex items-center gap-0.5">
+                        {onExportMapleScouterPreset ? (
+                          <button
+                            type="button"
+                            title={`Download “${p.name}” as MapleScouter JSON`}
+                            aria-label={`Download preset ${p.name} as JSON`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onExportMapleScouterPreset(p);
+                            }}
+                            className="rounded p-1 text-muted-foreground transition hover:bg-muted hover:text-foreground"
+                          >
+                            <Download className="size-3.5" aria-hidden />
+                          </button>
+                        ) : null}
+                        {isRecall ? (
+                          <button
+                            type="button"
+                            title={`Delete “${p.name}”`}
+                            aria-label={`Delete preset ${p.name}`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onDelete(p.id);
+                            }}
+                            className="rounded px-1.5 py-0.5 text-xs font-bold text-red-700 opacity-70 transition hover:bg-red-500/15 hover:opacity-100 dark:text-red-400"
+                          >
+                            ×
+                          </button>
+                        ) : null}
+                      </div>
                     </li>
                   );
                 })}
@@ -270,6 +292,23 @@ export function PresetModal({
                     {importError}
                   </p>
                 ) : null}
+              </div>
+            ) : null}
+
+            {!isRecall && onExportCurrentMapleScouter ? (
+              <div className="mt-5 border-t border-border/45 pt-4">
+                <p className="text-xs leading-relaxed opacity-65">
+                  Download the current Scouter form as MapleScouter JSON — usable
+                  in MapleScouter’s Recall → Import, or back here later.
+                </p>
+                <button
+                  type="button"
+                  onClick={onExportCurrentMapleScouter}
+                  className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg border border-border/55 bg-background px-3 py-3 text-sm font-semibold transition hover:bg-surface-muted"
+                >
+                  <Download className="size-4 shrink-0 opacity-80" aria-hidden />
+                  Download current as MapleScouter JSON
+                </button>
               </div>
             ) : null}
           </div>

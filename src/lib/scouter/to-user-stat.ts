@@ -179,13 +179,13 @@ export function toMapleScouterUserStat(args: {
       weaponRing: String(continuousUse ? 0 : input.ozWeaponJumpLevel),
       ringOfSum: String(input.ozRingOfSumLevel),
       riskTaker: "0",
-      statThird: "0",
-      statFourth: "0",
+      statThird: String(input.ozPrimaryStat),
+      statFourth: String(input.ozSecondaryStat),
       continuosRing: String(continuousUse ? input.ozContinuousLevel : 0),
       challenge: false,
       // MapleScouter default is unchecked; 30 min / GMS when Result toggle is 30.
       is30min,
-      destiny2ndSkill: false,
+      destiny2ndSkill: !!input.firstHeritage,
       famPassiveUp: false,
     },
     stat: {
