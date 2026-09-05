@@ -44,6 +44,7 @@ function coreKeyForStep(step: HexaUpgradePathStep): string {
   if (i >= 4 && i <= 7) return `reinCore${i - 3}`;
   if (i === 8) return "skillCore1";
   if (i === 9) return "skillCore2";
+  if (i === 11) return "commonClass";
   if (i === 12) return "generalCore1";
   if (i === 13) return "generalCore2";
   return "generalCore";

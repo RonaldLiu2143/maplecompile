@@ -12,6 +12,7 @@ import {
   WEEKLY_DUNGEON_FRAGMENTS,
 } from "./hexa-costs";
 import {
+  GMS_UNAVAILABLE_HEXA_INDICES,
   HEXA_MAX_LEVEL,
   HEXA_SLOT_COUNT,
   clampHexaForGms,
@@ -37,6 +38,9 @@ export const HEXA_SCOUTER_PAIR_KEY = "maplecompile-hexa-scouter-pair";
 export const HEXA_SCOUTER_PAIR_BY_CHAR_KEY =
   "maplecompile-hexa-scouter-pair-by-char-v1";
 export const HEXA_MIGRATED_KEY = "maplecompile-hexa-tracker-migrated-v1";
+/** One-shot: unlock Class Common goals that were force-zeroed while GMS-locked. */
+export const HEXA_CLASS_COMMON_UNLOCK_KEY =
+  "maplecompile-hexa-class-common-unlock-v1";
 
 export type HexaTrackerState = {
   /** Per-slot skill levels (length HEXA_SLOT_COUNT). */
@@ -102,10 +106,14 @@ function normalizeLevels(raw: unknown): number[] {
   return clampHexaForGms(next.slice(0, HEXA_SLOT_COUNT));
 }
 
+function isUnavailableHexaSlot(i: number): boolean {
+  return (GMS_UNAVAILABLE_HEXA_INDICES as readonly number[]).includes(i);
+}
+
 function defaultTargets(): number[] {
   return Array.from({ length: HEXA_SLOT_COUNT }, (_, i) => {
     // GMS-unavailable stay 0; others default target max.
-    if (i === 10 || i === 11) return 0;
+    if (isUnavailableHexaSlot(i)) return 0;
     return HEXA_CORE_MAX_LEVEL;
   });
 }
@@ -117,7 +125,7 @@ function normalizeTargets(raw: unknown, levels: number[]): number[] {
     return base.map((t, i) => Math.max(t, levels[i] ?? 0));
   }
   return base.map((fallback, i) => {
-    if (i === 10 || i === 11) return 0;
+    if (isUnavailableHexaSlot(i)) return 0;
     const n = Math.floor(Number(raw[i]));
     if (!Number.isFinite(n)) return Math.max(fallback, levels[i] ?? 0);
     return Math.max(0, Math.min(HEXA_CORE_MAX_LEVEL, n));
@@ -275,6 +283,7 @@ function placeLegacyHexaPair(
 /** One-shot: migrate legacy single-blob HEXA into primary (or tagged) key. */
 export function migrateLegacyHexaTracker(): void {
   if (typeof window === "undefined") return;
+  migrateClassCommonUnlock();
   try {
     if (localStorage.getItem(HEXA_MIGRATED_KEY) === "1") return;
   } catch {
@@ -323,6 +332,42 @@ export function migrateLegacyHexaTracker(): void {
 
   try {
     localStorage.setItem(HEXA_MIGRATED_KEY, "1");
+  } catch {
+    /* ignore */
+  }
+}
+
+/** Promote Class Common (slot 11) targets from the old GMS-locked 0 default to max. */
+function migrateClassCommonUnlock(): void {
+  try {
+    if (localStorage.getItem(HEXA_CLASS_COMMON_UNLOCK_KEY) === "1") return;
+  } catch {
+    return;
+  }
+
+  const CLASS_COMMON_SLOT = 11;
+  const raw = readJson<HexaByCharacter | null>(HEXA_TRACKER_BY_CHAR_KEY, null);
+  if (raw && typeof raw === "object" && !Array.isArray(raw)) {
+    let changed = false;
+    const next: HexaByCharacter = {};
+    for (const [key, value] of Object.entries(raw)) {
+      if (!key || !value) continue;
+      const state = normalizeTracker(value, key);
+      const targets = [...state.targets];
+      if ((targets[CLASS_COMMON_SLOT] ?? 0) === 0) {
+        targets[CLASS_COMMON_SLOT] = Math.max(
+          HEXA_CORE_MAX_LEVEL,
+          state.levels[CLASS_COMMON_SLOT] ?? 0,
+        );
+        changed = true;
+      }
+      next[key] = { ...state, targets };
+    }
+    if (changed) writeByCharacter(next);
+  }
+
+  try {
+    localStorage.setItem(HEXA_CLASS_COMMON_UNLOCK_KEY, "1");
   } catch {
     /* ignore */
   }
