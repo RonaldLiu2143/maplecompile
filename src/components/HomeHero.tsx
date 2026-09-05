@@ -25,8 +25,8 @@ export function HomeHero() {
     : undefined;
 
   return (
-    <div className="flex flex-col gap-5 md:gap-8">
-      <section className="mx-auto flex max-w-2xl flex-col items-center text-center">
+    <div className="flex w-full flex-col gap-5 md:gap-8">
+      <section className="mx-auto flex w-full max-w-3xl flex-col items-center text-center">
         <BrandWordmark
           as="h1"
           markSize={28}
@@ -36,7 +36,7 @@ export function HomeHero() {
           MapleStory GMS calculators, character search, and combat power
           scouter
         </p>
-        <p className="mt-2 max-w-md text-sm text-muted-foreground sm:mt-3 sm:text-base">
+        <p className="mt-2 max-w-xl text-sm text-muted-foreground sm:mt-3 sm:text-base">
           Look up a GMS character, pin a primary, then jump into scouter and
           gear tools. Free, no account required.
         </p>
@@ -44,7 +44,7 @@ export function HomeHero() {
 
       <div
         id="character-search"
-        className="mx-auto w-full max-w-2xl scroll-mt-24 text-left"
+        className="mx-auto w-full max-w-5xl scroll-mt-24 text-left xl:max-w-6xl"
       >
         {hydrated ? (
           <CharacterSearchBar roster={roster} onAdded={handleRosterAdded} />
@@ -57,7 +57,7 @@ export function HomeHero() {
       </div>
 
       {hydrated && primary ? (
-        <div className="mx-auto w-full max-w-2xl">
+        <div className="mx-auto w-full max-w-5xl xl:max-w-6xl">
           <DashboardPrimaryHero
             primary={primary}
             slot={primarySlot}
@@ -68,7 +68,10 @@ export function HomeHero() {
         </div>
       ) : null}
 
-      <nav aria-label="Tools" className="mx-auto w-full max-w-2xl">
+      <nav
+        aria-label="Tools"
+        className="mx-auto w-full max-w-5xl xl:max-w-6xl"
+      >
         <StackedToolLinks items={HOME_TOOL_LINKS} compact />
       </nav>
     </div>

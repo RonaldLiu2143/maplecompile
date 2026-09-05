@@ -63,6 +63,9 @@ export function ExpRangeGraph({
   centerChart = false,
   sectionLead = false,
   chartHeight,
+  days: daysProp,
+  onDaysChange,
+  hideRangePicker = false,
 }: {
   graph: MapleHubGraphData | null | undefined;
   averages?: MapleHubExpAverages | null;
@@ -73,10 +76,21 @@ export function ExpRangeGraph({
   /** First graph block under a parent divider (no extra top rule). */
   sectionLead?: boolean;
   chartHeight?: number;
+  /** Controlled range (parent owns day links / metric cards). */
+  days?: ExpRangeDays;
+  onDaysChange?: (days: ExpRangeDays) => void;
+  /** Hide title + chip buttons when parent renders day links. */
+  hideRangePicker?: boolean;
 }) {
   const dailyExp = graph?.dailyExp ?? [];
   const labels = graph?.labels ?? [];
-  const [days, setDays] = useState<ExpRangeDays>(7);
+  const [internalDays, setInternalDays] = useState<ExpRangeDays>(7);
+  const days = daysProp ?? internalDays;
+
+  function setDays(next: ExpRangeDays) {
+    if (daysProp == null) setInternalDays(next);
+    onDaysChange?.(next);
+  }
 
   if (!dailyExp.length && !averages) return null;
 
@@ -102,45 +116,47 @@ export function ExpRangeGraph({
           : "mt-5"
       }
     >
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <p
-          className={`font-semibold uppercase tracking-wider opacity-55 ${
-            compact ? "text-xs" : "text-xs sm:text-sm"
-          }`}
-        >
-          {compact ? "Daily EXP" : `${days}d chart`}
-        </p>
-        <div
-          className={`inline-flex rounded-lg border border-border/60 bg-surface-muted/40 ${
-            compact ? "p-0.5" : "p-1"
-          }`}
-          role="group"
-          aria-label="EXP history range"
-        >
-          {RANGES.map((r) => {
-            const active = days === r;
-            return (
-              <button
-                key={r}
-                type="button"
-                onClick={() => setDays(r)}
-                className={`rounded-md font-semibold tabular-nums transition ${
-                  compact
-                    ? "px-2 py-0.5 text-xs"
-                    : "px-2.5 py-1 text-xs sm:text-sm"
-                } ${
-                  active
-                    ? "bg-accent text-primary-foreground"
-                    : "opacity-70 hover:bg-surface-muted hover:opacity-100"
-                }`}
-                aria-pressed={active}
-              >
-                {r}d
-              </button>
-            );
-          })}
+      {!hideRangePicker ? (
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p
+            className={`font-semibold uppercase tracking-wider opacity-55 ${
+              compact ? "text-xs" : "text-xs sm:text-sm"
+            }`}
+          >
+            {compact ? "Daily EXP" : `${days}d chart`}
+          </p>
+          <div
+            className={`inline-flex rounded-lg border border-border/60 bg-surface-muted/40 ${
+              compact ? "p-0.5" : "p-1"
+            }`}
+            role="group"
+            aria-label="EXP history range"
+          >
+            {RANGES.map((r) => {
+              const active = days === r;
+              return (
+                <button
+                  key={r}
+                  type="button"
+                  onClick={() => setDays(r)}
+                  className={`rounded-md font-semibold tabular-nums transition ${
+                    compact
+                      ? "px-2 py-0.5 text-xs"
+                      : "px-2.5 py-1 text-xs sm:text-sm"
+                  } ${
+                    active
+                      ? "bg-accent text-primary-foreground"
+                      : "opacity-70 hover:bg-surface-muted hover:opacity-100"
+                  }`}
+                  aria-pressed={active}
+                >
+                  {r}d
+                </button>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      ) : null}
 
       {avg ? (
         <p className="mt-1.5 font-mono text-sm font-bold tabular-nums">
@@ -151,9 +167,9 @@ export function ExpRangeGraph({
         </p>
       ) : hasLine ? (
         <p
-          className={`mt-1.5 font-semibold uppercase tracking-wider opacity-55 ${
-            compact ? "text-xs" : "text-xs sm:text-xs"
-          }`}
+          className={`font-semibold uppercase tracking-wider opacity-55 ${
+            hideRangePicker ? "mt-0" : "mt-1.5"
+          } ${compact ? "text-xs" : "text-xs sm:text-xs"}`}
         >
           Last {days} days
           {slice.length < days ? ` (${slice.length} avail.)` : ""}
@@ -196,16 +212,28 @@ export function LevelProgressGraph({
   compact = false,
   centerChart = false,
   chartHeight,
+  days: daysProp,
+  onDaysChange,
+  defaultDays = 30,
 }: {
   graph: MapleHubGraphData | null | undefined;
   compact?: boolean;
   centerChart?: boolean;
   chartHeight?: number;
+  days?: ExpRangeDays;
+  onDaysChange?: (days: ExpRangeDays) => void;
+  defaultDays?: ExpRangeDays;
 }) {
   const levels = graph?.levels ?? [];
   const cumulativeExp = graph?.cumulativeExp ?? [];
   const labels = graph?.labels ?? [];
-  const [days, setDays] = useState<ExpRangeDays>(30);
+  const [internalDays, setInternalDays] = useState<ExpRangeDays>(defaultDays);
+  const days = daysProp ?? internalDays;
+
+  function setDays(next: ExpRangeDays) {
+    if (daysProp == null) setInternalDays(next);
+    onDaysChange?.(next);
+  }
 
   if (!levels.length) return null;
 
@@ -316,17 +344,19 @@ export function LevelExpBar({
   level,
   exp,
   dense = false,
+  className = "",
 }: {
   level?: number;
   exp?: number;
   dense?: boolean;
+  className?: string;
 }) {
   if (level == null) return null;
   const pct =
     exp != null && Number.isFinite(exp) ? expPercent(level, exp) : null;
   const need = expToNext(level);
   return (
-    <div className={dense ? "mt-1.5" : "mt-2"}>
+    <div className={`${dense ? "mt-1.5" : "mt-2"} ${className}`.trim()}>
       {pct != null && need != null ? (
         <div className="mb-0.5 flex justify-between gap-2 font-mono text-[0.6rem] tabular-nums text-foreground/50">
           <span>{formatCompact(exp!)}</span>

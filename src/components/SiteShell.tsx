@@ -161,7 +161,9 @@ export function SiteShell({
   useApplyThemeToDocument();
 
   const wideMain =
-    pathname === "/roster" || pathname === "/calc/character";
+    pathname === "/" ||
+    pathname === "/roster" ||
+    pathname === "/calc/character";
 
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 767px)");

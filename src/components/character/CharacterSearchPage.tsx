@@ -138,7 +138,12 @@ function BookmarkedRow({
                 </span>
               )}
             </p>
-            <LevelExpBar level={entry.level} exp={entry.exp} dense />
+            <LevelExpBar
+              level={entry.level}
+              exp={entry.exp}
+              dense
+              className="max-w-[6.5rem]"
+            />
           </div>
         </button>
         <button
@@ -257,20 +262,13 @@ export function CharacterSearchPage() {
 
   const bookmarkedPanel = (
     <aside className="lg:sticky lg:top-4 lg:self-start">
-      <div className="flex flex-wrap items-end justify-between gap-2">
-        <div>
-          <h2 className="font-display text-sm font-bold text-foreground">
-            Bookmarked
-          </h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Bookmarks only — not your roster.
-          </p>
-        </div>
-        {hydrated && saved.length > 0 ? (
-          <span className="font-mono text-xs tabular-nums text-foreground/50">
-            {saved.length}
-          </span>
-        ) : null}
+      <div>
+        <h2 className="font-display text-sm font-bold text-foreground">
+          Bookmarked
+        </h2>
+        <p className="mt-1 text-xs leading-snug text-muted-foreground">
+          Bookmarks only — not your roster.
+        </p>
       </div>
 
       {!hydrated ? (
@@ -325,7 +323,7 @@ export function CharacterSearchPage() {
         </p>
       </header>
 
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,24rem)] lg:items-start lg:gap-8 xl:grid-cols-[minmax(0,1fr)_minmax(20rem,28rem)]">
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(14rem,16.5rem)] lg:items-start lg:gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(14.5rem,17rem)]">
         <section className="min-w-0 space-y-3">
           <form
             onSubmit={(e) => void onSubmit(e)}

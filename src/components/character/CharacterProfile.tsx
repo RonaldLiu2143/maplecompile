@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   ExpRangeGraph,
   LevelProgressGraph,
+  type ExpRangeDays,
 } from "@/components/character/ExpRangeGraph";
 import type { LiberationTagFlags } from "@/lib/dashboard/roster-status";
 import { LiberationStatusTags } from "@/components/dashboard/LiberationStatusTags";
@@ -78,14 +79,18 @@ function MetricCard({
   avg,
   dailyPct,
   total,
+  selected = false,
+  onSelect,
 }: {
   label: string;
   avg: string;
   dailyPct: string;
   total: string;
+  selected?: boolean;
+  onSelect?: () => void;
 }) {
-  return (
-    <div className="rounded-xl border border-border/45 bg-surface-muted/35 px-3.5 py-3 sm:px-4 sm:py-3.5">
+  const body = (
+    <>
       <p className="text-xs font-semibold uppercase tracking-wider text-foreground/50">
         {label}
       </p>
@@ -107,8 +112,29 @@ function MetricCard({
           </dd>
         </div>
       </dl>
-    </div>
+    </>
   );
+
+  const shell =
+    "rounded-xl border px-3.5 py-3 text-left sm:px-4 sm:py-3.5 transition";
+  const tone = selected
+    ? "border-accent/60 bg-accent-soft/40 ring-1 ring-accent/30"
+    : "border-border/45 bg-surface-muted/35";
+
+  if (onSelect) {
+    return (
+      <button
+        type="button"
+        onClick={onSelect}
+        aria-pressed={selected}
+        className={`${shell} ${tone} hover:border-border hover:bg-surface-muted/55`}
+      >
+        {body}
+      </button>
+    );
+  }
+
+  return <div className={`${shell} ${tone}`}>{body}</div>;
 }
 
 function MiniStat({ label, value }: { label: string; value: string }) {
@@ -146,45 +172,54 @@ function formatDaysNumber(n: number): string {
   return String(Math.round(n));
 }
 
-function defaultAvgInput(avg7n: number, avg7Label: string | null): string {
-  if (avg7Label) {
-    return avg7Label.replace(/\/day$/i, "").trim();
+function defaultAvgInput(avgN: number, avgLabel: string | null): string {
+  if (avgLabel) {
+    return avgLabel.replace(/\/day$/i, "").trim();
   }
-  return formatCompact(avg7n);
+  return formatCompact(avgN);
 }
 
 /**
- * ETA to next levels using the 7d average as the base rate.
+ * ETA to next levels using the selected range average as the base rate.
  * Edit daily EXP to recalculate ETAs, or edit a milestone's days to set the
  * required daily rate for that target (remaining EXP / days).
+ * Editing the rate does not change which range card is selected.
  */
 function EtaToLevelSection({
   level,
   exp,
-  avg7n,
-  avg7Label,
+  avgRate,
+  avgLabel,
+  rangeDays,
   targets,
 }: {
   level: number;
   exp: number;
-  avg7n: number;
-  avg7Label: string | null;
+  avgRate: number;
+  avgLabel: string | null;
+  rangeDays: ExpRangeDays;
   targets: number[];
 }) {
   const [expInput, setExpInput] = useState(() =>
-    defaultAvgInput(avg7n, avg7Label),
+    defaultAvgInput(avgRate, avgLabel),
   );
   const [editingDays, setEditingDays] = useState<{
     lv: number;
     value: string;
   } | null>(null);
 
+  // Sync input only when the selected range changes (card / top day click).
+  useEffect(() => {
+    setExpInput(defaultAvgInput(avgRate, avgLabel));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- range-driven reset only
+  }, [rangeDays]);
+
   const rate = useMemo(() => {
     const parsed = parseCompactExp(expInput);
-    return parsed != null && parsed > 0 ? parsed : avg7n;
-  }, [expInput, avg7n]);
+    return parsed != null && parsed > 0 ? parsed : avgRate;
+  }, [expInput, avgRate]);
 
-  const baseLabel = avg7Label?.replace(/\/day$/i, "") ?? formatCompact(avg7n);
+  const baseLabel = avgLabel?.replace(/\/day$/i, "") ?? formatCompact(avgRate);
 
   function commitDays(lv: number, raw: string) {
     setEditingDays(null);
@@ -202,7 +237,7 @@ function EtaToLevelSection({
           ETA to Level
         </h4>
         <p className="mt-1 text-xs text-foreground/50">
-          Base rate: 7d average ({baseLabel}/day)
+          Base rate: {rangeDays}d average ({baseLabel}/day)
         </p>
       </div>
 
@@ -287,12 +322,51 @@ function EtaToLevelSection({
           );
         })}
       </ul>
-      {rate !== avg7n ? (
+      {rate !== avgRate ? (
         <p className="mt-2 text-xs text-foreground/45">
-          Using custom rate {formatCompact(rate)}/day (7d avg{" "}
-          {formatCompact(avg7n)}/day)
+          Using custom rate {formatCompact(rate)}/day ({rangeDays}d avg{" "}
+          {formatCompact(avgRate)}/day)
         </p>
       ) : null}
+    </div>
+  );
+}
+
+const EXP_RANGE_DAYS: ExpRangeDays[] = [7, 14, 30, 90];
+
+function ExpRangeDayLinks({
+  days,
+  onChange,
+  ariaLabel,
+}: {
+  days: ExpRangeDays;
+  onChange: (d: ExpRangeDays) => void;
+  ariaLabel: string;
+}) {
+  return (
+    <div
+      className="inline-flex items-center gap-2.5 text-xs sm:text-sm"
+      role="group"
+      aria-label={ariaLabel}
+    >
+      {EXP_RANGE_DAYS.map((r) => {
+        const active = days === r;
+        return (
+          <button
+            key={r}
+            type="button"
+            onClick={() => onChange(r)}
+            className={`tabular-nums transition ${
+              active
+                ? "font-bold text-foreground no-underline"
+                : "font-medium text-foreground/55 underline decoration-foreground/25 underline-offset-2 hover:text-foreground/80"
+            }`}
+            aria-pressed={active}
+          >
+            {r}d
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -575,6 +649,7 @@ function FullCharacterProfile({
   showOpenInScouter?: boolean;
 }) {
   const router = useRouter();
+  const [expRangeDays, setExpRangeDays] = useState<ExpRangeDays>(7);
   const pct = character.expPercent;
   const regionLabel = character.region.toUpperCase();
   const job = character.jobName;
@@ -585,13 +660,21 @@ function FullCharacterProfile({
   const avg14 = character.expAverages?.avg14d ?? null;
   const avg30 = character.expAverages?.avg30d ?? null;
   const avg90 = character.expAverages?.avg90d ?? null;
-  const avg7n = parseCompactExp(avg7);
   const dailyExp = character.graph?.dailyExp ?? [];
+
+  const avgByDays = (days: ExpRangeDays): string | null => {
+    if (days === 7) return avg7;
+    if (days === 14) return avg14;
+    if (days === 30) return avg30;
+    return avg90;
+  };
+  const selectedAvgLabel = avgByDays(expRangeDays);
+  const selectedAvgN = parseCompactExp(selectedAvgLabel);
 
   const metric = (
     label: string,
     avgLabel: string | null,
-    days: number,
+    days: ExpRangeDays,
   ) => {
     const avgN = parseCompactExp(avgLabel);
     const total = sumSlice(dailyExp, days);
@@ -606,6 +689,8 @@ function FullCharacterProfile({
         avg={avgLabel?.replace(/\/day$/i, "") ?? "—"}
         dailyPct={dailyPct}
         total={total != null ? formatCompact(total) : "—"}
+        selected={expRangeDays === days}
+        onSelect={() => setExpRangeDays(days)}
       />
     );
   };
@@ -626,11 +711,11 @@ function FullCharacterProfile({
   return (
     <div className="flex flex-col gap-5">
       {/* MapleRanks-style split: identity + side stats | charts */}
-      <div className="grid gap-5 xl:grid-cols-[minmax(17rem,22rem)_minmax(0,1fr)] xl:items-start">
+      <div className="grid gap-5 xl:grid-cols-[minmax(15rem,18rem)_minmax(0,1fr)] xl:items-start xl:gap-6">
         <div className="flex flex-col gap-4">
           <section className="overflow-hidden rounded-2xl border-2 border-border bg-surface">
             <div className="flex flex-col gap-5 p-5 sm:flex-row sm:items-start xl:flex-col xl:items-stretch">
-              <div className="flex shrink-0 justify-center sm:justify-start">
+              <div className="flex shrink-0 justify-center sm:justify-start xl:justify-center">
                 {character.characterImgURL ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
@@ -638,10 +723,10 @@ function FullCharacterProfile({
                     alt={`${character.name} avatar`}
                     width={200}
                     height={200}
-                    className="h-[180px] w-[180px] object-contain sm:h-[200px] sm:w-[200px]"
+                    className="mx-auto h-[180px] w-[180px] object-contain object-center sm:mx-0 sm:h-[200px] sm:w-[200px] xl:mx-auto"
                   />
                 ) : (
-                  <div className="flex h-[180px] w-[180px] items-center justify-center rounded-xl bg-surface-muted text-sm opacity-60 sm:h-[200px] sm:w-[200px]">
+                  <div className="mx-auto flex h-[180px] w-[180px] items-center justify-center rounded-xl bg-surface-muted text-sm opacity-60 sm:mx-0 sm:h-[200px] sm:w-[200px] xl:mx-auto">
                     No image
                   </div>
                 )}
@@ -795,15 +880,26 @@ function FullCharacterProfile({
 
         <div className="flex min-w-0 flex-col gap-4">
           {dailyExp.length || character.expAverages ? (
-            <section className="min-h-[22rem] rounded-2xl border border-border/60 bg-surface/90 p-5 sm:min-h-[26rem] sm:p-6">
-              <div className="flex flex-wrap items-end justify-between gap-2">
+            <section className="min-h-[22rem] rounded-2xl border border-border/60 bg-surface/90 p-5 sm:min-h-[26rem] sm:p-6 xl:p-7">
+              <div className="relative flex flex-wrap items-end justify-between gap-2">
                 <h3 className="font-display text-base font-bold uppercase tracking-[0.14em] text-accent sm:text-lg">
                   Daily Exp Gained
                 </h3>
-                <p className="text-xs text-foreground/50">
-                  Tracked history (MapleHub)
-                </p>
+                <ExpRangeDayLinks
+                  days={expRangeDays}
+                  onChange={setExpRangeDays}
+                  ariaLabel="Daily EXP history range"
+                />
               </div>
+
+              <ExpRangeGraph
+                graph={character.graph}
+                averages={character.expAverages}
+                showAvg={false}
+                days={expRangeDays}
+                onDaysChange={setExpRangeDays}
+                hideRangePicker
+              />
 
               {character.expAverages ? (
                 <div className="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -814,18 +910,13 @@ function FullCharacterProfile({
                 </div>
               ) : null}
 
-              <ExpRangeGraph
-                graph={character.graph}
-                averages={character.expAverages}
-                showAvg={false}
-              />
-
-              {avg7n != null && etaTargets.length > 0 ? (
+              {selectedAvgN != null && etaTargets.length > 0 ? (
                 <EtaToLevelSection
                   level={character.level}
                   exp={character.exp}
-                  avg7n={avg7n}
-                  avg7Label={avg7}
+                  avgRate={selectedAvgN}
+                  avgLabel={selectedAvgLabel}
+                  rangeDays={expRangeDays}
                   targets={etaTargets}
                 />
               ) : null}
@@ -833,8 +924,12 @@ function FullCharacterProfile({
           ) : null}
 
           {hasLevelProgress ? (
-            <section className="rounded-2xl border border-border/60 bg-surface/90 p-3 sm:p-4">
-              <LevelProgressGraph graph={character.graph} />
+            <section className="rounded-2xl border border-border/60 bg-surface/90 p-4 sm:p-5 xl:p-6">
+              <LevelProgressGraph
+                graph={character.graph}
+                days={expRangeDays}
+                onDaysChange={setExpRangeDays}
+              />
             </section>
           ) : null}
 
