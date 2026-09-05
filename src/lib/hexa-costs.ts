@@ -31,10 +31,10 @@ export const HEXA_FRAGMENT_COSTS: Record<HexaSkillType, readonly number[]> = {
     125, 38, 44, 50, 57, 63, 69, 75, 82, 300, 110, 124, 138, 152, 165, 179,
     193, 207, 220, 525, 234, 248, 262, 275, 289, 303, 317, 330, 344, 750,
   ],
-  /** Job Class Common (5th-job common mastery-style node). KMS/GMS Overdrive table. */
+  /** Job Class Common (5th-job common node boosts). Max 30 = 137 Sol Erda / 4035 frags. */
   ClassCommon: [
-    140, 21, 26, 30, 34, 38, 43, 47, 51, 142, 62, 69, 77, 83, 91, 98, 105, 112,
-    120, 252, 128, 136, 145, 152, 161, 168, 177, 184, 193, 357,
+    90, 25, 30, 35, 40, 45, 50, 55, 60, 180, 73, 81, 90, 98, 107, 115, 124, 132,
+    141, 315, 151, 160, 170, 179, 189, 198, 208, 217, 227, 450,
   ],
   "Hexa Stat": [
     300, 500, 600, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -64,8 +64,8 @@ export const HEXA_ERDA_COSTS: Record<HexaSkillType, readonly number[]> = {
     9, 9, 9, 10, 20,
   ],
   ClassCommon: [
-    7, 1, 1, 1, 1, 2, 2, 2, 2, 8, 2, 2, 3, 3, 3, 3, 3, 3, 3, 12, 4, 4, 4, 4, 4,
-    4, 5, 5, 5, 14,
+    4, 1, 1, 1, 2, 2, 2, 3, 3, 9, 3, 3, 3, 3, 4, 4, 4, 4, 4, 14, 4, 5, 5, 5, 5,
+    5, 5, 5, 6, 18,
   ],
   "Hexa Stat": [
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -165,7 +165,7 @@ export function nextLevelCost(
 /**
  * MapleScouter / tracker slot index → cost table type.
  * 0–3 Mastery, 4–7 Boost, 8 Origin, 9 Ascent, 10 GMS-unavailable (skill3),
- * 11 Class Common (job common / Overdrive table), 12–13 Common (Janus / Hecate).
+ * 11 Class Common (5th-job common boosts; 137 / 4035 to 30), 12–13 Common (Janus / Hecate).
  */
 export function skillTypeForSlot(index: number): HexaSkillType | null {
   if (index >= 0 && index <= 3) return "Mastery";

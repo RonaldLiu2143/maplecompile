@@ -659,18 +659,18 @@ function CompactCharacterProfile({
       </div>
 
       {!hideCharts ? (
-        <div className="border-t border-border/40 px-2.5 pb-2.5 pt-1.5 sm:px-3 sm:pb-3">
+        <div className="border-t border-border/40 px-3 pb-3 pt-2 sm:px-3.5 sm:pb-3.5">
           <ExpRangeGraph
             graph={character.graph}
             averages={character.expAverages}
             compact
             sectionLead
-            chartHeight={100}
+            chartHeight={168}
           />
           <LevelProgressGraph
             graph={character.graph}
             compact
-            chartHeight={92}
+            chartHeight={152}
           />
         </div>
       ) : null}
