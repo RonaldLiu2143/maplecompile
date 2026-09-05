@@ -308,7 +308,7 @@ export default function BossesIncomePage() {
           </div>
         </div>
 
-        <div className="grid gap-2 sm:grid-cols-2 sm:gap-3 xl:grid-cols-3 2xl:grid-cols-4">
+        <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-3">
           {hasRoster
             ? roster.map((entry, index) => {
                 const key = entryKey(entry);
@@ -807,7 +807,7 @@ function CharacterBossCard({
               })}
             </ul>
 
-            <div className="hidden overflow-x-auto md:block">
+            <div className="hidden md:block">
               <table className="w-full table-fixed text-left text-sm leading-tight">
                 <thead className="text-xs uppercase tracking-wider opacity-55">
                   <tr>
@@ -818,7 +818,7 @@ function CharacterBossCard({
                     <th className="w-10 p-0.5 text-center font-semibold md:w-12">
                       Party
                     </th>
-                    <th className="w-24 p-0.5 text-right font-semibold md:w-28">
+                    <th className="w-28 p-0.5 text-right font-semibold md:w-32">
                       Value
                     </th>
                   </tr>
@@ -896,25 +896,25 @@ function CharacterBossCard({
               </table>
             </div>
 
-            <div className="mt-auto flex items-center justify-between gap-2 border-t border-border/30 pt-2.5">
+            <div className="mt-auto flex items-center justify-between gap-3 border-t border-border/30 pt-2.5">
               <button
                 type="button"
                 onClick={() => onCheckAll(!allCleared)}
-                className="inline-flex min-h-11 items-center gap-1.5 rounded-md border border-border/50 bg-background px-3 text-sm font-semibold opacity-90 transition-colors hover:border-accent/40 hover:bg-accent-soft hover:text-accent"
+                className="inline-flex h-9 w-[8.75rem] shrink-0 items-center justify-center gap-1.5 rounded-md border border-border/50 bg-background px-2.5 text-sm font-semibold whitespace-nowrap opacity-90 transition-colors hover:border-accent/40 hover:bg-accent-soft hover:text-accent"
               >
                 <input
                   type="checkbox"
                   checked={allCleared}
                   readOnly
                   tabIndex={-1}
-                  className="pointer-events-none h-3.5 w-3.5 accent-[var(--accent)]"
+                  className="pointer-events-none h-3.5 w-3.5 shrink-0 accent-[var(--accent)]"
                   aria-hidden
                 />
                 {allCleared ? "Uncheck all" : "Check all"}
               </button>
               <span
                 className={[
-                  "font-mono text-sm tabular-nums",
+                  "shrink-0 whitespace-nowrap text-right font-mono text-sm tabular-nums",
                   clearedValue === totalValue && totalValue > 0
                     ? "text-emerald-500"
                     : "opacity-70",

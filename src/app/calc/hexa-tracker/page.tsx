@@ -612,7 +612,9 @@ export default function HexaTrackerPage() {
       ),
       mastery: progress.nodes.filter((n) => n.skillType === "Mastery"),
       boost: progress.nodes.filter((n) => n.skillType === "Boost"),
-      common: progress.nodes.filter((n) => n.skillType === "Common"),
+      common: progress.nodes.filter(
+        (n) => n.skillType === "Common" || n.skillType === "ClassCommon",
+      ),
       hexaStat: progress.nodes.filter((n) => n.skillType === "Hexa Stat"),
     };
     return [
@@ -845,8 +847,8 @@ export default function HexaTrackerPage() {
 
           <section className="rounded-xl border border-border/45 bg-surface/90 p-4">
             <h2 className="text-sm font-semibold">Fragment Rate Calculator</h2>
-            <div className="mt-3 grid gap-3 sm:grid-cols-2">
-              <label className="space-y-1 text-xs font-semibold opacity-70">
+            <div className="mt-3 grid grid-cols-1 gap-3">
+              <label className="flex min-w-0 flex-col gap-1 text-xs font-semibold opacity-70">
                 Fragments per WAP
                 <input
                   type="number"
@@ -861,10 +863,10 @@ export default function HexaTrackerPage() {
                       ),
                     })
                   }
-                  className={inputClass}
+                  className={`${inputClass} w-full min-w-0`}
                 />
               </label>
-              <label className="space-y-1 text-xs font-semibold opacity-70">
+              <label className="flex min-w-0 flex-col gap-1 text-xs font-semibold opacity-70">
                 WAPs per day
                 <input
                   type="number"
@@ -877,7 +879,7 @@ export default function HexaTrackerPage() {
                       wapsPerDay: Math.max(0, Number(e.target.value) || 0),
                     })
                   }
-                  className={inputClass}
+                  className={`${inputClass} w-full min-w-0`}
                 />
               </label>
             </div>

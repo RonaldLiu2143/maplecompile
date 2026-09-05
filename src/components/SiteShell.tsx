@@ -163,7 +163,9 @@ export function SiteShell({
   const wideMain =
     pathname === "/" ||
     pathname === "/roster" ||
-    pathname === "/calc/character";
+    pathname === "/calc/character" ||
+    pathname === "/calc/bosses" ||
+    pathname === "/calc/boss-income";
 
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 767px)");
