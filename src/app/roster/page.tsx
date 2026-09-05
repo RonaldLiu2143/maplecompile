@@ -158,22 +158,18 @@ export default function RosterPage() {
   const selectedLabel = selected?.name ?? "Character";
 
   return (
-    <div className="flex w-full flex-col gap-6 py-1 lg:gap-8 lg:py-2">
+    <div className="flex w-full flex-col gap-3 py-1 lg:gap-3 lg:py-1">
       <header className="min-w-0">
-        <p className="text-sm font-semibold uppercase tracking-wider text-accent opacity-80">
-          MapleCompile
-        </p>
-        <h1 className="font-display mt-1 text-3xl font-bold tracking-tight sm:text-4xl">
+        <h1 className="font-display text-xl font-bold tracking-tight sm:text-2xl">
           Roster
         </h1>
-        <p className="mt-2 max-w-3xl text-sm opacity-80">
-          Primary character opens here by default. Tap a card to switch
-          profiles, drag to reorder, star for primary, trash to remove.
+        <p className="mt-0.5 text-xs text-muted-foreground sm:text-sm">
+          Tap a card to switch profiles · drag to reorder · star for primary
         </p>
       </header>
 
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,24rem)] lg:items-start lg:gap-8 xl:grid-cols-[minmax(0,1fr)_minmax(20rem,28rem)]">
-        <div className="min-w-0 space-y-5">
+      <div className="grid min-h-0 gap-4 lg:h-[calc(100dvh-9.5rem)] lg:grid-cols-[minmax(0,1fr)_minmax(18rem,24rem)] lg:items-stretch lg:gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(20rem,26rem)]">
+        <div className="flex min-h-0 min-w-0 flex-col gap-3 overflow-y-auto lg:pr-1">
           {hydrated ? (
             <CharacterSearchBar roster={roster} onAdded={handleRosterAdded} />
           ) : (
@@ -279,31 +275,31 @@ export default function RosterPage() {
         </div>
 
         {hydrated ? (
-          <aside className="border-t border-border/55 pt-4 lg:sticky lg:top-4 lg:self-start lg:border-t-0 lg:pt-0">
-            <div className="min-w-0 space-y-1">
-              <h2 className="font-display text-lg font-bold tracking-tight">
+          <aside className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-border/70 bg-surface lg:sticky lg:top-0">
+            <div className="shrink-0 border-b border-border/50 px-3 py-2.5 sm:px-3.5">
+              <h2 className="font-display text-sm font-bold tracking-tight sm:text-base">
                 Characters
                 {roster.length > 0 ? (
-                  <span className="ml-2 text-sm font-semibold opacity-55">
+                  <span className="ml-1.5 text-xs font-semibold opacity-55">
                     ({roster.length})
                   </span>
                 ) : null}
               </h2>
               {roster.length > 0 ? (
-                <p className="text-xs opacity-55">
-                  Tip: tap a card to view their profile. Drag to reorder.
+                <p className="mt-0.5 text-xs opacity-55">
+                  Tap to view · drag to reorder
                 </p>
               ) : null}
             </div>
 
-            <div className="mt-3 max-h-[min(70vh,40rem)] overflow-y-auto">
+            <div className="min-h-0 flex-1 overflow-y-auto p-2.5 sm:p-3">
               <RosterGrid
                 roster={roster}
                 primary={primary}
                 slots={slots}
                 managing={false}
                 selectedKey={selectedKey}
-                gridClassName="grid grid-cols-1 gap-3"
+                gridClassName="grid grid-cols-1 gap-2.5"
                 makeDragProps={(index) => makeDragProps(index, true)}
                 onRemove={handleRemove}
                 onSetPrimary={handleSetPrimary}

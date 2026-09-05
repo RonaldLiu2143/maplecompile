@@ -210,7 +210,7 @@ export function RosterCharacterCard({
         />
       )}
 
-      <div className="relative z-10 flex items-stretch gap-3 p-3 pointer-events-none sm:gap-4 sm:p-3.5">
+      <div className="relative z-10 flex items-stretch gap-2.5 p-2.5 pointer-events-none sm:gap-3 sm:p-3">
         {showDragHandle ? (
           <div className="flex shrink-0 items-center pointer-events-auto">
             <DragHandle />
@@ -223,13 +223,13 @@ export function RosterCharacterCard({
             <img
               src={character.characterImgURL}
               alt=""
-              width={72}
-              height={72}
-              className="pointer-events-none h-[72px] w-[72px] rounded-lg object-contain"
+              width={56}
+              height={56}
+              className="pointer-events-none h-14 w-14 rounded-lg object-contain"
               draggable={false}
             />
           ) : (
-            <div className="flex h-[72px] w-[72px] items-center justify-center rounded-lg bg-surface-muted text-xs font-semibold uppercase tracking-wide opacity-50">
+            <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-surface-muted text-xs font-semibold uppercase tracking-wide opacity-50">
               {character.name.slice(0, 2)}
             </div>
           )}
@@ -237,7 +237,7 @@ export function RosterCharacterCard({
 
         <div className="min-w-0 flex-1 self-center">
           <div className="flex min-w-0 flex-wrap items-center gap-1.5">
-            <p className="truncate text-base font-bold tracking-tight text-accent">
+            <p className="truncate text-sm font-bold tracking-tight text-accent sm:text-base">
               {character.name}
             </p>
             {liberation ? (
@@ -248,18 +248,14 @@ export function RosterCharacterCard({
               />
             ) : null}
           </div>
-          <p className="mt-0.5 text-sm tabular-nums opacity-85">
+          <p className="mt-0.5 text-xs tabular-nums opacity-85 sm:text-sm">
             Lv. {character.level}
             {expPct ? (
               <span className="opacity-70"> ({expPct})</span>
             ) : null}
           </p>
-          <p className="mt-0.5 truncate text-sm opacity-75">
+          <p className="mt-0.5 truncate text-xs opacity-75 sm:text-sm">
             {character.jobName || "—"}
-          </p>
-          <p className="mt-0.5 truncate text-sm opacity-65">
-            {character.worldName || "—"}
-            {character.isHeroic ? " · Heroic" : ""}
           </p>
         </div>
 
