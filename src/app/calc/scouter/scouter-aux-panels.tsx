@@ -24,6 +24,18 @@ import {
   scouterLabelCellClass,
 } from "./scouter-field-primitives";
 
+/** Shared icon-tile sizing for Buffs / Links / HEXA so cards match. */
+const TILE_ICON_SIZE = 28;
+const TILE_GRID =
+  "grid grid-cols-4 gap-1.5 p-2 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10";
+const TILE_CARD_BASE =
+  "flex aspect-square w-full min-w-0 flex-col items-center justify-center gap-0.5 rounded border p-1";
+const TILE_CARD_IDLE = `${TILE_CARD_BASE} border-border/40 bg-background`;
+const TILE_CARD_ACTIVE = `${TILE_CARD_BASE} border-accent bg-accent-soft/40`;
+const TILE_CARD_LOCKED = `${TILE_CARD_BASE} border-border/40 bg-surface-muted/40 opacity-40 grayscale`;
+const TILE_CONTROL =
+  "flex h-6 w-full items-center justify-center";
+
 export type ScouterAuxPanelsProps = {
   buffs: BuffState;
   setBuffs: Dispatch<SetStateAction<BuffState>>;
