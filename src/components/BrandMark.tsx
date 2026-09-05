@@ -38,7 +38,7 @@ export function BrandWordmark({
   as?: "span" | "h1";
 }) {
   return (
-    <Tag className={["inline-flex items-center gap-2", className].join(" ")}>
+    <Tag className={["inline-flex min-w-0 max-w-full items-center gap-2", className].join(" ")}>
       <BrandMark size={markSize} />
       <span
         className={[

@@ -205,19 +205,19 @@ export function SiteShell({
       <aside
         className={cn(
           "sticky top-0 z-40 hidden h-dvh shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-[width] duration-200 ease-out md:flex",
-          open ? "w-60" : "w-14",
+          open ? "w-64" : "w-14",
         )}
         aria-label="Site navigation"
       >
         <div
           className={cn(
-            "flex items-center border-b border-sidebar-border py-3",
-            open ? "justify-between gap-2 px-3" : "flex-col gap-2 px-1",
+            "relative flex items-center border-b border-sidebar-border py-3",
+            open ? "pr-11 pl-3" : "flex-col gap-2 px-1",
           )}
         >
           {open ? (
             <Link href="/" className="min-w-0">
-              <BrandWordmark markSize={24} textClassName="text-xl" />
+              <BrandWordmark markSize={22} textClassName="text-lg leading-none" />
             </Link>
           ) : (
             <Link
@@ -235,7 +235,10 @@ export function SiteShell({
                 type="button"
                 variant="ghost"
                 size="icon"
-                className="size-11"
+                className={cn(
+                  "size-8 shrink-0",
+                  open && "absolute right-2 top-1/2 -translate-y-1/2",
+                )}
                 onClick={toggle}
                 aria-expanded={open}
                 aria-controls="site-sidebar-nav"
