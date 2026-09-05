@@ -12,6 +12,7 @@ import {
   UNLOCK_TO_CHANGE_ACTIVE_MSG,
 } from "@/lib/active-character";
 import { characterProfileHref } from "@/lib/character/client";
+import { expPercent } from "@/lib/character/exp";
 import type { CharacterLookupResult } from "@/lib/character/lookup";
 
 function DragHandle() {
@@ -94,10 +95,17 @@ function withDragAttrs(
   };
 }
 
-function formatExpPercent(pct: number | null | undefined): string | null {
-  if (pct == null || !Number.isFinite(pct)) return null;
-  const rounded = Math.round(pct * 1000) / 1000;
-  return `${rounded}%`;
+function formatExpPercent(
+  pct: number | null | undefined,
+  level?: number,
+  exp?: number,
+): string | null {
+  let value = pct;
+  if ((value == null || !Number.isFinite(value)) && level != null && exp != null) {
+    value = expPercent(level, exp);
+  }
+  if (value == null || !Number.isFinite(value)) return null;
+  return `${value.toFixed(3)}%`;
 }
 
 function stopCardNav(e: MouseEvent) {
@@ -133,7 +141,11 @@ export function RosterCharacterCard({
   drag?: RosterDragProps;
 }) {
   const profileHref = characterProfileHref(character);
-  const expPct = formatExpPercent(character.expPercent);
+  const expPct = formatExpPercent(
+    character.expPercent,
+    character.level,
+    character.exp,
+  );
   const showActions = Boolean(onRemove || onSetPrimary);
   const showDragHandle = Boolean(managing || drag?.draggable);
   const draggedRef = useRef(false);
@@ -249,9 +261,9 @@ export function RosterCharacterCard({
             ) : null}
           </div>
           <p className="mt-0.5 text-xs tabular-nums opacity-85 sm:text-sm">
-            Lv. {character.level}
+            <span className="font-semibold">Lv. {character.level}</span>
             {expPct ? (
-              <span className="opacity-70"> ({expPct})</span>
+              <span className="ml-1.5 opacity-70">{expPct}</span>
             ) : null}
           </p>
           <p className="mt-0.5 truncate text-xs opacity-75 sm:text-sm">

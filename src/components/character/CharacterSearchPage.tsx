@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { CharacterProfile } from "@/components/character/CharacterProfile";
-import { LevelExpBar } from "@/components/character/ExpRangeGraph";
 import { useSavedCharacters } from "@/hooks/useSavedCharacters";
 import {
   CHARACTER_LOOKUP_NETWORK_ERROR,
@@ -57,7 +56,7 @@ function StarIcon({ filled }: { filled?: boolean }) {
   );
 }
 
-/** Bookmark card: avatar, name, job/world, Lv + %, EXP bar. */
+/** Bookmark card — same layout language as Roster Characters. */
 function BookmarkedRow({
   entry,
   active,
@@ -73,88 +72,74 @@ function BookmarkedRow({
     entry.level != null && entry.exp != null
       ? expPercent(entry.level, entry.exp)
       : null;
-  const jobWorld = [entry.jobName, entry.worldName ? `in ${entry.worldName}` : null]
-    .filter(Boolean)
-    .join(" ");
 
   return (
     <li
       className={[
-        "overflow-hidden rounded-xl border transition",
+        "group relative overflow-hidden rounded-xl border bg-surface transition",
         active
-          ? "border-accent/55 bg-accent-soft/35"
-          : "border-border/50 bg-surface/80 hover:border-border hover:bg-surface",
+          ? "border-accent ring-2 ring-accent/35"
+          : "border-border/70 hover:border-accent/45 hover:bg-surface-muted/40",
       ].join(" ")}
     >
-      <div className="flex items-start gap-2.5 p-2.5">
-        <button
-          type="button"
-          onClick={onSelect}
-          className="flex min-w-0 flex-1 items-start gap-2.5 text-left"
-        >
+      <button
+        type="button"
+        onClick={onSelect}
+        className="absolute inset-0 z-0 cursor-pointer"
+        aria-label={`Show ${entry.name} profile`}
+        aria-pressed={active}
+      />
+      <div className="relative z-10 flex items-stretch gap-2.5 p-2.5 pointer-events-none sm:gap-3 sm:p-3">
+        <div className="flex shrink-0 items-center">
           {entry.characterImgURL ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={entry.characterImgURL}
               alt=""
-              width={52}
-              height={52}
-              className="h-[52px] w-[52px] shrink-0 object-contain"
+              width={56}
+              height={56}
+              className="h-14 w-14 rounded-lg object-contain"
+              draggable={false}
             />
           ) : (
-            <div className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-lg bg-surface-muted text-[0.6rem] opacity-50">
-              —
+            <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-surface-muted text-xs font-semibold uppercase tracking-wide opacity-50">
+              {entry.name.slice(0, 2)}
             </div>
           )}
-          <div className="min-w-0 flex-1">
-            <p className="truncate font-display text-sm font-bold tracking-tight">
-              {entry.name}
-            </p>
-            {jobWorld ? (
-              <p className="mt-0.5 truncate text-xs text-foreground/55">
-                {jobWorld}
-                <span className="opacity-60">
-                  {` · ${entry.region.toUpperCase()}`}
-                </span>
-              </p>
+        </div>
+
+        <div className="min-w-0 flex-1 self-center">
+          <p className="truncate text-sm font-bold tracking-tight text-accent sm:text-base">
+            {entry.name}
+          </p>
+          <p className="mt-0.5 text-xs tabular-nums opacity-85 sm:text-sm">
+            {entry.level != null ? (
+              <>
+                <span className="font-semibold">Lv. {entry.level}</span>
+                {pct != null ? (
+                  <span className="ml-1.5 opacity-70">{pct.toFixed(3)}%</span>
+                ) : null}
+              </>
             ) : (
-              <p className="mt-0.5 truncate text-xs text-foreground/55">
-                {entry.region.toUpperCase()}
-              </p>
+              <span className="opacity-55">Bookmarked</span>
             )}
-            <p className="mt-1 text-sm font-semibold tabular-nums">
-              {entry.level != null ? (
-                <>
-                  Lv. {entry.level}
-                  {pct != null ? (
-                    <span className="ml-1 text-xs font-medium text-foreground/55">
-                      ({pct.toFixed(2)}%)
-                    </span>
-                  ) : null}
-                </>
-              ) : (
-                <span className="text-xs font-medium text-foreground/50">
-                  Bookmarked
-                </span>
-              )}
-            </p>
-            <LevelExpBar
-              level={entry.level}
-              exp={entry.exp}
-              dense
-              className="max-w-[6.5rem]"
-            />
-          </div>
-        </button>
-        <button
-          type="button"
-          onClick={onRemove}
-          title="Remove bookmark"
-          aria-label={`Remove bookmark for ${entry.name}`}
-          className="rounded-lg p-1.5 text-accent opacity-70 transition hover:bg-accent-soft hover:opacity-100"
-        >
-          <StarIcon filled />
-        </button>
+          </p>
+          <p className="mt-0.5 truncate text-xs opacity-75 sm:text-sm">
+            {entry.jobName || "—"}
+          </p>
+        </div>
+
+        <div className="flex shrink-0 items-start pt-0.5 pointer-events-auto">
+          <button
+            type="button"
+            onClick={onRemove}
+            title="Remove bookmark"
+            aria-label={`Remove bookmark for ${entry.name}`}
+            className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-amber-400/60 bg-amber-400/15 text-amber-400 transition hover:bg-amber-400/25"
+          >
+            <StarIcon filled />
+          </button>
+        </div>
       </div>
     </li>
   );
@@ -261,53 +246,60 @@ export function CharacterSearchPage() {
   }
 
   const bookmarkedPanel = (
-    <aside className="lg:sticky lg:top-4 lg:self-start">
-      <div>
-        <h2 className="font-display text-sm font-bold text-foreground">
+    <aside className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-border/70 bg-surface lg:sticky lg:top-4 lg:self-start">
+      <div className="shrink-0 border-b border-border/50 px-3 py-2.5 sm:px-3.5">
+        <h2 className="font-display text-sm font-bold tracking-tight sm:text-base">
           Bookmarked
+          {hydrated && saved.length > 0 ? (
+            <span className="ml-1.5 text-xs font-semibold opacity-55">
+              ({saved.length})
+            </span>
+          ) : null}
         </h2>
-        <p className="mt-1 text-xs leading-snug text-muted-foreground">
-          Bookmarks only — not your roster.
+        <p className="mt-0.5 text-xs opacity-55">
+          Bookmarks only — not your roster
         </p>
       </div>
 
-      {!hydrated ? (
-        <p className="mt-3 text-sm opacity-60">Loading…</p>
-      ) : saved.length === 0 ? (
-        <p className="mt-3 rounded-xl border border-dashed border-border/50 bg-surface-muted/30 px-3 py-5 text-center text-sm text-foreground/55">
-          Star a profile to bookmark it here.
-        </p>
-      ) : (
-        <ul className="mt-3 flex max-h-[min(70vh,40rem)] flex-col gap-2.5 overflow-y-auto pb-1">
-          {saved.map((entry) => {
-            const key = entryKey(entry);
-            const isActive = activeKey === key;
-            return (
-              <BookmarkedRow
-                key={key}
-                entry={
-                  isActive && result
-                    ? {
-                        ...entry,
-                        level: result.level,
-                        exp: result.exp,
-                        jobName: result.jobName,
-                        worldName: result.worldName ?? entry.worldName,
-                        characterImgURL:
-                          result.characterImgURL ?? entry.characterImgURL,
-                      }
-                    : entry
-                }
-                active={isActive}
-                onSelect={() => {
-                  void loadCharacter(entry.name, entry.region);
-                }}
-                onRemove={() => unsave(entry)}
-              />
-            );
-          })}
-        </ul>
-      )}
+      <div className="min-h-0 flex-1 overflow-y-auto p-2.5 sm:p-3">
+        {!hydrated ? (
+          <p className="px-1 py-4 text-sm opacity-60">Loading…</p>
+        ) : saved.length === 0 ? (
+          <p className="rounded-xl border border-dashed border-border/50 bg-surface-muted/30 px-3 py-5 text-center text-sm text-foreground/55">
+            Star a profile to bookmark it here.
+          </p>
+        ) : (
+          <ul className="flex max-h-[min(70vh,40rem)] flex-col gap-2.5">
+            {saved.map((entry) => {
+              const key = entryKey(entry);
+              const isActive = activeKey === key;
+              return (
+                <BookmarkedRow
+                  key={key}
+                  entry={
+                    isActive && result
+                      ? {
+                          ...entry,
+                          level: result.level,
+                          exp: result.exp,
+                          jobName: result.jobName,
+                          worldName: result.worldName ?? entry.worldName,
+                          characterImgURL:
+                            result.characterImgURL ?? entry.characterImgURL,
+                        }
+                      : entry
+                  }
+                  active={isActive}
+                  onSelect={() => {
+                    void loadCharacter(entry.name, entry.region);
+                  }}
+                  onRemove={() => unsave(entry)}
+                />
+              );
+            })}
+          </ul>
+        )}
+      </div>
     </aside>
   );
 
@@ -323,7 +315,7 @@ export function CharacterSearchPage() {
         </p>
       </header>
 
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(14rem,16.5rem)] lg:items-start lg:gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(14.5rem,17rem)]">
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(16rem,20rem)] lg:items-start lg:gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(17rem,22rem)]">
         <section className="min-w-0 space-y-3">
           <form
             onSubmit={(e) => void onSubmit(e)}
@@ -421,9 +413,7 @@ export function CharacterSearchPage() {
           ) : null}
         </section>
 
-        <div className="border-t border-border/55 pt-4 lg:border-t-0 lg:pt-0">
-          {bookmarkedPanel}
-        </div>
+        {bookmarkedPanel}
       </div>
     </div>
   );

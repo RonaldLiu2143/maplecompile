@@ -465,7 +465,7 @@ function CompactCharacterProfile({
       .join(" ");
 
     return (
-      <article className="overflow-hidden rounded-xl border border-border/50 bg-surface">
+      <article className="rounded-xl border border-border/50 bg-surface">
         <div className="flex items-start gap-2.5 p-2.5 sm:gap-3">
           <div className="shrink-0">
             {character.characterImgURL ? (
@@ -560,7 +560,7 @@ function CompactCharacterProfile({
   }
 
   return (
-    <article className="overflow-hidden rounded-2xl border-2 border-border bg-surface">
+    <article className="rounded-2xl border-2 border-border bg-surface">
       <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-start">
         <div className="flex shrink-0 justify-start">
           {character.characterImgURL ? (
@@ -648,14 +648,22 @@ function CompactCharacterProfile({
             <MiniStat label={rankStats[2]!.label} value={rankStats[2]!.value} />
             <MiniStat label={rankStats[3]!.label} value={rankStats[3]!.value} />
           </div>
-
-          <ExpRangeGraph
-            graph={character.graph}
-            averages={character.expAverages}
-            compact
-          />
-          <LevelProgressGraph graph={character.graph} compact />
         </div>
+      </div>
+
+      <div className="border-t border-border/40 px-3 pb-3 pt-2 sm:px-4 sm:pb-4">
+        <ExpRangeGraph
+          graph={character.graph}
+          averages={character.expAverages}
+          compact
+          sectionLead
+          chartHeight={180}
+        />
+        <LevelProgressGraph
+          graph={character.graph}
+          compact
+          chartHeight={168}
+        />
       </div>
     </article>
   );

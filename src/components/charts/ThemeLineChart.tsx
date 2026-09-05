@@ -125,10 +125,10 @@ export function ThemeLineChart({
         {
           animationDuration: 280,
           grid: {
-            left: "3%",
+            left: type === "line" ? 8 : "3%",
             right: "4%",
             top: 12,
-            bottom: "3%",
+            bottom: 8,
             containLabel: true,
           },
           tooltip: {

@@ -179,7 +179,7 @@ export default function RosterPage() {
           )}
 
           {hydrated && selected ? (
-            <section className="overflow-hidden rounded-2xl border border-border/70 bg-surface">
+            <section className="rounded-2xl border border-border/70 bg-surface">
               <div className="flex items-center gap-3 border-b border-border/50 px-4 py-2.5">
                 <div className="min-w-0 flex-1">
                   <p className="text-xs font-semibold uppercase tracking-wider text-accent opacity-80">
