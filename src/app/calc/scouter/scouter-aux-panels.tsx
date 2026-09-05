@@ -87,16 +87,12 @@ export function ScouterAuxPanels({
             Select All
           </label>
         </div>
-        <div className="grid grid-cols-4 gap-1.5 p-2 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10">
+        <div className={TILE_GRID}>
           {BUFF_DEFS.map((b) => {
             const st = buffs[b.id] ?? { on: false, level: 0 };
             const active = b.control === "check" ? st.on : st.level > 0;
             const tip = `${b.label} — ${b.bonus}`;
-            const cardClass = `flex min-h-11 min-w-0 flex-col items-center justify-center gap-0.5 rounded border p-1.5 ${
-              active
-                ? "border-accent bg-accent-soft/40"
-                : "border-border/40 bg-background"
-            }`;
+            const cardClass = active ? TILE_CARD_ACTIVE : TILE_CARD_IDLE;
             if (b.control === "check") {
               return (
                 <label
@@ -105,13 +101,15 @@ export function ScouterAuxPanels({
                   aria-label={tip}
                   className={`${cardClass} cursor-pointer touch-manipulation`}
                 >
-                  <ScouterCdnIcon src={b.icon} alt="" size={24} />
-                  <input
-                    type="checkbox"
-                    className="pointer-events-none size-4 accent-[var(--accent)]"
-                    checked={st.on}
-                    onChange={(e) => setBuffChecked(b.id, e.target.checked)}
-                  />
+                  <ScouterCdnIcon src={b.icon} alt="" size={TILE_ICON_SIZE} />
+                  <span className={TILE_CONTROL}>
+                    <input
+                      type="checkbox"
+                      className="pointer-events-none size-3.5 accent-[var(--accent)]"
+                      checked={st.on}
+                      onChange={(e) => setBuffChecked(b.id, e.target.checked)}
+                    />
+                  </span>
                 </label>
               );
             }
@@ -133,9 +131,9 @@ export function ScouterAuxPanels({
                   }
                 }}
               >
-                <ScouterCdnIcon src={b.icon} alt="" size={24} />
+                <ScouterCdnIcon src={b.icon} alt="" size={TILE_ICON_SIZE} />
                 <div
-                  className="w-full"
+                  className={TILE_CONTROL}
                   onClick={(e) => e.stopPropagation()}
                   onKeyDown={(e) => e.stopPropagation()}
                 >
@@ -161,29 +159,27 @@ export function ScouterAuxPanels({
         <div className="border-b border-border/40 px-2 py-1.5">
           <h2 className="text-xs font-semibold">Links/Legion</h2>
         </div>
-        <div className="grid grid-cols-4 gap-1.5 p-2 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10">
+        <div className={TILE_GRID}>
           {LINK_DEFS.map((l) => {
             const tip = `${l.label} — ${l.bonus}`;
             return (
-              <div
-                key={l.id}
-                title={tip}
-                className="flex min-h-11 flex-col items-center gap-0.5 rounded border border-border/40 bg-background p-1.5"
-              >
+              <div key={l.id} title={tip} className={TILE_CARD_IDLE}>
                 <ScouterCdnIcon
                   src={l.icon}
                   alt=""
                   fallback={l.short}
-                  size={24}
+                  size={TILE_ICON_SIZE}
                 />
-                <ScouterLevelInput
-                  value={links[l.id] ?? 0}
-                  max={l.maxLevel}
-                  title={tip}
-                  onChange={(capped) => {
-                    setLinks((prev) => ({ ...prev, [l.id]: capped }));
-                  }}
-                />
+                <div className={TILE_CONTROL}>
+                  <ScouterLevelInput
+                    value={links[l.id] ?? 0}
+                    max={l.maxLevel}
+                    title={tip}
+                    onChange={(capped) => {
+                      setLinks((prev) => ({ ...prev, [l.id]: capped }));
+                    }}
+                  />
+                </div>
               </div>
             );
           })}
@@ -202,7 +198,7 @@ export function ScouterAuxPanels({
         <div className="border-b border-border/40 px-2 py-1.5">
           <h2 className="text-xs font-semibold">HEXA Enhancement</h2>
         </div>
-        <div className="grid grid-cols-4 gap-1.5 p-2 sm:grid-cols-6 md:grid-cols-7">
+        <div className={TILE_GRID}>
           {hexaSlots.map((slot, i) => {
             const locked = !!slot.unavailableInGms;
             return (
@@ -213,36 +209,34 @@ export function ScouterAuxPanels({
                     ? `${slot.label} (not available in GMS)`
                     : slot.label
                 }
-                className={`flex min-h-11 flex-col items-center gap-0.5 rounded border border-border/40 p-1.5 ${
-                  locked
-                    ? "bg-surface-muted/40 opacity-40 grayscale"
-                    : "bg-background"
-                }`}
+                className={locked ? TILE_CARD_LOCKED : TILE_CARD_IDLE}
               >
                 <ScouterCdnIcon
                   src={slot.iconSuffix}
                   alt=""
                   fallback={slot.label.slice(0, 3)}
-                  size={24}
+                  size={TILE_ICON_SIZE}
                 />
-                <ScouterLevelInput
-                  value={locked ? 0 : (hexa[i] ?? 0)}
-                  max={HEXA_MAX_LEVEL}
-                  title={
-                    locked
-                      ? `${slot.label} (not available in GMS)`
-                      : slot.label
-                  }
-                  disabled={locked}
-                  onChange={(level) => {
-                    if (locked) return;
-                    setHexa((prev) => {
-                      const next = [...prev];
-                      next[i] = level;
-                      return clampHexaForGms(next);
-                    });
-                  }}
-                />
+                <div className={TILE_CONTROL}>
+                  <ScouterLevelInput
+                    value={locked ? 0 : (hexa[i] ?? 0)}
+                    max={HEXA_MAX_LEVEL}
+                    title={
+                      locked
+                        ? `${slot.label} (not available in GMS)`
+                        : slot.label
+                    }
+                    disabled={locked}
+                    onChange={(level) => {
+                      if (locked) return;
+                      setHexa((prev) => {
+                        const next = [...prev];
+                        next[i] = level;
+                        return clampHexaForGms(next);
+                      });
+                    }}
+                  />
+                </div>
               </div>
             );
           })}
