@@ -158,7 +158,7 @@ export default function RosterPage() {
   const selectedLabel = selected?.name ?? "Character";
 
   return (
-    <div className="flex w-full flex-col gap-3 py-1 lg:gap-3 lg:py-1">
+    <div className="flex w-full flex-col gap-3 py-1 lg:gap-4 lg:py-1">
       <header className="min-w-0">
         <h1 className="font-display text-xl font-bold tracking-tight sm:text-2xl">
           Roster
@@ -168,8 +168,8 @@ export default function RosterPage() {
         </p>
       </header>
 
-      <div className="grid min-h-0 gap-4 lg:h-[calc(100dvh-9.5rem)] lg:grid-cols-[minmax(0,1fr)_minmax(18rem,24rem)] lg:items-stretch lg:gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(20rem,26rem)]">
-        <div className="flex min-h-0 min-w-0 flex-col gap-3 overflow-y-auto lg:pr-1">
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,24rem)] lg:items-start lg:gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(20rem,26rem)]">
+        <div className="flex min-w-0 flex-col gap-3">
           {hydrated ? (
             <CharacterSearchBar roster={roster} onAdded={handleRosterAdded} />
           ) : (
@@ -180,12 +180,12 @@ export default function RosterPage() {
 
           {hydrated && selected ? (
             <section className="rounded-2xl border border-border/70 bg-surface">
-              <div className="flex items-center gap-3 border-b border-border/50 px-4 py-2.5">
+              <div className="flex items-center gap-3 border-b border-border/50 px-3 py-2 sm:px-4">
                 <div className="min-w-0 flex-1">
                   <p className="text-xs font-semibold uppercase tracking-wider text-accent opacity-80">
                     Character profile
                   </p>
-                  <p className="truncate font-display text-lg font-bold tracking-tight">
+                  <p className="truncate font-display text-base font-bold tracking-tight sm:text-lg">
                     {selectedLabel}
                     {primary && entryKey(primary) === selectedKey ? (
                       <span className="ml-2 text-xs font-semibold text-amber-400">
@@ -197,7 +197,7 @@ export default function RosterPage() {
                 <button
                   type="button"
                   onClick={() => setMinimized((v) => !v)}
-                  className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-border bg-surface-muted/40 px-3 text-sm font-semibold transition hover:bg-surface-muted"
+                  className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-border bg-surface-muted/40 px-2.5 text-xs font-semibold transition hover:bg-surface-muted sm:text-sm"
                   aria-expanded={!minimized}
                   aria-controls="roster-profile-panel"
                   title={minimized ? "Expand profile" : "Minimize profile"}
@@ -208,9 +208,9 @@ export default function RosterPage() {
               </div>
 
               {!minimized ? (
-                <div id="roster-profile-panel" className="p-3 sm:p-4">
+                <div id="roster-profile-panel" className="p-2 sm:p-3">
                   {profilePending && !profile ? (
-                    <div className="rounded-xl border border-border/50 bg-surface-muted/30 px-4 py-12 text-center text-sm opacity-70">
+                    <div className="rounded-xl border border-border/50 bg-surface-muted/30 px-4 py-8 text-center text-sm opacity-70">
                       Looking up {selectedLabel}…
                     </div>
                   ) : null}
@@ -230,7 +230,7 @@ export default function RosterPage() {
                         actions={
                           <Link
                             href={characterProfileHref(profile)}
-                            className="rounded-lg border border-border px-3 py-1.5 text-sm font-semibold transition hover:bg-surface-muted"
+                            className="rounded-lg border border-border px-2.5 py-1 text-xs font-semibold transition hover:bg-surface-muted sm:px-3 sm:py-1.5 sm:text-sm"
                           >
                             Full profile
                           </Link>
@@ -275,7 +275,7 @@ export default function RosterPage() {
         </div>
 
         {hydrated ? (
-          <aside className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-border/70 bg-surface lg:sticky lg:top-0">
+          <aside className="flex max-h-[min(70vh,42rem)] flex-col overflow-hidden rounded-2xl border border-border/70 bg-surface lg:sticky lg:top-14 lg:max-h-[calc(100dvh-5.5rem)] lg:self-start">
             <div className="shrink-0 border-b border-border/50 px-3 py-2.5 sm:px-3.5">
               <h2 className="font-display text-sm font-bold tracking-tight sm:text-base">
                 Characters

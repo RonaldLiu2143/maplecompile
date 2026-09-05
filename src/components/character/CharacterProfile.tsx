@@ -404,11 +404,14 @@ function CompactCharacterProfile({
   character,
   actions,
   dense = false,
+  hideCharts = false,
 }: {
   character: CharacterLookupResult;
   actions?: ReactNode;
   /** Dashboard-tight: smaller chrome; still includes Daily EXP graph. */
   dense?: boolean;
+  /** Search preview: identity + actions only (no EXP charts). */
+  hideCharts?: boolean;
 }) {
   const world = character.worldName;
   const job = character.jobName;
@@ -422,7 +425,7 @@ function CompactCharacterProfile({
   const gmsOverall = formatRank(ranking?.globalRank ?? character.overallRank);
   const legion = formatOptionalInt(character.legionLevel);
 
-  const avatarPx = dense ? 56 : 88;
+  const avatarPx = dense ? 56 : hideCharts ? 72 : 72;
 
   const [liberation, setLiberation] = useState<LiberationTagFlags>({
     genesis: false,
@@ -542,18 +545,22 @@ function CompactCharacterProfile({
           <div className="mb-1.5 sm:hidden">
             <RankStatsGrid items={rankStats} className="gap-x-3" />
           </div>
-          <ExpRangeGraph
-            graph={character.graph}
-            averages={character.expAverages}
-            compact
-            sectionLead
-            chartHeight={220}
-          />
-          <LevelProgressGraph
-            graph={character.graph}
-            compact
-            chartHeight={200}
-          />
+          {!hideCharts ? (
+            <>
+              <ExpRangeGraph
+                graph={character.graph}
+                averages={character.expAverages}
+                compact
+                sectionLead
+                chartHeight={220}
+              />
+              <LevelProgressGraph
+                graph={character.graph}
+                compact
+                chartHeight={200}
+              />
+            </>
+          ) : null}
         </div>
       </article>
     );
@@ -561,7 +568,7 @@ function CompactCharacterProfile({
 
   return (
     <article className="rounded-2xl border-2 border-border bg-surface">
-      <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-start">
+      <div className="flex flex-col gap-3 p-3 sm:flex-row sm:items-start sm:gap-3 sm:p-3.5">
         <div className="flex shrink-0 justify-start">
           {character.characterImgURL ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -587,7 +594,7 @@ function CompactCharacterProfile({
           <div className="flex flex-wrap items-start justify-between gap-2">
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
-                <h2 className="font-display text-xl font-bold tracking-tight">
+                <h2 className="font-display text-lg font-bold tracking-tight sm:text-xl">
                   {character.name}
                 </h2>
                 {character.isHeroic ? (
@@ -601,7 +608,7 @@ function CompactCharacterProfile({
                   </span>
                 ) : null}
               </div>
-              <p className="mt-0.5 font-display text-base font-semibold">
+              <p className="mt-0.5 whitespace-nowrap font-display text-sm font-semibold sm:text-base">
                 Lv. {character.level}
                 {pct != null ? (
                   <span className="ml-1.5 text-sm font-medium opacity-70">
@@ -609,7 +616,7 @@ function CompactCharacterProfile({
                   </span>
                 ) : null}
               </p>
-              <p className="mt-0.5 text-sm opacity-70">
+              <p className="mt-0.5 text-xs opacity-70 sm:text-sm">
                 {job}
                 {world ? ` in ${world}` : ""}
                 {` · ${region}`}
@@ -621,8 +628,8 @@ function CompactCharacterProfile({
             ) : null}
           </div>
 
-          <div className="mt-3 max-w-sm">
-            <div className="mb-1 flex justify-between gap-3 font-mono text-xs tabular-nums text-foreground/60">
+          <div className="mt-2 max-w-sm">
+            <div className="mb-1 flex justify-between gap-3 font-mono text-[0.65rem] tabular-nums text-foreground/60 sm:text-xs">
               <span>{formatCompact(character.exp)}</span>
               <span>
                 {need != null ? formatCompact(need) : "Max level"}
@@ -636,7 +643,7 @@ function CompactCharacterProfile({
             </div>
           </div>
 
-          <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-4">
+          <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1.5 sm:grid-cols-4">
             <MiniStat
               label={rankStats[0]!.label}
               value={rankStats[0]!.value}
@@ -651,20 +658,22 @@ function CompactCharacterProfile({
         </div>
       </div>
 
-      <div className="border-t border-border/40 px-3 pb-3 pt-2 sm:px-4 sm:pb-4">
-        <ExpRangeGraph
-          graph={character.graph}
-          averages={character.expAverages}
-          compact
-          sectionLead
-          chartHeight={180}
-        />
-        <LevelProgressGraph
-          graph={character.graph}
-          compact
-          chartHeight={168}
-        />
-      </div>
+      {!hideCharts ? (
+        <div className="border-t border-border/40 px-2.5 pb-2.5 pt-1.5 sm:px-3 sm:pb-3">
+          <ExpRangeGraph
+            graph={character.graph}
+            averages={character.expAverages}
+            compact
+            sectionLead
+            chartHeight={100}
+          />
+          <LevelProgressGraph
+            graph={character.graph}
+            compact
+            chartHeight={92}
+          />
+        </div>
+      ) : null}
     </article>
   );
 }
@@ -1011,6 +1020,7 @@ export function CharacterProfile({
   character,
   compact = false,
   dense = false,
+  hideCharts = false,
   actions,
   showOpenInScouter = true,
 }: {
@@ -1025,6 +1035,8 @@ export function CharacterProfile({
    * EXP bar, and compact Daily EXP graph.
    */
   dense?: boolean;
+  /** Hide Daily EXP / Level Progress charts (search result preview). */
+  hideCharts?: boolean;
   /** Optional action buttons (Save, Add to roster, etc.). */
   actions?: ReactNode;
   /** Full profile footer link into Scouter (hidden on Character Search). */
@@ -1036,6 +1048,7 @@ export function CharacterProfile({
         character={character}
         actions={actions}
         dense={dense}
+        hideCharts={hideCharts}
       />
     );
   }

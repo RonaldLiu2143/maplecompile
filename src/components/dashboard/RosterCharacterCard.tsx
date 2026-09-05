@@ -260,11 +260,13 @@ export function RosterCharacterCard({
               />
             ) : null}
           </div>
-          <p className="mt-0.5 text-xs tabular-nums opacity-85 sm:text-sm">
-            <span className="font-semibold">Lv. {character.level}</span>
-            {expPct ? (
-              <span className="ml-1.5 opacity-70">{expPct}</span>
-            ) : null}
+          <p className="mt-0.5 whitespace-nowrap text-xs tabular-nums opacity-85 sm:text-sm">
+            <span className="font-semibold">
+              Lv. {character.level}
+              {expPct ? (
+                <span className="font-medium opacity-70"> {expPct}</span>
+              ) : null}
+            </span>
           </p>
           <p className="mt-0.5 truncate text-xs opacity-75 sm:text-sm">
             {character.jobName || "—"}

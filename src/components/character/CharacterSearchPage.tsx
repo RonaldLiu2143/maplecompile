@@ -112,14 +112,17 @@ function BookmarkedRow({
           <p className="truncate text-sm font-bold tracking-tight text-accent sm:text-base">
             {entry.name}
           </p>
-          <p className="mt-0.5 text-xs tabular-nums opacity-85 sm:text-sm">
+          <p className="mt-0.5 whitespace-nowrap text-xs tabular-nums opacity-85 sm:text-sm">
             {entry.level != null ? (
-              <>
-                <span className="font-semibold">Lv. {entry.level}</span>
+              <span className="font-semibold">
+                Lv. {entry.level}
                 {pct != null ? (
-                  <span className="ml-1.5 opacity-70">{pct.toFixed(3)}%</span>
+                  <span className="font-medium opacity-70">
+                    {" "}
+                    {pct.toFixed(3)}%
+                  </span>
                 ) : null}
-              </>
+              </span>
             ) : (
               <span className="opacity-55">Bookmarked</span>
             )}
@@ -246,7 +249,7 @@ export function CharacterSearchPage() {
   }
 
   const bookmarkedPanel = (
-    <aside className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-border/70 bg-surface lg:sticky lg:top-4 lg:self-start">
+    <aside className="z-10 flex max-h-[min(70vh,40rem)] flex-col overflow-hidden rounded-2xl border border-border/70 bg-surface lg:sticky lg:top-14 lg:max-h-[calc(100dvh-5.5rem)] lg:self-start">
       <div className="shrink-0 border-b border-border/50 px-3 py-2.5 sm:px-3.5">
         <h2 className="font-display text-sm font-bold tracking-tight sm:text-base">
           Bookmarked

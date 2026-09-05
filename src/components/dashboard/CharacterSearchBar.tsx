@@ -117,97 +117,108 @@ export function CharacterSearchBar({
   }
 
   const alreadyOnRoster = result ? rosterContains(roster, result) : false;
-  const panelClass = compactPanel
-    ? "space-y-3 rounded-xl border border-border/50 bg-surface/70 p-3"
-    : "space-y-3";
   const formClass = compactPanel
     ? "flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-end"
-    : "flex flex-col gap-2 rounded-xl border-2 border-border bg-surface p-3 sm:flex-row sm:flex-wrap sm:items-end sm:gap-3 sm:p-4";
+    : "flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-end sm:gap-3";
+  const searchShell = compactPanel
+    ? "space-y-3 rounded-xl border border-border/50 bg-surface/70 p-3"
+    : "space-y-3 rounded-2xl border border-border/70 bg-surface p-3 sm:p-4";
 
   return (
-    <section className={panelClass}>
-      {compactPanel || hint ? (
+    <>
+      <section className={searchShell}>
         <div>
           <h2 className="inline-flex items-center gap-1.5 text-sm font-semibold text-accent">
             <Search className="size-3.5" aria-hidden />
-            Find character
+            Search character
           </h2>
           {hint ? (
             <p className="mt-0.5 text-xs opacity-60">{hint}</p>
           ) : null}
         </div>
-      ) : null}
 
-      <form onSubmit={onSubmit} className={formClass}>
-        <label className="flex min-w-0 flex-1 flex-col gap-1 text-sm font-semibold">
-          Search character
-          <input
-            className={inputClass}
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="e.g. wokeChifuyu"
-            maxLength={13}
-            autoComplete="off"
-            spellCheck={false}
-            disabled={pending}
-          />
-        </label>
-        <div className="flex gap-2">
-          <label className="flex min-w-[5.5rem] flex-col gap-1 text-sm font-semibold">
-            Region
-            <select
+        <form onSubmit={onSubmit} className={formClass}>
+          <label className="flex min-w-0 flex-1 flex-col gap-1 text-sm font-semibold">
+            Character name
+            <input
               className={inputClass}
-              value={region}
-              onChange={(e) => setRegion(e.target.value as NexonRegion)}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g. wokeChifuyu"
+              maxLength={13}
+              autoComplete="off"
+              spellCheck={false}
               disabled={pending}
-            >
-              <option value="na">NA</option>
-              <option value="eu">EU</option>
-            </select>
+            />
           </label>
-          <button
-            type="submit"
-            disabled={pending || name.trim().length < 2}
-            className="mt-auto inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-lg bg-accent px-5 text-sm font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-50 sm:flex-none"
+          <div className="flex gap-2">
+            <label className="flex min-w-[5.5rem] flex-col gap-1 text-sm font-semibold">
+              Region
+              <select
+                className={inputClass}
+                value={region}
+                onChange={(e) => setRegion(e.target.value as NexonRegion)}
+                disabled={pending}
+              >
+                <option value="na">NA</option>
+                <option value="eu">EU</option>
+              </select>
+            </label>
+            <button
+              type="submit"
+              disabled={pending || name.trim().length < 2}
+              className="mt-auto inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-lg bg-accent px-5 text-sm font-semibold text-primary-foreground transition hover:opacity-90 disabled:opacity-50 sm:flex-none"
+            >
+              {pending ? (
+                <LoaderCircle className="size-4 animate-spin" aria-hidden />
+              ) : (
+                <Search className="size-4" aria-hidden />
+              )}
+              {pending ? "Searching…" : "Search"}
+            </button>
+          </div>
+        </form>
+
+        {error ? (
+          <div
+            role="alert"
+            className="rounded-xl border border-danger/40 bg-danger/10 px-4 py-3 text-sm"
           >
-            {pending ? (
-              <LoaderCircle className="size-4 animate-spin" aria-hidden />
-            ) : (
-              <Search className="size-4" aria-hidden />
-            )}
-            {pending ? "Searching…" : "Search"}
-          </button>
-        </div>
-      </form>
+            {error}
+          </div>
+        ) : null}
 
-      {error ? (
-        <div
-          role="alert"
-          className="rounded-xl border border-danger/40 bg-danger/10 px-4 py-3 text-sm"
-        >
-          {error}
-        </div>
-      ) : null}
-
-      {feedback ? (
-        <div
-          role="status"
-          className="rounded-xl border border-accent/40 bg-accent/10 px-4 py-3 text-sm"
-        >
-          {feedback}
-        </div>
-      ) : null}
+        {feedback ? (
+          <div
+            role="status"
+            className="rounded-xl border border-accent/40 bg-accent/10 px-4 py-3 text-sm"
+          >
+            {feedback}
+          </div>
+        ) : null}
+      </section>
 
       {result ? (
-        <MiniRosterProfileCard
-          character={result}
-          alreadyOnRoster={alreadyOnRoster}
-          adding={adding}
-          onAdd={handleAdd}
-          onUseActive={onUseActive ? () => void handleUseActive() : undefined}
-          usingActive={usingActive}
-        />
+        <section className="overflow-hidden rounded-2xl border border-border/70 bg-surface">
+          <div className="border-b border-border/50 px-3 py-2 sm:px-3.5">
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-accent opacity-80">
+              Searched character
+            </h2>
+          </div>
+          <div className="p-2 sm:p-2.5 [&>article]:border-0 [&>article]:bg-transparent">
+            <MiniRosterProfileCard
+              character={result}
+              alreadyOnRoster={alreadyOnRoster}
+              adding={adding}
+              onAdd={handleAdd}
+              onUseActive={
+                onUseActive ? () => void handleUseActive() : undefined
+              }
+              usingActive={usingActive}
+            />
+          </div>
+        </section>
       ) : null}
-    </section>
+    </>
   );
 }

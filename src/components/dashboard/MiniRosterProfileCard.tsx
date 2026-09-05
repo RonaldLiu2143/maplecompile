@@ -6,7 +6,7 @@ import {
 } from "@/components/character/CharacterProfile";
 import type { CharacterLookupResult } from "@/lib/character/lookup";
 
-/** Compact search / preview card (delegates to CharacterProfile compact). */
+/** Compact search result card (no EXP charts — roster profile owns those). */
 export function MiniRosterProfileCard({
   character,
   alreadyOnRoster,
@@ -26,6 +26,7 @@ export function MiniRosterProfileCard({
     <CharacterProfile
       character={character}
       compact
+      hideCharts
       actions={
         <CharacterSearchActions
           character={character}
