@@ -211,13 +211,17 @@ export function SiteShell({
       >
         <div
           className={cn(
-            "relative flex items-center border-b border-sidebar-border py-3",
-            open ? "pr-11 pl-3" : "flex-col gap-2 px-1",
+            "flex items-center border-b border-sidebar-border py-3",
+            open ? "gap-1 px-2" : "flex-col gap-2 px-1",
           )}
         >
           {open ? (
-            <Link href="/" className="min-w-0">
-              <BrandWordmark markSize={22} textClassName="text-lg leading-none" />
+            <Link href="/" className="min-w-0 flex-1 overflow-hidden pr-1">
+              <BrandWordmark
+                className="w-full"
+                markSize={22}
+                textClassName="truncate text-lg leading-none"
+              />
             </Link>
           ) : (
             <Link
@@ -234,11 +238,8 @@ export function SiteShell({
               <Button
                 type="button"
                 variant="ghost"
-                size="icon"
-                className={cn(
-                  "size-8 shrink-0",
-                  open && "absolute right-2 top-1/2 -translate-y-1/2",
-                )}
+                size="icon-sm"
+                className="relative z-10 shrink-0"
                 onClick={toggle}
                 aria-expanded={open}
                 aria-controls="site-sidebar-nav"
