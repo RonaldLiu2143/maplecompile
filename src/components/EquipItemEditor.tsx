@@ -113,7 +113,7 @@ export function EquipItemEditor({
 
   return (
     <div
-      className="flex w-full max-w-sm flex-col overflow-hidden rounded-lg border border-border bg-surface"
+      className="flex w-full max-w-xl flex-col overflow-hidden rounded-lg border border-border bg-surface"
       role="region"
       aria-label={`Edit ${equip.name}`}
     >
@@ -216,13 +216,12 @@ export function EquipItemEditor({
                 })}
               </ul>
             )}
-            <div
-              className="overflow-x-auto rounded border border-border bg-background p-1.5"
-            >
+            <div className="overflow-x-auto rounded border border-border bg-background p-2">
               <div
-                className="grid gap-x-1 gap-y-1"
+                className="grid min-w-[22rem] gap-x-1.5 gap-y-1"
                 style={{
-                  gridTemplateColumns: "minmax(4.75rem, 5.75rem) repeat(7, minmax(1.75rem, 1fr))",
+                  gridTemplateColumns:
+                    "minmax(5.5rem, 7.5rem) repeat(7, minmax(2.15rem, 1fr))",
                 }}
               >
                 <div className="px-1 py-0.5 text-sm font-semibold text-muted-foreground">

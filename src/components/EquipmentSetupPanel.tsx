@@ -813,7 +813,7 @@ export function EquipmentSetupPanel({
             <p className="text-sm text-danger">{error}</p>
           )}
 
-          <div className="grid w-full grid-cols-1 items-start gap-4 lg:grid-cols-[auto_minmax(0,24rem)_minmax(16rem,1fr)] lg:gap-x-8 lg:gap-y-4">
+          <div className="grid w-full grid-cols-1 items-start gap-4 lg:grid-cols-[auto_minmax(26rem,1fr)_minmax(11rem,13.5rem)] lg:gap-x-5 lg:gap-y-4">
             {hydrated && (status === "ready" || status === "loading") ? (
               <div className="justify-self-start">
                 <EquipGrid
@@ -828,7 +828,7 @@ export function EquipmentSetupPanel({
               <div className="hidden lg:block" aria-hidden />
             )}
 
-            <div className="flex w-full min-w-0 max-w-sm flex-col items-stretch gap-1.5 lg:max-w-none">
+            <div className="flex w-full min-w-0 flex-col items-stretch gap-1.5">
               {status === "ready" &&
                 (panel?.kind === "picker" && pickerType ? (
                   <EquipPicker
@@ -853,7 +853,7 @@ export function EquipmentSetupPanel({
                     onClose={() => setPanel(null)}
                   />
                 ) : (
-                  <p className="max-w-sm text-sm opacity-70">
+                  <p className="max-w-md text-sm opacity-70">
                     Click an empty slot to choose equipment, or a filled slot to
                     edit Star Force, flames, and potential. Rings fill from the
                     top slot; pendants fill pendant-1 then pendant-2.
@@ -861,7 +861,7 @@ export function EquipmentSetupPanel({
                 ))}
             </div>
 
-            <div className="flex w-full min-w-0 flex-col items-stretch gap-2 lg:min-w-0">
+            <div className="flex w-full min-w-0 flex-col items-stretch gap-2">
               <div className="inline-flex max-w-full flex-wrap items-center justify-end gap-1.5">
                 <select
                   value={starterId}

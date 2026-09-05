@@ -28,19 +28,21 @@ export function TotalSetEffects({ totals }: TotalProps) {
       {activeStats.length === 0 ? (
         <p className="mt-1 text-xs opacity-60">No set bonuses yet.</p>
       ) : (
-        <div className="mt-1.5 flex flex-wrap gap-1">
+        <ul className="mt-1.5 divide-y divide-border/35 rounded-md border border-border/45 bg-surface-muted/25">
           {activeStats.map((id) => (
-            <div
+            <li
               key={id}
-              className="inline-flex items-baseline gap-1 rounded border border-accent/30 bg-accent-soft/50 px-1.5 py-0.5 text-xs"
+              className="flex items-baseline justify-between gap-2 px-2 py-1 text-xs"
             >
-              <span className="opacity-70">{STAT_LABELS[id] ?? id}</span>
-              <span className="font-semibold tabular-nums text-accent">
+              <span className="min-w-0 truncate opacity-70">
+                {STAT_LABELS[id] ?? id}
+              </span>
+              <span className="shrink-0 font-semibold tabular-nums text-accent">
                 {formatStatValue(id, totals[id])}
               </span>
-            </div>
+            </li>
           ))}
-        </div>
+        </ul>
       )}
     </section>
   );
