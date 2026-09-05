@@ -53,3 +53,15 @@ export const CHAR_TO_KMS_CLASS: Record<string, string> = {
   striker: "스트라이커",
   viper: "바이퍼",
 };
+
+/** MapleScouter KMS `myClass` → our charType. */
+export const KMS_CLASS_TO_CHAR: Record<string, string> = Object.fromEntries(
+  Object.entries(CHAR_TO_KMS_CLASS).map(([charType, kms]) => [kms, charType]),
+);
+
+export function charTypeFromKmsClass(
+  myClass: string | null | undefined,
+): string | null {
+  if (!myClass?.trim()) return null;
+  return KMS_CLASS_TO_CHAR[myClass.trim()] ?? null;
+}

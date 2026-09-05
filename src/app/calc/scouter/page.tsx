@@ -22,6 +22,7 @@ import {
   getMissingRequiredScouterFields,
   focusScouterField,
   SCOUTER_STAT_LABELS,
+  importMapleScouterPresetJson,
   type BuffState,
   type LinkState,
   type MissingScouterField,
@@ -942,6 +943,35 @@ export default function ScouterPage() {
     }
   };
 
+  /** Import MapleScouter downloaded JSON as a new preset slot, then load it. */
+  const importMapleScouterFile = async (file: File) => {
+    const text = await file.text();
+    const imported = importMapleScouterPresetJson(text);
+    const nameCheck = filterDisplayText(imported.name, {
+      fieldLabel: "Preset name",
+      maxLength: 40,
+    });
+    if (!nameCheck.ok) {
+      throw new Error(nameCheck.error);
+    }
+    const saved = storage.saveScouterPreset({
+      name: nameCheck.value,
+      state: {
+        input: structuredClone(imported.input),
+        buffs: structuredClone(imported.buffs),
+        links: structuredClone(imported.links),
+        hexa: clampHexaForGms(imported.hexa),
+      },
+    });
+    refreshPresets();
+    applyPresetState(saved);
+    setSelectedPresetId(saved.id);
+    setLoadedPresetId(saved.id);
+    setPresetName(saved.name);
+    setPresetModal(null);
+    flashPresetMsg(`Imported “${saved.name}” from MapleScouter`);
+  };
+
   /** Label / class this scouter draft with a looked-up IGN — does not change Active Character. */
   const handleUseForStats = (character: CharacterLookupResult): boolean => {
     const mapped = classFromJobName(character.jobName);
@@ -1823,6 +1853,7 @@ export default function ScouterPage() {
         onSaveOverwrite={(id) => savePreset({ overwriteId: id })}
         onSaveAsNew={() => savePreset({ asNew: true })}
         onDelete={(id) => deletePresetById(id)}
+        onImportMapleScouterFile={importMapleScouterFile}
       />
 
       <ConfirmModal
