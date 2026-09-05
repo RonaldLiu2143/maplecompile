@@ -25,6 +25,7 @@ import {
 } from "@/lib/scouter/boss-cuts";
 import { storage } from "@/lib/storage";
 import type { MapleScouterCalculatedData } from "@/lib/scouter/to-user-stat";
+import { sanitizeMapleScouterStat } from "@/lib/scouter/to-user-stat";
 import type { ScouterInput, StatKey } from "@/lib/scouter/types";
 
 const STAT_LABEL: Record<StatKey, string> = {
@@ -538,19 +539,19 @@ export function AdditionalSpecSimulation({
   const metrics = useMemo(() => {
     const base = baseline;
     const cur = result && simEnabled ? result : baseline;
-    const dmg300Base = Number(base.calculatedHexaDamage_300 ?? 0);
-    const dmg380Base = Number(base.calculatedHexaDamage_380 ?? 0);
-    const dmg300 = Number(cur.calculatedHexaDamage_300 ?? 0);
-    const dmg380 = Number(cur.calculatedHexaDamage_380 ?? 0);
+    const dmg300Base = sanitizeMapleScouterStat(base.calculatedHexaDamage_300);
+    const dmg380Base = sanitizeMapleScouterStat(base.calculatedHexaDamage_380);
+    const dmg300 = sanitizeMapleScouterStat(cur.calculatedHexaDamage_300);
+    const dmg380 = sanitizeMapleScouterStat(cur.calculatedHexaDamage_380);
 
-    const item300 = Number(cur.boss300_stat ?? 0);
-    const hexa300 = Number(cur.boss300_hexaStat ?? 0);
-    const item380 = Number(cur.boss380_stat ?? 0);
-    const hexa380 = Number(cur.boss380_hexaStat ?? 0);
-    const item300Base = Number(base.boss300_stat ?? 0);
-    const hexa300Base = Number(base.boss300_hexaStat ?? 0);
-    const item380Base = Number(base.boss380_stat ?? 0);
-    const hexa380Base = Number(base.boss380_hexaStat ?? 0);
+    const item300 = sanitizeMapleScouterStat(cur.boss300_stat);
+    const hexa300 = sanitizeMapleScouterStat(cur.boss300_hexaStat);
+    const item380 = sanitizeMapleScouterStat(cur.boss380_stat);
+    const hexa380 = sanitizeMapleScouterStat(cur.boss380_hexaStat);
+    const item300Base = sanitizeMapleScouterStat(base.boss300_stat);
+    const hexa300Base = sanitizeMapleScouterStat(base.boss300_hexaStat);
+    const item380Base = sanitizeMapleScouterStat(base.boss380_stat);
+    const hexa380Base = sanitizeMapleScouterStat(base.boss380_hexaStat);
 
     const base300 = preferBossStat(hexa300Base, item300Base);
     const sim300 = preferBossStat(hexa300, item300);

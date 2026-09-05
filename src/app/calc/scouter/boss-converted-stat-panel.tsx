@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import type { BossClearFightMinutes } from "@/lib/scouter/boss-cuts";
 import type { MapleScouterCalculatedData } from "@/lib/scouter/to-user-stat";
+import { sanitizeMapleScouterStat } from "@/lib/scouter/to-user-stat";
 
 export type BossConvertedStatValues = {
   boss300Normal: number;
@@ -14,16 +15,16 @@ export type BossConvertedStatValues = {
 export function bossConvertedFromMaple(
   data: MapleScouterCalculatedData,
 ): BossConvertedStatValues {
-  const n300 = Math.round(Number(data.boss300_stat ?? 0) || 0);
-  const n380 = Math.round(Number(data.boss380_stat ?? 0) || 0);
+  const n300 = Math.round(sanitizeMapleScouterStat(data.boss300_stat));
+  const n380 = Math.round(sanitizeMapleScouterStat(data.boss380_stat));
   return {
     boss300Normal: n300,
     boss300Hexa: Math.round(
-      Number(data.boss300_hexaStat ?? data.boss300_stat ?? 0) || 0,
+      sanitizeMapleScouterStat(data.boss300_hexaStat ?? data.boss300_stat),
     ),
     boss380Normal: n380,
     boss380Hexa: Math.round(
-      Number(data.boss380_hexaStat ?? data.boss380_stat ?? 0) || 0,
+      sanitizeMapleScouterStat(data.boss380_hexaStat ?? data.boss380_stat),
     ),
   };
 }

@@ -150,6 +150,8 @@ export function toMapleScouterUserStat(args: {
       jangBi: buffOn(buffs, "jangBi"),
       fish: buffOn(buffs, "fish"),
       dragonsMeal: false,
+      // MapleScouter Result / calc payload (seed CD ring level string; UI not exposed yet)
+      criDmgRing: "0",
     },
     linkSkill: {
       ark: linkLevel(links, "ark"),
@@ -238,6 +240,7 @@ export function toMapleScouterUserStat(args: {
       ignoreElementalResist: String(input.ignoreElementalResistancePercent),
       maple_combatPower: "",
       tms_fd: String(input.additionalFinalDamagePercent ?? 0),
+      tms_soul: "0",
     },
     hexa: hexaPayload,
     seedRing: {
@@ -261,12 +264,42 @@ export function toMapleScouterUserStat(args: {
     isTMS: false,
     isJMS: false,
     isMSEA: false,
+    /**
+     * MapleScouter simulator delta block. Required by calc/dmg — omitting it
+     * zeroes exchangePower and returns combatPower=-1.
+     */
+    power: {
+      mainStatBase: 0,
+      mainStatPer: 0,
+      mainStatAbs: 0,
+      subStatBase: 0,
+      subStatPer: 0,
+      subStatAbs: 0,
+      ssubStatBase: 0,
+      ssubStatPer: 0,
+      ssubStatAbs: 0,
+      atk: 0,
+      atkPer: 0,
+      bossDmg: 0,
+      criDmg: 0,
+    },
     // Sol Janus uses General_1; Erda Shower is a separate hunt-only core we don't expose yet
     huntSkill: {
       solJanus: String(h[12] ?? 0),
       erdaShower: "0",
     },
   };
+}
+
+/**
+ * MapleScouter calc/dmg uses negative sentinels:
+ * -2 = invalid / empty input, -1 = missing field, -3 = HEXA N/A for sim FD.
+ * Treat any non-finite or negative value as unset (0) for display + clears.
+ */
+export function sanitizeMapleScouterStat(raw: unknown): number {
+  const n = Number(raw);
+  if (!Number.isFinite(n) || n < 0) return 0;
+  return n;
 }
 
 export type MapleScouterCalculatedData = {

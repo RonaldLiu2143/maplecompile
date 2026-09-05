@@ -16,10 +16,11 @@ import {
   type ShareIdentity,
 } from "@/lib/scouter/share";
 import type { MapleScouterCalculatedData } from "@/lib/scouter/to-user-stat";
+import { sanitizeMapleScouterStat } from "@/lib/scouter/to-user-stat";
 import { filterDisplayText } from "@/lib/content-filter";
 
 function formatStat(n: number): string {
-  if (!Number.isFinite(n)) return "—";
+  if (!Number.isFinite(n) || n <= 0) return "—";
   return Math.round(n).toLocaleString();
 }
 
@@ -131,8 +132,12 @@ export function ShareGalleryModal({
         }
         if (cancelled) return;
         const d = json.calculatedData;
-        setBoss300(Number(d.boss300_hexaStat ?? d.boss300_stat ?? 0));
-        setBoss380(Number(d.boss380_hexaStat ?? d.boss380_stat ?? 0));
+        setBoss300(
+          sanitizeMapleScouterStat(d.boss300_hexaStat ?? d.boss300_stat),
+        );
+        setBoss380(
+          sanitizeMapleScouterStat(d.boss380_hexaStat ?? d.boss380_stat),
+        );
       } catch (err) {
         if (cancelled) return;
         setBcsError(

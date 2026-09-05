@@ -1,7 +1,10 @@
 import { toMapleScouterUserStat } from "./to-user-stat";
 import type { BuffState, LinkState } from "./buffs";
 import type { ScouterInput } from "./types";
-import type { MapleScouterCalculatedData } from "./to-user-stat";
+import {
+  sanitizeMapleScouterStat,
+  type MapleScouterCalculatedData,
+} from "./to-user-stat";
 
 const CALC_DMG_URL = "https://api.maplescouter.com/api/calc/dmg";
 
@@ -79,8 +82,14 @@ export function bossConvertedHexaFromCalculated(
   data: MapleScouterCalculatedData,
 ): BossConvertedHexaStats {
   return {
-    boss300HexaStat: Number(data.boss300_hexaStat ?? data.boss300_stat ?? 0) || 0,
-    boss380HexaStat: Number(data.boss380_hexaStat ?? data.boss380_stat ?? 0) || 0,
+    boss300HexaStat:
+      sanitizeMapleScouterStat(
+        data.boss300_hexaStat ?? data.boss300_stat,
+      ) || 0,
+    boss380HexaStat:
+      sanitizeMapleScouterStat(
+        data.boss380_hexaStat ?? data.boss380_stat,
+      ) || 0,
   };
 }
 

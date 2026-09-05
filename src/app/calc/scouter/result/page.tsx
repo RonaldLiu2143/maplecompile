@@ -39,13 +39,14 @@ import {
 } from "@/lib/jobs";
 import { storage } from "@/lib/storage";
 import type { MapleScouterCalculatedData } from "@/lib/scouter/to-user-stat";
+import { sanitizeMapleScouterStat } from "@/lib/scouter/to-user-stat";
 import {
   AdditionalSpecSimulation,
   type SpecSimOverlay,
 } from "./additional-spec-sim";
 
 function formatNum(n: number, digits = 0): string {
-  if (!Number.isFinite(n)) return "—";
+  if (!Number.isFinite(n) || n <= 0) return "—";
   return n.toLocaleString(undefined, {
     maximumFractionDigits: digits,
     minimumFractionDigits: digits,
@@ -788,20 +789,31 @@ export default function ScouterDetailedResultPage() {
 
   const clearInput = useMemo(() => {
     if (!displayData) return null;
-    const damage380 = Number(displayData.calculatedHexaDamage_380 ?? 0);
+    const damage380 = sanitizeMapleScouterStat(
+      displayData.calculatedHexaDamage_380,
+    );
+    const damage300 = sanitizeMapleScouterStat(
+      displayData.calculatedHexaDamage_300,
+    );
+    const boss300Stat = sanitizeMapleScouterStat(
+      displayData.boss300_hexaStat ?? displayData.boss300_stat,
+    );
+    const boss380Stat = sanitizeMapleScouterStat(
+      displayData.boss380_hexaStat ?? displayData.boss380_stat,
+    );
+    // MapleScouter -2 sentinel: empty/invalid scouter draft — skip clear grid.
+    if (boss300Stat <= 0 && boss380Stat <= 0 && damage300 <= 0 && damage380 <= 0) {
+      return null;
+    }
     return {
-      boss300Stat: Number(
-        displayData.boss300_hexaStat ?? displayData.boss300_stat ?? 0,
-      ),
-      boss380Stat: Number(
-        displayData.boss380_hexaStat ?? displayData.boss380_stat ?? 0,
-      ),
-      damage300: Number(displayData.calculatedHexaDamage_300 ?? 0),
+      boss300Stat,
+      boss380Stat,
+      damage300,
       damage380,
-      damageKaling: Number(
+      damageKaling: sanitizeMapleScouterStat(
         displayData.calculatedHexaDamage_kaling ?? damage380,
       ),
-      damage380NonHexa: Number(
+      damage380NonHexa: sanitizeMapleScouterStat(
         displayData.calculatedDamage_380 ?? damage380,
       ),
       level: displayLevel,
@@ -809,9 +821,24 @@ export default function ScouterDetailedResultPage() {
       authenticForce: displayAuthentic,
       spline300: displayData.spline_300 ?? null,
       spline380: displayData.spline_380 ?? null,
-      ascentConst: Number(displayData.ascent_const ?? 0),
+      ascentConst: sanitizeMapleScouterStat(displayData.ascent_const),
     };
   }, [displayArcane, displayAuthentic, displayData, displayLevel]);
+
+  const statsInvalid = Boolean(
+    displayData &&
+      sanitizeMapleScouterStat(displayData.boss300_stat) <= 0 &&
+      sanitizeMapleScouterStat(displayData.boss300_hexaStat) <= 0 &&
+      sanitizeMapleScouterStat(displayData.exchangePower) <= 0,
+  );
+
+  const convertedPower = sanitizeMapleScouterStat(displayData?.exchangePower);
+  const convertedPowerHexa = sanitizeMapleScouterStat(
+    displayData?.exchangePowerHexa,
+  );
+  const dojoStat = sanitizeMapleScouterStat(
+    displayData?.mr_hexaStat ?? displayData?.mr_stat,
+  );
 
   const allBossRows = useMemo(() => {
     if (!clearInput) return [];
@@ -926,6 +953,39 @@ export default function ScouterDetailedResultPage() {
                     Showing Additional Spec Simulation
                   </p>
                 ) : null}
+                {statsInvalid ? (
+                  <p className="rounded-md border border-amber-500/40 bg-amber-500/10 px-2 py-2 text-xs text-amber-200">
+                    MapleScouter returned empty stats (−2). Fill required
+                    character-window fields on{" "}
+                    <Link href="/calc/scouter" className="font-semibold underline">
+                      Scouter
+                    </Link>{" "}
+                    then recalculate.
+                  </p>
+                ) : null}
+                <div className="space-y-1.5">
+                  <p className="text-xs font-semibold opacity-80">
+                    Converted Power
+                  </p>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    <ConvertedStatCell
+                      compact
+                      label="Normal"
+                      value={convertedPower}
+                    />
+                    <ConvertedStatCell
+                      compact
+                      label="HEXA"
+                      value={convertedPowerHexa}
+                      emphasize
+                    />
+                  </div>
+                </div>
+                <ConvertedStatCell
+                  compact
+                  label="Dojo"
+                  value={dojoStat}
+                />
                 <div className="space-y-1.5">
                   <p className="text-xs font-semibold opacity-80">
                     Boss 300% PDR
@@ -934,12 +994,14 @@ export default function ScouterDetailedResultPage() {
                     <ConvertedStatCell
                       compact
                       label="Normal"
-                      value={Number(displayData.boss300_stat ?? 0)}
+                      value={sanitizeMapleScouterStat(displayData.boss300_stat)}
                     />
                     <ConvertedStatCell
                       compact
                       label="HEXA"
-                      value={Number(displayData.boss300_hexaStat ?? 0)}
+                      value={sanitizeMapleScouterStat(
+                        displayData.boss300_hexaStat,
+                      )}
                       emphasize
                     />
                   </div>
@@ -952,12 +1014,14 @@ export default function ScouterDetailedResultPage() {
                     <ConvertedStatCell
                       compact
                       label="Normal"
-                      value={Number(displayData.boss380_stat ?? 0)}
+                      value={sanitizeMapleScouterStat(displayData.boss380_stat)}
                     />
                     <ConvertedStatCell
                       compact
                       label="HEXA"
-                      value={Number(displayData.boss380_hexaStat ?? 0)}
+                      value={sanitizeMapleScouterStat(
+                        displayData.boss380_hexaStat,
+                      )}
                       emphasize
                     />
                   </div>
